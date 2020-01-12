@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-在Device上初始化 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="在GPU上初始化绝大多数CUDA教材，都会提出一般CUDA程序的标准步骤，其中一步是将Host的数据拷贝到Device。也就是说Host中数据要先被初始化，后才能拷贝到Device。其实，可以直接在Device中初始化数据，如此既可以避免Host到Device的数据传输，又可以加快数据初始化的速度。如下是一个小例： 12345678910111213141516171819202122232425">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-在Device上初始化">
+<meta property="og:url" content="http://yoursite.com/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="在GPU上初始化绝大多数CUDA教材，都会提出一般CUDA程序的标准步骤，其中一步是将Host的数据拷贝到Device。也就是说Host中数据要先被初始化，后才能拷贝到Device。其实，可以直接在Device中初始化数据，如此既可以避免Host到Device的数据传输，又可以加快数据初始化的速度。如下是一个小例： 12345678910111213141516171819202122232425">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-10-06T11:45:39.000Z">
+<meta property="article:modified_time" content="2020-01-12T15:15:14.391Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-在Device上初始化" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" class="article-date">
+  <time datetime="2019-10-06T11:45:39.000Z" itemprop="datePublished">2019-10-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-在Device上初始化
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="在GPU上初始化"><a href="#在GPU上初始化" class="headerlink" title="在GPU上初始化"></a>在GPU上初始化</h1><p>绝大多数CUDA教材，都会提出一般CUDA程序的标准步骤，其中一步是将Host的数据拷贝到Device。也就是说Host中数据要先被初始化，后才能拷贝到Device。其实，可以直接在Device中初始化数据，如此既可以避免Host到Device的数据传输，又可以加快数据初始化的速度。如下是一个小例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cuda_runtime.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"device_launch_parameters.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 10</span></span><br><span class="line"><span class="comment">//#define N 16384 // N*N = 268435456   // 1GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*2 // N*N = 268435456*4   // 4GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*4 // N*N = 268435456*16   // 16GB 4Bytes </span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">initOnGPU</span><span class="params">(<span class="keyword">int</span>* dev_a)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> ix = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">	<span class="keyword">int</span> iy = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">	<span class="keyword">int</span> tid = ix * N + iy;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ix &lt; N &amp;&amp; iy &lt; N)&#123;</span><br><span class="line">        <span class="comment">// initialize on Device</span></span><br><span class="line">		dev_a[tid] = <span class="number">321</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1) </span></span><br><span class="line">	<span class="keyword">int</span>* h_a;</span><br><span class="line">	h_a = (<span class="keyword">int</span>*)<span class="built_in">malloc</span>(N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span>* dev_a;</span><br><span class="line">	cudaMalloc((<span class="keyword">int</span>**)&amp;dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2) init on gpu</span></span><br><span class="line">	<span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">2</span>, <span class="number">2</span>)</span></span>;</span><br><span class="line">	<span class="function">dim3 <span class="title">grid</span><span class="params">((N + block.x - <span class="number">1</span>), (N + block.y - <span class="number">1</span>))</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">clock_t</span> start = clock();</span><br><span class="line">	initOnGPU &lt;&lt;&lt; grid, block &gt;&gt;&gt;(dev_a);</span><br><span class="line">	<span class="keyword">clock_t</span> <span class="built_in">end</span> = clock();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"Time init on GPU: %.10f \n"</span>, (<span class="keyword">double</span>)(<span class="built_in">end</span> - start) / CLOCKS_PER_SEC);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 3) </span></span><br><span class="line">	cudaMemcpy(h_a, dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 4) show h_a</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N*N; i++)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"%d "</span>, h_a[i]);</span><br><span class="line">		<span class="keyword">if</span> ((i + <span class="number">1</span>) % N == <span class="number">0</span>)</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5) </span></span><br><span class="line">	<span class="built_in">free</span>(h_a);</span><br><span class="line">	cudaFree(dev_a);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解释一下：<br>1）分别在Host和Device上开辟空间<code>h_a</code>和<code>dev_a</code>。<br>2）调用kernel，这个kernel的作用是初始化<code>dev_a</code>。注意并不是从Host中拷贝过去的。以及其他需要在GPU上执行的操作。<br>3）GPU上的操作完成后，得到的最终数据保存在<code>dev_a</code>中。拷贝到Host<code>h_a</code>中。<br>4）显示最终计算结果。<br>5）释放资源。</p>
+<p>其中kernel函数<code>initOnGPU</code>的作用是初始化<code>dec_a</code>中元素为321。</p>
+<p>结果如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Time init on GPU: <span class="number">0.0000160000</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span></span><br></pre></td></tr></table></figure>
+
+<p>所以说，直接在Device上初始化，相对先在Host上初始化后拷贝到Device，是更高效的。<br>CPU与GPU的通信是通过PCIe 实现的。PCIe第三代 的极限速度是 16GB每秒。相比较，费米架构的GPU中，GPU芯片与GPU存储之间的数据交换速度高达144GB 每秒。所以说Host和Device间的数据传输是CUDA应用的 性能瓶颈。</p>
+<p><font color="green" size="5">敲黑板</font> CUDA程序的一个基本规则是，尽可能减少host 与device间的数据交换。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" data-id="ck5b64hn10003g5fzdehm1e6u" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-求三角形顶点坐标-Cross Production
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/10/06/CUDA-%E4%BA%8C%E7%BB%B4kernel%E7%9A%84%E5%85%A8%E5%B1%80ID/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-二维kernel的全局ID</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CUDA/" style="font-size: 10px;">CUDA</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/">CUDA-Nsight Eclipse Edition</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-overlap-data-transfer/">CUDA-overlap data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-Grid stride Loop | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Grid-stride loopGrid-stride loop 长这个样子： 123456__global__ void add(int n, float *x, float *y)&amp;#123;  int index &#x3D; blockIdx.x * blockDim.x + threadIdx.x;  int stride &#x3D; blockDim.x * gridDim.x;  for (int i">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-Grid stride Loop">
+<meta property="og:url" content="http://yoursite.com/2019/11/26/CUDA-Grid-stride-Loop/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="Grid-stride loopGrid-stride loop 长这个样子： 123456__global__ void add(int n, float *x, float *y)&amp;#123;  int index &#x3D; blockIdx.x * blockDim.x + threadIdx.x;  int stride &#x3D; blockDim.x * gridDim.x;  for (int i">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-11-26T15:29:29.000Z">
+<meta property="article:modified_time" content="2020-01-12T15:22:34.857Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-Grid-stride-Loop" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/26/CUDA-Grid-stride-Loop/" class="article-date">
+  <time datetime="2019-11-26T15:29:29.000Z" itemprop="datePublished">2019-11-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-Grid stride Loop
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Grid-stride-loop"><a href="#Grid-stride-loop" class="headerlink" title="Grid-stride loop"></a>Grid-stride loop</h2><p>Grid-stride loop 长这个样子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> index = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = index; i &lt; n; i += stride)</span><br><span class="line">    y[i] = x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当有足够的线程可以覆盖所有需要处理的数据时，一个线程处理一个数据。线程ID不需要更新，一次并行执行结束，如下:<br>Common CUDA guidance is to launch one thread per data element, which means to parallelize the above SAXPY loop we write a kernel that assumes we have enough threads to more than cover the array size:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) </span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一个grid可以覆盖所有数据，这种方式的kernel被称作<em>monolithic kernel</em>. 如下kernel可以一次处理1M的数据量:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">4096</span>,<span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>但是，当数据量很大时，超过可用的线程数，那么所有线程由不能只干一次活了，所有线程做完一批后更新ID接着做下一批。这种方式被称作<em>grid-stride loop</em>，如下边的kernel:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">         i &lt; n; </span><br><span class="line">         i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">          y[i] = a * x[i] + y[i];</span><br><span class="line">      &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>自然地，更新ID的方式就是，让ID加上grid的大小，即所有线程个数。一个grid 的所有线程个数就是<code>blockDim.x * gridDim.x</code>。<br>这个值可以称作为ID更新步长。加入我有1280个线程，那么线程0 将会处理元素0,1280,2560，…。这样做的好处是，保证了相邻的线程处理相邻的数据，这是效率最高的执行方式。如本文所讲“we ensure that all addressing within warps is unit-stride, so we get maximum memory coalescing, just as in the monolithic version.”</p>
+<p>总结下<em>grid-stride loop</em>的优势:</p>
+<p>1) <strong>Scalability and thread reuse</strong>. </p>
+<p>保证可以处理任何量的数据，一批一批地串行就可以啦，没办法，可用线程数有限，这可以保证所有数据正确被处理。另一方面，可以限制block的数量，做微调，尝试提升性能。<br>“By using a loop, you can support <span style="color:red">any problem size</span>. even if it exceeds the largest grid size your CUDA device supports. Moreover, you can <span style="color:red">limit the number of blocks</span> you use to tune performance. For example, it’s often useful to launch a number of blocks <span style="color:red">that is a multiple of the number of multiprocessors on the device</span>, to balance utilization. As an example, we might launch the loop version of the kernel like this:”</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> numSMs;</span><br><span class="line">cudaDeviceGetAttribute(&amp;numSMs, cudaDevAttrMultiProcessorCount, devId);</span><br><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">32</span>*numSMs, <span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span> &lt;&lt; <span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>When you limit the number of blocks in your grid, threads are reused for multiple computations. Thread reuse amortizes thread creation and destruction cost along with any other processing the kernel might do before or after the loop (such as thread-private or shared data initialization).</p>
+<p>2) <strong>Debugging</strong></p>
+<p>方便Debug，只是用一个线程，使整个过程变为串行处理，通过使用打印语句，找到错误，便于修改。<br>By using a loop instead of a <em>monolithic kernel</em>, you can easily switch to serial processing by launching one block with one thread. </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saxpy&lt;&lt;&lt;<span class="number">1</span>,<span class="number">1</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>This makes it easier to emulate a serial host implementation to validate results, and it can make printf debugging easier by <span style="color:red">serializing the print order</span>. Serializing the computation also allows you to eliminate numerical variations caused by changes in the order of operations from run to run, helping you to verify that your numerics are correct before tuning the parallel version.</p>
+<p>3) <strong>Portability and readability</strong></p>
+<p>The grid-stride loop code is more like the original sequential loop code than the monolithic kernel code, making it clearer for other users. In fact we can pretty easily write a version of the kernel that compiles and runs either as a parallel CUDA kernel on the GPU or as a sequential loop on the CPU. The Hemi library provides a <code>grid_stride_range()</code> helper that makes this trivial using C++11 range-based for loops. </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HEMI_LAUNCHABLE</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> i : hemi::grid_stride_range(<span class="number">0</span>, n)) &#123;</span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>We can launch the kernel using this code, which generates a kernel launch when compiled for CUDA, or a function call when compiled for the CPU. <code>hemi::cudaLaunch(saxpy, 1&lt;&lt;20, 2.0, x, y);</code><br>Grid-stride loops are a great way to make your CUDA kernels flexible, scalable, debuggable, and even portable. </p>
+<p>原文内容来自 Mark Harris<br>原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/" target="_blank" rel="noopener">链接</a></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/26/CUDA-Grid-stride-Loop/" data-id="ck5b64hn30008g5fz8phv7opz" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/26/CUDA-Vectorized-Memory-Access/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA:-Vectorized Memory Access
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-求三角形顶点坐标-Cross Production</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CUDA/" style="font-size: 10px;">CUDA</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/">CUDA-Nsight Eclipse Edition</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-overlap-data-transfer/">CUDA-overlap data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

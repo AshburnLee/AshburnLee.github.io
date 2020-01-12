@@ -5,17 +5,17 @@
   
 
   
-  <title>Hexo</title>
+  <title>Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
+<meta property="og:title" content="Junhui&#39;s Journal">
 <meta property="og:url" content="http://yoursite.com/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
 <meta property="og:locale" content="en_US">
-<meta property="article:author" content="John Doe">
+<meta property="article:author" content="Junhui">
 <meta name="twitter:card" content="summary">
   
-    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
   
   
     <link rel="icon" href="/favicon.png">
@@ -36,7 +36,7 @@
   <div id="header-outer" class="outer">
     <div id="header-title" class="inner">
       <h1 id="logo-wrap">
-        <a href="/" id="logo">Hexo</a>
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
       </h1>
       
     </div>
@@ -596,10 +596,10 @@
 
 
   
-    <article id="post-CUDA-更新线程ID" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-CUDA-Grid-stride-Loop" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" class="article-date">
-  <time datetime="2019-08-12T06:13:44.000Z" itemprop="datePublished">2019-08-12</time>
+    <a href="/2019/11/26/CUDA-Grid-stride-Loop/" class="article-date">
+  <time datetime="2019-11-26T15:29:29.000Z" itemprop="datePublished">2019-11-26</time>
 </a>
     
   <div class="article-category">
@@ -614,7 +614,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/">CUDA-更新线程ID</a>
+      <a class="article-title" href="/2019/11/26/CUDA-Grid-stride-Loop/">CUDA-Grid stride Loop</a>
     </h1>
   
 
@@ -622,25 +622,36 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h1 id="更新-thread-ID"><a href="#更新-thread-ID" class="headerlink" title="更新 thread ID"></a>更新 thread ID</h1><p>当数据个数 <code>≥ CUDA core</code> 个数时，<code>thread id</code> 不用更新，一次同时习性完。</p>
-<p>如我有2024个数据，而我的GPU每次可分配2048个threads。我的<code>kernel</code>配置<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>，那么2024个数据可以被2024个threads一次执行完毕，其中有24个threads空闲，因为因为没有多余的数据去处理。</p>
-<p>如果还是2024个数据，而我的GPU只允许用户一次配置512个threads。我的kernel配置是&lt;&lt;&lt;1, 512&gt;&gt;&gt;，一次是不能把数据全部处理完的。当第一次处理完后，还要3次threads的id更新，最后一次有24个threads空闲，因为没有多余出具需要被处理。</p>
-<p>kernel代码片段如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> id = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line"><span class="keyword">while</span>(id &lt; N)&#123;</span><br><span class="line">    <span class="comment">// TODO excute operation</span></span><br><span class="line">    id += blockDIm.x * gridDim.x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+        <h2 id="Grid-stride-loop"><a href="#Grid-stride-loop" class="headerlink" title="Grid-stride loop"></a>Grid-stride loop</h2><p>Grid-stride loop 长这个样子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> index = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = index; i &lt; n; i += stride)</span><br><span class="line">    y[i] = x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当有足够的线程可以覆盖所有需要处理的数据时，一个线程处理一个数据。线程ID不需要更新，一次并行执行结束，如下:<br>Common CUDA guidance is to launch one thread per data element, which means to parallelize the above SAXPY loop we write a kernel that assumes we have enough threads to more than cover the array size:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) </span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一个grid可以覆盖所有数据，这种方式的kernel被称作<em>monolithic kernel</em>. 如下kernel可以一次处理1M的数据量:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">4096</span>,<span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>但是，当数据量很大时，超过可用的线程数，那么所有线程由不能只干一次活了，所有线程做完一批后更新ID接着做下一批。这种方式被称作<em>grid-stride loop</em>，如下边的kernel:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">         i &lt; n; </span><br><span class="line">         i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">          y[i] = a * x[i] + y[i];</span><br><span class="line">      &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>自然地，更新ID的方式就是，让ID加上grid的大小，即所有线程个数。一个grid 的所有线程个数就是<code>blockDim.x * gridDim.x</code>。<br>这个值可以称作为ID更新步长。加入我有1280个线程，那么线程0 将会处理元素0,1280,2560，…。这样做的好处是，保证了相邻的线程处理相邻的数据，这是效率最高的执行方式。如本文所讲“we ensure that all addressing within warps is unit-stride, so we get maximum memory coalescing, just as in the monolithic version.”</p>
+<p>总结下<em>grid-stride loop</em>的优势:</p>
+<p>1) <strong>Scalability and thread reuse</strong>. </p>
+<p>保证可以处理任何量的数据，一批一批地串行就可以啦，没办法，可用线程数有限，这可以保证所有数据正确被处理。另一方面，可以限制block的数量，做微调，尝试提升性能。<br>“By using a loop, you can support <span style="color:red">any problem size</span>. even if it exceeds the largest grid size your CUDA device supports. Moreover, you can <span style="color:red">limit the number of blocks</span> you use to tune performance. For example, it’s often useful to launch a number of blocks <span style="color:red">that is a multiple of the number of multiprocessors on the device</span>, to balance utilization. As an example, we might launch the loop version of the kernel like this:”</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> numSMs;</span><br><span class="line">cudaDeviceGetAttribute(&amp;numSMs, cudaDevAttrMultiProcessorCount, devId);</span><br><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">32</span>*numSMs, <span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span> &lt;&lt; <span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>When you limit the number of blocks in your grid, threads are reused for multiple computations. Thread reuse amortizes thread creation and destruction cost along with any other processing the kernel might do before or after the loop (such as thread-private or shared data initialization).</p>
+<p>2) <strong>Debugging</strong></p>
+<p>方便Debug，只是用一个线程，使整个过程变为串行处理，通过使用打印语句，找到错误，便于修改。<br>By using a loop instead of a <em>monolithic kernel</em>, you can easily switch to serial processing by launching one block with one thread. </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saxpy&lt;&lt;&lt;<span class="number">1</span>,<span class="number">1</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>This makes it easier to emulate a serial host implementation to validate results, and it can make printf debugging easier by <span style="color:red">serializing the print order</span>. Serializing the computation also allows you to eliminate numerical variations caused by changes in the order of operations from run to run, helping you to verify that your numerics are correct before tuning the parallel version.</p>
+<p>3) <strong>Portability and readability</strong></p>
+<p>The grid-stride loop code is more like the original sequential loop code than the monolithic kernel code, making it clearer for other users. In fact we can pretty easily write a version of the kernel that compiles and runs either as a parallel CUDA kernel on the GPU or as a sequential loop on the CPU. The Hemi library provides a <code>grid_stride_range()</code> helper that makes this trivial using C++11 range-based for loops. </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HEMI_LAUNCHABLE</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> i : hemi::grid_stride_range(<span class="number">0</span>, n)) &#123;</span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>We can launch the kernel using this code, which generates a kernel launch when compiled for CUDA, or a function call when compiled for the CPU. <code>hemi::cudaLaunch(saxpy, 1&lt;&lt;20, 2.0, x, y);</code><br>Grid-stride loops are a great way to make your CUDA kernels flexible, scalable, debuggable, and even portable. </p>
+<p>原文内容来自 Mark Harris<br>原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/" target="_blank" rel="noopener">链接</a></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
 
-<p>其中<code>while()</code>判断当前thread的id需要更新多少次。</p>
-<ul>
-<li><p>对于<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>的kernel，处理2024个数据，其中<code>N=2024</code>。假如其中一个thread的起始<code>id</code>为0，干完活后，判断<code>0＜2024</code>，所以这个thread的<code>id</code>会被跟新为2048，此时再判断<code>2048＜2024</code>，返回<code>false</code>，这个thread的工作结束。thread的id未被更新。</p>
-</li>
-<li><p>对于&lt;&lt;&lt;1, 512&gt;&gt;&gt;的kernel，处理2024个数据， 其中N=2024。<br>仍假如有一个thread是起始id为0，判断0＜2024，执行操作。所以跟新id为512；<br>判断512＜2024，执行操作，再更新id为1024；<br>判断1024＜2024，执行操作，再更新id为1536；<br>判断1536＜2024，执行操作，再更新id为2048；<br>判断2048＜2024，返回false。该thread的工作结束。</p>
-</li>
-</ul>
-<p>期间这个thread的id被更新了4次，第4次更新玩后，并无操作。</p>
-<h1 id="Matrix-Transpose-理解id更新"><a href="#Matrix-Transpose-理解id更新" class="headerlink" title="Matrix Transpose 理解id更新"></a>Matrix Transpose 理解id更新</h1>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" data-id="ck5b5jb5l000313fza3eb3ow4" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/11/26/CUDA-Grid-stride-Loop/" data-id="ck5b64hn30008g5fz8phv7opz" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -652,10 +663,10 @@
 
 
   
-    <article id="post-CUDA-基本步骤-逻辑概念-物理概念" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-CUDA-求三角形顶点坐标-Cross-Production" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" class="article-date">
-  <time datetime="2019-08-10T13:03:23.000Z" itemprop="datePublished">2019-08-10</time>
+    <a href="/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/" class="article-date">
+  <time datetime="2019-10-10T14:05:01.000Z" itemprop="datePublished">2019-10-10</time>
 </a>
     
   <div class="article-category">
@@ -670,7 +681,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/">CUDA-基本步骤-逻辑概念-物理概念</a>
+      <a class="article-title" href="/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/">CUDA-求三角形顶点坐标-Cross Production</a>
     </h1>
   
 
@@ -678,119 +689,22 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="一个实例"><a href="#一个实例" class="headerlink" title="一个实例"></a>一个实例</h2><p>检查环境：</p>
-<ul>
-<li><code>nvcc -V</code>：CUDA编译器是否安装</li>
-<li><code>nvidia-smi</code>：显卡驱动是否安装</li>
-</ul>
-<p>cuda代码文件以<code>.cu</code>结尾，当写好一个文件后，使用NVIDIA 的编译器编译 <code>nvcc FILE-NAME.cu</code>，后<code>./FILE-NAME</code>执行。</p>
-<p>从一个实例讲起：<br>两个向量相加，结果存入另一个向量。<br>代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 1&lt;&lt;10  </span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ARRAY_BYTES N*sizeof(float)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 1) add __global__ to kernel, AKA device code</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">float</span>* x, <span class="keyword">float</span>* y, <span class="keyword">float</span>* z)</span></span>&#123;  </span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">	<span class="keyword">if</span> (tid &lt; N)&#123;</span><br><span class="line">		z[tid] = x[tid] + y[tid];</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//host code (runs on cpu)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//allocate mem on steak for a,b,c </span></span><br><span class="line">	<span class="keyword">float</span> h_a[N], h_b[N], h_c[N];</span><br><span class="line"></span><br><span class="line">	<span class="comment">//declare pointers in gpu   </span></span><br><span class="line">	<span class="keyword">float</span> *dev_a, *dev_b, *dev_c;  </span><br><span class="line"></span><br><span class="line">	<span class="comment">//allocate mem in gpu </span></span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_a, ARRAY_BYTES);</span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_b, ARRAY_BYTES);</span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_c, ARRAY_BYTES);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//initialize a, b  arrays in the host</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)&#123;</span><br><span class="line">		h_a[i] = i * <span class="number">1.0f</span>;</span><br><span class="line">		h_b[i] = i * <span class="number">2.0f</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//copy a, b to gpu</span></span><br><span class="line">	cudaMemcpy(dev_a, h_a, ARRAY_BYTES, cudaMemcpyHostToDevice);</span><br><span class="line">	cudaMemcpy(dev_b, h_b, ARRAY_BYTES, cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//run kernel on 1M elements on the CPU</span></span><br><span class="line">	add&lt;&lt;&lt;<span class="number">1</span>, <span class="number">1024</span>&gt;&gt;&gt;(dev_a, dev_b, dev_c);  <span class="comment">//one block and 1024 threads</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//copy c back from gpu</span></span><br><span class="line">	cudaMemcpy(h_c, dev_c ,ARRAY_BYTES, cudaMemcpyDeviceToHost);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//display results</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"%f + %f = %f \n"</span>, h_a[i], h_b[i], h_c[i]);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//2) free memory</span></span><br><span class="line">	cudaFree(dev_a);</span><br><span class="line">	cudaFree(dev_b);</span><br><span class="line">	cudaFree(dev_c);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//new &amp; delete go together. </span></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述代码包含了CUDA代码的一般步骤：</p>
-<ul>
-<li><p>1）声明所需指针在GPU，并且在GPU上开辟空间， 使用函数<code>cudaMalloc()</code></p>
-</li>
-<li><p>2）从CPU拷贝所需内容到GPU的内存中，使用函数<code>cudaMemcpy()</code></p>
-</li>
-<li><p>3）配置核函数，并执行操作。该函数在main函数之外，以<code>__global__</code>开头</p>
-</li>
-<li><p>4）把GPU上计算得到的结果拷贝回RAM，使用函数<code>cudaMemcpy()</code></p>
-</li>
-<li><p>5）释放VRAM中的空间</p>
-  <div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/main-process.png" width="600"></div>
+        <h1 id="三角型，已知三个角度和两个定点坐标，求第三个定点坐标"><a href="#三角型，已知三个角度和两个定点坐标，求第三个定点坐标" class="headerlink" title="三角型，已知三个角度和两个定点坐标，求第三个定点坐标"></a>三角型，已知三个角度和两个定点坐标，求第三个定点坐标</h1><p>一个三角形，已知两个顶点坐标<code>p1</code>和<code>p2</code>，和三个顶角<code>angle1</code>, <code>angle2</code>, <code>angle3</code>，求第三个顶点p3的坐标。方法如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">x = (p1X * cot(angle2) + p2X * cot(angle1) + p2Y - p1Y) / cot(angle1) + cot(angle2));</span><br><span class="line"></span><br><span class="line">y = (p1Y * cot(angle2) + p2Y * cot(angle1) + p1X - p2X) / (cot(angle1) + cot(angle2));</span><br></pre></td></tr></table></figure>
 
+<p>其中 <code>cot(alpha) = 1/tan(alpha);</code>， 注意，<code>p1</code>，<code>p2</code>，<code>p3</code>逆时针位置关系。</p>
+<h1 id="叉乘-Cross-Production"><a href="#叉乘-Cross-Production" class="headerlink" title="叉乘-Cross Production"></a>叉乘-Cross Production</h1><p>叉乘是用于判断点与向量的位置关系。如已知向量起点为 p1，终点为 p2，待判断的点为 pt。那么点与向量的位置关系由以下公式决定：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> tmp = (pt1-&gt;y - pt2-&gt;y)*pt-&gt;x + (pt2-&gt;x - pt1-&gt;x)*pt-&gt;y + pt1-&gt;x*pt2-&gt;y - pt2-&gt;x*pt1-&gt;y;</span><br></pre></td></tr></table></figure>
 
-</li>
-</ul>
-<pre><code>从两个维度理解CUDA基本概念</code></pre><ul>
-<li><strong>物理层</strong></li>
-<li><strong>逻辑层</strong></li>
-</ul>
-<h2 id="物理概念"><a href="#物理概念" class="headerlink" title="物理概念"></a>物理概念</h2><p>CUDA中的两个对象：Host，Device</p>
-<ul>
-<li>Host 包括 CPU 和内存 DRAM</li>
-<li>Device 包括 GPU 和存在与其上的存储 VRAM</li>
-</ul>
-<p>VRAM 是 off-chip memory，即不在芯片上。由三部分组成：Global Memory，Texture Memory 和 Constant Memory。其中后二者为 read-only。<br>GPU 芯片上的 memory 包括 Registers，l1-cache, 和 Shared Memory。</p>
-<p>每个 GPU 芯片拥有一组不同的 memory，如上述。其中最重要的两个是 Global Memory 和 Shared Memory。<br>Global Memory 类似CPU系统的 RAM，Shared Memory 相当于CPU的片内缓存。</p>
-<p>Host 和 Device 由北桥芯片连接：</p>
-<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/host-device.png" width="500"></div>
+<p>其中各个点由struct 定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Points</span>&#123;</span></span><br><span class="line">	<span class="keyword">int</span> x;</span><br><span class="line">	<span class="keyword">int</span> y;</span><br><span class="line">	<span class="keyword">float</span> value;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 
-<p>对于CUDA编程，你需要负责以下内容：</p>
-<p>1) 在 GPU memory 上开辟空间<br>2) 拷贝数据从CPU上到GPU上<br>3) 在GPU上执行 kernel 代码<br>4) 再把结果从GPU上考回CPU<br>5) 协调Host 和 Device中的操作</p>
-<p>使用GPU编程时，要从 MIMD(Multiple Instructions Multiple Data) 的思考形式转变到 SIMD(Single Instruction Multiple Data)，在CUDA 中，每个核心执行的代码指令都是一样的，所以说是Single。</p>
-<p>CUDA 提供的重要功能：组织线程，memory access。</p>
-<p>与CUDA并行编程的代码分为两部分：</p>
-<ul>
-<li>Host 部分代码由 ANSI C 来完成</li>
-<li>Device 部分由 CUDA C 来完成</li>
-</ul>
-<p>知道怎样组织 threads 在使用 CUDA 是十分重要的。</p>
-<h2 id="逻辑概念"><a href="#逻辑概念" class="headerlink" title="逻辑概念"></a>逻辑概念</h2><p>在一个 grid 中所有的 thread 共享相同的 Global Memory。来自不同 block 的 threads 不能相互交流。即属于同一个 block 的 thread 可以相互交流。   </p>
-<ul>
-<li>threadIdx.x: 每个 block 中 x 方向 thread 的 id</li>
-<li>threadIdx.y: 每个 block 中 y 方向 thread 的 id</li>
-<li>threadIdx.z: 每个 block 中 z 方向 thread 的 id</li>
-</ul>
-<ul>
-<li>blockIdx.x: 每个 block 的 x 方向上所含的 id</li>
-<li>blockIdx.y: 每个 block 的 y 方向上所含的 id</li>
-<li>blockIdx.z: 每个 block 的 z 方向上所含的 id</li>
-</ul>
-<ul>
-<li>blockDim.x: 每个 block 的 x 方向上所含的 thread 数</li>
-<li>blockDim.y: 每个 block 的 y 方向上所含的 thread 数</li>
-<li>blockDim.z: 每个 block 的 z 方向上所含的 thread 数</li>
-</ul>
-<ul>
-<li>gridDim.x: 每个 grid 的 x 方向上的 block 数</li>
-<li>gridDim.y: 每个 grid 的 y 方向上的 block 数</li>
-<li>gridDim.z: 每个 grid 的 z 方向上的 block 数</li>
-</ul>
-<p>grids 和 blocks 使用 dim3 数据类型。 当给了数据的大小，如何决定 grid &amp; block 的维度。</p>
-<ul>
-<li>1）先决定 block 大小，即每个 block 由多少 threads，</li>
-<li>2）然后根据数据大小和 block 大小，计算 grid dim。</li>
-</ul>
-<p>为了得到 block dim，考虑两点：</p>
-<ul>
-<li>1）kernel 的性能特点</li>
-<li>2）GPU的物理极限<ul>
-<li>我的芯片的数据：</li>
-</ul>
-</li>
-</ul>
-<p>func&lt;&lt;&lt;32, 1024&gt;&gt;&gt;()：</p>
-<ul>
-<li>32：block 的数量为32个</li>
-<li>1024：每一个 block 的 thread 数为1024个</li>
-</ul>
-<p>为了配置 kernel 你需要知道：</p>
-<ul>
-<li>1）kernel 的 thread 总数</li>
-<li>2）这些 threads 的分布：block &amp; grid 的维数，每个 block 由多少 threads</li>
-</ul>
-<p>举例子：<br>假如我想使用32个threads，我想 配置一个<em>1D grid 1D block</em> kernel func&lt;&lt;&lt;4, 8&gt;&gt;&gt;()，其 thread 分布是：</p>
-<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/1d.png"></div>
-
-<p><strong>32个 threads 决定了会有32 份func()的拷贝，每一份由一个thread 执行，唯一不同的是每一个thread 的ID</strong>，这样计算：<br><code>idx=threadIdx.x + blockDim.x * blockIdx.x</code>。<br>如第二个block的第一个thread 的ID是 <code>0+8*1=8</code>，最后一个thread的ID是<code>7+8*3=31</code>，所以，这个配置中的所有threads由唯一的ID：<code>0~31</code>。</p>
-<p>再如：<em>2D grid，2D block</em> kernel：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">dim3 <span class="title">threads</span><span class="params">(<span class="number">2</span>, <span class="number">4</span>)</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">blocks</span><span class="params">(<span class="number">2</span>, <span class="number">4</span>)</span></span></span><br><span class="line">func&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
-
-<p>下图是所有相关的参数，及怎样得到每个 thread 的 ID：</p>
-<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/2d-2d.png"></div>
-其中每个矩形代表一个 block：blockDim.x=4，blockDim.y=2。每个 block 中的 thread 的组织是4行2列。
-
-<p>更多kernel的配置：</p>
-<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/more-configure.png" width="600"></div>
-
-<p>其中矩形表示一个block，相邻blocks组织成grid。</p>
-<p>核心概念：<br>grid 由 block 组成，可以是1D，2D，和3D。<br>block 由 thread 组成，也可以是1D，2D，和3D。<br>根据具体问题，选择 block/grid 的维度。一般来说：<br>1D 适用于 vector 操作<br>2D 适用于 images<br>3D 适用于 3D space</p>
-
+<p>简单的数学完整实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Points</span>&#123;</span></span><br><span class="line">	<span class="keyword">int</span> x;</span><br><span class="line">	<span class="keyword">int</span> y;</span><br><span class="line">	<span class="keyword">float</span> value;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pointLinePosition</span><span class="params">(struct Points*, struct Points*, struct Points*)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line">	<span class="comment">// 已知的向量</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Points</span> <span class="title">p0</span>, <span class="title">p1</span>;</span></span><br><span class="line">	p0.x = <span class="number">0</span>, p0.y = <span class="number">0</span>;</span><br><span class="line">	p1.x = <span class="number">2</span>, p1.y = <span class="number">6</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 待判断的点</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Points</span> <span class="title">px</span>;</span></span><br><span class="line">	px.x = <span class="number">5</span>, px.y = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> res = pointLinePosition(&amp;p0, &amp;p1, &amp;px);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (res == <span class="number">1</span>)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"left on  \n"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (res == <span class="number">0</span>)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"right \n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Determine the position bewteen a VECTOR(pt1-&gt;pt2) and a POINT(pt)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pointLinePosition</span><span class="params">(struct Points* pt1, struct Points* pt2, struct Points* pt)</span></span>&#123;</span><br><span class="line">	<span class="keyword">float</span> tmp = (pt1-&gt;y - pt2-&gt;y)*pt-&gt;x + (pt2-&gt;x - pt1-&gt;x)*pt-&gt;y + pt1-&gt;x*pt2-&gt;y - pt2-&gt;x*pt1-&gt;y;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tmp &gt; <span class="number">0</span> )&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"tmp: %.5f \n"</span>, tmp);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(tmp &lt; <span class="number">0</span>)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"tmp: %.5f \n"</span>, tmp);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span>&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"tmp: %.5f \n"</span>, tmp);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" data-id="ck5b5jb5j000113fz02qv4nzl" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/" data-id="ck5b64hn5000bg5fz36qv862b" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -802,12 +716,16 @@
 
 
   
-    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-CUDA-在Device上初始化" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/1970/01/01/hello-world/" class="article-date">
-  <time datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+    <a href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" class="article-date">
+  <time datetime="2019-10-06T11:45:39.000Z" itemprop="datePublished">2019-10-06</time>
 </a>
     
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
   </div>
   <div class="article-inner">
     
@@ -816,7 +734,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/1970/01/01/hello-world/">Hello World</a>
+      <a class="article-title" href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/">CUDA-在Device上初始化</a>
     </h1>
   
 
@@ -824,26 +742,25 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
+        <h1 id="在GPU上初始化"><a href="#在GPU上初始化" class="headerlink" title="在GPU上初始化"></a>在GPU上初始化</h1><p>绝大多数CUDA教材，都会提出一般CUDA程序的标准步骤，其中一步是将Host的数据拷贝到Device。也就是说Host中数据要先被初始化，后才能拷贝到Device。其实，可以直接在Device中初始化数据，如此既可以避免Host到Device的数据传输，又可以加快数据初始化的速度。如下是一个小例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cuda_runtime.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"device_launch_parameters.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 10</span></span><br><span class="line"><span class="comment">//#define N 16384 // N*N = 268435456   // 1GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*2 // N*N = 268435456*4   // 4GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*4 // N*N = 268435456*16   // 16GB 4Bytes </span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">initOnGPU</span><span class="params">(<span class="keyword">int</span>* dev_a)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> ix = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">	<span class="keyword">int</span> iy = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">	<span class="keyword">int</span> tid = ix * N + iy;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ix &lt; N &amp;&amp; iy &lt; N)&#123;</span><br><span class="line">        <span class="comment">// initialize on Device</span></span><br><span class="line">		dev_a[tid] = <span class="number">321</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1) </span></span><br><span class="line">	<span class="keyword">int</span>* h_a;</span><br><span class="line">	h_a = (<span class="keyword">int</span>*)<span class="built_in">malloc</span>(N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span>* dev_a;</span><br><span class="line">	cudaMalloc((<span class="keyword">int</span>**)&amp;dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2) init on gpu</span></span><br><span class="line">	<span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">2</span>, <span class="number">2</span>)</span></span>;</span><br><span class="line">	<span class="function">dim3 <span class="title">grid</span><span class="params">((N + block.x - <span class="number">1</span>), (N + block.y - <span class="number">1</span>))</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">clock_t</span> start = clock();</span><br><span class="line">	initOnGPU &lt;&lt;&lt; grid, block &gt;&gt;&gt;(dev_a);</span><br><span class="line">	<span class="keyword">clock_t</span> <span class="built_in">end</span> = clock();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"Time init on GPU: %.10f \n"</span>, (<span class="keyword">double</span>)(<span class="built_in">end</span> - start) / CLOCKS_PER_SEC);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 3) </span></span><br><span class="line">	cudaMemcpy(h_a, dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 4) show h_a</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N*N; i++)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"%d "</span>, h_a[i]);</span><br><span class="line">		<span class="keyword">if</span> ((i + <span class="number">1</span>) % N == <span class="number">0</span>)</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5) </span></span><br><span class="line">	<span class="built_in">free</span>(h_a);</span><br><span class="line">	cudaFree(dev_a);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>解释一下：<br>1）分别在Host和Device上开辟空间<code>h_a</code>和<code>dev_a</code>。<br>2）调用kernel，这个kernel的作用是初始化<code>dev_a</code>。注意并不是从Host中拷贝过去的。以及其他需要在GPU上执行的操作。<br>3）GPU上的操作完成后，得到的最终数据保存在<code>dev_a</code>中。拷贝到Host<code>h_a</code>中。<br>4）显示最终计算结果。<br>5）释放资源。</p>
+<p>其中kernel函数<code>initOnGPU</code>的作用是初始化<code>dec_a</code>中元素为321。</p>
+<p>结果如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Time init on GPU: <span class="number">0.0000160000</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span></span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
+<p>所以说，直接在Device上初始化，相对先在Host上初始化后拷贝到Device，是更高效的。<br>CPU与GPU的通信是通过PCIe 实现的。PCIe第三代 的极限速度是 16GB每秒。相比较，费米架构的GPU中，GPU芯片与GPU存储之间的数据交换速度高达144GB 每秒。所以说Host和Device间的数据传输是CUDA应用的 性能瓶颈。</p>
+<p><font color="green" size="5">敲黑板</font> CUDA程序的一个基本规则是，尽可能减少host 与device间的数据交换。</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/1970/01/01/hello-world/" data-id="ck5b4gi3k0000vsfz70mu4hgm" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" data-id="ck5b64hn10003g5fzdehm1e6u" class="article-share-link">Share</a>
       
       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
     </footer>
   </div>
   
@@ -852,6 +769,11 @@
 
   
 
+
+  <nav id="page-nav">
+    
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &amp;raquo;</a>
+  </nav>
 
 </section>
         
@@ -890,7 +812,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
     </div>
   </div>
 
@@ -934,7 +856,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2020 John Doe<br>
+      &copy; 2020 Junhui<br>
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>

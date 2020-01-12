@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-PCIe速率 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="检测PCIe的数据传输速度当从Host 拷贝数据到Device的过程中，数据需要通过PCIe实现拷贝。所以你的主板的PCIe的版本和传输速度就会影响CUDA 代码的效率。 首先你需要知道你的GPU的显存大小。比如我的P106 有6GB 的VRAM。然后分别传输1GB，2GB，… 的数据。 假如传输int型数据，根据： 1printf(&quot;this TYPE size: %lu Bytes\n&quot;, s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-PCIe速率">
+<meta property="og:url" content="http://yoursite.com/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="检测PCIe的数据传输速度当从Host 拷贝数据到Device的过程中，数据需要通过PCIe实现拷贝。所以你的主板的PCIe的版本和传输速度就会影响CUDA 代码的效率。 首先你需要知道你的GPU的显存大小。比如我的P106 有6GB 的VRAM。然后分别传输1GB，2GB，… 的数据。 假如传输int型数据，根据： 1printf(&quot;this TYPE size: %lu Bytes\n&quot;, s">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-10-04T10:45:01.000Z">
+<meta property="article:modified_time" content="2020-01-12T15:21:37.515Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-PCIe速率" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/" class="article-date">
+  <time datetime="2019-10-04T10:45:01.000Z" itemprop="datePublished">2019-10-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-PCIe速率
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="检测PCIe的数据传输速度"><a href="#检测PCIe的数据传输速度" class="headerlink" title="检测PCIe的数据传输速度"></a>检测PCIe的数据传输速度</h1><p>当从Host 拷贝数据到Device的过程中，数据需要通过PCIe实现拷贝。所以你的主板的PCIe的版本和传输速度就会影响CUDA 代码的效率。</p>
+<p>首先你需要知道你的GPU的显存大小。比如我的P106 有6GB 的VRAM。然后分别传输1GB，2GB，… 的数据。</p>
+<p>假如传输int型数据，根据：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">"this TYPE size: %lu Bytes\n"</span>, <span class="keyword">sizeof</span>(TYPE));</span><br></pre></td></tr></table></figure>
+<p>来得到所使用的机器存储一个int型所需多少空间。我的机器存储int型需要4Bytes。</p>
+<p>如果要传输3GB的数据，那么所需int型数据的数量为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>GB = <span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1</span> Bytes</span><br><span class="line"><span class="number">1</span>GB / <span class="number">4B</span>yte = <span class="number">268435456</span></span><br></pre></td></tr></table></figure>
+<p>将这个数赋值给N。</p>
+<p>之后，分别在Host和Device上开辟空间，最后计时从Host拷贝到Device所需时间：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 268435456  <span class="comment">// 1GB int</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span>* h_a;</span><br><span class="line">h_a = (<span class="keyword">int</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span>* dev_a;</span><br><span class="line">cudaMalloc((<span class="keyword">int</span>**)&amp;dev_a, N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++)&#123;</span><br><span class="line">    h_a[i] = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">clock_t</span> start = clock();</span><br><span class="line">cudaMemcpy(dev_a, h_a, N*<span class="keyword">sizeof</span>(TYPE), cudaMemcpyHostToDevice);</span><br><span class="line"><span class="keyword">clock_t</span> end = clock();</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"time: %.10f s \n"</span>, (<span class="keyword">double</span>)(end - start) / CLOCKS_PER_SEC);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">free</span>(h_a);</span><br><span class="line">cudaFree(dev_a);</span><br></pre></td></tr></table></figure>
+
+<p>之后可以逐步增加数据量，知道VRAM极限。如下是实验结果，传输数据量及所需时间：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>GB: <span class="number">268435456</span>    <span class="comment">//  1.349s</span></span><br><span class="line"><span class="number">2</span>GB: <span class="number">268435456</span>*<span class="number">2</span>  <span class="comment">//  2.700s </span></span><br><span class="line"><span class="number">3</span>GB: <span class="number">268435456</span>*<span class="number">3</span>  <span class="comment">//  4.050s</span></span><br><span class="line"><span class="number">4</span>GB: <span class="number">268435456</span>*<span class="number">4</span>  <span class="comment">//  5.400s</span></span><br><span class="line"><span class="number">5</span>GB: <span class="number">268435456</span>*<span class="number">5</span>  <span class="comment">//  6.750s</span></span><br><span class="line"><span class="number">5.5</span>GB:            <span class="comment">//  7.430s          </span></span><br><span class="line"><span class="number">5.75</span>GB:           <span class="comment">//  7.760s</span></span><br><span class="line"></span><br><span class="line"><span class="number">6</span>GB: <span class="number">268435456</span>*<span class="number">6</span>  <span class="comment">//  0.000s</span></span><br></pre></td></tr></table></figure>
+
+<p>6GB 的数据错误是因为VRAM不可能全部给用户使用。<br>所传输数据量越大，经过PCIe传输时间也就越长。这样可以感受PCIe的速度。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/" data-id="ck5b64hn6000eg5fz20fggr3d" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/10/04/CUDA-Linux%E4%B8%8B%E8%AE%A1%E6%97%B6%E5%99%A8-GPU%E4%BF%A1%E6%81%AF-Device%E5%87%BD%E6%95%B0%E4%BF%AE%E9%A5%B0%E8%AF%8D/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-Linux下计时器-GPU信息-Device函数修饰词
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-更新线程ID</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CUDA/" style="font-size: 10px;">CUDA</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/">CUDA-Nsight Eclipse Edition</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-overlap-data-transfer/">CUDA-overlap data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
