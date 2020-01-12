@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>LeetCode-方法论-Floyd&#39;s Algorithm | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题转化的。当原问题棘手时，找到合适的方向可以转化为简单问题。 287, 224,  #141 Linked List Cycle 描述   123Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1Output: trueExplanation: There is a cycle">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LeetCode-方法论-Floyd&#39;s Algorithm">
+<meta property="og:url" content="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题转化的。当原问题棘手时，找到合适的方向可以转化为简单问题。 287, 224,  #141 Linked List Cycle 描述   123Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1Output: trueExplanation: There is a cycle">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png">
+<meta property="og:image" content="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png">
+<meta property="article:published_time" content="2019-08-02T16:08:05.000Z">
+<meta property="article:modified_time" content="2020-01-12T17:27:40.186Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Algorithms">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-LeetCode-方法论-Floyd-s-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" class="article-date">
+  <time datetime="2019-08-02T16:08:05.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      LeetCode-方法论-Floyd&#39;s Algorithm
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题<strong>转化</strong>的。当原问题棘手时，找到合适的方向可以转化为简单问题。</p>
+<p>287, 224, </p>
+<h1 id="141-Linked-List-Cycle"><a href="#141-Linked-List-Cycle" class="headerlink" title="#141 Linked List Cycle"></a>#141 Linked List Cycle</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1</span><br><span class="line">Output: true</span><br><span class="line">Explanation: There is a cycle in the linked list, where tail connects to the second node.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p> 如果存在环，兔子与乌龟会第二次相遇；否则除了起点，龟兔不会再相遇。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasCycle</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    ListNode* rabbit=head;</span><br><span class="line">    ListNode* turtle=head;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(rabbit &amp;&amp; turtle)&#123;</span><br><span class="line">        rabbit = rabbit-&gt;next;</span><br><span class="line">        turtle = turtle-&gt;next;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (rabbit) rabbit=rabbit-&gt;next; <span class="comment">// one step faster than the turtle</span></span><br><span class="line">        <span class="keyword">if</span> (rabbit &amp;&amp; (rabbit==turtle))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="287-Find-the-Duplicate-Number"><a href="#287-Find-the-Duplicate-Number" class="headerlink" title="#287 Find the Duplicate Number"></a>#287 Find the Duplicate Number</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,1,3,4,2]</span><br><span class="line">Output: 3</span><br><span class="line">Note:</span><br><span class="line"></span><br><span class="line">    You must not modify the array (assume the array is read only).</span><br><span class="line">    You must use only constant, O(1) extra space.</span><br><span class="line">    Your runtime complexity should be less than O(n2).</span><br><span class="line">    There is only one duplicate number in the array, but it could be repeated more than once.</span><br><span class="line"></span><br><span class="line">依照本题意，数组中一定有重复元素，找到数组中重复出现的元素。</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  就题意而言，数组元素唯一和数组元素有重复的区别可用下图表示：</p>
+<p>  1) 当给定数组中无重复元素时，如<code>nums={3,4,5,2,1}</code>。以第一行为当前位置，第二行为下一位置。小人从位置0开始走最终走到5停止。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png" width="700"> </div>
+  <div align="center">路经无环</div>
+
+<p>  2) 当给定数组中有重复元素时，如<code>nums={1，4，6，5，6，2，3}</code>。小人从位置0开始走，路经有环始终不会停止。而且被两个箭头指向的节点6为重复元素。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png" width="700"> </div>
+  <div align="center">路经有环</div>
+
+
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findDuplicate</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> turtle = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> rabbit = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        turtle = nums[turtle];      <span class="comment">// one step</span></span><br><span class="line">        rabbit = nums[nums[rabbit]]; <span class="comment">// two steps</span></span><br><span class="line">    &#125;<span class="keyword">while</span>(turtle != rabbit);  </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ptr1 = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> ptr2 = turtle;</span><br><span class="line">    <span class="keyword">while</span>(ptr1 != ptr2)&#123;</span><br><span class="line">        ptr1 = nums[ptr1];</span><br><span class="line">        ptr2 = nums[ptr2];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ptr1;              </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  当龟兔位于同起点，向相同的方向跑，<strong>如果赛道无环，乌龟永远追不上兔子。若赛道有环，兔子会再次追上乌龟</strong>。这就是Floy’s 算法的来源。</p>
+<p>  表面上与龟兔赛跑无关，在<font color="red" size="4">逻辑上构建出类似链表</font>后，就水到渠成了。</p>
+<p>  本题并不复杂，但当经过<font color="red" size="4">转化</font>后时间空间复杂度达到若干方法中较优。时刻有转化问题的意识。</p>
+</li>
+</ul>
+<p>关键：<font color="red" size="4">问题转化</font>，<font color="red" size="4">龟兔赛跑</font></p>
+<h1 id="142-Linked-List-Cycle-II"><a href="#142-Linked-List-Cycle-II" class="headerlink" title="#142 Linked List Cycle II"></a>#142 Linked List Cycle II</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" data-id="ck5bb2keo0018qzfzcadn90rw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          LeetCode-方法论-DP-一
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Linux下使用hexo创建静态博客并部署到github</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/utility/">utility</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">17</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 10px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/">LeetCode-方法论-DP-二</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/">LeetCode-方法论-map&amp;set-二</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/">LeetCode-方法论-数组相关-三</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/">LeetCode-方法论-数组相关-二</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/">LeetCode-方法论-map&amp;set-一</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
