@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-project review | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="这篇blog记录了项目中使用或未使用到的CUDA知识点。  __constant__ float d_arr[10] 在constant memory中开辟10个空间。   cudaMemcpyToSymbol(d_arr, h_arr, sizeof(h_arr)) 将Host中的数据复制进Device中所开辟的空间。  __device__ float d_arr[10][5] 在Global">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-project review">
+<meta property="og:url" content="http://yoursite.com/2019/12/09/CUDA-project-review/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="这篇blog记录了项目中使用或未使用到的CUDA知识点。  __constant__ float d_arr[10] 在constant memory中开辟10个空间。   cudaMemcpyToSymbol(d_arr, h_arr, sizeof(h_arr)) 将Host中的数据复制进Device中所开辟的空间。  __device__ float d_arr[10][5] 在Global">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-12-09T02:49:07.000Z">
+<meta property="article:modified_time" content="2020-01-12T14:54:53.919Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-project-review" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/09/CUDA-project-review/" class="article-date">
+  <time datetime="2019-12-09T02:49:07.000Z" itemprop="datePublished">2019-12-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-project review
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇blog记录了项目中使用或未使用到的CUDA知识点。</p>
+<ul>
+<li><p><code>__constant__ float d_arr[10]</code> 在constant memory中开辟10个空间。 </p>
+</li>
+<li><p><code>cudaMemcpyToSymbol(d_arr, h_arr, sizeof(h_arr))</code> 将Host中的数据复制进Device中所开辟的空间。</p>
+</li>
+<li><p><code>__device__ float d_arr[10][5]</code> 在Global memory中开辟空间。</p>
+</li>
+<li><p><code>cudaMemcpyFromSymbol(h_arr,d_arr, sizeof(d_arr))</code> 将Device中的数据复制到Host中所开辟的空间。</p>
+</li>
+<li><p>在<code>local memory</code>中开辟空间，lifetime为threads的周期：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">float</span> tmp[<span class="number">7</span>];</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用<code>registers</code>而非<code>local memory</code>，当所需数据大小较小，且数量固定时将<code>float a[3]</code> 改写成<code>float a0,a1,a2</code>.</p>
+</li>
+<li><p>使用<code>grid-stride-loop</code>。其中idd需要根据实际问题计算得到:</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = ...;</span><br><span class="line">    <span class="keyword">int</span> stride = ...;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> idd = tid; idd&lt;N; idd+=stride)&#123;</span><br><span class="line">        <span class="comment">// idd is the thread id in this loop;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  使用grid-stride-loop 后，将kernel函数改为<code>&lt;&lt;&lt;1,1&gt;&gt;&gt;</code>，并且在适当的位置加上打印语句。便于调试。</p>
+</li>
+<li><p>实现时，在cuda相关的 语句前加上<code>checkCudaError()</code>.这个函数要自己实现。</p>
+</li>
+<li><p>在调用跟kernel函数后，加上<code>checkCudaError(cudaGetLatError())</code>;</p>
+</li>
+<li><p>根据当前问题找example中可用内容。</p>
+</li>
+<li><p>实验函数，先用笔在纸上实现，定义内个变量的含义，左后写code。</p>
+</li>
+<li><p>在一个较大的实现中，保证一段code一个功能，这一段的实现尽量不要使用其他段code的变量，尽量使每段code独立化。</p>
+</li>
+<li><p><code>pinned memory</code> VS <code>pageable memory</code>.</p>
+</li>
+<li><p>deviceQuery 轻量级的方法。</p>
+</li>
+<li><p>协作组</p>
+</li>
+<li><p>对于 代操作数据为二维或三维点，一个技巧是，为了尽可能减少PCIe的使用，线程id天然可以表示成数据点的坐标：<code>(idx,idy)&lt;=&gt;(x,y)</code>.</p>
+</li>
+<li><p>因为Device段不能动态分配空间，所以当实现摸个算法的CPU版本时，要使用stack内存，开辟足够多的空间。</p>
+</li>
+<li><p><code>cudaMallocPitch()</code>;</p>
+</li>
+<li><p><code>cudaMemSet2D()</code>;</p>
+</li>
+<li><p><code>std::bitset&lt;16&gt; foo</code>;</p>
+</li>
+<li><p>角度与弧度的转化：<code>1°=π/180,1rad=(180/π)°</code></p>
+</li>
+<li><p>choose device</p>
+</li>
+<li><p>multiple GPUs</p>
+</li>
+<li><p>使用event给code计时。或自己写计时类。</p>
+</li>
+<li><p>Unified Memory.</p>
+</li>
+<li><p>循环展开，减少操作。</p>
+</li>
+<li><p>注意CPU code中不可并行的部分，如下：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (tid &lt; N)&#123;</span><br><span class="line">    bb[tid+<span class="number">1</span>] = count + bb[tid];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  上面的指令只能串行执行。</p>
+</li>
+</ul>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/09/CUDA-project-review/" data-id="ck5b540ba0003q5fz2tdu6ect" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-Nsight Eclipse Edition
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/11/28/CUDA-optimize-data-transfer/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-optimize data transfer</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CUDA/" style="font-size: 10px;">CUDA</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/">CUDA-Nsight Eclipse Edition</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-overlap-data-transfer/">CUDA-overlap data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

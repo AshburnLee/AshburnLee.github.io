@@ -141,6 +141,114 @@
 
 
   
+    <article id="post-CUDA-project-review" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/09/CUDA-project-review/" class="article-date">
+  <time datetime="2019-12-09T02:49:07.000Z" itemprop="datePublished">2019-12-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇blog记录了项目中使用或未使用到的CUDA知识点。</p>
+<ul>
+<li><p><code>__constant__ float d_arr[10]</code> 在constant memory中开辟10个空间。 </p>
+</li>
+<li><p><code>cudaMemcpyToSymbol(d_arr, h_arr, sizeof(h_arr))</code> 将Host中的数据复制进Device中所开辟的空间。</p>
+</li>
+<li><p><code>__device__ float d_arr[10][5]</code> 在Global memory中开辟空间。</p>
+</li>
+<li><p><code>cudaMemcpyFromSymbol(h_arr,d_arr, sizeof(d_arr))</code> 将Device中的数据复制到Host中所开辟的空间。</p>
+</li>
+<li><p>在<code>local memory</code>中开辟空间，lifetime为threads的周期：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">float</span> tmp[<span class="number">7</span>];</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用<code>registers</code>而非<code>local memory</code>，当所需数据大小较小，且数量固定时将<code>float a[3]</code> 改写成<code>float a0,a1,a2</code>.</p>
+</li>
+<li><p>使用<code>grid-stride-loop</code>。其中idd需要根据实际问题计算得到:</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = ...;</span><br><span class="line">    <span class="keyword">int</span> stride = ...;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> idd = tid; idd&lt;N; idd+=stride)&#123;</span><br><span class="line">        <span class="comment">// idd is the thread id in this loop;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  使用grid-stride-loop 后，将kernel函数改为<code>&lt;&lt;&lt;1,1&gt;&gt;&gt;</code>，并且在适当的位置加上打印语句。便于调试。</p>
+</li>
+<li><p>实现时，在cuda相关的 语句前加上<code>checkCudaError()</code>.这个函数要自己实现。</p>
+</li>
+<li><p>在调用跟kernel函数后，加上<code>checkCudaError(cudaGetLatError())</code>;</p>
+</li>
+<li><p>根据当前问题找example中可用内容。</p>
+</li>
+<li><p>实验函数，先用笔在纸上实现，定义内个变量的含义，左后写code。</p>
+</li>
+<li><p>在一个较大的实现中，保证一段code一个功能，这一段的实现尽量不要使用其他段code的变量，尽量使每段code独立化。</p>
+</li>
+<li><p><code>pinned memory</code> VS <code>pageable memory</code>.</p>
+</li>
+<li><p>deviceQuery 轻量级的方法。</p>
+</li>
+<li><p>协作组</p>
+</li>
+<li><p>对于 代操作数据为二维或三维点，一个技巧是，为了尽可能减少PCIe的使用，线程id天然可以表示成数据点的坐标：<code>(idx,idy)&lt;=&gt;(x,y)</code>.</p>
+</li>
+<li><p>因为Device段不能动态分配空间，所以当实现摸个算法的CPU版本时，要使用stack内存，开辟足够多的空间。</p>
+</li>
+<li><p><code>cudaMallocPitch()</code>;</p>
+</li>
+<li><p><code>cudaMemSet2D()</code>;</p>
+</li>
+<li><p><code>std::bitset&lt;16&gt; foo</code>;</p>
+</li>
+<li><p>角度与弧度的转化：<code>1°=π/180,1rad=(180/π)°</code></p>
+</li>
+<li><p>choose device</p>
+</li>
+<li><p>multiple GPUs</p>
+</li>
+<li><p>使用event给code计时。或自己写计时类。</p>
+</li>
+<li><p>Unified Memory.</p>
+</li>
+<li><p>循环展开，减少操作。</p>
+</li>
+<li><p>注意CPU code中不可并行的部分，如下：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (tid &lt; N)&#123;</span><br><span class="line">    bb[tid+<span class="number">1</span>] = count + bb[tid];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  上面的指令只能串行执行。</p>
+</li>
+</ul>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/09/CUDA-project-review/" data-id="ck5b540ba0003q5fz2tdu6ect" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-optimize-data-transfer" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/11/28/CUDA-optimize-data-transfer/" class="article-date">
@@ -196,6 +304,164 @@
     </div>
     <footer class="article-footer">
       <a data-url="http://yoursite.com/2019/11/28/CUDA-optimize-data-transfer/" data-id="ck5b4yclb0000kxfz06im9koe" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-overlap-data-transfer" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/28/CUDA-overlap-data-transfer/" class="article-date">
+  <time datetime="2019-11-28T15:01:48.000Z" itemprop="datePublished">2019-11-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/28/CUDA-overlap-data-transfer/">CUDA-overlap data transfer</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Overlap-Data-Transfers"><a href="#Overlap-Data-Transfers" class="headerlink" title="Overlap Data Transfers"></a>Overlap Data Transfers</h1><p>目的是通过并发，隐藏延时。we discuss how to overlap data transfers with computation on the host。并发是指数据传输和host上的操作一同执行。Achieving overlap between data transfers and other operations requires the use of CUDA streams, so first let’s learn about streams.</p>
+<h2 id="CUDA-Srteam"><a href="#CUDA-Srteam" class="headerlink" title="CUDA Srteam"></a>CUDA Srteam</h2><p>A stream in CUDA is a sequence of operations that execute on the device in the order in which they are issued by the host code. While operations within a stream are guaranteed to execute in the prescribed order, operations in different streams can be interleaved and, when possible, they can even run concurrently.</p>
+<h3 id="1-The-default-stream"><a href="#1-The-default-stream" class="headerlink" title="1. The default stream"></a>1. The default stream</h3><p>All device operations (kernels and data transfers) in CUDA run in a stream. When no stream is specified, the default stream (also called the “null stream”) is used. The default stream is different from other streams because it is a synchronizing stream with respect to operations on the device: no operation in the default stream will begin until all previously issued operations in any stream on the device have completed, and an operation in the default stream must complete before any other operation (in any stream on the device) will begin.</p>
+<p>Please note that CUDA 7, released in 2015, introduced a new option to use a separate default stream per host thread, and to treat per-thread default streams as regular streams (i.e. they don’t synchronize with operations in other streams)</p>
+<p>Let’s look at some simple code examples that use the default stream, and discuss how operations progress from the perspective of the host as well as the device.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cudaMemcpy(d_a, a, numBytes, cudaMemcpyHostToDevice);</span><br><span class="line">increment&lt;&lt;&lt;<span class="number">1</span>,N&gt;&gt;&gt;(d_a)</span><br><span class="line">cudaMemcpy(a, d_a, numBytes, cudaMemcpyDeviceToHost);</span><br></pre></td></tr></table></figure>
+
+<p>From the perspective of the device, all three operations are issued to the same (default) stream and will execute in the order that they were issued.</p>
+<p>From the perspective of the host, the implicit data transfers are blocking or synchronous transfers, while the kernel launch is asynchronous. </p>
+<p>Since the host-to-device data transfer on the first line is synchronous, the CPU thread will not reach the kernel call on the second line until the host-to-device transfer is complete. Once the kernel is issued, the CPU thread moves to the third line, but the transfer on that line cannot begin due to the device-side order of execution.</p>
+<p>The asynchronous behavior of kernel launches from the host’s perspective makes overlapping device and host computation very simple. We can modify the code to add some independent CPU computation as follows.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cudaMemcpy(d_a, a, numBytes, cudaMemcpyHostToDevice);</span><br><span class="line">increment&lt;&lt;&lt;<span class="number">1</span>,N&gt;&gt;&gt;(d_a)    <span class="comment">// device 执行这个</span></span><br><span class="line">myCpuFunction(b)           <span class="comment">// 同时 host 执行这个</span></span><br><span class="line">cudaMemcpy(a, d_a, numBytes, cudaMemcpyDeviceToHost);</span><br></pre></td></tr></table></figure>
+
+<p>上述code实现了一个overlap，在<code>increment()</code>和<code>myCpuFunction()</code>同时分别在device和host端执行。Whether the host function or device kernel completes first doesn’t affect the subsequent device-to-host transfer, which will begin only after the kernel completes.  From the perspective of the device, nothing has changed from the previous example; the device is completely unaware of myCpuFunction(). 从device的角度看，device并不知道<code>myCpuFunction()</code>这个操作的存在，device端的操作与前一段code一模一样。</p>
+<h3 id="2-Non-default-streams"><a href="#2-Non-default-streams" class="headerlink" title="2. Non-default streams"></a>2. Non-default streams</h3><p>Non-default streams in CUDA C/C++ are declared, created, and destroyed in host code as follows.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cudaStream_t stream1;    <span class="comment">// 声明一个stream</span></span><br><span class="line">cudaError_t result;</span><br><span class="line">result = cudaStreamCreate(&amp;stream1)  <span class="comment">// create</span></span><br><span class="line">result = cudaStreamDestroy(stream1)   <span class="comment">// destroy</span></span><br></pre></td></tr></table></figure>
+
+<p>To issue a data transfer to a non-default stream we use the <code>cudaMemcpyAsync()</code> function, which is similar to the <code>cudaMemcpy()</code> function discussed in the previous post, but takes a stream identifier as a <strong>fifth</strong> argument.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">result = cudaMemcpyAsync(d_a, a, N, cudaMemcpyHostToDevice, stream1)</span><br></pre></td></tr></table></figure>
+
+<p><code>cudaMemcpyAsync()</code> is non-blocking on the host, so control returns to the host thread immediately after the transfer is issued. There are <code>cudaMemcpy2DAsync()</code> and <code>cudaMemcpy3DAsync()</code> variants of this routine which can transfer 2D and 3D array sections asynchronously in the specified streams.</p>
+<p>To issue a kernel to a non-default stream we specify the stream identifier as a <strong>fourth</strong> execution configuration parameter (the <strong>third</strong> execution configuration parameter allocates <code>shared device memory</code>, which we’ll talk about later; use 0 for now).</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">increment&lt;&lt;&lt;<span class="number">1</span>, N, <span class="number">0</span>, stream1&gt;&gt;&gt;(d_a)</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-Synchronization-with-streams"><a href="#3-Synchronization-with-streams" class="headerlink" title="3. Synchronization with streams"></a>3. Synchronization with streams</h3><p>在执行cudaMemcpy()时，code变为同步的，就是说，host code要等待这个copy函数执行完毕，才能接着往下执行。而all operations in non-default streams are non-blocking with respect to the host code,  you will run across situations where you need to synchronize the host code with operations in a stream. 同步就需要我们来做了。有若干种方法来同步：The “heavy hammer” way is to use <code>cudaDeviceSynchronize()</code>, which blocks the host code until all previously issued operations on the device have completed. In most cases this is <strong>overkill</strong>, and can really hurt performance due to stalling the entire device and host thread.</p>
+<p>The <strong>CUDA stream API</strong> has multiple less severe methods of synchronizing the host with a stream. </p>
+<ul>
+<li><code>cudaStreamSynchronize(stream)</code> can be used to block the host thread until all previously issued operations in the specified stream have completed.</li>
+<li><code>cudaStreamQuery(stream)</code> tests whether all operations issued to the specified stream have completed, without blocking host execution.</li>
+<li><code>cudaEventSynchronize(event)</code> &amp; <code>cudaEventQuery(event)</code> act similar to their stream counterparts, except that their result is based on whether a specified event has been recorded rather than whether a specified stream is idle.</li>
+<li><code>cudaStreamWaitEvent(event)</code> You can also synchronize operations within a single stream on a specific event using cudaStreamWaitEvent(event) (even if the event is recorded in a different stream, or on a different device!).</li>
+</ul>
+<h2 id="Overlapping-Kernel-Execution-and-Data-Transfers"><a href="#Overlapping-Kernel-Execution-and-Data-Transfers" class="headerlink" title="Overlapping Kernel Execution and Data Transfers"></a>Overlapping Kernel Execution and Data Transfers</h2><p>Earlier we demonstrated how to overlap kernel execution in the default stream with execution of code on the host. But our main goal in this post is to show you how to overlap kernel execution with data transfers. There are several requirements for this to happen. There are several requirements for this to happen.</p>
+<ul>
+<li>The device must be capable of <code>“concurrent copy and execution”</code>.  This can be queried from the deviceOverlap field of a <code>cudaDeviceProp</code> struct, or from the output of the deviceQuery sample included with the CUDA SDK/Toolkit. Nearly all devices with compute capability 1.1 and higher have this capability.</li>
+<li>The kernel execution and the data transfer to be overlapped must both occur <strong>in different, non-default streams</strong>.</li>
+<li>The host memory involved in the data transfer must be <strong>pinned</strong> memory.</li>
+</ul>
+<p>附录为实例程序，we break up the array of size <code>N</code> into chunks of <code>streamSize</code> elements. Since the kernel operates independently on all elements, each of the chunks can be processed independently. The number of (non-default) streams used is <code>nStreams=N/streamSize</code>. There are multiple ways to implement the domain decomposition of the data and processing; one is to loop over all the operations for each chunk of the array as in this example code.</p>
+<p>原文内容作者Mark Harris<br>原文<a href="https://devblogs.nvidia.com/how-overlap-data-transfers-cuda-cc/" target="_blank" rel="noopener">链接</a><br>原文<a href="https://github.com/NVIDIA-developer-blog/code-samples/blob/master/series/cuda-cpp/overlap-data-transfers/async.cu" target="_blank" rel="noopener">程序</a></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+<p>附录<br>完整code：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Convenience function for checking CUDA runtime API results</span></span><br><span class="line"><span class="comment">// can be wrapped around any runtime API call. No-op in release builds.</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> cudaError_t <span class="title">checkCuda</span><span class="params">(cudaError_t result)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(DEBUG) || defined(_DEBUG)</span></span><br><span class="line">  <span class="keyword">if</span> (result != cudaSuccess) &#123;</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"CUDA Runtime Error: %s\n"</span>, cudaGetErrorString(result));</span><br><span class="line">    assert(result == cudaSuccess);</span><br><span class="line">  &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">int</span> offset)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i = offset + threadIdx.x + blockIdx.x*blockDim.x;</span><br><span class="line">  <span class="keyword">float</span> x = (<span class="keyword">float</span>)i;</span><br><span class="line">  <span class="keyword">float</span> s = sinf(x); </span><br><span class="line">  <span class="keyword">float</span> c = cosf(x);</span><br><span class="line">  a[i] = a[i] + sqrtf(s*s+c*c);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">float</span> <span class="title">maxError</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">int</span> n)</span> </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">float</span> maxE = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">    <span class="keyword">float</span> error = <span class="built_in">fabs</span>(a[i]<span class="number">-1.0f</span>);</span><br><span class="line">    <span class="keyword">if</span> (error &gt; maxE) maxE = error;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> maxE;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> blockSize = <span class="number">256</span>, nStreams = <span class="number">4</span>;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> n = <span class="number">4</span> * <span class="number">1024</span> * blockSize * nStreams;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> streamSize = n / nStreams;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> streamBytes = streamSize * <span class="keyword">sizeof</span>(<span class="keyword">float</span>);</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> bytes = n * <span class="keyword">sizeof</span>(<span class="keyword">float</span>);</span><br><span class="line">   </span><br><span class="line">  <span class="keyword">int</span> devId = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">if</span> (argc &gt; <span class="number">1</span>) devId = atoi(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">  cudaDeviceProp prop;</span><br><span class="line">  checkCuda( cudaGetDeviceProperties(&amp;prop, devId));</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"Device : %s\n"</span>, prop.name);</span><br><span class="line">  checkCuda( cudaSetDevice(devId) );</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// allocate pinned host memory and device memory</span></span><br><span class="line">  <span class="keyword">float</span> *a, *d_a;</span><br><span class="line">  checkCuda( cudaMallocHost((<span class="keyword">void</span>**)&amp;a, bytes) );      <span class="comment">// host pinned</span></span><br><span class="line">  checkCuda( cudaMalloc((<span class="keyword">void</span>**)&amp;d_a, bytes) );    <span class="comment">// device</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">float</span> ms; <span class="comment">// elapsed time in milliseconds</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">// create events and streams</span></span><br><span class="line">  cudaEvent_t startEvent, stopEvent, dummyEvent;</span><br><span class="line">  cudaStream_t stream[nStreams];</span><br><span class="line">  checkCuda( cudaEventCreate(&amp;startEvent) );</span><br><span class="line">  checkCuda( cudaEventCreate(&amp;stopEvent) );</span><br><span class="line">  checkCuda( cudaEventCreate(&amp;dummyEvent) );</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nStreams; ++i)</span><br><span class="line">    checkCuda( cudaStreamCreate(&amp;stream[i]) );</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// baseline case - sequential transfer and execute</span></span><br><span class="line">  <span class="built_in">memset</span>(a, <span class="number">0</span>, bytes);</span><br><span class="line">  checkCuda( cudaEventRecord(startEvent,<span class="number">0</span>) );</span><br><span class="line">  checkCuda( cudaMemcpy(d_a, a, bytes, cudaMemcpyHostToDevice) );</span><br><span class="line">  kernel&lt;&lt;&lt;n/blockSize, blockSize&gt;&gt;&gt;(d_a, <span class="number">0</span>);</span><br><span class="line">  checkCuda( cudaMemcpy(a, d_a, bytes, cudaMemcpyDeviceToHost) );</span><br><span class="line">  checkCuda( cudaEventRecord(stopEvent, <span class="number">0</span>) );</span><br><span class="line">  checkCuda( cudaEventSynchronize(stopEvent) );</span><br><span class="line">  checkCuda( cudaEventElapsedTime(&amp;ms, startEvent, stopEvent) );</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"Time for sequential transfer and execute (ms): %f\n"</span>, ms);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"  max error: %e\n"</span>, maxError(a, n));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// asynchronous version 1: loop over &#123;copy, kernel, copy&#125;</span></span><br><span class="line">  <span class="built_in">memset</span>(a, <span class="number">0</span>, bytes);</span><br><span class="line">  checkCuda( cudaEventRecord(startEvent,<span class="number">0</span>) );</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nStreams; ++i) &#123;</span><br><span class="line">    <span class="keyword">int</span> offset = i * streamSize;</span><br><span class="line">    checkCuda( cudaMemcpyAsync(&amp;d_a[offset], &amp;a[offset], </span><br><span class="line">                               streamBytes, cudaMemcpyHostToDevice, </span><br><span class="line">                               stream[i]) );</span><br><span class="line">    kernel&lt;&lt;&lt;streamSize/blockSize, blockSize, <span class="number">0</span>, stream[i]&gt;&gt;&gt;(d_a, offset);</span><br><span class="line">    checkCuda( cudaMemcpyAsync(&amp;a[offset], &amp;d_a[offset], </span><br><span class="line">                               streamBytes, cudaMemcpyDeviceToHost,</span><br><span class="line">                               stream[i]) );</span><br><span class="line">  &#125;</span><br><span class="line">  checkCuda( cudaEventRecord(stopEvent, <span class="number">0</span>) );</span><br><span class="line">  checkCuda( cudaEventSynchronize(stopEvent) );</span><br><span class="line">  checkCuda( cudaEventElapsedTime(&amp;ms, startEvent, stopEvent) );</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"Time for asynchronous V1 transfer and execute (ms): %f\n"</span>, ms);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"  max error: %e\n"</span>, maxError(a, n));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// asynchronous version 2: </span></span><br><span class="line">  <span class="comment">// loop over copy, loop over kernel, loop over copy</span></span><br><span class="line">  <span class="built_in">memset</span>(a, <span class="number">0</span>, bytes);</span><br><span class="line">  checkCuda( cudaEventRecord(startEvent,<span class="number">0</span>) );</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nStreams; ++i)</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">int</span> offset = i * streamSize;</span><br><span class="line">    checkCuda( cudaMemcpyAsync(&amp;d_a[offset], &amp;a[offset], </span><br><span class="line">                               streamBytes, cudaMemcpyHostToDevice,</span><br><span class="line">                               stream[i]) );</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nStreams; ++i)</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">int</span> offset = i * streamSize;</span><br><span class="line">    kernel&lt;&lt;&lt;streamSize/blockSize, blockSize, <span class="number">0</span>, stream[i]&gt;&gt;&gt;(d_a, offset);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nStreams; ++i)</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">int</span> offset = i * streamSize;</span><br><span class="line">    checkCuda( cudaMemcpyAsync(&amp;a[offset], &amp;d_a[offset], </span><br><span class="line">                               streamBytes, cudaMemcpyDeviceToHost,</span><br><span class="line">                               stream[i]) );</span><br><span class="line">  &#125;</span><br><span class="line">  checkCuda( cudaEventRecord(stopEvent, <span class="number">0</span>) );</span><br><span class="line">  checkCuda( cudaEventSynchronize(stopEvent) );</span><br><span class="line">  checkCuda( cudaEventElapsedTime(&amp;ms, startEvent, stopEvent) );</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"Time for asynchronous V2 transfer and execute (ms): %f\n"</span>, ms);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"  max error: %e\n"</span>, maxError(a, n));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// cleanup</span></span><br><span class="line">  checkCuda( cudaEventDestroy(startEvent) );</span><br><span class="line">  checkCuda( cudaEventDestroy(stopEvent) );</span><br><span class="line">  checkCuda( cudaEventDestroy(dummyEvent) );</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nStreams; ++i)</span><br><span class="line">    checkCuda( cudaStreamDestroy(stream[i]) );</span><br><span class="line">  cudaFree(d_a);</span><br><span class="line">  cudaFreeHost(a);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/28/CUDA-overlap-data-transfer/" data-id="ck5b540bb0004q5fz7ha53qhq" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-Performance-Metrics" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/27/CUDA-Performance-Metrics/" class="article-date">
+  <time datetime="2019-11-27T14:46:48.000Z" itemprop="datePublished">2019-11-27</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Implement-Performance-Metrics-in-CUDA"><a href="#Implement-Performance-Metrics-in-CUDA" class="headerlink" title="Implement Performance Metrics in CUDA"></a>Implement Performance Metrics in CUDA</h1><p>“Before we jump into these performance measurement techniques, we need to discuss how to synchronize execution between the host and device.”<br>why? 因为有些指令同步执行，有些指令异步执行。只有知道了区别才可以正确测量性能。</p>
+<p>遇到<code>cudaMemcpy()</code> 执行变成同步的，也就是说，所有指令必须等待其他指令执行到此，才可以一起向下继续执行。如果没有<code>cudaMemcpy()</code>，可以使用<code>cudaDeviceSynchronize()</code>实现同步。</p>
+<h2 id="使用CPU的timer"><a href="#使用CPU的timer" class="headerlink" title="使用CPU的timer"></a>使用CPU的timer</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">t1 = myCPUTimer();</span><br><span class="line">saxpy&lt;&lt;&lt;(N+<span class="number">255</span>)/<span class="number">256</span>, <span class="number">256</span>&gt;&gt;&gt;(N, <span class="number">2.0</span>, d_x, d_y);</span><br><span class="line">cudaDeviceSynchronize();   <span class="comment">// </span></span><br><span class="line">t2 = myCPUTimer();</span><br><span class="line"></span><br><span class="line">cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br></pre></td></tr></table></figure>
+
+<p>“we use the explicit synchronization barrier <code>cudaDeviceSynchronize()</code> to block CPU execution until all previously issued commands on the device have completed. Without this barrier, this code would measure the kernel launch time and not the kernel execution time.” 在这里犯过错，CPU负责控制，当执行到kernel函数时，是CPU调用kernel函数，但是在GPU上执行，CPU调用之后，马上执行下面的语句，如果没有<code>cudaDeviceSynchronize()</code>，CPU会执行t2，如此一来t2-t1测的是调用kernel的时间，而非kernel执行的时间。也就是说，CPU与GPU是异步的，只有加上<code>cudaDeviceSynchronize()</code>，告诉CPU等待GPU把kernel执行完毕，后一同执行t2. </p>
+<h2 id="Timing-using-CUDA-Events"><a href="#Timing-using-CUDA-Events" class="headerlink" title="Timing using CUDA Events"></a>Timing using CUDA Events</h2><p>A problem with using host-device synchronization points, such as <code>cudaDeviceSynchronize()</code>, is that they stall the GPU pipeline. For this reason, CUDA offers a relatively light-weight alternative to CPU timers via the CUDA event API. The CUDA event API includes calls to create and destroy events, record events, and compute the elapsed time in milliseconds between two recorded events.</p>
+<p> A CUDA stream is simply a sequence of operations that are performed in order on the device. Operations in different streams can be interleaved and in some cases overlapped—a property that can be used to hide data transfers between the host and the device </p>
+<p>默认使用的stream 0，<br> Up to now, all operations on the GPU have occurred in the default stream, or stream 0 (also called the “Null Stream”).</p>
+<p> here is an example:</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">cudaEvent_t start, stop;</span><br><span class="line">cudaEventCreate(&amp;start);</span><br><span class="line">cudaEventCreate(&amp;stop);</span><br><span class="line"></span><br><span class="line">cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">cudaEventRecord(start);</span><br><span class="line">saxpy&lt;&lt;&lt;(N+<span class="number">255</span>)/<span class="number">256</span>, <span class="number">256</span>&gt;&gt;&gt;(N, <span class="number">2.0f</span>, d_x, d_y);</span><br><span class="line">cudaEventRecord(stop);</span><br><span class="line"></span><br><span class="line">cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">cudaEventSynchronize(stop);</span><br><span class="line"><span class="keyword">float</span> milliseconds = <span class="number">0</span>;</span><br><span class="line">cudaEventElapsedTime(&amp;milliseconds, start, stop);</span><br></pre></td></tr></table></figure>
+
+<p> 这个计时器记录的是核函数的执行时间。</p>
+<p> CUDA events are of type <code>cudaEvent_t</code> and are created and destroyed with <code>cudaEventCreate()</code> and <code>cudaEventDestroy()</code>. In the above code <code>cudaEventRecord()</code> places the start and stop events into the default stream, <code>stream 0</code>. The device will record a time stamp for the event when it reaches that event in the stream. The function <code>cudaEventSynchronize()</code> blocks CPU execution until the specified event is recorded. The <code>cudaEventElapsedTime()</code> function returns in the first argument the number of milliseconds time elapsed between the recording of start and stop. This value has a resolution of approximately one half microsecond.</p>
+<h2 id="Memory-Bandwidth"><a href="#Memory-Bandwidth" class="headerlink" title="Memory Bandwidth"></a>Memory Bandwidth</h2><p> 我们需要知道极限带宽，和实际带宽。</p>
+<h3 id="极限带宽（理论带宽）"><a href="#极限带宽（理论带宽）" class="headerlink" title="极限带宽（理论带宽）"></a>极限带宽（理论带宽）</h3><p> Theoretical bandwidth can be calculated using hardware specifications available in the product literature. For example, the NVIDIA Tesla M2050 GPU uses DDR (double data rate) RAM with a memory clock rate of <code>1,546 MHz</code> and a <code>384-bit</code> wide memory interface. Using these data items, the peak theoretical memory bandwidth of this GPU can be computed using the following:</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BWTheoretical &#x3D; 1546 * 10^6 * (384&#x2F;8) * 2 &#x2F; 10^9 &#x3D; 148 GB&#x2F;s</span><br></pre></td></tr></table></figure>
+
+<p>解释：In this calculation, we convert the memory clock rate to Hz, multiply it by the interface width (divided by 8, to convert bits to bytes) and multiply by 2 due to the double data rate. Finally, we divide by 109 to convert the result to GB/s.</p>
+<h3 id="实际带宽"><a href="#实际带宽" class="headerlink" title="实际带宽"></a>实际带宽</h3><p>We calculate effective bandwidth by timing specific program activities and by knowing how our program accesses data. We use the following equation.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BWEffective &#x3D; (RB + WB) &#x2F; (t * 10^9)</span><br></pre></td></tr></table></figure>
+
+<p>Here, <code>BWEffective</code> is the effective bandwidth in units of GB/s, <code>RB</code> is the number of bytes read per kernel, <code>WB</code> is the number of bytes written per kernel, and <code>t</code> is the elapsed time given in seconds.</p>
+<p>实例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">__global__</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = blockIdx.x*blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) y[i] = a*x[i] + y[i];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> N = <span class="number">20</span> * (<span class="number">1</span> &lt;&lt; <span class="number">20</span>);</span><br><span class="line">    <span class="keyword">float</span> *x, *y, *d_x, *d_y;</span><br><span class="line">    x = (<span class="keyword">float</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">    y = (<span class="keyword">float</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">    cudaMalloc(&amp;d_x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>)); </span><br><span class="line">    cudaMalloc(&amp;d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">        x[i] = <span class="number">1.0f</span>;</span><br><span class="line">        y[i] = <span class="number">2.0f</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cudaEvent_t start, stop;</span><br><span class="line">    cudaEventCreate(&amp;start);</span><br><span class="line">    cudaEventCreate(&amp;stop);</span><br><span class="line"></span><br><span class="line">    cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">    cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">    cudaEventRecord(start);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">    saxpy&lt;&lt;&lt;(N+<span class="number">511</span>)/<span class="number">512</span>, <span class="number">512</span>&gt;&gt;&gt;(N, <span class="number">2.0f</span>, d_x, d_y);</span><br><span class="line"></span><br><span class="line">    cudaEventRecord(stop);</span><br><span class="line"></span><br><span class="line">    cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">    cudaEventSynchronize(stop);</span><br><span class="line">    <span class="keyword">float</span> milliseconds = <span class="number">0</span>;</span><br><span class="line">    cudaEventElapsedTime(&amp;milliseconds, start, stop);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> maxError = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">        maxError = max(maxError, <span class="built_in">abs</span>(y[i]<span class="number">-4.0f</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Max error: %fn"</span>, maxError);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Effective Bandwidth (GB/s): %fn"</span>, N*<span class="number">4</span>*<span class="number">3</span>/milliseconds/<span class="number">1e6</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>In the bandwidth calculation, N*4 is the number of bytes transferred per array read or write, and the factor of three represents the reading of x and the reading and writing of y. The elapsed time is stored in the variable milliseconds to make units clear. Note that in addition to adding the functionality needed for the bandwidth calculation, we have also changed the array size and the thread-block size.</p>
+<p>CUDA events use the GPU timer and therefore avoid the problems associated with host-device synchronization</p>
+<p>原文作者Mark Harris<br>原文<a href="https://devblogs.nvidia.com/how-implement-performance-metrics-cuda-cc/" target="_blank" rel="noopener">链接</a></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/27/CUDA-Performance-Metrics/" data-id="ck5b540b30000q5fzdhgcbzba" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -312,11 +578,19 @@
           </li>
         
           <li>
+            <a href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
+          </li>
+        
+          <li>
             <a href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
           </li>
         
           <li>
-            <a href="/1970/01/01/hello-world/">Hello World</a>
+            <a href="/2019/11/28/CUDA-overlap-data-transfer/">CUDA-overlap data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
           </li>
         
       </ul>
