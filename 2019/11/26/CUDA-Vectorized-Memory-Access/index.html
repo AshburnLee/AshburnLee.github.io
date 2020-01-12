@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA:-Vectorized Memory Access | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Increase Performance with Vectorized Memory AccessMany CUDA kernels are bandwidth bound, and the increasing ratio of flops to bandwidth in new hardware results in more bandwidth bound kernels. This ma">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA:-Vectorized Memory Access">
+<meta property="og:url" content="http://yoursite.com/2019/11/26/CUDA-Vectorized-Memory-Access/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Increase Performance with Vectorized Memory AccessMany CUDA kernels are bandwidth bound, and the increasing ratio of flops to bandwidth in new hardware results in more bandwidth bound kernels. This ma">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-11-26T15:36:13.000Z">
+<meta property="article:modified_time" content="2020-01-12T15:03:53.811Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-Vectorized-Memory-Access" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/26/CUDA-Vectorized-Memory-Access/" class="article-date">
+  <time datetime="2019-11-26T15:36:13.000Z" itemprop="datePublished">2019-11-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA:-Vectorized Memory Access
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Increase-Performance-with-Vectorized-Memory-Access"><a href="#Increase-Performance-with-Vectorized-Memory-Access" class="headerlink" title="Increase Performance with Vectorized Memory Access"></a>Increase Performance with Vectorized Memory Access</h2><p>Many CUDA kernels are bandwidth bound, and the increasing ratio of flops to bandwidth in new hardware results in more bandwidth bound kernels. This makes it very important to take steps to mitigate bandwidth bottlenecks in your code. In this post, I will show you how to use vector loads and stores in CUDA C/C++ to help increase bandwidth utilization while decreasing the number of executed instructions.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_scalar_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123; </span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N; i += blockDim.x * gridDim.x) &#123; </span><br><span class="line">    d_out[i] = d_in[i]; </span><br><span class="line">  &#125; </span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_scalar</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>; </span><br><span class="line">  <span class="keyword">int</span> blocks = min((N + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);  </span><br><span class="line">  device_copy_scalar_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>We can inspect the assembly for this kernel using the cuobjdump tool included with the CUDA Toolkit.<code>%&gt; cuobjdump -sass executable</code>.<br>The SASS for the body of the scalar copy kernel is the following:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0058*/</span> IMAD R6.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x140</span>]                </span><br><span class="line"><span class="comment">/*0060*/</span> IMAD.HI.X R7, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x144</span>]              </span><br><span class="line"><span class="comment">/*0068*/</span> IMAD R4.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*0070*/</span> LD.E R2, [R6]                                   </span><br><span class="line"><span class="comment">/*0078*/</span> IMAD.HI.X R5, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span> ST.E [R4], R2</span><br></pre></td></tr></table></figure>
+
+<p>Here we can see a total of six instructions associated with the copy operation. The four <code>IMAD</code> instructions compute the load and store addresses and the <code>LD.E</code> and <code>ST.E</code> load and store 32 bits from those addresses.</p>
+<p>We can improve performance of this operation by using the vectorized load and store instructions <code>LD.E.{64,128}</code> and <code>ST.E.{64,128}</code>. </p>
+<p>These operations also load and store data but do so in 64- or 128-bit widths. Using vectorized loads reduces the total number of instructions, reduces latency, and improves bandwidth utilization.</p>
+<p>The easiest way to use vectorized loads is to use the vector data types defined in the CUDA C/C++ standard headers, such as <code>int2</code>, <code>int4</code>, or <code>float2</code>. You can easily use these types via type casting in C/C++. For example in C++ you can recast the <code>int</code> pointer <code>d_in</code> to an <code>int2</code> pointer using <code>reinterpret_cast&lt;int2*&gt;(d_in)</code>. In C99 you can do the same thing using the casting operator: <code>(int2*(d_in))</code>.</p>
+<p>Dereferencing those pointers will cause the compiler to generate the vectorized instructions. However, there is one important caveat: these instructions require aligned data. Device-allocated memory is automatically aligned to a multiple of the size of the data type, but if you offset the pointer the offset must also be aligned. For example <code>reinterpret_cast&lt;int2*&gt;(d_in+1)</code> is invalid because <code>d_in+1</code> is not aligned to a multiple of <code>sizeof(int2)</code>.</p>
+<p>You can safely offset arrays if you use an “aligned” offset, as in <code>reinterpret_cast&lt;int2*&gt;(d_in+2)</code>. You can also generate vectorized loads using structures as long as the structure is a power of two bytes in size.</p>
+<p>Now that we have seen how to generate vectorized instructions let’s modify the memory copy kernel to use vector loads.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector2_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">2</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final element (if there is one)</span></span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">2</span> &amp;&amp; N%<span class="number">2</span>==<span class="number">1</span>)</span><br><span class="line">    d_out[N<span class="number">-1</span>] = d_in[N<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector2</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">  threads = <span class="number">128</span>; </span><br><span class="line">  blocks = min((N/<span class="number">2</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS); </span><br><span class="line"></span><br><span class="line">  device_copy_vector2_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>This kernel has only a few changes. First, the loop now executes <span style="color:red">only N/2 times because each iteration processes two elements</span>. Second, we use the casting technique described above in the copy. Third, we handle any <span style="color:red">remaining elements</span> which may arise if N is not divisible by 2. Finally, we launch half as many threads as we did in the scalar kernel.</p>
+<p>Inspecting the SASS we see the following.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0088*/</span>                IMAD R10.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span>                IMAD.HI.X R11, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD R8.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x148</span>]             </span><br><span class="line"><span class="comment">/*00a0*/</span>                LD.E<span class="number">.64</span> R6, [R10]                                      </span><br><span class="line"><span class="comment">/*00a8*/</span>                IMAD.HI.X R9, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]           </span><br><span class="line"><span class="comment">/*00c8*/</span>                ST.E<span class="number">.64</span> [R8], R6</span><br></pre></td></tr></table></figure>
+<p>Notice that now the compiler generates LD.E.64 and ST.E.64. All the other instructions are the same. However, it is important to note that there will be half as many instructions executed because the loop only executes N/2 times. This 2x improvement in instruction count is very important in instruction-bound or latency-bound kernels.</p>
+<p>We can also write a vector4 version of the copy kernel.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector4_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span>(<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">4</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final elements (if there are any)</span></span><br><span class="line">  <span class="keyword">int</span> remainder = N%<span class="number">4</span>;</span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">4</span> &amp;&amp; remainder!=<span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">while</span>(remainder) &#123;</span><br><span class="line">      <span class="keyword">int</span> idx = N - remainder--;</span><br><span class="line">      d_out[idx] = d_in[idx];</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector4</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>;</span><br><span class="line">  <span class="keyword">int</span> blocks = min((N/<span class="number">4</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);</span><br><span class="line"></span><br><span class="line">  device_copy_vector4_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>The corresponding SASS is the following:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0090*/</span>                IMAD R10.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD.HI.X R11, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*00a0*/</span>                IMAD R8.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*00a8*/</span>                LD.E<span class="number">.128</span> R4, [R10]                               </span><br><span class="line"><span class="comment">/*00b0*/</span>                IMAD.HI.X R9, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]             </span><br><span class="line"><span class="comment">/*00d0*/</span>                ST.E<span class="number">.128</span> [R8], R4</span><br></pre></td></tr></table></figure>
+<p>Here we can see the generated LD.E.128 and ST.E.128. This version of the code has reduced the instruction count by a factor of 4.</p>
+<p>In almost all cases vectorized loads are preferable to scalar loads. Note however that using vectorized loads increases register pressure and reduces overall parallelism. So if you have a kernel that is already register limited or has very low parallelism, you may want to stick to scalar loads. Also, as discussed earlier, if your pointer is not aligned or your data type size in bytes is not a power of two you cannot use vectorized loads.</p>
+<p>Vectorized loads are a fundamental CUDA optimization that you should use when possible, because they increase bandwidth, reduce instruction count, and reduce latency. In this post, I’ve shown how you can easily incorporate vectorized loads into existing kernels with relatively few changes.</p>
+<hr>
+<p>原文作者Justin Luitjens 原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-increase-performance-with-vectorized-memory-access/" target="_blank" rel="noopener">链接</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/26/CUDA-Vectorized-Memory-Access/" data-id="ck5b5jb5g000013fz8l8v8m5o" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/27/CUDA-Unified-Memory/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-Unified Memory
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-更新线程ID</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CUDA/" style="font-size: 10px;">CUDA</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/">CUDA-Nsight Eclipse Edition</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/28/CUDA-overlap-data-transfer/">CUDA-overlap data transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

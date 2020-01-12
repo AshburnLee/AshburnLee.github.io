@@ -5,18 +5,19 @@
   
 
   
-  <title>Hello World | Hexo</title>
+  <title>CUDA-更新线程ID | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quick">
+  <meta name="description" content="更新 thread ID当数据个数 ≥ CUDA core 个数时，thread id 不用更新，一次同时习性完。 如我有2024个数据，而我的GPU每次可分配2048个threads。我的kernel配置&lt;&lt;&lt;1, 2048&gt;&gt;&gt;，那么2024个数据可以被2024个threads一次执行完毕，其中有24个threads空闲，因为因为没有多余的数据去处理。 如果">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Hello World">
-<meta property="og:url" content="http://yoursite.com/1970/01/01/hello-world/index.html">
+<meta property="og:title" content="CUDA-更新线程ID">
+<meta property="og:url" content="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quick">
+<meta property="og:description" content="更新 thread ID当数据个数 ≥ CUDA core 个数时，thread id 不用更新，一次同时习性完。 如我有2024个数据，而我的GPU每次可分配2048个threads。我的kernel配置&lt;&lt;&lt;1, 2048&gt;&gt;&gt;，那么2024个数据可以被2024个threads一次执行完毕，其中有24个threads空闲，因为因为没有多余的数据去处理。 如果">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="1970-01-01T00:00:00.000Z">
-<meta property="article:modified_time" content="2020-01-12T14:23:51.307Z">
+<meta property="article:published_time" content="2019-08-12T06:13:44.000Z">
+<meta property="article:modified_time" content="2020-01-12T15:06:24.442Z">
 <meta property="article:author" content="John Doe">
+<meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
@@ -66,12 +67,16 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main"><article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-CUDA-更新线程ID" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/1970/01/01/hello-world/" class="article-date">
-  <time datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" class="article-date">
+  <time datetime="2019-08-12T06:13:44.000Z" itemprop="datePublished">2019-08-12</time>
 </a>
     
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
   </div>
   <div class="article-inner">
     
@@ -80,7 +85,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      Hello World
+      CUDA-更新线程ID
     </h1>
   
 
@@ -88,41 +93,49 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
+        <h1 id="更新-thread-ID"><a href="#更新-thread-ID" class="headerlink" title="更新 thread ID"></a>更新 thread ID</h1><p>当数据个数 <code>≥ CUDA core</code> 个数时，<code>thread id</code> 不用更新，一次同时习性完。</p>
+<p>如我有2024个数据，而我的GPU每次可分配2048个threads。我的<code>kernel</code>配置<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>，那么2024个数据可以被2024个threads一次执行完毕，其中有24个threads空闲，因为因为没有多余的数据去处理。</p>
+<p>如果还是2024个数据，而我的GPU只允许用户一次配置512个threads。我的kernel配置是&lt;&lt;&lt;1, 512&gt;&gt;&gt;，一次是不能把数据全部处理完的。当第一次处理完后，还要3次threads的id更新，最后一次有24个threads空闲，因为没有多余出具需要被处理。</p>
+<p>kernel代码片段如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> id = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line"><span class="keyword">while</span>(id &lt; N)&#123;</span><br><span class="line">    <span class="comment">// TODO excute operation</span></span><br><span class="line">    id += blockDIm.x * gridDim.x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
+<p>其中<code>while()</code>判断当前thread的id需要更新多少次。</p>
+<ul>
+<li><p>对于<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>的kernel，处理2024个数据，其中<code>N=2024</code>。假如其中一个thread的起始<code>id</code>为0，干完活后，判断<code>0＜2024</code>，所以这个thread的<code>id</code>会被跟新为2048，此时再判断<code>2048＜2024</code>，返回<code>false</code>，这个thread的工作结束。thread的id未被更新。</p>
+</li>
+<li><p>对于&lt;&lt;&lt;1, 512&gt;&gt;&gt;的kernel，处理2024个数据， 其中N=2024。<br>仍假如有一个thread是起始id为0，判断0＜2024，执行操作。所以跟新id为512；<br>判断512＜2024，执行操作，再更新id为1024；<br>判断1024＜2024，执行操作，再更新id为1536；<br>判断1536＜2024，执行操作，再更新id为2048；<br>判断2048＜2024，返回false。该thread的工作结束。</p>
+</li>
+</ul>
+<p>期间这个thread的id被更新了4次，第4次更新玩后，并无操作。</p>
+<h1 id="Matrix-Transpose-理解id更新"><a href="#Matrix-Transpose-理解id更新" class="headerlink" title="Matrix Transpose 理解id更新"></a>Matrix Transpose 理解id更新</h1>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/1970/01/01/hello-world/" data-id="ck5b4gi3k0000vsfz70mu4hgm" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" data-id="ck5b5jb5l000313fza3eb3ow4" class="article-share-link">Share</a>
       
       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
     </footer>
   </div>
   
     
 <nav id="article-nav">
   
-    <a href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2019/11/26/CUDA-Vectorized-Memory-Access/" id="article-nav-newer" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Newer</strong>
       <div class="article-nav-title">
         
-          CUDA-基本步骤-逻辑概念-物理概念
+          CUDA:-Vectorized Memory Access
         
       </div>
     </a>
   
+  
+    <a href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-基本步骤-逻辑概念-物理概念</div>
+    </a>
   
 </nav>
 

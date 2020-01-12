@@ -473,6 +473,335 @@
 
 
   
+    <article id="post-CUDA-Unified-Memory" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/27/CUDA-Unified-Memory/" class="article-date">
+  <time datetime="2019-11-27T14:42:44.000Z" itemprop="datePublished">2019-11-27</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/27/CUDA-Unified-Memory/">CUDA-Unified Memory</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Unified-Memory"><a href="#Unified-Memory" class="headerlink" title="Unified Memory"></a>Unified Memory</h2><p>Unified Memory 是个逻辑概念，就像字面上所说，把Host内存和Device内存逻辑上放到一起，如此一来，对于程序员来说，就没有Host和Device之分了，表面上就更容易编写程序了。如下图所示。<br>“Unified Memory creates a pool of managed memory that is shared between the CPU and GPU, bridging the CPU-GPU divide. Managed memory is accessible to both the CPU and GPU using a single pointer. The key is that the system automatically migrates data allocated in Unified Memory between host and device so that it looks like CPU memory to code running on the CPU, and like GPU memory to code running on the GPU.”</p>
+<div align="center"><img src="/2019/11/27/CUDA-Unified-Memory/um.png"></div>
+如下是使用Unified memory一般情况：
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Allocate Unified Memory -- accessible from CPU or GPU</span></span><br><span class="line"><span class="keyword">float</span> *x, *y;</span><br><span class="line">cudaMallocManaged(&amp;x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">cudaMallocManaged(&amp;y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">...</span><br><span class="line">kernel&lt;&lt;&lt;grid, threads&gt;&gt;&gt;();</span><br><span class="line">cudaDeviceSynchronize()</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// Free memory</span></span><br><span class="line">cudaFree(x);</span><br><span class="line">cudaFree(y);</span><br></pre></td></tr></table></figure>
+<p>但是注意了，使用这种方式时，要加上<code>cudaDeviceSynchronize()</code>。保证<br>“Just one more thing: I need the CPU to wait until the kernel is done before it accesses the results (because CUDA kernel launches don’t block the calling CPU thread). To do this I just call <code>cudaDeviceSynchronize()</code> before doing the final error checking on the CPU.”</p>
+<p>这种方法使得在逻辑上，xy不区分是存在于host 还是存在于device</p>
+<p>原文作者Mark Harris<br>原文<a href="https://devblogs.nvidia.com/unified-memory-in-cuda-6/" target="_blank" rel="noopener">链接</a></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/27/CUDA-Unified-Memory/" data-id="ck5b5jb5o000513fzcg4w45fs" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-Vectorized-Memory-Access" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/26/CUDA-Vectorized-Memory-Access/" class="article-date">
+  <time datetime="2019-11-26T15:36:13.000Z" itemprop="datePublished">2019-11-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/26/CUDA-Vectorized-Memory-Access/">CUDA:-Vectorized Memory Access</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Increase-Performance-with-Vectorized-Memory-Access"><a href="#Increase-Performance-with-Vectorized-Memory-Access" class="headerlink" title="Increase Performance with Vectorized Memory Access"></a>Increase Performance with Vectorized Memory Access</h2><p>Many CUDA kernels are bandwidth bound, and the increasing ratio of flops to bandwidth in new hardware results in more bandwidth bound kernels. This makes it very important to take steps to mitigate bandwidth bottlenecks in your code. In this post, I will show you how to use vector loads and stores in CUDA C/C++ to help increase bandwidth utilization while decreasing the number of executed instructions.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_scalar_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123; </span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N; i += blockDim.x * gridDim.x) &#123; </span><br><span class="line">    d_out[i] = d_in[i]; </span><br><span class="line">  &#125; </span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_scalar</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>; </span><br><span class="line">  <span class="keyword">int</span> blocks = min((N + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);  </span><br><span class="line">  device_copy_scalar_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>We can inspect the assembly for this kernel using the cuobjdump tool included with the CUDA Toolkit.<code>%&gt; cuobjdump -sass executable</code>.<br>The SASS for the body of the scalar copy kernel is the following:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0058*/</span> IMAD R6.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x140</span>]                </span><br><span class="line"><span class="comment">/*0060*/</span> IMAD.HI.X R7, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x144</span>]              </span><br><span class="line"><span class="comment">/*0068*/</span> IMAD R4.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*0070*/</span> LD.E R2, [R6]                                   </span><br><span class="line"><span class="comment">/*0078*/</span> IMAD.HI.X R5, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span> ST.E [R4], R2</span><br></pre></td></tr></table></figure>
+
+<p>Here we can see a total of six instructions associated with the copy operation. The four <code>IMAD</code> instructions compute the load and store addresses and the <code>LD.E</code> and <code>ST.E</code> load and store 32 bits from those addresses.</p>
+<p>We can improve performance of this operation by using the vectorized load and store instructions <code>LD.E.{64,128}</code> and <code>ST.E.{64,128}</code>. </p>
+<p>These operations also load and store data but do so in 64- or 128-bit widths. Using vectorized loads reduces the total number of instructions, reduces latency, and improves bandwidth utilization.</p>
+<p>The easiest way to use vectorized loads is to use the vector data types defined in the CUDA C/C++ standard headers, such as <code>int2</code>, <code>int4</code>, or <code>float2</code>. You can easily use these types via type casting in C/C++. For example in C++ you can recast the <code>int</code> pointer <code>d_in</code> to an <code>int2</code> pointer using <code>reinterpret_cast&lt;int2*&gt;(d_in)</code>. In C99 you can do the same thing using the casting operator: <code>(int2*(d_in))</code>.</p>
+<p>Dereferencing those pointers will cause the compiler to generate the vectorized instructions. However, there is one important caveat: these instructions require aligned data. Device-allocated memory is automatically aligned to a multiple of the size of the data type, but if you offset the pointer the offset must also be aligned. For example <code>reinterpret_cast&lt;int2*&gt;(d_in+1)</code> is invalid because <code>d_in+1</code> is not aligned to a multiple of <code>sizeof(int2)</code>.</p>
+<p>You can safely offset arrays if you use an “aligned” offset, as in <code>reinterpret_cast&lt;int2*&gt;(d_in+2)</code>. You can also generate vectorized loads using structures as long as the structure is a power of two bytes in size.</p>
+<p>Now that we have seen how to generate vectorized instructions let’s modify the memory copy kernel to use vector loads.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector2_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">2</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final element (if there is one)</span></span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">2</span> &amp;&amp; N%<span class="number">2</span>==<span class="number">1</span>)</span><br><span class="line">    d_out[N<span class="number">-1</span>] = d_in[N<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector2</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">  threads = <span class="number">128</span>; </span><br><span class="line">  blocks = min((N/<span class="number">2</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS); </span><br><span class="line"></span><br><span class="line">  device_copy_vector2_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>This kernel has only a few changes. First, the loop now executes <span style="color:red">only N/2 times because each iteration processes two elements</span>. Second, we use the casting technique described above in the copy. Third, we handle any <span style="color:red">remaining elements</span> which may arise if N is not divisible by 2. Finally, we launch half as many threads as we did in the scalar kernel.</p>
+<p>Inspecting the SASS we see the following.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0088*/</span>                IMAD R10.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span>                IMAD.HI.X R11, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD R8.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x148</span>]             </span><br><span class="line"><span class="comment">/*00a0*/</span>                LD.E<span class="number">.64</span> R6, [R10]                                      </span><br><span class="line"><span class="comment">/*00a8*/</span>                IMAD.HI.X R9, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]           </span><br><span class="line"><span class="comment">/*00c8*/</span>                ST.E<span class="number">.64</span> [R8], R6</span><br></pre></td></tr></table></figure>
+<p>Notice that now the compiler generates LD.E.64 and ST.E.64. All the other instructions are the same. However, it is important to note that there will be half as many instructions executed because the loop only executes N/2 times. This 2x improvement in instruction count is very important in instruction-bound or latency-bound kernels.</p>
+<p>We can also write a vector4 version of the copy kernel.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector4_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span>(<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">4</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final elements (if there are any)</span></span><br><span class="line">  <span class="keyword">int</span> remainder = N%<span class="number">4</span>;</span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">4</span> &amp;&amp; remainder!=<span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">while</span>(remainder) &#123;</span><br><span class="line">      <span class="keyword">int</span> idx = N - remainder--;</span><br><span class="line">      d_out[idx] = d_in[idx];</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector4</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>;</span><br><span class="line">  <span class="keyword">int</span> blocks = min((N/<span class="number">4</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);</span><br><span class="line"></span><br><span class="line">  device_copy_vector4_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>The corresponding SASS is the following:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0090*/</span>                IMAD R10.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD.HI.X R11, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*00a0*/</span>                IMAD R8.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*00a8*/</span>                LD.E<span class="number">.128</span> R4, [R10]                               </span><br><span class="line"><span class="comment">/*00b0*/</span>                IMAD.HI.X R9, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]             </span><br><span class="line"><span class="comment">/*00d0*/</span>                ST.E<span class="number">.128</span> [R8], R4</span><br></pre></td></tr></table></figure>
+<p>Here we can see the generated LD.E.128 and ST.E.128. This version of the code has reduced the instruction count by a factor of 4.</p>
+<p>In almost all cases vectorized loads are preferable to scalar loads. Note however that using vectorized loads increases register pressure and reduces overall parallelism. So if you have a kernel that is already register limited or has very low parallelism, you may want to stick to scalar loads. Also, as discussed earlier, if your pointer is not aligned or your data type size in bytes is not a power of two you cannot use vectorized loads.</p>
+<p>Vectorized loads are a fundamental CUDA optimization that you should use when possible, because they increase bandwidth, reduce instruction count, and reduce latency. In this post, I’ve shown how you can easily incorporate vectorized loads into existing kernels with relatively few changes.</p>
+<hr>
+<p>原文作者Justin Luitjens 原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-increase-performance-with-vectorized-memory-access/" target="_blank" rel="noopener">链接</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/26/CUDA-Vectorized-Memory-Access/" data-id="ck5b5jb5g000013fz8l8v8m5o" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-更新线程ID" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" class="article-date">
+  <time datetime="2019-08-12T06:13:44.000Z" itemprop="datePublished">2019-08-12</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/">CUDA-更新线程ID</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="更新-thread-ID"><a href="#更新-thread-ID" class="headerlink" title="更新 thread ID"></a>更新 thread ID</h1><p>当数据个数 <code>≥ CUDA core</code> 个数时，<code>thread id</code> 不用更新，一次同时习性完。</p>
+<p>如我有2024个数据，而我的GPU每次可分配2048个threads。我的<code>kernel</code>配置<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>，那么2024个数据可以被2024个threads一次执行完毕，其中有24个threads空闲，因为因为没有多余的数据去处理。</p>
+<p>如果还是2024个数据，而我的GPU只允许用户一次配置512个threads。我的kernel配置是&lt;&lt;&lt;1, 512&gt;&gt;&gt;，一次是不能把数据全部处理完的。当第一次处理完后，还要3次threads的id更新，最后一次有24个threads空闲，因为没有多余出具需要被处理。</p>
+<p>kernel代码片段如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> id = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line"><span class="keyword">while</span>(id &lt; N)&#123;</span><br><span class="line">    <span class="comment">// TODO excute operation</span></span><br><span class="line">    id += blockDIm.x * gridDim.x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>while()</code>判断当前thread的id需要更新多少次。</p>
+<ul>
+<li><p>对于<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>的kernel，处理2024个数据，其中<code>N=2024</code>。假如其中一个thread的起始<code>id</code>为0，干完活后，判断<code>0＜2024</code>，所以这个thread的<code>id</code>会被跟新为2048，此时再判断<code>2048＜2024</code>，返回<code>false</code>，这个thread的工作结束。thread的id未被更新。</p>
+</li>
+<li><p>对于&lt;&lt;&lt;1, 512&gt;&gt;&gt;的kernel，处理2024个数据， 其中N=2024。<br>仍假如有一个thread是起始id为0，判断0＜2024，执行操作。所以跟新id为512；<br>判断512＜2024，执行操作，再更新id为1024；<br>判断1024＜2024，执行操作，再更新id为1536；<br>判断1536＜2024，执行操作，再更新id为2048；<br>判断2048＜2024，返回false。该thread的工作结束。</p>
+</li>
+</ul>
+<p>期间这个thread的id被更新了4次，第4次更新玩后，并无操作。</p>
+<h1 id="Matrix-Transpose-理解id更新"><a href="#Matrix-Transpose-理解id更新" class="headerlink" title="Matrix Transpose 理解id更新"></a>Matrix Transpose 理解id更新</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" data-id="ck5b5jb5l000313fza3eb3ow4" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-基本步骤-逻辑概念-物理概念" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" class="article-date">
+  <time datetime="2019-08-10T13:03:23.000Z" itemprop="datePublished">2019-08-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/">CUDA-基本步骤-逻辑概念-物理概念</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="一个实例"><a href="#一个实例" class="headerlink" title="一个实例"></a>一个实例</h2><p>检查环境：</p>
+<ul>
+<li><code>nvcc -V</code>：CUDA编译器是否安装</li>
+<li><code>nvidia-smi</code>：显卡驱动是否安装</li>
+</ul>
+<p>cuda代码文件以<code>.cu</code>结尾，当写好一个文件后，使用NVIDIA 的编译器编译 <code>nvcc FILE-NAME.cu</code>，后<code>./FILE-NAME</code>执行。</p>
+<p>从一个实例讲起：<br>两个向量相加，结果存入另一个向量。<br>代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 1&lt;&lt;10  </span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ARRAY_BYTES N*sizeof(float)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 1) add __global__ to kernel, AKA device code</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">float</span>* x, <span class="keyword">float</span>* y, <span class="keyword">float</span>* z)</span></span>&#123;  </span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">	<span class="keyword">if</span> (tid &lt; N)&#123;</span><br><span class="line">		z[tid] = x[tid] + y[tid];</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//host code (runs on cpu)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//allocate mem on steak for a,b,c </span></span><br><span class="line">	<span class="keyword">float</span> h_a[N], h_b[N], h_c[N];</span><br><span class="line"></span><br><span class="line">	<span class="comment">//declare pointers in gpu   </span></span><br><span class="line">	<span class="keyword">float</span> *dev_a, *dev_b, *dev_c;  </span><br><span class="line"></span><br><span class="line">	<span class="comment">//allocate mem in gpu </span></span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_a, ARRAY_BYTES);</span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_b, ARRAY_BYTES);</span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_c, ARRAY_BYTES);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//initialize a, b  arrays in the host</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)&#123;</span><br><span class="line">		h_a[i] = i * <span class="number">1.0f</span>;</span><br><span class="line">		h_b[i] = i * <span class="number">2.0f</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//copy a, b to gpu</span></span><br><span class="line">	cudaMemcpy(dev_a, h_a, ARRAY_BYTES, cudaMemcpyHostToDevice);</span><br><span class="line">	cudaMemcpy(dev_b, h_b, ARRAY_BYTES, cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//run kernel on 1M elements on the CPU</span></span><br><span class="line">	add&lt;&lt;&lt;<span class="number">1</span>, <span class="number">1024</span>&gt;&gt;&gt;(dev_a, dev_b, dev_c);  <span class="comment">//one block and 1024 threads</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//copy c back from gpu</span></span><br><span class="line">	cudaMemcpy(h_c, dev_c ,ARRAY_BYTES, cudaMemcpyDeviceToHost);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//display results</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"%f + %f = %f \n"</span>, h_a[i], h_b[i], h_c[i]);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//2) free memory</span></span><br><span class="line">	cudaFree(dev_a);</span><br><span class="line">	cudaFree(dev_b);</span><br><span class="line">	cudaFree(dev_c);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//new &amp; delete go together. </span></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码包含了CUDA代码的一般步骤：</p>
+<ul>
+<li><p>1）声明所需指针在GPU，并且在GPU上开辟空间， 使用函数<code>cudaMalloc()</code></p>
+</li>
+<li><p>2）从CPU拷贝所需内容到GPU的内存中，使用函数<code>cudaMemcpy()</code></p>
+</li>
+<li><p>3）配置核函数，并执行操作。该函数在main函数之外，以<code>__global__</code>开头</p>
+</li>
+<li><p>4）把GPU上计算得到的结果拷贝回RAM，使用函数<code>cudaMemcpy()</code></p>
+</li>
+<li><p>5）释放VRAM中的空间</p>
+  <div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/main-process.png" width="600"></div>
+
+
+</li>
+</ul>
+<pre><code>从两个维度理解CUDA基本概念</code></pre><ul>
+<li><strong>物理层</strong></li>
+<li><strong>逻辑层</strong></li>
+</ul>
+<h2 id="物理概念"><a href="#物理概念" class="headerlink" title="物理概念"></a>物理概念</h2><p>CUDA中的两个对象：Host，Device</p>
+<ul>
+<li>Host 包括 CPU 和内存 DRAM</li>
+<li>Device 包括 GPU 和存在与其上的存储 VRAM</li>
+</ul>
+<p>VRAM 是 off-chip memory，即不在芯片上。由三部分组成：Global Memory，Texture Memory 和 Constant Memory。其中后二者为 read-only。<br>GPU 芯片上的 memory 包括 Registers，l1-cache, 和 Shared Memory。</p>
+<p>每个 GPU 芯片拥有一组不同的 memory，如上述。其中最重要的两个是 Global Memory 和 Shared Memory。<br>Global Memory 类似CPU系统的 RAM，Shared Memory 相当于CPU的片内缓存。</p>
+<p>Host 和 Device 由北桥芯片连接：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/host-device.png" width="500"></div>
+
+<p>对于CUDA编程，你需要负责以下内容：</p>
+<p>1) 在 GPU memory 上开辟空间<br>2) 拷贝数据从CPU上到GPU上<br>3) 在GPU上执行 kernel 代码<br>4) 再把结果从GPU上考回CPU<br>5) 协调Host 和 Device中的操作</p>
+<p>使用GPU编程时，要从 MIMD(Multiple Instructions Multiple Data) 的思考形式转变到 SIMD(Single Instruction Multiple Data)，在CUDA 中，每个核心执行的代码指令都是一样的，所以说是Single。</p>
+<p>CUDA 提供的重要功能：组织线程，memory access。</p>
+<p>与CUDA并行编程的代码分为两部分：</p>
+<ul>
+<li>Host 部分代码由 ANSI C 来完成</li>
+<li>Device 部分由 CUDA C 来完成</li>
+</ul>
+<p>知道怎样组织 threads 在使用 CUDA 是十分重要的。</p>
+<h2 id="逻辑概念"><a href="#逻辑概念" class="headerlink" title="逻辑概念"></a>逻辑概念</h2><p>在一个 grid 中所有的 thread 共享相同的 Global Memory。来自不同 block 的 threads 不能相互交流。即属于同一个 block 的 thread 可以相互交流。   </p>
+<ul>
+<li>threadIdx.x: 每个 block 中 x 方向 thread 的 id</li>
+<li>threadIdx.y: 每个 block 中 y 方向 thread 的 id</li>
+<li>threadIdx.z: 每个 block 中 z 方向 thread 的 id</li>
+</ul>
+<ul>
+<li>blockIdx.x: 每个 block 的 x 方向上所含的 id</li>
+<li>blockIdx.y: 每个 block 的 y 方向上所含的 id</li>
+<li>blockIdx.z: 每个 block 的 z 方向上所含的 id</li>
+</ul>
+<ul>
+<li>blockDim.x: 每个 block 的 x 方向上所含的 thread 数</li>
+<li>blockDim.y: 每个 block 的 y 方向上所含的 thread 数</li>
+<li>blockDim.z: 每个 block 的 z 方向上所含的 thread 数</li>
+</ul>
+<ul>
+<li>gridDim.x: 每个 grid 的 x 方向上的 block 数</li>
+<li>gridDim.y: 每个 grid 的 y 方向上的 block 数</li>
+<li>gridDim.z: 每个 grid 的 z 方向上的 block 数</li>
+</ul>
+<p>grids 和 blocks 使用 dim3 数据类型。 当给了数据的大小，如何决定 grid &amp; block 的维度。</p>
+<ul>
+<li>1）先决定 block 大小，即每个 block 由多少 threads，</li>
+<li>2）然后根据数据大小和 block 大小，计算 grid dim。</li>
+</ul>
+<p>为了得到 block dim，考虑两点：</p>
+<ul>
+<li>1）kernel 的性能特点</li>
+<li>2）GPU的物理极限<ul>
+<li>我的芯片的数据：</li>
+</ul>
+</li>
+</ul>
+<p>func&lt;&lt;&lt;32, 1024&gt;&gt;&gt;()：</p>
+<ul>
+<li>32：block 的数量为32个</li>
+<li>1024：每一个 block 的 thread 数为1024个</li>
+</ul>
+<p>为了配置 kernel 你需要知道：</p>
+<ul>
+<li>1）kernel 的 thread 总数</li>
+<li>2）这些 threads 的分布：block &amp; grid 的维数，每个 block 由多少 threads</li>
+</ul>
+<p>举例子：<br>假如我想使用32个threads，我想 配置一个<em>1D grid 1D block</em> kernel func&lt;&lt;&lt;4, 8&gt;&gt;&gt;()，其 thread 分布是：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/1d.png"></div>
+
+<p><strong>32个 threads 决定了会有32 份func()的拷贝，每一份由一个thread 执行，唯一不同的是每一个thread 的ID</strong>，这样计算：<br><code>idx=threadIdx.x + blockDim.x * blockIdx.x</code>。<br>如第二个block的第一个thread 的ID是 <code>0+8*1=8</code>，最后一个thread的ID是<code>7+8*3=31</code>，所以，这个配置中的所有threads由唯一的ID：<code>0~31</code>。</p>
+<p>再如：<em>2D grid，2D block</em> kernel：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">dim3 <span class="title">threads</span><span class="params">(<span class="number">2</span>, <span class="number">4</span>)</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">blocks</span><span class="params">(<span class="number">2</span>, <span class="number">4</span>)</span></span></span><br><span class="line">func&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>下图是所有相关的参数，及怎样得到每个 thread 的 ID：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/2d-2d.png"></div>
+其中每个矩形代表一个 block：blockDim.x=4，blockDim.y=2。每个 block 中的 thread 的组织是4行2列。
+
+<p>更多kernel的配置：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/more-configure.png" width="600"></div>
+
+<p>其中矩形表示一个block，相邻blocks组织成grid。</p>
+<p>核心概念：<br>grid 由 block 组成，可以是1D，2D，和3D。<br>block 由 thread 组成，也可以是1D，2D，和3D。<br>根据具体问题，选择 block/grid 的维度。一般来说：<br>1D 适用于 vector 操作<br>2D 适用于 images<br>3D 适用于 3D space</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" data-id="ck5b5jb5j000113fz02qv4nzl" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/1970/01/01/hello-world/" class="article-date">
@@ -561,7 +890,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
     </div>
   </div>
 
