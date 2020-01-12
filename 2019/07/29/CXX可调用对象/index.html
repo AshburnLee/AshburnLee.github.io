@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CXX可调用对象 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="这篇笔记记录function模板与含有相同调用形式的可调用对象。 c++中有一些可调用对象  函数 函数指针 lambda bind创建的对象 重载了函数调用运算符的类  比如下面三个函数add, mod, divide 1234567891011121314151617#include &lt;iostream&gt;#include &lt;functional&gt;#inlcude &amp;lt">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CXX可调用对象">
+<meta property="og:url" content="http://yoursite.com/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="这篇笔记记录function模板与含有相同调用形式的可调用对象。 c++中有一些可调用对象  函数 函数指针 lambda bind创建的对象 重载了函数调用运算符的类  比如下面三个函数add, mod, divide 1234567891011121314151617#include &lt;iostream&gt;#include &lt;functional&gt;#inlcude &amp;lt">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-07-29T07:16:11.000Z">
+<meta property="article:modified_time" content="2020-01-12T17:54:38.008Z">
+<meta property="article:author" content="Junhui">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CXX可调用对象" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/" class="article-date">
+  <time datetime="2019-07-29T07:16:11.000Z" itemprop="datePublished">2019-07-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CXX可调用对象
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录function模板与含有相同调用形式的可调用对象。</p>
+<p>c++中有一些可调用对象</p>
+<ul>
+<li>函数</li>
+<li>函数指针</li>
+<li>lambda</li>
+<li>bind创建的对象</li>
+<li>重载了函数调用运算符的类</li>
+</ul>
+<p>比如下面三个函数add, mod, divide</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#inlcude <span class="meta-string">&lt;unordered_map&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//一般函数</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span>  b)</span></span>&#123; <span class="keyword">return</span> a+b; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//命名的lambda函数</span></span><br><span class="line"><span class="keyword">auto</span> mod = [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a%b; &#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//重载了调用运算符的类，又称作函数对象</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">divide</span>&#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">int</span> denomenator, <span class="keyword">int</span> divisor)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> denomenator/divisor; </span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>三个不同可调用对象：普通函数<code>add</code>，命名了的<code>lambda</code>对象<code>mod</code>，函数对象(<code>function object</code>)<code>divide</code> 拥有相同的<font color="red">调用形式(<code>call signature</code>)</font>.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> (<span class="keyword">int</span>, <span class="keyword">int</span>)   <span class="comment">//表示传入两个int型，返回一个int型</span></span><br></pre></td></tr></table></figure>
+
+<p>而模板类<code>function</code>使用时需要指定类型，如上述调用形式。如此可以定义多个<code>function</code>对象</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f1 = add;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f2 = divide();    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f3 = [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a%b; &#125;;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f4 = mod;    </span><br><span class="line">        </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f1(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f2(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f3(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f4(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来, 可以构建从算数符号到函数的映射，如</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//加入main中</span></span><br><span class="line">   <span class="built_in">unordered_map</span>&lt;<span class="built_in">string</span>, function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>,<span class="keyword">int</span>)&gt;&gt; calculator = &#123;</span><br><span class="line">       &#123;<span class="string">"+"</span>, add&#125;,                                <span class="comment">//函数指针</span></span><br><span class="line">       &#123;<span class="string">"-"</span>, <span class="built_in">std</span>::minus&lt;<span class="keyword">int</span>&gt;()&#125;,                  <span class="comment">//STL函数            </span></span><br><span class="line">       &#123;<span class="string">"*"</span>, [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a*b; &#125;&#125;,    <span class="comment">//匿名lambda函数</span></span><br><span class="line">       &#123;<span class="string">"/"</span>, divide()&#125;,                           <span class="comment">//函数对象</span></span><br><span class="line">       &#123;<span class="string">"%"</span>, mod&#125; &#125;;                              <span class="comment">//命名的lambda函数</span></span><br><span class="line"></span><br><span class="line">   calculator[<span class="string">"+"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"-"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"*"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"/"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"%"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br></pre></td></tr></table></figure>
+
+<p>如同<code>vector&lt;int&gt;</code>可以作为容器内容的类型，此处只不过用<code>function&lt;int(int,int)&gt;</code>作为了map的val类型。</p>
+<p>结束<br>c++可调用对象</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/" data-id="ck5bbuog40015a2fz2s1038ox" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          LeetCode-方法论-Floyd&#39;s Algorithm
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/07/29/cmake%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E5%8F%8ACMakeLists-txt%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">cmake编译工具及CMakeLists.txt的基本使用</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">7</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">17</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 10px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/01/13/Trouble-Shooting/">Trouble-Shooting</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/">汇总ShortCuts</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/">Linux安装cuDNN</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/">LeetCode-方法论-DP-二</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/">LeetCode-方法论-map&amp;set-二</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

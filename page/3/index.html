@@ -64,6 +64,263 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-理解线程ID" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/" class="article-date">
+  <time datetime="2019-10-06T02:51:01.000Z" itemprop="datePublished">2019-10-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/">CUDA-理解线程ID</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="理解线程ID"><a href="#理解线程ID" class="headerlink" title="理解线程ID"></a>理解线程ID</h1><p>从线程逻辑结构上讲，所有线程有三层结构：threads，blocks，grids。每一层有三个维度：x，y，z。下面小例子展示了CUDA是怎样给不同的threads编号的：</p>
+<p>假如我配置的kernel如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> nElem = <span class="number">6</span>;</span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">3</span>)</span></span>;</span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">((nElem + block.x - <span class="number">1</span>) / block.x)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>grid中结果为2，所以在kernel中：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">checkDeviceIndex &lt;&lt;&lt; grid, block &gt;&gt;&gt;();</span><br></pre></td></tr></table></figure>
+<p>grid处为2，block处为3，即<code>&lt;&lt;&lt;2, 3&gt;&gt;&gt;</code>. 表示<strong>有2个blocks，每个blocks中有3个threads</strong>。其结构如下图：</p>
+<div align="center"><img src="/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/config.png" width="800"></div>
+
+<p>一个蓝色矩形表示一个block，一个曲线箭头表示一个thread，在本例中一个grid由两个blocks 组成。</p>
+<p>解释为：<br>对于grid<br>在x方向为2，表示在x方向由2个blocks。<br>y方向为1，表示在y方向上有1个block。<br>z方向为1，表示在z方向有1个block。</p>
+<p>对于block<br>在x方向为2，表示在x方向上有3个threads。<br>y方向为1，表示在y方向上有1个thread。<br>在方向为1，表示在z方向上有1个thread。</p>
+<p>threads是构成blocks和grids的最小单位，也是执行操作的最小单位。</p>
+<p>从执行结上检验上述：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">"grid.x %d grid.y %d grid.z %d \n"</span>, grid.x, grid.y, grid.z);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"block.x %d block.y %d block.z %d \n"</span>, block.x, block.y, block.z);</span><br></pre></td></tr></table></figure>
+<p>结果为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">grid.x=<span class="number">2</span> grid.y=<span class="number">1</span> grid.z=<span class="number">1</span> </span><br><span class="line">block.x=<span class="number">3</span> block.y=<span class="number">1</span> block.z=<span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>与上述描述相符。</p>
+<p>那么在kernel中是如何编号的呢！设计kernel：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">checkDeviceIndex</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"threadIdx:(%d, %d, %d)\n"</span>, threadIdx.x, threadIdx.y, threadIdx.z);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"blockIdx:(%d, %d, %d)\n"</span>, blockIdx.x, blockIdx.y, blockIdx.z);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"blockDim:(%d, %d, %d)\n"</span>, blockDim.x, blockDim.y, blockDim.z);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"gridDim:(%d, %d, %d)\n"</span>, gridDim.x, gridDim.y, gridDim.z);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>表示每一个thread都会打印4条信息，共有2*3=6个threads。结果为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">threadIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p>根据threads ID的计算公式：<code>int tid = threadIdx.x + blockIdx.x * blockDim.x</code><br>可以得到6个threads的ID分别是：<br>0 + 0 × 3 = 0，<br>1 + 0 × 3 = 1，<br>2 + 0 × 3 = 2，<br>0 + 1 × 3 = 3，<br>1 + 1 × 3 = 4，<br>2 + 1 × 3 = 5，</p>
+<p>可以看出，CUDA kernel是根据公式给每一个threads编号的，保证每个threads有唯一的ID。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/" data-id="ck5bbuog30012a2fzheab6t1d" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-几点要记住-更新ID" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/" class="article-date">
+  <time datetime="2019-10-04T13:14:31.000Z" itemprop="datePublished">2019-10-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/">CUDA-几点要记住-更新ID</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Bare-in-mind"><a href="#Bare-in-mind" class="headerlink" title="Bare in mind:"></a>Bare in mind:</h1><ul>
+<li>不管你的数据是一维的二维的还是更高维度的，在GPU端，高维被扁平化，都将被看成一维的，所以么有必要在Device上开辟，比如，一个二维数组。</li>
+<li>CUDA code 需要你并行地思考：<code>Think parallel</code>. </li>
+<li>当你在写CUDA code， 实际上你是在为一个thread 写串行code，而每一个thread都执行这个段相同的串行code。看下图体会。</li>
+<li>可以这样理解，对于简单问题，把CPU code的for 循环去掉，其实就得到了GPU code。每个thread 有自己唯一的ID，其他都一样。<div align="center"><img src="/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/parallel.png" width="800"></div>
+
+</li>
+</ul>
+<h1 id="配置kernel"><a href="#配置kernel" class="headerlink" title="配置kernel"></a>配置kernel</h1><ul>
+<li><p>当GPU可用的thread非常多，而当前所需解决的任务规模并不大时，可以一次invoke 足量的threads，这样便不用更新threads ID。如下：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 1&lt;&lt;7</span></span><br><span class="line">...</span><br><span class="line">	<span class="function"><span class="keyword">int</span> <span class="title">block</span><span class="params">(<span class="number">1024</span>)</span></span>;</span><br><span class="line">	<span class="function"><span class="keyword">int</span> <span class="title">grid</span> <span class="params">((N + block.x - <span class="number">1</span>) / block.x )</span></span>;</span><br><span class="line"></span><br><span class="line">	kernal_func &lt;&lt;&lt;grid, block &gt;&gt;&gt;(d_c, d_a, d_b);</span><br></pre></td></tr></table></figure>
+
+<p>  或者二维的configuration：</p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 1&lt;&lt;7</span></span><br><span class="line">...</span><br><span class="line">	<span class="function">dim3 <span class="title">block</span> <span class="params">(<span class="number">1024</span>, <span class="number">1024</span>)</span></span>;</span><br><span class="line">	<span class="function">dim3 <span class="title">grid</span> <span class="params">(( N + block.x <span class="number">-1</span>) / block.x, (N + block.y <span class="number">-1</span>) / block.y )</span></span>;</span><br><span class="line"></span><br><span class="line">	kernel_func &lt;&lt;&lt;grid, block &gt;&gt;&gt;(dev_m, dev_mt);</span><br></pre></td></tr></table></figure>
+
+<p>  当然所有的configuration都应该在你的GPU硬件极限内。</p>
+</li>
+<li><p>当数据量很大时，所有CUDA cores 就需要工作不止一波，第一波后，就需要更新threads ID 继续工作下一波：</p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> *a, <span class="keyword">int</span> *b, <span class="keyword">int</span> *c)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">	<span class="keyword">while</span> (tid &lt; N) &#123;</span><br><span class="line">		c[tid] = a[tid] + b[tid];</span><br><span class="line">		<span class="comment">// OPERATIONS</span></span><br><span class="line">		tid += blockDim.x * gridDim.x;     <span class="comment">// update id when #threads are less than #elements </span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  此处的<code>while</code>循环 表示，只要threads ID 还小于元素个数N，就更新ID。</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/" data-id="ck5bbuofw000qa2fz40rbam51" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-Linux下计时器-GPU信息-Device函数修饰词" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/04/CUDA-Linux%E4%B8%8B%E8%AE%A1%E6%97%B6%E5%99%A8-GPU%E4%BF%A1%E6%81%AF-Device%E5%87%BD%E6%95%B0%E4%BF%AE%E9%A5%B0%E8%AF%8D/" class="article-date">
+  <time datetime="2019-10-04T11:24:26.000Z" itemprop="datePublished">2019-10-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/10/04/CUDA-Linux%E4%B8%8B%E8%AE%A1%E6%97%B6%E5%99%A8-GPU%E4%BF%A1%E6%81%AF-Device%E5%87%BD%E6%95%B0%E4%BF%AE%E9%A5%B0%E8%AF%8D/">CUDA-Linux下计时器-GPU信息-Device函数修饰词</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="CUDA-中修饰函数的三个修饰词"><a href="#CUDA-中修饰函数的三个修饰词" class="headerlink" title="CUDA 中修饰函数的三个修饰词"></a>CUDA 中修饰函数的三个修饰词</h1><p><code>__global__</code> : 此函数由CPU调用，在GPU端执行。可调用自身或者两一个<strong>global</strong>函数。</p>
+<p><code>__host__</code>: 此函数由CPU调用，在CPU端执行。一般默认省略。在CPU端只能调用<strong>global</strong>函数，不能调用<strong>device</strong>函数。</p>
+<p><code>__device__</code> : 此函数由GPU调用，在GPU端执行。只能由<strong>global</strong>函数或<strong>device</strong>函数调用。可调用<strong>device</strong>函数。</p>
+<h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//add 1 for each element in the vector. </span></span><br><span class="line"><span class="comment">//__device__ functions can be called by __gloable__  functions</span></span><br><span class="line">__<span class="function">device__ <span class="keyword">void</span> <span class="title">addOne</span><span class="params">(<span class="keyword">float</span>&amp; z)</span></span>&#123;</span><br><span class="line">	z += <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// add yourself to you </span></span><br><span class="line"><span class="comment">//__device__fucntions can be called by __device__ functions</span></span><br><span class="line">__<span class="function">device__ <span class="keyword">void</span> <span class="title">addSelf</span><span class="params">(<span class="keyword">float</span>&amp; z)</span></span>&#123;</span><br><span class="line">	z += z;</span><br><span class="line">	addOne(z);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1) add __global__ to kernel, AKA device code</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">const</span> <span class="keyword">float</span>* x, <span class="keyword">const</span> <span class="keyword">float</span>* y, <span class="keyword">float</span>* z)</span></span>&#123;  </span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tid &lt; N)&#123;</span><br><span class="line">		z[tid] = x[tid] + y[tid];</span><br><span class="line">		addSelf(z[tid]);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">体会`Think Parallel`</span><br></pre></td></tr></table></figure>
+
+<p>在CPU端， 只能调用add()。在add() 函数中，对于每一个线程，除了元素求和之外，还调用了addSelf() 函数。因为addSelf() 由<code>__device__</code>修饰，所以可以被add() 函数调用。</p>
+<p>在addSelf() 函数中，每个元素自己加上自己，后调用了另一个<code>__device__</code>函数： addOne()：元素加一。</p>
+<h1 id="Linux-下的计时器"><a href="#Linux-下的计时器" class="headerlink" title="Linux 下的计时器"></a>Linux 下的计时器</h1><p>在<code>&lt;sys/time.h&gt;</code>中：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">cpuSecond</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">tp</span>;</span></span><br><span class="line">	gettimeofday(&amp;tp,<span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">return</span> ((<span class="keyword">double</span>)tp.tv_sec + (<span class="keyword">double</span>)tp.tv_usec*<span class="number">1.e-6</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="keyword">double</span> iStart = cpuSecond();</span><br><span class="line">    <span class="comment">// Do what ever you want here</span></span><br><span class="line">	<span class="keyword">double</span> iElaps = cpuSecond() - iStart;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"time: %.10f \n"</span>, iElaps);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="获得当前使用GPU的信息"><a href="#获得当前使用GPU的信息" class="headerlink" title="获得当前使用GPU的信息"></a>获得当前使用GPU的信息</h1><p>这应当是写CUDA code的第一步，了解你所用工具的基本信息。</p>
+<p>当机器由不止一个GPU时，需要知道当前由多少个GPU，默认使用哪一个，指定使用哪一个。</p>
+<ul>
+<li><p>可使用（CUDA-enabled）的GPU个数: <code>cudaGetDeviceCount()</code></p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> deviceCount = <span class="number">0</span>;</span><br><span class="line">cudaError_t error_id = cudaGetDeviceCount(&amp;deviceCount);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"Device number: %d\n"</span>, deviceCount);</span><br></pre></td></tr></table></figure>
+
+<p>  GPU个数存在<code>deviceCount</code>中， 此时可以使用循环来打印各个GPU的信息：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (dev = <span class="number">0</span>; dev &lt; deviceCount; ++dev) &#123;  </span><br><span class="line">	cudaSetDevice(dev);            <span class="comment">// 制定使用索引为dev的GPU</span></span><br><span class="line">	cudaDeviceProp deviceProp;      <span class="comment">// 创建一个property对象</span></span><br><span class="line">	cudaGetDeviceProperties(&amp;deviceProp, dev);   <span class="comment">//得到这个GPU的property</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"\nDevice %d: \"%s\"\n"</span>, dev, deviceProp.name);</span><br><span class="line">	cudaDriverGetVersion(&amp;driverVersion);</span><br><span class="line">	cudaRuntimeGetVersion(&amp;runtimeVersion);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"  CUDA Driver Version / Runtime Version          %d.%d / %d.%d\n"</span>, </span><br><span class="line">		driverVersion / <span class="number">1000</span>, (driverVersion % <span class="number">100</span>) / <span class="number">10</span>, runtimeVersion / <span class="number">1000</span>, (runtimeVersion % <span class="number">100</span>) / <span class="number">10</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"  CUDA Capability Major/Minor version number:    %d.%d\n"</span>, </span><br><span class="line">		deviceProp.major, deviceProp.minor);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>当前使用哪一个GPU: <code>cudaGetDevice()</code></p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// the device that is currently used</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setupDevice</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> dev;</span><br><span class="line">	cudaGetDevice(&amp;dev);</span><br><span class="line">	cudaDeviceProp prop;</span><br><span class="line">	cudaGetDeviceProperties(&amp;prop, dev);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"\nDevice name %d: %s \n"</span>, dev, prop.name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>制定使用哪个GPU: <code>cudaSetDevice()</code></p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> dev = <span class="number">2</span>;</span><br><span class="line">cudaSetDevice(dev);  <span class="comment">// 使用索引为2 的GPU</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/04/CUDA-Linux%E4%B8%8B%E8%AE%A1%E6%97%B6%E5%99%A8-GPU%E4%BF%A1%E6%81%AF-Device%E5%87%BD%E6%95%B0%E4%BF%AE%E9%A5%B0%E8%AF%8D/" data-id="ck5bbuof30001a2fz578jdiuw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-PCIe速率" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/" class="article-date">
+  <time datetime="2019-10-04T10:45:01.000Z" itemprop="datePublished">2019-10-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/">CUDA-PCIe速率</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="检测PCIe的数据传输速度"><a href="#检测PCIe的数据传输速度" class="headerlink" title="检测PCIe的数据传输速度"></a>检测PCIe的数据传输速度</h1><p>当从Host 拷贝数据到Device的过程中，数据需要通过PCIe实现拷贝。所以你的主板的PCIe的版本和传输速度就会影响CUDA 代码的效率。</p>
+<p>首先你需要知道你的GPU的显存大小。比如我的P106 有6GB 的VRAM。然后分别传输1GB，2GB，… 的数据。</p>
+<p>假如传输int型数据，根据：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">"this TYPE size: %lu Bytes\n"</span>, <span class="keyword">sizeof</span>(TYPE));</span><br></pre></td></tr></table></figure>
+<p>来得到所使用的机器存储一个int型所需多少空间。我的机器存储int型需要4Bytes。</p>
+<p>如果要传输3GB的数据，那么所需int型数据的数量为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>GB = <span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1024</span>*<span class="number">1</span> Bytes</span><br><span class="line"><span class="number">1</span>GB / <span class="number">4B</span>yte = <span class="number">268435456</span></span><br></pre></td></tr></table></figure>
+<p>将这个数赋值给N。</p>
+<p>之后，分别在Host和Device上开辟空间，最后计时从Host拷贝到Device所需时间：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 268435456  <span class="comment">// 1GB int</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span>* h_a;</span><br><span class="line">h_a = (<span class="keyword">int</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span>* dev_a;</span><br><span class="line">cudaMalloc((<span class="keyword">int</span>**)&amp;dev_a, N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++)&#123;</span><br><span class="line">    h_a[i] = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">clock_t</span> start = clock();</span><br><span class="line">cudaMemcpy(dev_a, h_a, N*<span class="keyword">sizeof</span>(TYPE), cudaMemcpyHostToDevice);</span><br><span class="line"><span class="keyword">clock_t</span> end = clock();</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"time: %.10f s \n"</span>, (<span class="keyword">double</span>)(end - start) / CLOCKS_PER_SEC);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">free</span>(h_a);</span><br><span class="line">cudaFree(dev_a);</span><br></pre></td></tr></table></figure>
+
+<p>之后可以逐步增加数据量，知道VRAM极限。如下是实验结果，传输数据量及所需时间：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>GB: <span class="number">268435456</span>    <span class="comment">//  1.349s</span></span><br><span class="line"><span class="number">2</span>GB: <span class="number">268435456</span>*<span class="number">2</span>  <span class="comment">//  2.700s </span></span><br><span class="line"><span class="number">3</span>GB: <span class="number">268435456</span>*<span class="number">3</span>  <span class="comment">//  4.050s</span></span><br><span class="line"><span class="number">4</span>GB: <span class="number">268435456</span>*<span class="number">4</span>  <span class="comment">//  5.400s</span></span><br><span class="line"><span class="number">5</span>GB: <span class="number">268435456</span>*<span class="number">5</span>  <span class="comment">//  6.750s</span></span><br><span class="line"><span class="number">5.5</span>GB:            <span class="comment">//  7.430s          </span></span><br><span class="line"><span class="number">5.75</span>GB:           <span class="comment">//  7.760s</span></span><br><span class="line"></span><br><span class="line"><span class="number">6</span>GB: <span class="number">268435456</span>*<span class="number">6</span>  <span class="comment">//  0.000s</span></span><br></pre></td></tr></table></figure>
+
+<p>6GB 的数据错误是因为VRAM不可能全部给用户使用。<br>所传输数据量越大，经过PCIe传输时间也就越长。这样可以感受PCIe的速度。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/" data-id="ck5bbuof70004a2fzc94j8ond" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-方法论-数组相关-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/" class="article-date">
@@ -238,7 +495,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/" data-id="ck5bb2kg3002cqzfz8erebvfl" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/" data-id="ck5bbuoho002ua2fz9i1obl0i" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
@@ -358,11 +615,77 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/" data-id="ck5bb2kg2002bqzfz099u8ych" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/" data-id="ck5bbuohn002ta2fz6j09fnfc" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
 
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-信息论-信息量与二叉树" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/" class="article-date">
+  <time datetime="2019-08-18T09:46:24.000Z" itemprop="datePublished">2019-08-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/">信息论-信息量与二叉树</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>香浓认为，对于一条信息，重要的是找出这条信息中含有多少信息量，要搞清楚信息量，就要找到一个量化度量信息的单位。香浓的最大贡献就是找到了这个单位“比特(bit)”。<br>比特是度量信息量的基本单位。它可以被这样定义：<em>如果一个黑盒子里由A和B两种可能，而且这两种可能出现的概率相同。那么要搞清楚黑盒子中到底是A还是B，所需要的信息量就是一个比特(bit)</em>。<br>当A和B的出现的概率不相同时，确定他们谁出现所需的信息量就不到一个比特。</p>
+<p>比如，设抛一枚两面质地均匀的硬币为一个系统，状态A和B分别是正面朝上和反面朝上。则确定一次投掷所需要的信息量为一个比特。<br>可以这样计算：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-1.png" width="400"></div>
+
+<p>又比如，做一道4(有A,B,C,D4中状态)选一个的选择题，需要多少信息量才能找到正确答案。2bits。先使用1bit信息确定比如是否在A或B中，若是，再使用1bit信息量确定是否是A，若否，则最终答案是B。(这只是一种判断出结果的方法，但每种方法所需的信息量都是2bits)：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-2.png" width="400"></div>
+
+<p>所以，如果由32个足球队参加世界杯，最终需要5bits的信息量确定最终哪支球队为冠军。</p>
+<p>可以看出的规律：一棵树，以所有可能情况为根，<strong>平均</strong>分所有情况给左子右子，如此递归，直到每个叶节点只有一种情况。此时得到树的深度即为确定做种是哪种情况所需的信息量。以选择题为例：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-3.png" width="400"></div>
+
+<p>树的深度为2，从树根到树叶需要2步走，即需要2bits信息确定究竟是哪一个。</p>
+<p>我们把充满不确定性的盒子称作“信息源”，它里面的不确定性称作“信息熵”，“信息”是用来消除这些不确定性的(信息熵)。所以要消除黑盒子里的不确定性，需要的“信息量”等于“信息熵”。“熵”是热力学的概念，它表示混乱程度，同样的，信息论中的信息熵表示一个系统中的不确定性。</p>
+<p>一个系统中的状态数量也叫做<strong>可能性数量，越多，系统不确定性越大；当状态数量确定时，各个状态的可能性相同，熵达到最大；相反，如果只要概率有不相同，系统不确定性就会减小，极限情况下，当状态A发生的概率为99.9%，而其他所有状态发生的概率和为0.01%时，系统的不确定性很小：很大的概率上A是会发生的</strong>。香浓用以下公式可以计算出系统信息熵：</p>
+<img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-4.png">
+
+<p>以二分类为例，下图体现了一个状态的概率与系统的信息熵的关系：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-5.png" width="500"></div>
+
+<p>当状态概率为0.5时，系统信息熵，即不确定性达最大值。实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 根据上述信息熵计算公式</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">entropy</span><span class="params">(p)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> -p * np.log2(p)-(<span class="number">1</span>-p)*np.log2(<span class="number">1</span>-p)</span><br><span class="line"></span><br><span class="line">x = np.linspace(<span class="number">0.01</span>, <span class="number">0.99</span>, <span class="number">200</span>)</span><br><span class="line"></span><br><span class="line">plt.plot(x, entropy(x))</span><br><span class="line"><span class="comment"># 绘出一个点</span></span><br><span class="line">plt.scatter([<span class="number">0.5</span>], [<span class="number">1</span>], marker=<span class="string">'o'</span>, edgecolors=<span class="string">'r'</span>)   </span><br><span class="line"><span class="comment"># 添加注释 </span></span><br><span class="line">plt.text(<span class="number">0.5</span>, <span class="number">1</span>, (<span class="number">0.5</span>, <span class="number">1</span>), ha=<span class="string">'center'</span>, va=<span class="string">'bottom'</span>, fontsize=<span class="number">10</span>)   </span><br><span class="line">plt.xlabel(<span class="string">'Pr(x)'</span>, fontsize=<span class="number">10</span>)</span><br><span class="line">plt.ylabel(<span class="string">'Entropy'</span>, fontsize=<span class="number">10</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>在构建ID3决策树时，就是根据信息熵公式，得到各种划分后的信息熵，选取信息熵最小的划分。即这个划分使得系统不确定性变得最小！</p>
+<p>如四选一选择题，假如，每种选项的概率均为0.25，根据公式，消除选择题的不确定性所需信息量为2bits。<br>如果4中选项的概率不相同，不论哪种情况，信息熵均小于2bits。</p>
+<p>通过平衡二叉树来理解信息量单位比特。如果一个分类模型在一个数据集上的正确率为0.5，那么可以说，这个模型是最糟糕的模型，它对减少系统信息熵没有贡献。</p>
+<h1 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h1><p>热力学熵和信息熵的物理意义，数学形式，完全一样，不存在本质区别，只是应用领域不同。克劳修斯形式(熵的宏观形式)用于内燃机研究，进入量子时代后主要使用玻尔兹曼形式(熵的微观形式)。<br>玻尔兹曼熵与信息熵的唯一不同只是前者计算对数用e为底数得到单位为nats，后者计算使用2为底数得到单位为bit。<br><br>另外，取10为底，得到单位是bans。其实，在决策树的计算中，求信息熵的对数底可以使任意的，因为具体在划分的时候，不管底取多少，H这个函数的性质是不会变的。模型其实在意熵的相对值，而非绝对值。</p>
+<p>熵增原理：任何孤立的系统，总熵不会减少。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/" data-id="ck5bbuohb002ja2fzch7u5io3" class="article-share-link">Share</a>
+      
+      
     </footer>
   </div>
   
@@ -414,7 +737,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" data-id="ck5bb2kek000tqzfz5tuqat3b" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" data-id="ck5bbuog1000wa2fzg01gcv6b" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -564,7 +887,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" data-id="ck5bb2kel000wqzfze5yahtp9" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" data-id="ck5bbuog0000ta2fzdpxv3xtw" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -671,505 +994,11 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" data-id="ck5bb2kf9001xqzfz3lazaoeq" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" data-id="ck5bbuoh00024a2fz0ov8blu0" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
 
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-方法论-DP-一" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" class="article-date">
-  <time datetime="2019-08-07T07:11:57.000Z" itemprop="datePublished">2019-08-07</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/">LeetCode-方法论-DP-一</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>总结一下与DP相关的问题。</p>
-<p>64, 300(LIS), LCS, 120, 62, 303, 198, </p>
-<p><strong>DP特点</strong>：</p>
-<ul>
-<li>把重复计算的结果保存下来，避免重复计算（记忆机制）。</li>
-<li>DP自下而上执行，通过可计算的最小子结构逐步向上求值，直到得到最终值。</li>
-<li>通常问题是要求最优值。</li>
-</ul>
-<p><strong>实现DP方法</strong>：</p>
-<ul>
-<li>画递归树，自顶向下思考，自下而上实现</li>
-<li>找到合适的<strong>状态</strong>及<strong>状态转移方程</strong><ul>
-<li>状态：递归树的结点啥定义，即每一步记忆的内容是啥<code>memo[i]</code>，即函数是啥。</li>
-<li>状态转移方程：结点怎样实现，即怎样得到<code>memo[i]</code>，即函数怎么做。</li>
-</ul>
-</li>
-</ul>
-<h1 id="64-Minimum-Sum-Path"><a href="#64-Minimum-Sum-Path" class="headerlink" title="#64 Minimum Sum Path"></a>#64 Minimum Sum Path</h1><p>问题描述：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Given a m x n grid filled with non-negative numbers, find a path from **top left** to **bottom right** which minimizes the sum of all numbers along its path.</span><br><span class="line">Note: You can only move either *down* or *right* at any point in time.</span><br><span class="line"></span><br><span class="line">Input:</span><br><span class="line">[</span><br><span class="line">  [1,3,1],</span><br><span class="line">  [1,5,1],</span><br><span class="line">  [4,2,1]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">Output: 7</span><br><span class="line">the path 1→3→1→1→1 minimizes the sum, which is 7.</span><br></pre></td></tr></table></figure>
-<ul>
-<li><p>思路</p>
-<p>  记忆的逐步实现：</p>
-<ul>
-<li><p>初始化：memo所有元素初始化为0，且第一行第一列特殊处理。</p>
-</li>
-<li><p>状态定义：<code>memo[i][j]</code>表示从左上角到<code>Input[i][j]</code>的最短路径。</p>
-</li>
-<li><p>状态转移方程：<code>memo[i][j] = Input[i][j] + min(memo[i][j-1], memo[i-1][j])</code>。</p>
-</li>
-<li><p>返回值：<code>memo[i-1][j-1]</code></p>
-<p>图示：</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/dp1.png" width="700"></div>
-
-<p>最终返回memo右下角值：7。</p>
-</li>
-</ul>
-</li>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minPathSum</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; grid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> m = grid.size();</span><br><span class="line">    <span class="keyword">int</span> n = grid[<span class="number">0</span>].size();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)</span><br><span class="line">        grid[i][<span class="number">0</span>] += grid[i<span class="number">-1</span>][<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;n; i++)</span><br><span class="line">        grid[<span class="number">0</span>][i] += grid[<span class="number">0</span>][i<span class="number">-1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            grid[i][j] += min(grid[i][j<span class="number">-1</span>], grid[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> grid[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="300-Longest-Increasing-Subsequence"><a href="#300-Longest-Increasing-Subsequence" class="headerlink" title="#300 Longest Increasing Subsequence"></a>#300 Longest Increasing Subsequence</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input: [10,9,2,5,3,7,101,18]</span><br><span class="line">Output: 4 </span><br><span class="line">Explanation: The longest increasing subsequence is [2,3,7,101], therefore the length is 4. </span><br><span class="line"></span><br><span class="line">返回最长公共子序列的长度。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<ul>
-<li>初始化：mem数组为全1。</li>
-<li>状态的定义：定义<code>mem[i]</code>为以<code>nums[i]</code> 为结尾的最长上升子序列的长度。</li>
-<li>状态转移方程：当前元素<code>nums[i]</code>与其前元素逐个比较，如果当前元素大于其前某个元素<code>nums[j]</code>，更新<code>mem[i]=max(mem[i], 1+mem[j])</code>.</li>
-<li>最终：找到<code>mem</code>数组中最大的值即可。DONE</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lengthOfLIS</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// calculate memo</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;i; j++)&#123;</span><br><span class="line">            <span class="keyword">if</span> (nums[i]&gt;nums[j])</span><br><span class="line">                memo[i] = max(memo[i], <span class="number">1</span>+memo[j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// get max length</span></span><br><span class="line">    <span class="keyword">int</span> res = memo[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;memo.size(); i++)</span><br><span class="line">        res = max(res, memo[i]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">由最小已知求未知，接着根据当前的已知求进一步的未知</font>， <font color="red" size="4">状态的定义</font>，<font color="red" size="4">找到状态转移方程</font>，</p>
-<h1 id="LCS-Longest-Common-Subsequence"><a href="#LCS-Longest-Common-Subsequence" class="headerlink" title="#LCS Longest Common Subsequence"></a>#LCS Longest Common Subsequence</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">给定两个字符数组，求其公共的子序列。公共子序列的元素在原序列中可以不连续。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>逻辑</li>
-</ul>
-<ul>
-<li>实现</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">getLCS</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; s1, <span class="keyword">const</span> <span class="built_in">string</span>&amp; s2)</span></span>&#123;</span><br><span class="line">		<span class="keyword">int</span> m = s1.size();</span><br><span class="line">		<span class="keyword">int</span> n = s2.size();</span><br><span class="line">		</span><br><span class="line">		<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m ,<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">		<span class="comment">// initilize memo</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[i]==s2[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=i; k&lt;m; k++)</span><br><span class="line">					memo[k][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s2[j]==s1[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=j; k&lt;n; k++)</span><br><span class="line">					memo[<span class="number">0</span>][k]=<span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// DP progress for the rest</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)&#123;</span><br><span class="line">				<span class="keyword">if</span> (s1[i]==s2[j])</span><br><span class="line">					memo[i][j] = <span class="number">1</span> + memo[i<span class="number">-1</span>][j<span class="number">-1</span>];</span><br><span class="line">				<span class="keyword">else</span></span><br><span class="line">					memo[i][j] = max(memo[i<span class="number">-1</span>][j], memo[i][j<span class="number">-1</span>]);</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;<span class="string">"The lenght of the LCS: "</span>&lt;&lt;memo[m<span class="number">-1</span>][n<span class="number">-1</span>]&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">		<span class="comment">// get the longest common sequence</span></span><br><span class="line">		<span class="built_in">string</span> res = <span class="string">""</span>;</span><br><span class="line">		<span class="keyword">while</span> (m&gt;=<span class="number">0</span> &amp;&amp; n&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[m] == s2[n])&#123;</span><br><span class="line">				res = s1[m] + res;</span><br><span class="line">				m--;</span><br><span class="line">				n--;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (m==<span class="number">0</span>) n--;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (n==<span class="number">0</span>) m--;</span><br><span class="line">			<span class="keyword">else</span>&#123;</span><br><span class="line">				<span class="keyword">if</span> (memo[m<span class="number">-1</span>][n]&gt;memo[m][n<span class="number">-1</span>]) m--;</span><br><span class="line">				<span class="keyword">else</span> n--;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> res;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="120-Triangle"><a href="#120-Triangle" class="headerlink" title="#120 Triangle"></a>#120 Triangle</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Given a triangle, find the minimum path sum from top to bottom. </span><br><span class="line">Each step you may move to adjacent numbers on the row below.</span><br><span class="line"></span><br><span class="line">For example, given the following triangle</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">     [2],</span><br><span class="line">    [3,4],</span><br><span class="line">   [6,5,7],</span><br><span class="line">  [4,1,8,3]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 &#x3D; 11).</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  bottom-up DP或者Top-down DP。使用Top-down：</p>
-<ul>
-<li><p>状态定义：<code>triangle[i][j]</code> 表示从顶端到第<code>i</code>行第<code>j</code>个位置的最小路径</p>
-</li>
-<li><p>状态转移方程：见下图</p>
-<p>Top-down DP过程如下图表示：其中椭圆结点构成的triangle为源triangle，矩形结点构成的triangle就是DP的<code>mem</code>，即状态。</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/120.png" width="650"></div>
-
-
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minimumTotal</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; triangle)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = triangle.size();  <span class="comment">// height of this triangle</span></span><br><span class="line"></span><br><span class="line">    triangle[<span class="number">0</span>][<span class="number">0</span>] = triangle[<span class="number">0</span>][<span class="number">0</span>];  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i&lt;n; i++)&#123;    <span class="comment">// </span></span><br><span class="line">        <span class="comment">// 这一行第一个值</span></span><br><span class="line">        triangle[i][<span class="number">0</span>] += triangle[i<span class="number">-1</span>][<span class="number">0</span>];  </span><br><span class="line">        <span class="comment">// 这一行最后一个值</span></span><br><span class="line">        triangle[i][i] += triangle[i<span class="number">-1</span>][i<span class="number">-1</span>];</span><br><span class="line">        <span class="comment">// 这一行其他值</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>;j&lt;i;j++)</span><br><span class="line">            triangle[i][j] += min(triangle[i<span class="number">-1</span>][j<span class="number">-1</span>], triangle[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 源triangle被修改了，所以最终结果在这个triangle的最后一层找最小值即可</span></span><br><span class="line">    <span class="keyword">return</span> *min_element(triangle[n<span class="number">-1</span>].begin(), triangle[n<span class="number">-1</span>].end());</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：当处理最值相关问题，考虑DP</p>
-<h1 id="62-Unique-Path"><a href="#62-Unique-Path" class="headerlink" title="#62 Unique Path"></a>#62 Unique Path</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">从grid的左上角位置到右下角位置有几种走法？只能向下走或向右走。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  Top-down DP或者Bottom-up DP，使用Bottom-up：</p>
-<ul>
-<li>状态定义：从<code>(i,j)</code>出发到终点<code>(m-1,n-1)</code>由多少条路径。</li>
-<li>状态转移方程：同Fibonacci()，<code>numPath(i,j) = numPath(i,j+1) + numPath(i+1,j)</code>;</li>
-<li>初始化最右边和最下边值为1. 过程从这里开始<code>up</code>。</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-<ul>
-<li>Bottom-up<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line">    <span class="comment">// 初始化最下行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][n<span class="number">-1</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最右行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[m<span class="number">-1</span>][j] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// Bottom up</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = m<span class="number">-2</span>; i&gt;=<span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> j = n<span class="number">-2</span>; j&gt;=<span class="number">0</span>; j-- )</span><br><span class="line">            memo[i][j] = memo[i][j+<span class="number">1</span>] + memo[i+<span class="number">1</span>][j];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> memo[<span class="number">0</span>][<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li>Top-down <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 初始化第一行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最左行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[<span class="number">0</span>][j] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// top-down</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>;i&lt;m; i++)</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            memo[i][j] = memo[i<span class="number">-1</span>][j] + memo[i][j<span class="number">-1</span>];</span><br><span class="line">    <span class="keyword">return</span> memo[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<h1 id="303-Range-Sum-Query-Immutable"><a href="#303-Range-Sum-Query-Immutable" class="headerlink" title="#303 Range Sum Query - Immutable"></a>#303 Range Sum Query - Immutable</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Given an integer array nums, find the sum of the elements between indices i and j (i ≤ j), inclusive.</span><br><span class="line"></span><br><span class="line">Example:</span><br><span class="line">Given nums &#x3D; [-2, 0, 3, -5, 2, -1]</span><br><span class="line"></span><br><span class="line">sumRange(0, 2) -&gt; 1</span><br><span class="line">sumRange(2, 5) -&gt; -1</span><br><span class="line">sumRange(0, 5) -&gt; -3</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  从nums[i] 到nums[j] 元素累加就可以了。这种方法对于一条query，没问题。但是query一般频繁的。最好可以把结果提前计算出来，之后的query操作秩序做一次减法，便可以得到结果。所以使用DP。</p>
-<ul>
-<li>状态定义：mem[0]=0，mem[i]表示从第一个数到第i个数的和。</li>
-<li>状态转移方程：<code>memo[i+1] = memo[i] + nums[i]</code>;</li>
-<li>初始化mem为全零。</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NumArray2</span>&#123;</span></span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        NumArray2(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)&#123;</span><br><span class="line">            <span class="comment">// n+1个元素。</span></span><br><span class="line">            memo = <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(nums.size()+<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)</span><br><span class="line">                memo[i+<span class="number">1</span>] = memo[i] + nums[i];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 频繁操作只需求一次减法。效率高</span></span><br><span class="line">        <span class="function"><span class="keyword">int</span> <span class="title">sumRange</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>&#123;</span><br><span class="line">            <span class="keyword">return</span> memo[j+<span class="number">1</span>] - memo[i];</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="198-House-Robber"><a href="#198-House-Robber" class="headerlink" title="#198 House Robber"></a>#198 House Robber</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">一条街上有若干房子，现在要抢劫房子，从街头到街尾，所抢的房子不能直接相邻，求可能的最大收益。</span><br><span class="line"></span><br><span class="line">Input: [2,7,9,3,1]</span><br><span class="line">Output: 12</span><br><span class="line">Explanation: Rob house 1 (money &#x3D; 2), rob house 3 (money &#x3D; 9) and rob house 5 (money &#x3D; 1).</span><br><span class="line">             Total amount you can rob &#x3D; 2 + 9 + 1 &#x3D; 12.</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<ul>
-<li><p>状态定义：mem[i]表示抢[0~i]可获得的最大收益。</p>
-</li>
-<li><p>状态转移方程：<code>memo[i] = max(memo[i-1], nums[i]+tmp</code>;</p>
-<p>下图为抢house=[5,2,3,1,1,5]的DP过程：</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/198.png" width="500"></div>
-</li>
-</ul>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 切入口：前两个值特殊处理</span></span><br><span class="line">    memo[<span class="number">0</span>] = nums[<span class="number">0</span>];  </span><br><span class="line">    memo[<span class="number">1</span>] = max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 开始切~~</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="comment">// 求tmp：当前位置之前可抢劫最大收益（不包括与当前位置紧邻的房子）</span></span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;    </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)</span><br><span class="line">            <span class="keyword">if</span> (memo[j]&gt;tmp)</span><br><span class="line">                tmp = memo[j];</span><br><span class="line"></span><br><span class="line">        memo[i] = max(memo[i<span class="number">-1</span>], nums[i]+tmp);</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> memo[nums.size()<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关键：<font color="red" size="4">mem[],以初始化的值为切入点，一个一个计算。</font>，</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" data-id="ck5bb2kfd0021qzfzgvq151r1" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-方法论-Floyd-s-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" class="article-date">
-  <time datetime="2019-08-02T16:08:05.000Z" itemprop="datePublished">2019-08-03</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/">LeetCode-方法论-Floyd&#39;s Algorithm</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题<strong>转化</strong>的。当原问题棘手时，找到合适的方向可以转化为简单问题。</p>
-<p>287, 224, </p>
-<h1 id="141-Linked-List-Cycle"><a href="#141-Linked-List-Cycle" class="headerlink" title="#141 Linked List Cycle"></a>#141 Linked List Cycle</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1</span><br><span class="line">Output: true</span><br><span class="line">Explanation: There is a cycle in the linked list, where tail connects to the second node.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p> 如果存在环，兔子与乌龟会第二次相遇；否则除了起点，龟兔不会再相遇。</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasCycle</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    ListNode* rabbit=head;</span><br><span class="line">    ListNode* turtle=head;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(rabbit &amp;&amp; turtle)&#123;</span><br><span class="line">        rabbit = rabbit-&gt;next;</span><br><span class="line">        turtle = turtle-&gt;next;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (rabbit) rabbit=rabbit-&gt;next; <span class="comment">// one step faster than the turtle</span></span><br><span class="line">        <span class="keyword">if</span> (rabbit &amp;&amp; (rabbit==turtle))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="287-Find-the-Duplicate-Number"><a href="#287-Find-the-Duplicate-Number" class="headerlink" title="#287 Find the Duplicate Number"></a>#287 Find the Duplicate Number</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,1,3,4,2]</span><br><span class="line">Output: 3</span><br><span class="line">Note:</span><br><span class="line"></span><br><span class="line">    You must not modify the array (assume the array is read only).</span><br><span class="line">    You must use only constant, O(1) extra space.</span><br><span class="line">    Your runtime complexity should be less than O(n2).</span><br><span class="line">    There is only one duplicate number in the array, but it could be repeated more than once.</span><br><span class="line"></span><br><span class="line">依照本题意，数组中一定有重复元素，找到数组中重复出现的元素。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  就题意而言，数组元素唯一和数组元素有重复的区别可用下图表示：</p>
-<p>  1) 当给定数组中无重复元素时，如<code>nums={3,4,5,2,1}</code>。以第一行为当前位置，第二行为下一位置。小人从位置0开始走最终走到5停止。</p>
-  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png" width="700"> </div>
-  <div align="center">路经无环</div>
-
-<p>  2) 当给定数组中有重复元素时，如<code>nums={1，4，6，5，6，2，3}</code>。小人从位置0开始走，路经有环始终不会停止。而且被两个箭头指向的节点6为重复元素。</p>
-  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png" width="700"> </div>
-  <div align="center">路经有环</div>
-
-
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findDuplicate</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> turtle = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> rabbit = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        turtle = nums[turtle];      <span class="comment">// one step</span></span><br><span class="line">        rabbit = nums[nums[rabbit]]; <span class="comment">// two steps</span></span><br><span class="line">    &#125;<span class="keyword">while</span>(turtle != rabbit);  </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ptr1 = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> ptr2 = turtle;</span><br><span class="line">    <span class="keyword">while</span>(ptr1 != ptr2)&#123;</span><br><span class="line">        ptr1 = nums[ptr1];</span><br><span class="line">        ptr2 = nums[ptr2];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ptr1;              </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  当龟兔位于同起点，向相同的方向跑，<strong>如果赛道无环，乌龟永远追不上兔子。若赛道有环，兔子会再次追上乌龟</strong>。这就是Floy’s 算法的来源。</p>
-<p>  表面上与龟兔赛跑无关，在<font color="red" size="4">逻辑上构建出类似链表</font>后，就水到渠成了。</p>
-<p>  本题并不复杂，但当经过<font color="red" size="4">转化</font>后时间空间复杂度达到若干方法中较优。时刻有转化问题的意识。</p>
-</li>
-</ul>
-<p>关键：<font color="red" size="4">问题转化</font>，<font color="red" size="4">龟兔赛跑</font></p>
-<h1 id="142-Linked-List-Cycle-II"><a href="#142-Linked-List-Cycle-II" class="headerlink" title="#142 Linked List Cycle II"></a>#142 Linked List Cycle II</h1>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" data-id="ck5bb2keo0018qzfzcadn90rw" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Linux下使用hexo创建静态博客并部署到github" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" class="article-date">
-  <time datetime="2019-07-28T04:36:32.000Z" itemprop="datePublished">2019-07-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/utility/">utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/">Linux下使用hexo创建静态博客并部署到github</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇博客记录了在linux系统下，安装<code>hexo</code>及所需必要工具，并创建local博客，最终部署到远端如github的整个过程。</p>
-<h1 id="1-安装必要工具"><a href="#1-安装必要工具" class="headerlink" title="1. 安装必要工具"></a>1. 安装必要工具</h1><p>使用root权限</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ root -s</span><br></pre></td></tr></table></figure>
-
-<h2 id="1-1-下载node-js-root"><a href="#1-1-下载node-js-root" class="headerlink" title="1.1 下载node.js (root)"></a>1.1 下载node.js (root)</h2><p>下载<a href="https://nodejs.org/en/" target="_blank" rel="noopener">node.js</a>安装包到我的Applications目录，<br>解压并设置软连接</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ tar -xvf node-v10.16.0-linux-x64.tar.xz </span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/npm /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/node /usr/<span class="built_in">local</span>/bin/</span><br></pre></td></tr></table></figure>
-
-<p>检查是否安装好</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ node -v</span><br><span class="line">$ npm -v</span><br></pre></td></tr></table></figure>
-
-<p>若无误，进行下一步。</p>
-<h2 id="1-2-安装hexo-root"><a href="#1-2-安装hexo-root" class="headerlink" title="1.2 安装hexo (root)"></a>1.2 安装hexo (root)</h2><p>使用npm安装<a href="https://hexo.io" target="_blank" rel="noopener">hexo</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
-
-<p>如果终端提示平台不兼容，忽略它。可以转到<code>nodejs</code>的<code>bin</code>目录下，<code>hexo</code>存在表示<code>hexo</code>已经下载好了。<br>建立软连接，后检查。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/hexo /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ hexo -v</span><br></pre></td></tr></table></figure>
-<p>当不能正常下载时，用<code>cnpm</code>下载，先下载<code>cnpm</code>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g cnpm --registry=https://registry.npm.taobao.org</span><br></pre></td></tr></table></figure>
-<p>只需将<code>npm</code>换为<code>cnpm</code><br><br>若无误， 进行下一步。</p>
-<h1 id="2-生成本地静态博客"><a href="#2-生成本地静态博客" class="headerlink" title="2. 生成本地静态博客"></a>2. 生成本地静态博客</h1><h2 id="初始化博客-root"><a href="#初始化博客-root" class="headerlink" title="初始化博客 (root)"></a>初始化博客 (root)</h2><p>在目录中新建一个存放所有blogs的目录, 并进入该目录，之后的所有操作都在其中。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir blogs</span><br><span class="line">$ <span class="built_in">cd</span> blogs</span><br></pre></td></tr></table></figure>
-
-<p>第一次安装使用hexo需要初始化。初始化后该目录中回生成_config.yml, source 等文件。<br>开启本地服务。本地服务是用来显示blog的最终效果，并且可以及时修正。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo init</span><br><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>使用终端给出的端口登录，可以看到hexo为我们创建的默认博客: <code>Hello World</code>。</p>
-<p>当关闭本地端口后，用下面命令清理。尤其在页面显示不正常时</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br></pre></td></tr></table></figure>
-
-<h2 id="建立第一篇本地静态博客-所有用户"><a href="#建立第一篇本地静态博客-所有用户" class="headerlink" title="建立第一篇本地静态博客 (所有用户)"></a>建立第一篇本地静态博客 (所有用户)</h2><p>确保现在仍在blogs/目录中， 使用如下命令新建博客</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My_first_blog"</span></span><br></pre></td></tr></table></figure>
-<p>此时就可以在nvim(或vim)使用markdown写博客了</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nvim <span class="built_in">source</span>/_post/My_first_blog.md</span><br></pre></td></tr></table></figure>
-
-<p>当然可以转到<code>My_first_blog.md</code> 所在目录用其他编辑器写内容，但记得编辑结束后一定退回到blogs/目录。</p>
-<p>确保仍在blogs/目录中，使用如下命令生成静态博客。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>后开启本地服务。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>打开给出端口，可以显示所创建的静态博客。目前会有两篇博客: <code>Hello World</code> 和 <code>My_first_blog</code>。到此为止，本地静态博客已经成功初始化，并创建了自己的第一篇博客。<br><br>静态博客只是便于检查，修改博客。我们的目的是要把博客部署到服务上。</p>
-<h1 id="3-部署到github-root"><a href="#3-部署到github-root" class="headerlink" title="3. 部署到github (root)"></a>3. 部署到github (root)</h1><p>这部分假设你已经有github账户，本地已经安装github，并可以熟练使用github。<br>如果未安装，安装</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get install git-core</span><br></pre></td></tr></table></figure>
-
-<h2 id="3-1-为静态博客新建repository"><a href="#3-1-为静态博客新建repository" class="headerlink" title="3.1. 为静态博客新建repository"></a>3.1. 为静态博客新建repository</h2><p>新建repository并命名。个人博客的repo名是有规定的：<code>OWNER.github.io</code>，<code>OWNER</code> 一定是你的github账户名。点击<code>create repository</code>。此时一个空的repo建好了。不要关闭此页面。</p>
-<h2 id="3-2-本地安装git插件并配置-root"><a href="#3-2-本地安装git插件并配置-root" class="headerlink" title="3.2. 本地安装git插件并配置 (root)"></a>3.2. 本地安装git插件并配置 (root)</h2><p>确保现在仍在blogs/目录中, 如下命令安装插件，并忽略<code>warning</code></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install --save hexo-deployer-git</span><br></pre></td></tr></table></figure>
-<p>在<code>_config.yml</code>配置文件中添加第3.1步所建立空repo的信息。具体是在<code>_config.yml</code><br>的文件尾的<code># Deplotment</code>下添加<code>repo</code>和<code>branch</code>两行。注意冒号后有一空格。<br>更多细节参考<a href="https://hexo.io/docs/deployment" target="_blank" rel="noopener">官方主页</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/OWNER/OWNER.github.io.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
-<p>其中<code>https://github.com/OWNER/OWNER.github.io.git</code> 是第3.1步空repo的地址。<code>OWNER</code>是你的github账户名。</p>
-<h2 id="3-3-部署本地静态博客-root"><a href="#3-3-部署本地静态博客-root" class="headerlink" title="3.3. 部署本地静态博客  (root)"></a>3.3. 部署本地静态博客  (root)</h2><p>用下面命令执行部署(blogs/目录中)</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>在终端提示处输入<code>github</code>的<code>username</code>和<code>password</code><br>此时刷新第3.1步的页面，repo不再是空的了。</p>
-<h2 id="3-4-访问"><a href="#3-4-访问" class="headerlink" title="3.4. 访问"></a>3.4. 访问</h2><p>在浏览器输入<code>OWNER.github.io</code>即可从远端访问。<br>可能无法马上访问，稍等，刷新页面即可。</p>
-<h1 id="4-部署后对博客的修改或新建-root"><a href="#4-部署后对博客的修改或新建-root" class="headerlink" title="4. 部署后对博客的修改或新建 (root)"></a>4. 部署后对博客的修改或新建 (root)</h1><p>确保仍在blogs/目录中，创建新的博客后生成对应的<code>.md</code>文件。<br>对相应的<code>.md</code>文件添加或修改内容。<br>后在本地检查。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>本地检查无误后生成并部署到github</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>或一条命令完成</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate --deploy</span><br></pre></td></tr></table></figure>
-
-<h1 id="5-插入图片"><a href="#5-插入图片" class="headerlink" title="5. 插入图片"></a>5. 插入图片</h1><ol>
-<li>修改配置文件<code>_config.yml</code>中<code>post_asset_folder:</code>的值设置为<code>true</code>。</li>
-<li>回到blog/目录中，安装插件<code>cnpm install https://github.com/7ym0n/hexo-asset-image --save</code>。这个asset管理插件是没有bug的。</li>
-<li>新建博客<code>hexo new &quot;xxx&quot;</code>。在<code>/source/_posts</code>文件夹内会生成<code>xxx.md</code>和同名的<code>xxx文件夹</code>。</li>
-<li>把在<code>xxx.md</code>中要引用的图片放到<code>xxx文件夹</code>中。</li>
-<li>在写博客过程中引入图片：<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;xxx/resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：在你的md编辑器中图片可以正常显示，但4000端口和github上不能显示。<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：相反的，md编辑器中不能显示，远端可以。<br><br>后者才是正确的引用。</li>
-<li>回到blog/目录中，生成及部署<code>hexo g --d</code>。</li>
-</ol>
-<h1 id="6-更改当前主题属性-root"><a href="#6-更改当前主题属性-root" class="headerlink" title="6. 更改当前主题属性 (root)"></a>6. 更改当前主题属性 (root)</h1><p>以更改背景图片为例，保证当前目录为<code>blog</code>目录，图片存在于blog下的<code>blog/themes/landscape/source/css/images/</code>中，名为<code>banner.jpg</code>，选择自己喜欢的图片命名为<code>banner.jpg</code>并替换原来图片。在blog目录中开启服务<code>hexo server</code>。在localhost就可以看到变化。</p>
-<p>若果要更改主题其他参数，回到上一级目录即<code>blog/themes/landscape/source/css/</code>编辑器打开目录中的<code>_variables.styl</code>文件。内容类似：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">35 // Header</span><br><span class="line">36 logo-size = 50px</span><br><span class="line">37 subtitle-size = 16px</span><br><span class="line">38 banner-height = 400px</span><br><span class="line">39 banner-url = <span class="string">"images/banner.jpg"</span></span><br></pre></td></tr></table></figure>
-<p>修改对应参数值，后刷新localhost，就可以看到及时变化。</p>
-<p>最后，回到blog/目录，执行一下命令保证github远端也得到更新：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br><span class="line">$ hexo g --d</span><br></pre></td></tr></table></figure>
-<p>完成！</p>
-<h1 id="7-添加“分类”和“tags”-root"><a href="#7-添加“分类”和“tags”-root" class="headerlink" title="7. 添加“分类”和“tags” (root)"></a>7. 添加“分类”和“tags” (root)</h1><p>进入blog目录</p>
-<ol>
-<li><p>在<code>source</code>中生成<code>categories</code>文件夹：<code>tags</code>是默认就含有的，不用添加。</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new page categories</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑 <code>blog/source/categories</code>中<code>index.md</code>。添加<code>type: categories</code>于末行。保存并退出</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: categories</span><br><span class="line">date: 2020-01-11 17:48:47</span><br><span class="line">type: categories</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ol>
-<ol start="3">
-<li><p>给每一篇blog添加<code>categories</code>，如下。注意：hexo一篇文章只能属于一个分类，即如果在“- web前端”下方添加“-xxx”，hexo不会产生两个分类，而是把分类嵌套（即该文章属于 “- web前端”下的 “-xxx ”分类）。</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: Linux(ubuntu)下使用hexo创建静态博客并部署到github</span><br><span class="line">date: 2019-07-28 12:36:32</span><br><span class="line">tags:</span><br><span class="line">    - hahaha</span><br><span class="line">categories: </span><br><span class="line">    - utility</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-<p>最终blog每一页都会出现<code>categories</code>，<code>tags</code>和<code>tag cloud</code>三个标签。</p>
-</li>
-</ol>
-<h1 id="8-修改页面显示博客数-root"><a href="#8-修改页面显示博客数-root" class="headerlink" title="8. 修改页面显示博客数 (root)"></a>8. 修改页面显示博客数 (root)</h1><ol>
-<li><p>获取<code>sudo</code>权限并安装<code>hexo</code>的三个插件，archive的，tag的category的：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo -s</span><br><span class="line">$ cnpm install hexo-generator-archive --save</span><br><span class="line">$ cnpm install hexo-generator-tag --save</span><br><span class="line">$ cnpm install hexo-generator-category --save</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>在目录<code>/media/junhui/DATA/blog/</code>下，编辑<code>_config.yml</code>，添加如下内容：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">archive_generator:</span><br><span class="line">  enabled: true</span><br><span class="line">  per_page: 0</span><br><span class="line">  yearly: true</span><br><span class="line">  monthly: true</span><br><span class="line">  daily: false</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">tag_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">category_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>自定义对应的<code>per_page</code>数值。其中<code>0</code>表示显示所有blog，就是说，不分页。</p>
-</li>
-</ol>
-<h1 id="9-注意"><a href="#9-注意" class="headerlink" title="9. 注意"></a>9. 注意</h1><p>当生成及部署完毕后，<strong>远端不会马上生效</strong>，不慌张，稍等。</p>
-<hr>
-<p>完成<br><br>Linux(ubuntu)下使用hexo创建静态博客并部署到github</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" data-id="ck5bb2kg7002gqzfz0v4t5c3o" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/1970/01/01/hello-world/" class="article-date">
-  <time datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/1970/01/01/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/1970/01/01/hello-world/" data-id="ck5bb2kfm0026qzfzfjquc108" class="article-share-link">Share</a>
-      
-      
     </footer>
   </div>
   
@@ -1181,7 +1010,7 @@
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/2/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+    <a class="extend prev" rel="prev" href="/page/2/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/4/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -1192,7 +1021,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/utility/">utility</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">7</span></li></ul>
     </div>
   </div>
 
@@ -1221,7 +1050,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1234,23 +1063,23 @@
       <ul>
         
           <li>
+            <a href="/2020/01/13/Trouble-Shooting/">Trouble-Shooting</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/">汇总ShortCuts</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/">Linux安装cuDNN</a>
+          </li>
+        
+          <li>
             <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/">LeetCode-方法论-DP-二</a>
           </li>
         
           <li>
             <a href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/">LeetCode-方法论-map&amp;set-二</a>
-          </li>
-        
-          <li>
-            <a href="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/">LeetCode-方法论-数组相关-三</a>
-          </li>
-        
-          <li>
-            <a href="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/">LeetCode-方法论-数组相关-二</a>
-          </li>
-        
-          <li>
-            <a href="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/">LeetCode-方法论-map&amp;set-一</a>
           </li>
         
       </ul>
