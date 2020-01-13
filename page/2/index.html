@@ -64,6 +64,254 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-map-set-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/" class="article-date">
+  <time datetime="2019-12-18T05:53:03.000Z" itemprop="datePublished">2019-12-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/">LeetCode-方法论-map&amp;set-一</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>594, 349, 350, 1, 290, 205, 451, 202, </p>
+<p>map包括有序map和无序map，set也分为有序set和无序set。<br>map由键值构成，set中元素无重复。</p>
+<p>常用操作: <code>find()</code>, <code>insert()</code>, <code>erase()</code>, <code>change()</code>, <code>search()</code>,</p>
+<h1 id="594-最长Harmonius-子序列"><a href="#594-最长Harmonius-子序列" class="headerlink" title="#594 最长Harmonius 子序列"></a>#594 最长Harmonius 子序列</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: [1,3,2,2,5,2,3,7]</span><br><span class="line">Output: 5</span><br><span class="line">Explanation: The longest harmonious subsequence is [3,2,2,2,3].</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路：<br>  1) 第一步 将数组元素作为key，对应出现的次数作为val，放入map中。如下：</p>
+<pre><code>map | 1st | 2nd | 3rd | 4th| 5th 
+-|-|-|-|-|-
+key | 1 | 2 | 3 | 5 | 7 |
+val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
+<pre><code>对于key=1，如果key=2存在，则子序列长度为： key=1的val + key=2的val： 1+3=4
+对于key=2，如果key=3存在，则子序列长度为： key=2的val + key=3的val： 3+2=5
+对于key=3，如果key=4不存在，continue
+对于key=5，如果key=6不存在，continue
+对于key=7，如果key=8不存在，continue
+最终返回最大值 5</code></pre></li>
+<li><p>实现如下：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findLHS</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// create map</span></span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; item: nums)</span><br><span class="line">        mp[item]++;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// main process</span></span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> itr = mp.begin(); itr!=mp.end(); itr++)&#123;</span><br><span class="line">        <span class="keyword">if</span> ( mp.find(itr-&gt;first + <span class="number">1</span>) != mp.end())&#123;</span><br><span class="line">            res = max(res, mp[itr-&gt;first] + mp[itr-&gt;first+<span class="number">1</span>]);  <span class="comment">// update max</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="349-Intersection-Of-Two-Arrays"><a href="#349-Intersection-Of-Two-Arrays" class="headerlink" title="#349 Intersection Of Two Arrays"></a>#349 Intersection Of Two Arrays</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: nums1 &#x3D; [4,9,5], nums2 &#x3D; [9,4,9,8,4]</span><br><span class="line">Output: [9,4]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<pre><code>第一步：将nums1中元素放入set中
+第二步：从set中查找nums2中每个元素，
+    如果找到，就放入结果set中，如此一来，结果中也没有重复元素。
+    如果没找到，continue。</code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; intersection(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2) &#123;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">set</span>&lt;<span class="keyword">int</span>&gt; record(nums1.begin(), nums1.end());</span><br><span class="line"></span><br><span class="line">    <span class="built_in">set</span>&lt;<span class="keyword">int</span>&gt; resSet;</span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums2.size(); i++)</span><br><span class="line">        <span class="keyword">if</span> (record.find(nums2[i]) != record.end()) <span class="comment">//in record</span></span><br><span class="line">            resSet.insert(nums2[i]);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;( resSet.begin(), resSet.end() );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="350-INtersection-Of-Two-Arrays-II"><a href="#350-INtersection-Of-Two-Arrays-II" class="headerlink" title="#350 INtersection Of Two Arrays II"></a>#350 INtersection Of Two Arrays II</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: nums1 &#x3D; [1,2,2,1], nums2 &#x3D; [2,2]</span><br><span class="line">Output: [2,2]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<pre><code>第一步：将nums1中元素放入map中
+第二步：遍历num2中每个元素：
+    如果当前元素在map中的频数&gt;0, 那么在结果vector中加入这个元素，同时map中这个元素的频数-1.
+    如果当前元素在map中的频数==0，说明这个元素不是共有的，continue。</code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; intersect(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2) &#123;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; record;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums1.size(); i++)</span><br><span class="line">        record[nums1[i]] ++;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; resV;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;nums2.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (record[nums2[i]] &gt; <span class="number">0</span>)&#123;</span><br><span class="line">            resV.push_back(nums2[i]);</span><br><span class="line">            record[nums2[i]] -- ;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> resV;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="1-Two-Sum"><a href="#1-Two-Sum" class="headerlink" title="#1 Two Sum"></a>#1 Two Sum</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Given nums &#x3D; [2, 7, 11, 15], target &#x3D; 9,</span><br><span class="line"></span><br><span class="line">Because nums[0] + nums[1] &#x3D; 2 + 7 &#x3D; 9,</span><br><span class="line">return [0, 1].</span><br><span class="line"></span><br><span class="line">NOTE:You may assume that each input would have exactly one solution, </span><br><span class="line">and you may not use the same element twice.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<pre><code>遍历nums中所有元素nums[i]：
+    如果:map中没有找到target-nums[i]这个值，就把{nums[i], i}放入map中；
+    如果:map中找到了target-nums[i]，那么当前值index和target-nums[i]的index放入结果中。done</code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; twoSum(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> target)&#123;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; record;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;nums.size();i++)&#123;</span><br><span class="line">        <span class="comment">// nums[i] is not in the record</span></span><br><span class="line">        <span class="keyword">if</span> (record.find(target - nums[i]) == record.end())&#123;</span><br><span class="line">            record[nums[i]] = i;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;<span class="comment">// nums[i] is in the record</span></span><br><span class="line">            <span class="keyword">int</span> res[<span class="number">2</span>] = &#123;record[target-nums[i]], i&#125;;</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(res, res+<span class="number">2</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> invalid_argument(<span class="string">"NO SOLUTION!"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><font color="green" size="5">敲黑板</font>这个问题虽然简单，但有两点值得注意：<br><font color="red" size="4">元素逐个放入map</font>，<font color="red" size="4">map的value为index</font>。相同的技巧，看#290.</p>
+</li>
+</ul>
+<h1 id="290-Word-Pattern"><a href="#290-Word-Pattern" class="headerlink" title="#290 Word Pattern"></a>#290 Word Pattern</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: pattern &#x3D; &quot;abba&quot;, str &#x3D; &quot;dog cat cat dog&quot;</span><br><span class="line">Output: true</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑 (不容易想到)</p>
+<p>  要使用c++ 中 map容器的一个性质：”空的map中任何key对应的value都是0”。</p>
+<pre><code>第一步：为两个input分别声明map。
+第二步：同步遍历pattern和str每一个元素：
+    如果 两个map的key对应的value（index）相同，赋值给两个value为index+1;
+    否则 返回false
+最终判断：最终的循环变量i是否等于input 的长度。</code></pre></li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">wordPattern</span><span class="params">(<span class="built_in">string</span> pattern, <span class="built_in">string</span> str)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mp1;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt; mp2;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从一个string中逐个读取单词</span></span><br><span class="line">    <span class="function"><span class="built_in">istringstream</span> <span class="title">in</span><span class="params">(str)</span></span>;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>, n = pattern.size();</span><br><span class="line">    <span class="keyword">for</span> (<span class="built_in">string</span> word; in &gt;&gt; word; ++i) &#123;</span><br><span class="line">        <span class="keyword">if</span> (i == n || mp1[pattern[i]] != mp2[word])</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        mp2[word] = i + <span class="number">1</span>;</span><br><span class="line">        mp1[pattern[i]] = i + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> i == n;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>细节：从一个string中逐个读取单词。使用了c++中map的特性，考虑其他更通用的方法。</p>
+<h1 id="205-Isomorphic-Strings"><a href="#205-Isomorphic-Strings" class="headerlink" title="#205 Isomorphic Strings"></a>#205 Isomorphic Strings</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input: s &#x3D; &quot;egg&quot;, t &#x3D; &quot;add&quot;</span><br><span class="line">Output: true</span><br><span class="line"></span><br><span class="line">Input: s &#x3D; &quot;foo&quot;, t &#x3D; &quot;bar&quot;</span><br><span class="line">Output: false</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  思路与#290相同。用图示表示出来：</p>
+<p>  以 s = “egg”, t = “add” 为例：</p>
+  <div align="center"><img src="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/205-1.png" width="500"></div>
+
+<p>  以 s = “egg”, t = “ade” 为例：</p>
+  <div align="center"><img src="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/205-2.png" width="500"></div>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isIsomorphic</span><span class="params">(<span class="built_in">string</span> s, <span class="built_in">string</span> t)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mpS;</span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mpT;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;s.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (mpS[s[i]] != mpT[t[i]])</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        mpS[s[i]]=i+<span class="number">1</span>;</span><br><span class="line">        mpT[t[i]]=i+<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p><font color="green" size="5">敲黑板</font>逐个放入map</p>
+<h1 id="451-Sort-Charactors-By-Frequency"><a href="#451-Sort-Charactors-By-Frequency" class="headerlink" title="#451 Sort Charactors By Frequency"></a>#451 Sort Charactors By Frequency</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">&quot;aBbbccc&quot;</span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line">&quot;cccbbaB&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  很直接</p>
+<pre><code>第一步：将string s中元素放入map中，并且把键值对作为元素翻入vector中。
+第二步：按value的大小从大到小排序。
+第三步：将vector中的元素放入结果string中。</code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cmpByValue</span> &#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">const</span> pair&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt;&amp; l, <span class="keyword">const</span> pair&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt;&amp; r)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> l.second &gt; r.second;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">frequencySort</span><span class="params">(<span class="built_in">string</span> s)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">string</span> res;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mp;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;s.length(); i++)</span><br><span class="line">        mp[s[i]] ++;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;pair&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt;&gt; mapValue(mp.begin(), mp.end());</span><br><span class="line">    sort(mapValue.begin(), mapValue.end(), cmpByValue());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第三步</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;mapValue.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;mapValue[i].second; j++)&#123;</span><br><span class="line">            res+=mapValue[i].first;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="202-Happy-Number"><a href="#202-Happy-Number" class="headerlink" title="#202 Happy Number"></a>#202 Happy Number</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Input: 19</span><br><span class="line">Output: true</span><br><span class="line">Explanation: </span><br><span class="line">1**2 + 9**2 &#x3D; 82</span><br><span class="line">8**2 + 2**2 &#x3D; 68</span><br><span class="line">6**2 + 8**2 &#x3D; 100</span><br><span class="line">1**2 + 0**2 + 0**2 &#x3D; 1</span><br><span class="line"></span><br><span class="line">Those numbers for which this process ends 1 are happy numbers.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  过程如描述中的Explanation。要注意的是，对于不是happy number的数，防止无限循环，将每一步的结果放入set中（不重复）。</p>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(n!=<span class="number">0</span>)&#123;</span><br><span class="line">        res+=<span class="built_in">pow</span>(n % <span class="number">10</span>,<span class="number">2</span>);</span><br><span class="line">        n/=<span class="number">10</span>;   <span class="comment">// 每次循环，从高高位到低位得到每一位的数值。</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isHappy</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">unordered_set</span>&lt;<span class="keyword">int</span>&gt; record;</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (n ==<span class="number">1</span>) <span class="keyword">return</span> <span class="literal">true</span>; </span><br><span class="line">        </span><br><span class="line">        record.insert(n);</span><br><span class="line">        n = func(n);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (record.find(n) != record.end())</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/" data-id="ck5bbuogy0021a2fz5cct489k" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-Nsight-Eclipse-Edition" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/" class="article-date">
+  <time datetime="2019-12-10T04:13:56.000Z" itemprop="datePublished">2019-12-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/">CUDA-Nsight Eclipse Edition</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Nsight 是一个开发CUDA程序的IDE和debug工具。</p>
+<ol>
+<li><p>使用Nsight打开samples程序。<br>选择“new”，“CUDA C/C++ Project”,给<code>project</code>命名，<code>Project type</code> 选择”Import CUDA Sample“。接下来从你的机器的<code>samples install location</code>中选择想要打开的project。如果机器上有CUDA-enabled GPU，接下来的设置默认就好。此时可以看到，<code>.cu</code>文件存在于project下的<code>src</code>文件中。这表示，如果自己新建的project也应个先create一个<code>src</code>文件夹，来存放所有源文件。</p>
+</li>
+<li><p>使用Nsight创建自己的project。<br>如上述，只需在<code>project type</code>选择“Empty Project”。然后在这个project中 新建一个“Source Folder”，取名为<code>src</code>。最后就可以把所有的 <code>.cu</code>, <code>.cuh</code>, <code>.cpp</code>, <code>.h</code> 等源码文件在src中创建。</p>
+</li>
+</ol>
+<p>Nsight 的强大之处在于debug。它可以告诉你你的程序使用了多少<code>SM</code>，多少<code>warp</code>，多少<code>registers</code>，以及每个<code>register</code>中所存放的内容，<code>SM</code>的利用率，硬件基本信息等等。除了debug，Nsight还集成了<code>visual profiler</code>的功能，即可视化程序每个部分的执行时间，以便找到程序可优化之处：<br>以如下简单code为例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">int</span> N)</span></span>&#123;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> idd=tid; idd&lt;N; idd+=stride)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"hello from thread: %d\n"</span>, idd);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	kernel&lt;&lt;&lt;<span class="number">2</span>, <span class="number">12</span>&gt;&gt;&gt;(<span class="number">36</span>);</span><br><span class="line">	cudaDeviceSynchronize(); <span class="comment">//同步Device和Host，即，device 执行完后再执行Host</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"hello from Host\n"</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>即我有36个元素要处理，使用32个线程，并且32个线程分配到1个block中。当启用debug时，可以得到Device端的信息。<br>从硬件角度看：</p>
+<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/01.png" width="700"> </div>
+可以看到我的GPU编号为0，共有5个SM，使用了2个SM，每个SM都有64分warp，只使用了1个warp。
+
+<p>具体看一个SM中的一个warp。一个warp有32个线程，此处只使用了12个。</p>
+<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/02.png" width="700"> </div>
+
+<p>从逻辑角度看：启用了两个block，分别在两个SM中。</p>
+<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/03.png" width="700"> </div>
+
+<p>每个block使用12个线程。</p>
+<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/04.png" width="700"> </div>
+
+<p>另外Nsight还会给出Host的信息，如下：</p>
+<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/05.png" width="700"> </div>
+
+<p>以下是GPU中registers中的信息：</p>
+<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/06.png" width="700"> </div>
+
+<p>以及dissambly信息：</p>
+<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/07.png" width="700"> </div>
+
+<p>当生成可执行文件后，便可以使用profiler测程序的性能。</p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/10/CUDA-Nsight-Eclipse-Edition/" data-id="ck5bbuog6001ca2fzcjve0z3c" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-project-review" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/12/09/CUDA-project-review/" class="article-date">
@@ -424,8 +672,8 @@
       
         <h2 id="Unified-Memory"><a href="#Unified-Memory" class="headerlink" title="Unified Memory"></a>Unified Memory</h2><p>Unified Memory 是个逻辑概念，就像字面上所说，把Host内存和Device内存逻辑上放到一起，如此一来，对于程序员来说，就没有Host和Device之分了，表面上就更容易编写程序了。如下图所示。<br>“Unified Memory creates a pool of managed memory that is shared between the CPU and GPU, bridging the CPU-GPU divide. Managed memory is accessible to both the CPU and GPU using a single pointer. The key is that the system automatically migrates data allocated in Unified Memory between host and device so that it looks like CPU memory to code running on the CPU, and like GPU memory to code running on the GPU.”</p>
 <div align="center"><img src="/2019/11/27/CUDA-Unified-Memory/um.png"></div>
-如下是使用Unified memory一般情况：
 
+<p>如下是使用Unified memory一般情况：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Allocate Unified Memory -- accessible from CPU or GPU</span></span><br><span class="line"><span class="keyword">float</span> *x, *y;</span><br><span class="line">cudaMallocManaged(&amp;x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">cudaMallocManaged(&amp;y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">...</span><br><span class="line">kernel&lt;&lt;&lt;grid, threads&gt;&gt;&gt;();</span><br><span class="line">cudaDeviceSynchronize()</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// Free memory</span></span><br><span class="line">cudaFree(x);</span><br><span class="line">cudaFree(y);</span><br></pre></td></tr></table></figure>
 <p>但是注意了，使用这种方式时，要加上<code>cudaDeviceSynchronize()</code>。保证<br>“Just one more thing: I need the CPU to wait until the kernel is done before it accesses the results (because CUDA kernel launches don’t block the calling CPU thread). To do this I just call <code>cudaDeviceSynchronize()</code> before doing the final error checking on the CPU.”</p>
 <p>这种方法使得在逻辑上，xy不区分是存在于host 还是存在于device</p>
@@ -639,108 +887,6 @@
 
 
   
-    <article id="post-CUDA-在Device上初始化" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" class="article-date">
-  <time datetime="2019-10-06T11:45:39.000Z" itemprop="datePublished">2019-10-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/">CUDA-在Device上初始化</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="在GPU上初始化"><a href="#在GPU上初始化" class="headerlink" title="在GPU上初始化"></a>在GPU上初始化</h1><p>绝大多数CUDA教材，都会提出一般CUDA程序的标准步骤，其中一步是将Host的数据拷贝到Device。也就是说Host中数据要先被初始化，后才能拷贝到Device。其实，可以直接在Device中初始化数据，如此既可以避免Host到Device的数据传输，又可以加快数据初始化的速度。如下是一个小例：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cuda_runtime.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"device_launch_parameters.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 10</span></span><br><span class="line"><span class="comment">//#define N 16384 // N*N = 268435456   // 1GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*2 // N*N = 268435456*4   // 4GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*4 // N*N = 268435456*16   // 16GB 4Bytes </span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">initOnGPU</span><span class="params">(<span class="keyword">int</span>* dev_a)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> ix = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">	<span class="keyword">int</span> iy = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">	<span class="keyword">int</span> tid = ix * N + iy;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ix &lt; N &amp;&amp; iy &lt; N)&#123;</span><br><span class="line">        <span class="comment">// initialize on Device</span></span><br><span class="line">		dev_a[tid] = <span class="number">321</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1) </span></span><br><span class="line">	<span class="keyword">int</span>* h_a;</span><br><span class="line">	h_a = (<span class="keyword">int</span>*)<span class="built_in">malloc</span>(N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span>* dev_a;</span><br><span class="line">	cudaMalloc((<span class="keyword">int</span>**)&amp;dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2) init on gpu</span></span><br><span class="line">	<span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">2</span>, <span class="number">2</span>)</span></span>;</span><br><span class="line">	<span class="function">dim3 <span class="title">grid</span><span class="params">((N + block.x - <span class="number">1</span>), (N + block.y - <span class="number">1</span>))</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">clock_t</span> start = clock();</span><br><span class="line">	initOnGPU &lt;&lt;&lt; grid, block &gt;&gt;&gt;(dev_a);</span><br><span class="line">	<span class="keyword">clock_t</span> <span class="built_in">end</span> = clock();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"Time init on GPU: %.10f \n"</span>, (<span class="keyword">double</span>)(<span class="built_in">end</span> - start) / CLOCKS_PER_SEC);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 3) </span></span><br><span class="line">	cudaMemcpy(h_a, dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 4) show h_a</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N*N; i++)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"%d "</span>, h_a[i]);</span><br><span class="line">		<span class="keyword">if</span> ((i + <span class="number">1</span>) % N == <span class="number">0</span>)</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5) </span></span><br><span class="line">	<span class="built_in">free</span>(h_a);</span><br><span class="line">	cudaFree(dev_a);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>解释一下：<br>1）分别在Host和Device上开辟空间<code>h_a</code>和<code>dev_a</code>。<br>2）调用kernel，这个kernel的作用是初始化<code>dev_a</code>。注意并不是从Host中拷贝过去的。以及其他需要在GPU上执行的操作。<br>3）GPU上的操作完成后，得到的最终数据保存在<code>dev_a</code>中。拷贝到Host<code>h_a</code>中。<br>4）显示最终计算结果。<br>5）释放资源。</p>
-<p>其中kernel函数<code>initOnGPU</code>的作用是初始化<code>dec_a</code>中元素为321。</p>
-<p>结果如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Time init on GPU: <span class="number">0.0000160000</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span></span><br></pre></td></tr></table></figure>
-
-<p>所以说，直接在Device上初始化，相对先在Host上初始化后拷贝到Device，是更高效的。<br>CPU与GPU的通信是通过PCIe 实现的。PCIe第三代 的极限速度是 16GB每秒。相比较，费米架构的GPU中，GPU芯片与GPU存储之间的数据交换速度高达144GB 每秒。所以说Host和Device间的数据传输是CUDA应用的 性能瓶颈。</p>
-<p><font color="green" size="5">敲黑板</font> CUDA程序的一个基本规则是，尽可能减少host 与device间的数据交换。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" data-id="ck5bbuofs000na2fz4f7p1qjb" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-二维kernel的全局ID" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/10/06/CUDA-%E4%BA%8C%E7%BB%B4kernel%E7%9A%84%E5%85%A8%E5%B1%80ID/" class="article-date">
-  <time datetime="2019-10-06T08:17:38.000Z" itemprop="datePublished">2019-10-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/10/06/CUDA-%E4%BA%8C%E7%BB%B4kernel%E7%9A%84%E5%85%A8%E5%B1%80ID/">CUDA-二维kernel的全局ID</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="确定2Dkernel-的thread-全局ID"><a href="#确定2Dkernel-的thread-全局ID" class="headerlink" title="确定2Dkernel 的thread 全局ID"></a>确定2Dkernel 的thread 全局ID</h1><p>假如我configure 了一个kernel：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> row;</span><br><span class="line"><span class="keyword">int</span> col;</span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">12</span>, <span class="number">12</span>)</span></span>;</span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">((row + block.x - <span class="number">1</span>) / block.x, (col + block.y - <span class="number">1</span>) / block.y)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>那么在<code>__globla__</code>中的全局thread ID 用如下方法确定：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">(struct Points* dev_a, </span></span></span><br><span class="line"><span class="function"><span class="params">						struct Points* dev_b, </span></span></span><br><span class="line"><span class="function"><span class="params">						struct Points p1,      <span class="comment">//注意 C是不支持传入参数的引用的</span></span></span></span><br><span class="line"><span class="function"><span class="params">						struct Points p2,</span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">float</span>* dev_c, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> row, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> col)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> ix = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">	<span class="keyword">int</span> iy = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">	<span class="keyword">int</span> tid = ix * col + iy;    <span class="comment">// 用这个公式来确定全局ID</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ix &lt; row &amp;&amp; iy &lt; col)&#123;</span><br><span class="line">		dev_b[tid].x = dev_a[tid].x + p1.x;</span><br><span class="line">		dev_b[tid].y = dev_a[tid].y + p1.y;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 对每个元素进行所需要的操作，</span></span><br><span class="line">		Line(dev_b[tid], p1, p2);</span><br><span class="line">		getValue(dev_b[tid], dev_c[tid]);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其中<code>int tid = ix * col + iy;</code>用x和y两个方向的分量来确定threads的全局ID。</p>
-<p>同理，在求矩阵转置时的kernel是如下实现的：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">int</span> *m, <span class="keyword">int</span> *mt)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> idx = blockIdx.x*blockDim.x + threadIdx.x;</span><br><span class="line">	<span class="keyword">int</span> idy = blockIdx.y*blockDim.y + threadIdx.y;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> tidM, tidT;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (idx &lt; N &amp;&amp; idy &lt;N)&#123;</span><br><span class="line">		tidM = idx * N + idy;</span><br><span class="line">		tidT = idy * N + idx;</span><br><span class="line"></span><br><span class="line">		mt[tidT] = m[tidM];   <span class="comment">// copy value from original matrix to transpose matrix</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其中<code>tidM = idx * N + idy;</code>为原矩阵的thread ID。<code>tidT = idy * N + idx;</code>是转置后的矩阵thread ID。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E4%BA%8C%E7%BB%B4kernel%E7%9A%84%E5%85%A8%E5%B1%80ID/" data-id="ck5bbuofp000ka2fz3lftazxy" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -756,7 +902,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">7</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">7</span></li></ul>
     </div>
   </div>
 
@@ -785,7 +931,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -802,6 +948,10 @@
           </li>
         
           <li>
+            <a href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/">Linear Algebra-看待矩阵的视角</a>
+          </li>
+        
+          <li>
             <a href="/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/">汇总ShortCuts</a>
           </li>
         
@@ -811,10 +961,6 @@
         
           <li>
             <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/">LeetCode-方法论-DP-二</a>
-          </li>
-        
-          <li>
-            <a href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/">LeetCode-方法论-map&amp;set-二</a>
           </li>
         
       </ul>
