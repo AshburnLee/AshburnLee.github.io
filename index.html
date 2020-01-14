@@ -64,6 +64,98 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-APOD-Strong-Scaling-Weak-Scaling" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" class="article-date">
+  <time datetime="2020-01-14T11:52:36.000Z" itemprop="datePublished">2020-01-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>读书笔记来自<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/" target="_blank" rel="noopener">这里</a></p>
+<h1 id="APOD"><a href="#APOD" class="headerlink" title="APOD"></a>APOD</h1><ul>
+<li><p><code>APOD</code> 表示Assess，Parallelize, Optimize, Deploy。是Nvidia官方提出的CUDA应用程序的周期性设计模式，目的很明确，让开发者快速找到程序中可以并行的部分，尽可能地加速计算。</p>
+<ol>
+<li><p>Assess 作为循环设计的入口，评估程序中最耗时的代码部分。</p>
+</li>
+<li><p>Parallelize 根据原始代码，调用现有的GPU优化库（如<code>cuBLAS</code>，<code>cuFFT</code>或<code>Thrust</code>），也可以简单地添加一些预处理器指令作为并行化编译器的提示。</p>
+</li>
+<li><p>Optimize 有很多方法，可以从很多角度，比如 overlapping data transfers， fine-tuning floating-point operation sequences 等等。这一步一定要用可用的优化工具。</p>
+</li>
+<li><p>Deploy 经过初步优化后，保证正确性，在有限时间内得到一个较好的结果。而不是将所有可能优化都实现。</p>
+<p>根据具体任务和产品，迭代4步骤。尽可能的得到好的性能提升。</p>
+</li>
+</ol>
+</li>
+<li><p>建立优化优先级</p>
+<p>  在执行优化前要建立优化优先级。</p>
+<p>  高优化优先级是一些优化，这些优化对于大部分CUDA程序而言可以显著提升性能。低优化优先级是一些小的优化，这些优化可能只适用于某些特定的情况下。</p>
+<p>  先处理高优先级的优化，后解决低优先级的优化。这保证了在有限时间内提供足有的结果，并且避免了过早优化（premature optimization）。 </p>
+<p>  常见高优先级：</p>
+<pre><code>* 用profiler工具找到最耗时的部分
+* 并行处理可以并行的穿行部分</code></pre></li>
+</ul>
+<h1 id="Host-和-Device的不同"><a href="#Host-和-Device的不同" class="headerlink" title="Host 和 Device的不同"></a>Host 和 Device的不同</h1><p>同时含有CPU和GPU的计算系统称作是异构计算系统（Heterogeneous Computing）。为了有效是哟个CUDA，有必要知道Host和Device 的不同。</p>
+<ul>
+<li><p>线程资源<br>  Host上的流水线可以支持有限数量的并发线程。比如，具有2个32核芯处理器的服务器只能同时运行64个线程（如果CPU支持同时多线程，那么可同时运行的线程数为64的倍数，如128，192）。</p>
+<p>  相比之下，CUDA设备上最基本的并行执行单元包含32个线程（一个warp）。现代NVIDIA GPU可以在多处理器上同时支持最多2048个活动线程。如果一个GPU上有80个多处理器（SM），这表示可以有超过160000个并发活动线程。</p>
+</li>
+<li><p>线程本身<br>  CPU上的线程通常是重量级实体。操作系统必须用其他线程交换CPU执行通道上的线程，以提供多线程功能。因此，上下文切换（当两个线程被交换时）是缓慢而昂贵的。</p>
+<p>  相比之下，GPU上的线程是轻量级。在一个典型的系统中，数千个线程排队等待工作。如果GPU要等待一个warp，它只需在另一个warp上开始执行工作。因为单独的<font color="green">寄存器</font>被分配给所有活动线程，所以在GPU线程之间切换时<font color="green">不需要交换寄存器或其他状态</font>。资源一直分配给每个线程，直到它完成执行。</p>
+<p>  简而言之，CPU内核目的是最小化每次一小部分线程的等待时间，而GPU则被设计成处理大量并发、轻量级线程以最大化吞吐量。</p>
+</li>
+<li><p>RAM<br>  Host由CPU和系统内存构成，Device由GPU和显卡上的存储器构成。所以说，Host和Device有各自的RAM。</p>
+</li>
+</ul>
+<p>这些是硬件层面就并行角度看的不同。总之在这样的异构系统中Host做串行工作，Device做并行工作。</p>
+<h1 id="Profiling"><a href="#Profiling" class="headerlink" title="Profiling"></a>Profiling</h1><p>目的是找到程序中最耗时函数。有很多Profiler工具，比如<code>gprof</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -O2 -g -pg myprog.c</span><br><span class="line">$ gprof .&#x2F;a.out &gt; profile.txt</span><br><span class="line">Each sample counts as 0.01 seconds.</span><br><span class="line">  %   cumulative   self              self     total           </span><br><span class="line"> time   seconds   seconds    calls  ms&#x2F;call  ms&#x2F;call  name    </span><br><span class="line"> 33.34      0.02     0.02     7208     0.00     0.00  genTimeStep</span><br><span class="line"> 16.67      0.03     0.01      240     0.04     0.12  calcStats</span><br><span class="line"> 16.67      0.04     0.01        8     1.25     1.25  calcSummaryData</span><br><span class="line"> 16.67      0.05     0.01        7     1.43     1.43  write</span><br><span class="line"> 16.67      0.06     0.01                             mcount</span><br><span class="line">  0.00      0.06     0.00      236     0.00     0.00  tzset</span><br><span class="line">  0.00      0.06     0.00      192     0.00     0.00  tolower</span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+<p>其中<code>genTimeStep</code>函数是最耗时的。所以是我们优化对象</p>
+<h1 id="Strong-Scaling-amp-Weak-Scaling"><a href="#Strong-Scaling-amp-Weak-Scaling" class="headerlink" title="Strong Scaling &amp; Weak Scaling"></a>Strong Scaling &amp; Weak Scaling</h1><p>这是两类不同的问题，还有两者的混合问题。</p>
+<p>了解这里的目的是啥，是为我们的加速设置一个期望值，并且计划一个增强并行化的策略。</p>
+<ol>
+<li><p>Strong scaling 表示待解决的<font color="green">问题总体大小</font>是固定的，当使用更多的处理单元时，解决该问题的时间会相应地减少。</p>
+<p> 对应的测量加速公式是<code>Amdahl&#39;s Law</code>。</p>
+</li>
+<li><p>Weak scaling 表示<font color="green">每个处理单元（处理器）内所解决的问题大小</font>是固定的，随着处理器数量的增加，问题的总量也会变大。</p>
+<p> 对应测量加速的公式是<code>Gustafson&#39;s Law</code>。</p>
+</li>
+</ol>
+<p>公式理解看<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#understanding-scaling" target="_blank" rel="noopener">这里</a></p>
+<h1 id="得到正确结果是所有计算的目的"><a href="#得到正确结果是所有计算的目的" class="headerlink" title="得到正确结果是所有计算的目的"></a>得到正确结果是所有计算的目的</h1><p>一个并行系统可能遇到的关于结果正确性的问题，这些问题在一个串行系统中是不存在的：线程问题，浮点计算带来的问题，CPU和GPU的不同计算方式带来的问题。</p>
+<p><font color="green"></font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" data-id="ck5dtul18000084fzd9qs2w8i" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Trouble-Shooting" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/13/Trouble-Shooting/" class="article-date">
@@ -217,7 +309,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 <div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/APPD.jpg" width="700"></div>
 
 <p>左右相等，证毕。</p>
-<p>表达式<code>i</code>中<code>A</code>为一个函数，操作与右边灭一个列向量。但并没有展开，因为根据特征值特征向量的定义，可以将<code>A</code>用<code>lambda</code>替换。</p>
+<p>表达式<code>i</code>中<code>A</code>为一个函数，操作与右边每一个列向量。但并没有展开，因为根据特征值特征向量的定义，可以将<code>A</code>用<code>lambda</code>替换。</p>
 <p>而表达式<code>ii</code>的过程，就是将左边矩阵每一列当成一个列向量考虑，实际上，这个矩阵就是由列向量构成，所以自然而然的将这个矩阵用类向量的视角看待。</p>
 
       
@@ -275,7 +367,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 <p><code>$ export PS1=’:&gt; ’</code>    change the prompt(shorten prompt when it is too long)<br><code>:&gt; bash</code>    change back</p>
 <p><code>$ xdg-open .</code>   : open the current directory in terminal<br><code>$ sudo apt-get install alacarte</code>: 删除Linux中invalid app icon</p>
 <h2 id="Chrome-amp-Firefox"><a href="#Chrome-amp-Firefox" class="headerlink" title="Chrome &amp; Firefox"></a>Chrome &amp; Firefox</h2><p><code>Ctrl + Tab</code> or <code>Ctrl + PgDn</code>: Jump to next open tab<br><code>Ctrl + Shift + Tab</code> or <code>Ctrl + PgUp</code>: Jump to the previous open tab<br><code>Ctrl + t</code>: New tab<br><code>Ctrl + w</code>: close current tab<br><code>Ctrl + n</code>: new windows</p>
-<h2 id="Terminal"><a href="#Terminal" class="headerlink" title="Terminal"></a>Terminal</h2><p><code>ctrl + a</code>:移动光标到头<br><code>ctrl + e</code>:移动光标到尾<br><code>ctrl + u</code>:删除光标所在行<br><code>ctrl + k</code>:<br><code>ctrl + r</code>:历史中搜索<br><code>!xxx</code>: 调用最后一个以xxx开头的命令（当命令较长时）<br><code>export PS1=”AssHole&gt;”</code>: 缩短命令行</p>
+<h2 id="Terminal"><a href="#Terminal" class="headerlink" title="Terminal"></a>Terminal</h2><p><code>ctrl + a</code>:移动光标到头<br><code>ctrl + e</code>:移动光标到尾<br><code>ctrl + u</code>:删除光标所在行<br><code>ctrl + k</code>:<br><code>ctrl + r</code>:历史中搜索<br><code>!xxx</code>: 调用最后一个以xxx开头的命令（当命令较长时）<br><code>export PS1=&quot;--&gt;&quot;</code>: 缩短命令行</p>
 <h2 id="Quake-Terminal"><a href="#Quake-Terminal" class="headerlink" title="Quake Terminal"></a>Quake Terminal</h2><p><code>ctrl+shift+t</code>: new tab <br><code>ctrl+shift+w</code>: close tab<br><code>ctrl+page up</code>: go to previous tab<br><code>ctrl+page down</code>: go to next tab</p>
 <h2 id="Ipython-notebook-非Edit模式下"><a href="#Ipython-notebook-非Edit模式下" class="headerlink" title="Ipython notebook (非Edit模式下)"></a>Ipython notebook (非Edit模式下)</h2><p><code>b</code>: add cell below<br><code>a</code>: add cell above<br><code>1</code>: change cell to head 1<br><code>2</code>: change cell to head 2<br><code>Esc</code>: change to command mode<br><code>Enter</code>: change to edit mode<br><code>d+d</code>: delete cell<br><code>Shift+l</code>: show/close line numbers</p>
 <h2 id="Tmux"><a href="#Tmux" class="headerlink" title="Tmux"></a>Tmux</h2><p><code>ctrl+b</code>: pre-fix P<br><code>ctrl+b arrows</code>: move around windows<br><code>ctrl+b %</code>: split window l&amp;r<br><code>ctrl+b ”</code>: split window u&amp;d<br><code>ctrl+b x</code>: kill this split-screen<br><code>ctrl+b &amp;</code>: kill this window<br><code>kill-server</code> : kill all sessions</p>
@@ -1239,161 +1331,6 @@ else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
 
 
   
-    <article id="post-vim-neovim" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/18/vim-neovim/" class="article-date">
-  <time datetime="2019-12-18T14:22:49.000Z" itemprop="datePublished">2019-12-18</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/18/vim-neovim/">vim-neovim</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>将这些操作变为肌肉记忆。<br>可以将常用操作写进配置文件文件中。</p>
-<ol>
-<li>vim 对应的配置文件 <code>~.vimrc</code> </li>
-<li>neovim 对应的配置文件 <code>~.config/nvim/init.vim</code></li>
-</ol>
-<ul>
-<li><p>Open files</p>
-<pre><code>vi a.txt b.txt -O   :窗口打开两个文件</code></pre></li>
-<li><p>Command Mode</p>
-<pre><code>:           :进入Command Mode
-e!          :重新加载文件，撤销这次修改
-set nu      :加上行号   .vimrc
-syntax on   :语法高亮   .vimrc
-help s      :查看s的文档
-ls          :列出打开的文件（所有的buffer）
-b a.txt     :跳到a.txt
-e b.txt     :打开b.txt 加入另一个buffer
-vs          :当前文件分一个窗口显示
-vs a.txt    :分窗口打开a.txt
-ZZ          :关闭这个窗口，但不退出对应的buffer
-
-ctrl w w            :光标移动到下一个文件
-
-ctrl w =            :所有窗口等宽度
-ctrl w |            :最大化当前窗口
-ctrl w p            :回到上一个窗口</code></pre></li>
-<li><p>Insert Mode</p>
-<pre><code>ctrl u  :删除当前行 从行首到当前位置的内容
-ctrl h  :删除当前位置前一个字符
-ctrl w  :删除当前单词 从单词首到当前位置内容</code></pre></li>
-<li><p>Visual Mode</p>
-<p>  Visual Mode的一般操作步骤：进入Visual Mode，后<font color="red" size="4">选择</font>所需内容，对所选内容进行<font color="red" size="4">操作</font>。</p>
-<pre><code>v   :从Normal Mode进入Visual Mode
-V   :从Normal Mode进入Visual Mode 并且选中当前行</code></pre></li>
-<li><p>Normal Mode (即Read Mode，是进入Vim的默认模式，Esc返回Normal Mode)</p>
-<pre><code>a   :从当前位置的下一个位置 进入Insert Mode
-i   :从当前位置开始 进入Insert Mode
-
-I   :从当前行行首开始 进入Insert Mode
-A   :从当前行行尾开始 进入Insert Mode
-
-o   :从下一行的行首 进入Insert Mode
-O   :从上一行的行首 进入Insert Mode
-
-gg      :跳到整个文件的首行
-25gg    :跳到25行行首
-G       :跳到整个文件的尾行
-
-H/M/L   :移动到窗口的高/中/低位置
-
-ctrl u  :向上翻页
-ctrl f  :向下翻页
-
-zz  :当前行放到窗口的中间
-
-w/b      :以单词为单位移动 向后移动/向前移动
-h/j/k/l  :以字符为单位移动 左/下/上/右
-
-0   :移到行首
-$   :移到行尾
-
-y   :复制
-yiw :复制这个词
-yy  :复制这一行
-p   :粘贴到下一行
-P   :大p粘到上一行
-dd  :删除这一行
-diw :删除这个词
-
-u   :撤销这一步
-ZZ  :保存并退出
-
-ctrl s/ctrl q   :锁vim窗口/解锁窗口</code></pre></li>
-<li><p>Combo operations</p>
-<pre><code>ciw     :进入insert mode 更改这个单词 i表示“in”
-viw     :选中这个单词
-caw     :改变这个单词
-viw-&gt;y-&gt;viw-&gt;p  :拷贝一个单词从这里拷贝到那里        
-
-vi(     :选中括号中内容
-ci&quot;     :改变这一行中“”中内容 
-ci[     :改变这一行中[]中内容
-vi&quot;     :选中这一行中“”中内容
-yi)     :选择()中所有内容
-da[     :删除[]中所有内容
-
-dt&quot;     :删除从此到“的内容 t表示“to”
-di&lt;
-:% s/XXX/YYY/g     :用XXX替换YYY   
-:32,65d            :delete from line 32 to line 65,  
-
-v, $, y :从此处复制到行尾
-v, $, p :从此处粘贴到行尾 </code></pre></li>
-</ul>
-<ul>
-<li><p>命令中的字母含义</p>
-<pre><code>gg,G        : top, bottom
-d,c,y,v     : delete, change, copy, visually select
-w,s,p,t     : words, sentences, paragraphs, tags(HTML)
-a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
-<li><p>Code 补全</p>
-<pre><code>ctrl n + ctrl p     :自动补全词</code></pre></li>
-<li><p>查询且高亮</p>
-<pre><code>:set incsearch  :一边查一边高亮     
-:set hlsearch   :查询结果高亮      
-/JUNHUI         :(normal mode下)查询字符“JUNHUI”，n定位到下一个，N定位到上一个。 </code></pre></li>
-<li><p>有用插件</p>
-<ul>
-<li><p>NERDTree        :显示目录的插件。</p>
-<p>  使用方法：<code>cd</code>到project目录-&gt;进入<code>nvim</code>-&gt;<code>Command Mode</code>输入<code>:NERDTree</code>，即可显示当前project的文件和文件夹。</p>
-<p>  可以使用<code>&lt;Leader&gt;</code>快捷键避免繁复输入<code>NERDTree</code>。类似的设置要写入配置文件。</p>
-</li>
-</ul>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/18/vim-neovim/" data-id="ck5bbuoha002ia2fz7mk5dcv8" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1409,7 +1346,7 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">7</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">7</span></li></ul>
     </div>
   </div>
 
@@ -1438,7 +1375,7 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1449,6 +1386,10 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
+          </li>
         
           <li>
             <a href="/2020/01/13/Trouble-Shooting/">Trouble-Shooting</a>
@@ -1464,10 +1405,6 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
         
           <li>
             <a href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/">Linux安装cuDNN</a>
-          </li>
-        
-          <li>
-            <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/">LeetCode-方法论-DP-二</a>
           </li>
         
       </ul>
