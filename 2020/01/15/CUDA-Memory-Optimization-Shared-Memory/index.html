@@ -5,15 +5,21 @@
   
 
   
-  <title>Category: Linear Algebra | Junhui&#39;s Journal</title>
+  <title>CUDA-Memory Optimization-Shared Memory | Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Junhui&#39;s Journal">
-<meta property="og:url" content="http://yoursite.com/categories/Linear-Algebra/index.html">
+  <meta name="description" content="Allocation使用cudaMallo() 和cudaFree()在Device上申请, 和回收空间是很耗时的操作，所以程序应该尽可能重复利用已分配好的空间。 Shared Memory on-chip 高带宽，低延时，相较于local 和 global memory 在线程间没有bank冲突 线程可通过shared memory 来进行协作。  Shared Memory 的快速访问。通常将">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-Memory Optimization-Shared Memory">
+<meta property="og:url" content="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/index.html">
 <meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="Allocation使用cudaMallo() 和cudaFree()在Device上申请, 和回收空间是很耗时的操作，所以程序应该尽可能重复利用已分配好的空间。 Shared Memory on-chip 高带宽，低延时，相较于local 和 global memory 在线程间没有bank冲突 线程可通过shared memory 来进行协作。  Shared Memory 的快速访问。通常将">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/bank.png">
+<meta property="article:published_time" content="2020-01-14T17:24:41.000Z">
+<meta property="article:modified_time" content="2020-01-14T17:56:17.664Z">
 <meta property="article:author" content="Junhui">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/bank.png">
   
     <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
   
@@ -62,69 +68,78 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2020" class="archive-year">2020</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/" class="archive-article-date">
-  <time datetime="2020-01-03T06:58:28.000Z" itemprop="datePublished">Jan 3</time>
+        <section id="main"><article id="post-CUDA-Memory-Optimization-Shared-Memory" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" class="article-date">
+  <time datetime="2020-01-14T17:24:41.000Z" itemprop="datePublished">2020-01-15</time>
 </a>
-      
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/">Linear Algebra-看待矩阵的视角</a>
+    <h1 class="article-title" itemprop="name">
+      CUDA-Memory Optimization-Shared Memory
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
+    <div class="article-entry" itemprop="articleBody">
       
-        </div></section>
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/12/20/%E5%A4%A7%E8%AF%9D-%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0/" class="archive-article-date">
-  <time datetime="2019-12-20T09:36:38.000Z" itemprop="datePublished">Dec 20</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/12/20/%E5%A4%A7%E8%AF%9D-%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0/">大话-线性代数</a>
-    </h1>
-  
+        <h2 id="Allocation"><a href="#Allocation" class="headerlink" title="Allocation"></a>Allocation</h2><p>使用cudaMallo() 和cudaFree()在Device上申请, 和回收空间是很耗时的操作，所以程序应该尽可能<font color="green">重复利用</font>已分配好的空间。</p>
+<h1 id="Shared-Memory"><a href="#Shared-Memory" class="headerlink" title="Shared Memory"></a>Shared Memory</h1><ul>
+<li>on-chip</li>
+<li>高带宽，低延时，相较于local 和 global memory</li>
+<li>在线程间没有bank冲突</li>
+<li>线程可通过shared memory 来进行协作。</li>
+</ul>
+<p>Shared Memory 的快速访问。通常将<font color="green">经常要访问的数据</font>放入shared memory，来减少访存的次数Shared Memory。</p>
+<p>为了在并发访问中，实现高的内存带宽，shared memory被分成大小相等的块，<font color="green" size="4">banks</font>，这些banks可以被同时访问。所以任何对n个不同banks进行访存，这些访存是同时的。这就实现了高带宽。</p>
+<p>再深入一点，shared memory 被划分为banks，一个bank对外有一个<font color="green">接口</font>，使得每个周期只相应这个bank中的一个地址。所以对于同一个bank的不同地址的并发访问将导致bank conflict。如下图中的<code>threads a</code>和<code>threads b</code>，同时访问<code>bank 1</code>，冲突了。冲突了怎么办，冲突的访存会被排队串行执行。</p>
+<div align="center"><img src="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/bank.png" width="800"></div>
 
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
+<p>这就是shared memory 架构的设计特点。</p>
+<p>关于bank conflict：</p>
+<ul>
+<li><p>一个Warp中的所有（多个）threads访问不同的banks，无冲突。如图中<code>thread c</code>与<code>thread a</code>不冲突，<code>thread c</code>与<code>thread b</code>也不冲突。</p>
+</li>
+<li><p>一个Warp中所有（多个）的threads访问同一个地址，这是<font color="green">广播</font>，无冲突。这个地址所在的bank只相应这个地址，所以可以同时访问。[In this case, multiple broadcasts from different banks are coalesced into a single multicast from the requested shared memory locations to the threads. ]</p>
+</li>
+<li><p>关于bank conflict，一个Warp有32个threads，一个bank中的地址也是32，所以bank conflicts 可能发生在同一个warp中的任何线程。</p>
+</li>
+</ul>
+<p><font color="green"></font></p>
 
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" data-id="ck5e6gyov0000kgfzer18hqiy" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-APOD Strong-Scaling Weak-Scaling</div>
+    </a>
+  
+</nav>
+
+  
+</article>
 
 </section>
         
