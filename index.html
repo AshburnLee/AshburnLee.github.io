@@ -93,10 +93,10 @@
         <h2 id="Local-Memory"><a href="#Local-Memory" class="headerlink" title="Local Memory"></a>Local Memory</h2><p>Local memory 的命周期是一个thread，它存在与Global memory中，所以对Local memory的访存是低效的。</p>
 <p>Local memory 是存储自动变量的。通常自动变量是较复杂的structures 或者数组，这些对象都会消耗太多的这个线程的寄存器。当nvcc编译器发现没有足够的寄存器空间来保存变量时，就会将变量放进Local memory中。</p>
 <p>有个技巧，如果一个kernel函数中需要使用数组，而且数组的长度是固定的，为了避免使用Local memory，将这个数组拆成单个的变量，这些变量会被存储到Registers中（当然是当Registers的个数足够时）。</p>
-<h2 id="Constant-Memory"><a href="#Constant-Memory" class="headerlink" title="Constant Memory"></a>Constant Memory</h2><p>There is a total of 64 KB constant memory on a device. The constant memory space is cached. As a result, a read from constant memory costs one memory read from device memory only on a cache miss; otherwise, it just costs one read from the constant cache. Accesses to different addresses by threads within a warp are serialized, thus the cost scales linearly with the number of unique addresses read by all threads within a warp. As such, the constant cache is best when threads in the same warp accesses only a few distinct locations. If all threads of a warp access the same location, then constant memory can be as fast as a register access.</p>
+<h2 id="Constant-Memory"><a href="#Constant-Memory" class="headerlink" title="Constant Memory"></a>Constant Memory</h2><p>在Device中共有64KB大小的Constant memory。</p>
+<p>如果一个warp中的所有threads同一个Constant memory，此时的访存可以和Registers一样快。</p>
 <h2 id="Registers"><a href="#Registers" class="headerlink" title="Registers"></a>Registers</h2><p>通常，访问寄存器每一条指令都不会消耗额外的时钟周期，但由于寄存器的读写依赖关系和寄存器内存bank冲突，可能会出现延迟。</p>
 <p>编译器和硬件线程调度程序将尽可能优化调度指令，以避免寄存器bank冲突。应用程序无法直接控制这些银行冲突。这些开发者不受控制。</p>
-<p>Register Pressure</p>
 <p>当没有足够的寄存器可用分配给指定任务时，就会出现寄存器压力。尽管每个多处理器都包含数千个32位寄存器但它们都是在并发线程之间分配的。为了防止编译器分配太多寄存器，使用<code>-maxrregcount=N</code>编译器命令行选项（nvcc）或启动边界内核定义限定符来控制每个线程分配的寄存器的最大数量。</p>
 <h2 id="Allocation"><a href="#Allocation" class="headerlink" title="Allocation"></a>Allocation</h2><p>使用cudaMallo() 和cudaFree()在Device上申请, 和回收空间是很耗时的操作，所以程序应该尽可能<font color="green">重复利用</font>已分配好的空间。</p>
 
@@ -298,14 +298,14 @@
       
         <p>为什么出现计算机。计算机是发展出来的。从电子管到晶体管到集成电路到超大规模集成电路，到未来的生物计算机，量子计算机。</p>
 <p>早期计算机只含有固定用途的程序，这导致了，如果要改变工作内容，即程序，就需要重新设计结构电路。在没有通用计算机的当时，重新设计电路就很低效率。所以有了冯诺依曼的思想：</p>
-<p>把程序存储起来，并且设计通用电路。<font color="green">当需要运行某个程序时，把程序翻译成电路能理解的语言，让通用电路执行逻辑</font>。这就是冯诺依曼思想的核心 “<font color="green">存储程序指令，设计通用电路</font>”。</p>
-<p>所以可以总结冯诺依曼体系是将<font color="green">程序指令</font>和<font color="green">数据</font>一起存储的计算机设计概念。</p>
+<p>把程序存储起来，并且设计通用电路。<font color="green">当需要运行某个程序时，将程序和数据放入存储器中，把程序翻译成电路能理解的语言，让通用电路执行逻辑</font>。这就是冯诺依曼思想的核心 “<font color="green">存储程序指令，设计通用电路</font>”。</p>
+<p>所以可以总结冯诺依曼体系是将<font color="green">程序指令</font>和<font color="green">数据</font>一起放入存储器的计算机设计概念。也就是说，用户只需要输入不同的程序被数据，就可以改变计算机的操作。</p>
 <p>具体说就是，创造通用的指令集结构，将程序转化成一串指令的集合。指令作为一种特殊的静态数据，这使得一台计算机可以改变运行内容，而不用重新设计电路。</p>
 <p>这是冯诺依曼的贡献。</p>
 <p>冯诺依曼体系的基本组件：   </p>
 <ol>
 <li>存储器。存储运行时的程序和数据</li>
-<li>控制器。执行到哪一步，下一步执行什么。能长期记忆程序数据中间结果以及最终结果</li>
+<li>程序计数器PC。执行到哪一步，下一步执行什么。能长期记忆程序数据中间结果以及最终结果</li>
 <li>运算器。具备算术，逻辑运算和数据传送等数据加工处理能力</li>
 <li>I/O设备。能把所需程序和数据，传送至计算机中。能将计算结果传入，输出给用户</li>
 </ol>
