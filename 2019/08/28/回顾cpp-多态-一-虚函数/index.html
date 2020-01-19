@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>回顾cpp-多态-虚函数 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="封装-&gt;继承-&gt;多态  普通虚函数  虚析构函数  check 纯虚函数 抽象类 接口类 RTTI 异常处理  隐藏 覆盖  早绑定 晚绑定 check 虚函数表   静态多态（早绑定）函数重构 123456789101112class Rect&amp;#123;public:    int calcArea(int width);    int calcAera(int width, in">
+<meta property="og:type" content="article">
+<meta property="og:title" content="回顾cpp-多态-虚函数">
+<meta property="og:url" content="http://yoursite.com/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="封装-&gt;继承-&gt;多态  普通虚函数  虚析构函数  check 纯虚函数 抽象类 接口类 RTTI 异常处理  隐藏 覆盖  早绑定 晚绑定 check 虚函数表   静态多态（早绑定）函数重构 123456789101112class Rect&amp;#123;public:    int calcArea(int width);    int calcAera(int width, in">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-08-28T04:38:51.000Z">
+<meta property="article:modified_time" content="2020-01-19T23:34:04.902Z">
+<meta property="article:author" content="Junhui">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-回顾cpp-多态-一-虚函数" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/" class="article-date">
+  <time datetime="2019-08-28T04:38:51.000Z" itemprop="datePublished">2019-08-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      回顾cpp-多态-虚函数
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>封装-&gt;继承-&gt;多态</p>
+<ul>
+<li>普通虚函数 </li>
+<li>虚析构函数  check</li>
+<li>纯虚函数</li>
+<li>抽象类</li>
+<li>接口类</li>
+<li>RTTI</li>
+<li>异常处理 </li>
+<li>隐藏 覆盖 </li>
+<li>早绑定 晚绑定 check</li>
+<li>虚函数表 </li>
+</ul>
+<h1 id="静态多态（早绑定）"><a href="#静态多态（早绑定）" class="headerlink" title="静态多态（早绑定）"></a>静态多态（早绑定）</h1><p>函数重构</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">calcArea</span><span class="params">(<span class="keyword">int</span> width)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">calcAera</span><span class="params">(<span class="keyword">int</span> width, <span class="keyword">int</span> height)</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Rect rect;</span><br><span class="line">    rect.calcAera(<span class="number">10</span>);</span><br><span class="line">    rect.calcAera(<span class="number">10</span>, <span class="number">20</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序在运行之前，在编译阶段就已经确定下来要使用哪个calsAera()函数了。很早地就将函数编译进去了。此情况叫做<font color="green">早绑定</font>，即<font color="green">静态多态</font>。</p>
+<h1 id="动态多态（晚绑定）"><a href="#动态多态（晚绑定）" class="headerlink" title="动态多态（晚绑定）"></a>动态多态（晚绑定）</h1><p>不同的对象下达相同的指令，做着不同的操作，为动态多态。有前提的：它必须以封装，继承为基础。</p>
+<p>也就是说，有了封装继承之后，才能谈动态多态。动态多态至少由两个类，父子类，三个类时动态多态才表现的更加明显。</p>
+<p>父类：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Shape()&#123;&#125;</span><br><span class="line">    ~Shape()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Shape()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;                  <span class="comment">// 不是虚函数</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"Shape-&gt;calc area"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>子类Circle：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r)&#123;</span><br><span class="line">        m_dR = r;</span><br><span class="line">    &#125;</span><br><span class="line">    ~Circle()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Circle()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;                 <span class="comment">// 不是虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">3.14</span>*m_dR*m_dR;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>子类Rect：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Rect(<span class="keyword">double</span> width, <span class="keyword">double</span> height)&#123;</span><br><span class="line">        m_dWidth = width;</span><br><span class="line">        m_dHeight = height;</span><br><span class="line">    &#125;</span><br><span class="line">    ~Rect()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Rect()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>&#123;                  <span class="comment">// 不是虚函数</span></span><br><span class="line">        <span class="keyword">return</span> m_dHeight*m_dWidth;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dWidth;</span><br><span class="line">    <span class="keyword">double</span> m_dHeight;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>如果，用两个<font color="red" size="4">父类指针</font>分别指向<font color="red" size="4">两个不同子类</font>，后分别调用两个子类的计算面积方法：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Shape *shape1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);     <span class="comment">// 父类指针指向子类对象</span></span><br><span class="line">Shape *shape2 = <span class="keyword">new</span> Rect(<span class="number">3.0</span>, <span class="number">5.0</span>);  <span class="comment">// 父类指针指向子类对象</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;shape1-&gt;calcArea()&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;shape2-&gt;calcArea()&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">delete</span> shape1;</span><br><span class="line">shape1 = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">delete</span> shape2;</span><br><span class="line">shape2 = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+<p>结果并不是我们想要的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Shape-&gt;calc area    <span class="comment">//  调用父类方法</span></span><br><span class="line"><span class="number">0</span></span><br><span class="line">Shape-&gt;calc area    <span class="comment">// 调用父类方法</span></span><br><span class="line"><span class="number">0</span></span><br><span class="line">~Shape()     <span class="comment">// 调用父类析构函数</span></span><br><span class="line">~Shape()     <span class="comment">// 调用父类析构函数</span></span><br></pre></td></tr></table></figure>
+<p>都调用了父类的<code>calcArea()</code>方法。且都调用了父类的析构函数。此现象称为<font color="green">隐藏</font>.</p>
+<p><font color="red">WHY</font>：我们不希望这样，我们希望通过父类指针可以调用子类的方法。如何解决？使用virtual 关键字。</p>
+<hr>
+<p>解决方法：在父类中想要实现多态的函数前加virtual，同时在子类的相同函数前也加上<code>virtual</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;         <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"calc area..."</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;         <span class="comment">//  虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">3.14</span>*m_dR*m_dR;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;       <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="keyword">return</span> m_dHeight*m_dWidth;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>此时的结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3.14</span>     <span class="comment">// 调用Circle 的方法</span></span><br><span class="line"><span class="number">15</span>       <span class="comment">// 调用Rect 的方法</span></span><br><span class="line">~Shape()    <span class="comment">// 只调用父类析构函数</span></span><br><span class="line">~Shape()</span><br></pre></td></tr></table></figure>
+
+<p>一种情况：当使用<font color="red" size="4">子类指针</font>指向<font color="red" size="4">子类对象</font>时，不管是不是<code>virtual</code>，都会由正确执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">Circle *circle1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);</span><br><span class="line">Rect *rect1 = <span class="keyword">new</span> Rect(<span class="number">3.0</span>, <span class="number">5.0</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">delete</span> circle1;</span><br><span class="line">circle1 = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">delete</span> rect1;</span><br><span class="line">rect1 = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3.14</span></span><br><span class="line"><span class="number">15</span></span><br><span class="line">~Circle()    <span class="comment">// 既调用子类析构函数</span></span><br><span class="line">~Shape()     <span class="comment">// 又调用父类析构函数</span></span><br><span class="line">~Rect()</span><br><span class="line">~Shape()</span><br></pre></td></tr></table></figure>
+
+<p><font color="grenn" size="6">敲黑板</font></p>
+<ul>
+<li>父类子类要实现多态的方法前，都要加上<code>virtual</code>。</li>
+<li>当父类子类父的析构函数不是虚函数时，类指针指向子类对象，则只调用父类析构函数。</li>
+<li>当父类子类父的析构函数不是虚函数时，<code>delete</code> 后跟父类指针，只执行父类析构函数，如果<code>delete</code> 后跟子类指针，执行父类和子类析构函数。</li>
+</ul>
+<h1 id="虚析构函数"><a href="#虚析构函数" class="headerlink" title="虚析构函数"></a>虚析构函数</h1><p>为啥要有虚析构函数？一句话，基类子类都应该把析构函数定义成<code>virtual</code>！<br>看以下例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r, <span class="keyword">int</span> x, <span class="keyword">int</span> y)&#123;</span><br><span class="line">        m_pCenter = <span class="keyword">new</span> Coordinate(x, y)   <span class="comment">// 2.实例化一个坐标对象</span></span><br><span class="line">        m_dR = r;</span><br><span class="line">    &#125;</span><br><span class="line">    ~Circle()&#123;</span><br><span class="line">        <span class="keyword">delete</span> m_pCenter;                 <span class="comment">// 3.释放坐标对象</span></span><br><span class="line">        m_pCenter = <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">3.14</span>*m_dR*m_dR;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">    Coordinate* m_pCenter;      <span class="comment">// 1.多一个坐标类属性</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>在析构函数中释放了坐标对象，不会内存泄露。可是！<br>在多态时：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Shape *shape1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);    </span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;shape1-&gt;calcArea()&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line"></span><br><span class="line"><span class="keyword">delete</span> shape1;      <span class="comment">// 使用父类指针销毁子类对象</span></span><br><span class="line">shape1 = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+
+<p>使用父类指针销毁子类对象时，<strong>只调用了父类析构函数<code>~Shape()</code>，而子类<code>~Circle()</code>未被调用。坐标对象不会被释放，此时</strong>内存泄漏。<strong>这就不合理了，虚构函数设计就是要被执行的</strong></p>
+<p>如何解决？<br>虚析构函数！在父类和子类的析构函数前加<code>virtual</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">virtual</span> ~Shape()&#123;            <span class="comment">// 虚析构</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">virtual</span> ~Circle()&#123;           <span class="comment">// 虚析构   </span></span><br><span class="line">    <span class="keyword">delete</span> m_pCenter;                 <span class="comment">// 释放坐标对象</span></span><br><span class="line">    m_pCenter = <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此时，使用父类指针销毁子类对象时，<strong>既调用了父类析构函数<code>~Shape()</code>，又调用子类<code>~Circle()</code></strong>。总之，应该都加上virtual，使父类子类的析构函数都被执行。情理上就对了。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~Shape()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Shape()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~Circle()&#123;                <span class="comment">//  虚</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Circle()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:     </span><br><span class="line">    <span class="keyword">virtual</span> ~Rect()&#123;                    <span class="comment">// 虚</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Rect()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>父类子类的析构函数都被执行：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">    Shape *shape1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);</span><br><span class="line">    Shape *shape2 = <span class="keyword">new</span> Rect(<span class="number">3.0</span>, <span class="number">5.0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">delete</span> shape1;</span><br><span class="line">    shape1 = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">delete</span> shape2;</span><br><span class="line">    shape2 = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">OUTPUT：</span><br><span class="line"><span class="number">3.14</span></span><br><span class="line"><span class="number">15</span></span><br><span class="line">~Circle()</span><br><span class="line">~Shape()</span><br><span class="line">~Rect()</span><br><span class="line">~Shape()</span><br></pre></td></tr></table></figure>
+
+<p><strong>执行完子类虚析构函数，再执行父类虚析构函数。</strong></p>
+<h2 id="virtual使用限制"><a href="#virtual使用限制" class="headerlink" title="virtual使用限制"></a>virtual使用限制</h2><ul>
+<li>普通函数不能是虚函数</li>
+<li>不能修饰静态成员函数  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Animal</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">func</span><span class="params">()</span></span>; </span><br><span class="line">&#125;；</span><br></pre></td></tr></table></figure></li>
+<li>不能修饰inline函数，如果这么做了，计算机会忽略inline关键字，使之成为虚函数。</li>
+<li>不能修饰构造函数。</li>
+</ul>
+<p><font color="grenn" size="6">敲黑板</font><br>防止内存泄露，父类子类都使用<strong>虚析构函数</strong>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/" data-id="ck5lntfpn000105fz7d4j8i41" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          回顾cpp-多态-虚函数表
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">LeetCode-方法论-数组相关-一</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">21</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/">安装使用MinGW Cmake在windows</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/">CUDA-优化优先级</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/">CUDA-Memory Optimization-Local Memory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/">CUDA-Memory Optimization-Shared Memory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

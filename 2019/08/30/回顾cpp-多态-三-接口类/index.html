@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>回顾cpp-多态-接口类 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="封装-&gt;继承-&gt;多态  普通虚函数 check 虚析构函数 check 纯虚函数 check 抽象类  check 接口类 check RTTI 异常处理  隐藏 覆盖  check 早绑定 晚绑定 check 虚函数表  check  纯虚函数类中，一个虚函数没有函数体，直接&#x3D;0。称为纯虚函数。如下： 123456class Shape&amp;#123;public:    Shape()">
+<meta property="og:type" content="article">
+<meta property="og:title" content="回顾cpp-多态-接口类">
+<meta property="og:url" content="http://yoursite.com/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="封装-&gt;继承-&gt;多态  普通虚函数 check 虚析构函数 check 纯虚函数 check 抽象类  check 接口类 check RTTI 异常处理  隐藏 覆盖  check 早绑定 晚绑定 check 虚函数表  check  纯虚函数类中，一个虚函数没有函数体，直接&#x3D;0。称为纯虚函数。如下： 123456class Shape&amp;#123;public:    Shape()">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-08-30T04:44:59.000Z">
+<meta property="article:modified_time" content="2020-01-19T23:36:03.134Z">
+<meta property="article:author" content="Junhui">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-回顾cpp-多态-三-接口类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/" class="article-date">
+  <time datetime="2019-08-30T04:44:59.000Z" itemprop="datePublished">2019-08-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      回顾cpp-多态-接口类
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>封装-&gt;继承-&gt;多态</p>
+<ul>
+<li>普通虚函数 check</li>
+<li>虚析构函数 check</li>
+<li>纯虚函数 check</li>
+<li>抽象类  check</li>
+<li>接口类 check</li>
+<li>RTTI</li>
+<li>异常处理 </li>
+<li>隐藏 覆盖  check</li>
+<li>早绑定 晚绑定 check</li>
+<li>虚函数表  check</li>
+</ul>
+<h1 id="纯虚函数"><a href="#纯虚函数" class="headerlink" title="纯虚函数"></a>纯虚函数</h1><p>类中，一个虚函数没有函数体，直接=0。称为纯虚函数。如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Shape()&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>&#123; <span class="keyword">return</span> <span class="number">0</span>; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcPerimeter</span><span class="params">()</span> </span>= <span class="number">0</span>;     <span class="comment">// 纯虚函数</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>上一篇中提到，一个类中因为有虚函数，所以一定有虚函数表指针，当然也有虚函数表。如果类中虚函数是一个普通的虚函数，这个虚函数的地址存储在虚函数表中。如果是纯虚函数，则在虚函数表中存储0，即该函数没有实现，没有函数体，所以自然就没有地址。</p>
+<h1 id="抽象类"><a href="#抽象类" class="headerlink" title="抽象类"></a>抽象类</h1><p>纯虚函数一定是某个类的成员函数。包含纯虚函数的类称作抽象类。</p>
+<ul>
+<li>1.含有一个或多个纯虚函数的类叫做抽象类。</li>
+<li>2.抽象类是不被允许实例化对象的。 </li>
+<li>3.抽象类的子类也可以是抽象类。<br>Person类太抽象，所以设计成抽象类：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Person(<span class="built_in">string</span> name);</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">work</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">printInfo</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p><code>Worker</code>类作为子类还是抽象，仍然是抽象类：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Worker</span>:</span><span class="keyword">public</span> Person&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Worker(<span class="built_in">string</span> name);</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">work</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">printInfo</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;m_strName; &#125;;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">string</span> m_strName;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>4.抽象类的子类，只有把抽象类中的所有纯虚函数都做了实现，那么这个子类才可以实例化对象：<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Dustman</span>:</span><span class="keyword">public</span> Worker&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Worker(<span class="built_in">string</span> name);</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">work</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">"Cleaning"</span>; &#125;;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">printInfo</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;m_strName; &#125;;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">string</span> m_strName;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<hr>
+<p>一个实例：<br><code>Person</code>被设计为一个抽象类，它<code>work</code>可是是什么不好说：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Person(<span class="built_in">std</span>::<span class="built_in">string</span> name)&#123; m_strName=name; &#125;;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">work</span><span class="params">()</span></span>=<span class="number">0</span>;      <span class="comment">// 纯虚函数</span></span><br><span class="line">    <span class="keyword">virtual</span> ~Person()&#123;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> m_strName;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><code>Worker</code>类还是抽象，具体做什么呢：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 还是抽象类</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Worker</span>:</span><span class="keyword">public</span> Person&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Worker(<span class="built_in">std</span>::<span class="built_in">string</span> name, <span class="keyword">int</span> age):Person(name)&#123;</span><br><span class="line">        m_iAge=age;</span><br><span class="line">    &#125;;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iAge;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><code>Dustman</code>就具体了，做清洁的一类工人：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Dustman</span>:</span><span class="keyword">public</span> Worker&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Dustman(<span class="built_in">std</span>::<span class="built_in">string</span> name, <span class="keyword">int</span> age):Worker(name, age)&#123;&#125;;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">work</span><span class="params">()</span></span>&#123; <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"cleaning"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>; &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="接口类"><a href="#接口类" class="headerlink" title="接口类"></a>接口类</h1><p><strong>只含有</strong>纯虚函数的类称为接口类。即这个类中没有任何数据成员，只有成员函数，而这仅有的成员函数又都是纯虚函数。<br>接口类长这样：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcPerimeter</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>“只有纯虚函数”真的是只有纯虚函数。</p>
+<p>使用时，接口类表达一种能力或协议。接口类要被继承，且所有纯虚函数要被实现。最常使用方式如下例：</p>
+<p>两个接口类：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 饮食习惯</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Diet</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">breakfirst</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">int</span> <span class="title">numMeal</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 训练方式</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Training</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">method</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">int</span> <span class="title">timeOfTraining</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>一个普通类：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ID 即姓名</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ID</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ID(<span class="built_in">std</span>::<span class="built_in">string</span> name)&#123;</span><br><span class="line">        m_strName = name;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">printName</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"candidate name is: "</span>&lt;&lt;m_strName&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> m_strName;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><code>Fighter</code>是一个更具体的类，分别继承上述两个接口和一个普通类，并且实现所有的纯虚函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Fighter</span>:</span> <span class="keyword">public</span> ID, <span class="keyword">public</span> Diet, <span class="keyword">public</span> Training&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Fighter(<span class="built_in">std</span>::<span class="built_in">string</span> name, <span class="keyword">int</span> trainTime, <span class="keyword">int</span> numMeal):ID(name)&#123;</span><br><span class="line">        num_meal = numMeal;</span><br><span class="line">        time_training = trainTime;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 实现所有接口中的纯虚函数：</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">int</span> <span class="title">numMeal</span><span class="params">()</span></span>&#123; <span class="keyword">return</span> num_meal; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">int</span> <span class="title">timeOfTraining</span><span class="params">()</span></span>&#123; <span class="keyword">return</span> time_training; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">breakfirst</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">"breakfirst ture"</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">method</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">"scientific"</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    </span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_meal;</span><br><span class="line">    <span class="keyword">int</span> time_training;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>最近的子类（在本例中也是唯一的子类）<code>Fighter</code> 继承了<code>ID</code>， 表示<code>Fighter</code> 有<code>ID</code>类的姓名。而且继承了<code>Diet</code>， 表示<code>Fighter</code>有各自的饮食习惯。还继承了<code>Training</code>类， 表示<code>Fighter</code>有各自的训练方式。只是<code>Fighter</code>的饮食和训练方式要自己定义。</p>
+<p>最终使用的是那个没有被继承的类<code>Fighter</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">match</span><span class="params">(Fighter* candidate1, Fighter* candidate2)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (candidate1-&gt;timeOfTraining() &gt; candidate2-&gt;timeOfTraining())</span><br><span class="line">        <span class="built_in">cout</span>&lt;&lt;<span class="string">"candidate1 is more likely going to win"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">cout</span>&lt;&lt;<span class="string">"candidate2 is more likely going to win"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// How to use API</span></span><br><span class="line">    <span class="comment">// 应该实例化“没有被继承的类”</span></span><br><span class="line">    <span class="function">Fighter <span class="title">f1</span><span class="params">(<span class="string">"Junhui"</span>, <span class="number">5</span>, <span class="number">3</span>)</span></span>;</span><br><span class="line">    <span class="function">Fighter <span class="title">f2</span><span class="params">(<span class="string">"Uunnui"</span>, <span class="number">6</span>, <span class="number">4</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    f1.printName();</span><br><span class="line">    f2.printName();</span><br><span class="line"></span><br><span class="line">    match(&amp;f1, &amp;f2);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该实例是接口类的常用形式。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/" data-id="ck5lntfpk000005fz26115eoo" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          回顾cpp-多态-RTTI
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">回顾cpp-多态-虚函数表</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">21</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/">安装使用MinGW Cmake在windows</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/">CUDA-优化优先级</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/">CUDA-Memory Optimization-Local Memory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/">CUDA-Memory Optimization-Shared Memory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>回顾cpp-多态-RTTI | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="RTTI的主要内容RTTI：运行时类型识别。主要有两个运算符实现：  typeid： 返回对象 dynamic_cast： 用于将父类的指针或引用安全地转化成子类的指针或引用。  为什么设计RTTI当处于这种情况时，使用RTTI：当我们想使用基类对象的指针或引用，执行某个派生类的操作，并且该操作不是虚函数时。 一般讲，只要有可能，我们应该尽量使用虚函数。当一个方法被定义成虚函数时，编译器将根据对象">
+<meta property="og:type" content="article">
+<meta property="og:title" content="回顾cpp-多态-RTTI">
+<meta property="og:url" content="http://yoursite.com/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="RTTI的主要内容RTTI：运行时类型识别。主要有两个运算符实现：  typeid： 返回对象 dynamic_cast： 用于将父类的指针或引用安全地转化成子类的指针或引用。  为什么设计RTTI当处于这种情况时，使用RTTI：当我们想使用基类对象的指针或引用，执行某个派生类的操作，并且该操作不是虚函数时。 一般讲，只要有可能，我们应该尽量使用虚函数。当一个方法被定义成虚函数时，编译器将根据对象">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-08-31T13:30:26.000Z">
+<meta property="article:modified_time" content="2020-01-19T23:31:17.108Z">
+<meta property="article:author" content="Junhui">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-回顾cpp-多态-四-RTTI" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" class="article-date">
+  <time datetime="2019-08-31T13:30:26.000Z" itemprop="datePublished">2019-08-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      回顾cpp-多态-RTTI
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="RTTI的主要内容"><a href="#RTTI的主要内容" class="headerlink" title="RTTI的主要内容"></a>RTTI的主要内容</h1><p>RTTI：运行时类型识别。主要有两个运算符实现：</p>
+<ul>
+<li>typeid： 返回对象</li>
+<li>dynamic_cast： 用于将父类的<strong>指针或引用</strong>安全地转化成子类的<strong>指针或引用</strong>。</li>
+</ul>
+<h1 id="为什么设计RTTI"><a href="#为什么设计RTTI" class="headerlink" title="为什么设计RTTI"></a>为什么设计RTTI</h1><p>当处于这种情况时，使用RTTI：当我们想使用基类对象的指针或引用，执行某个派生类的操作，并且该操作不是虚函数时。</p>
+<p>一般讲，只要有可能，我们应该尽量使用虚函数。当一个方法被定义成虚函数时，编译器将根据对象的动态类型自动正确地选择正确的方法版本。</p>
+<p>但，并不是任何时候都能定义虚函数的。当无法使用虚函数时，就使用RTTI。另一方面，使用RTTI，程序员必须清楚地知道要转换成什么类型，并且检查转换是否成功。</p>
+<p>dynamic_cast 使用规则：</p>
+<ul>
+<li>只能使用<strong>对象指针</strong>或<strong>对象引用</strong>的转换：dynamic_cast&lt;bird*&gt;或dynamci_cast&lt;&amp;bird&gt;，而不能是对象本身。</li>
+<li>需要转换的类型中必须包含<strong>虚函数</strong>，</li>
+<li>如果转换成功返回子类地址，否则返回NULL。</li>
+</ul>
+<p>typeid 使用规则：</p>
+<ul>
+<li>type_id 返回一个type_info对象的引用。</li>
+<li>如果想通过基类指针获得派生类的数据类型，基类必须带有<strong>虚函数</strong>。</li>
+<li>只能判断当前<strong>对象</strong>是基类还是子类，无法判断<strong>指针</strong>是基类还是子类。即typeid()参数是对象，而非指针。</li>
+</ul>
+<p>type_info 中的内容：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">type_info</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">name</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br><span class="line">    <span class="keyword">bool</span> <span class="keyword">operator</span>==(<span class="keyword">const</span> typ_info&amp; rhs) <span class="keyword">const</span>;</span><br><span class="line">    <span class="keyword">bool</span> <span class="keyword">operator</span>!=(<span class="keyword">const</span> typ_info&amp; rhs) <span class="keyword">const</span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">before</span><span class="params">(<span class="keyword">const</span> type_info&amp; rhs)</span> <span class="keyword">const</span></span>;</span><br><span class="line">    <span class="keyword">virtual</span> ~type_info();</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    ......</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h1 id="用法与实例"><a href="#用法与实例" class="headerlink" title="用法与实例"></a>用法与实例</h1><p>假如由两个类都继承了借口类Flyable：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Flyable</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">takeoff</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">landing</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bird</span> :</span> <span class="keyword">public</span> Flyable&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// foraging()方法不是虚函数</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">foraging</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"bird--foraging"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">takeoff</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"bird--takeoff"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">landing</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"bird--landing"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Plane</span> :</span> <span class="keyword">public</span> Flyable&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// carry()方法不是虚函数</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">carry</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"plane--carray"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">takeoff</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"plane--takeoff"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">landing</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"plane--landing"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>Bird由飞行能力，且可以觅食，Plane有飞行能力，且可以运输。</p>
+<p>可以定义一个函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(Flyable* obj)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 1)</span></span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(*obj).name()&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    obj-&gt;takeoff();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2)</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">typeid</span>(*obj)== <span class="keyword">typeid</span>(Bird))&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 3)</span></span><br><span class="line">        Bird* bird = <span class="keyword">dynamic_cast</span>&lt;Bird*&gt;(obj);</span><br><span class="line">        bird-&gt;foraging();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 4)</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">typeid</span>(*obj)== <span class="keyword">typeid</span>(Plane))&#123;</span><br><span class="line">        Plane* plane = <span class="keyword">dynamic_cast</span>&lt;Plane*&gt;(obj);</span><br><span class="line">        plane-&gt;carray();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    obj-&gt;landing();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>1)打印<code>obj</code>是什么类型。<code>typeid(对象)</code>：参数是<code>obj</code>所指向的对象<br>2)判断当前<code>obj</code>指针所指向的是什么类型。如果<code>obj</code>指向的对象是<code>Bird</code>类型，<br>3)将原本是<code>Flyable 类型</code>的<code>obj指针</code>，cast为<code>Bird 类指针</code>。并且将转化后的指针复制给一个新的指针。<br>4)同3)。</p>
+<p>此时在main中调用func()。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Bird b ;</span><br><span class="line">func(&amp;b);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(b).name()&lt;&lt;<span class="built_in">endl</span>;     <span class="comment">//</span></span><br></pre></td></tr></table></figure>
+
+<p>b为<code>Bird类</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Flyable* plane = <span class="keyword">new</span> Plane();</span><br><span class="line">func(plane);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(plane).name()&lt;&lt;<span class="built_in">endl</span>;     <span class="comment">// </span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(*plane).name()&lt;&lt;<span class="built_in">endl</span>;    <span class="comment">//</span></span><br></pre></td></tr></table></figure>
+
+<p>分别返回<code>Flyable 指针类</code>，和<code>Plane 类</code>。</p>
+<p><code>typeid().name()</code>使用前需要<code>#include &lt;typeinfo&gt;</code>。</p>
+<p><font color="gree" size="5">敲黑板</font>在可能的情况下，最好定义虚函数，而非直接管理类型。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" data-id="ck5lntfpp000205fzaqm40d5p" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          回顾cpp-继承-一
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">回顾cpp-多态-接口类</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">21</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/">安装使用MinGW Cmake在windows</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/">CUDA-优化优先级</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/">CUDA-Memory Optimization-Local Memory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/">CUDA-Memory Optimization-Shared Memory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
