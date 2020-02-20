@@ -916,12 +916,12 @@
         <ol>
 <li><p>优化实列：并行规约（parallel reduction）</p>
 <p> 规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
-<ul>
+<ol>
 <li><p>未优化的规约</p>
-<p>  过程看图：</p>
-  <div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
+<p> 过程看图：</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
 
-<p>  其中</p>
+<p> 其中</p>
 <ul>
 <li><p><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</p>
 </li>
@@ -933,14 +933,24 @@
 </ul>
 </li>
 <li><p>优化后规约</p>
-<p>  由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
-<p>  这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程相邻位置的数据</font>. </p>
-<p>  所以改进如图：</p>
-<p>  &lt;&gt;pic6&lt;&gt;</p>
-<p>  实现：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 4，2，1</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=blockDim.x/<span class="number">2</span>; stride &gt; <span class="number">0</span>; stride /= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对特定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; stride)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
+<p> 这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程相邻位置的数据</font>. </p>
+<p> 所以改进如图：</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
 
-<p>  为什么此法好？</p>
+<p> 其中：</p>
+<ul>
+<li><p><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</p>
+</li>
+<li><p>n个元素需要<code>lg(n)</code>次平行。</p>
+</li>
+<li><p>当数据元素更多时，橙色虚线框对应的threads与其他threads不属于同个warp，所以threads所用资源较前一个实现提前释放。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 4，2，1</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=blockDim.x/<span class="number">2</span>; stride &gt; <span class="number">0</span>; stride /= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对特定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; stride)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为什么此法好？</p>
+</li>
+</ul>
 <ol>
 <li><p>每一轮都有一半的 thread不需要工作，资源释放掉。让warp提前完工，释放资源。</p>
 </li>
@@ -960,7 +970,7 @@
 </li>
 </ol>
 </li>
-</ul>
+</ol>
 </li>
 </ol>
 
