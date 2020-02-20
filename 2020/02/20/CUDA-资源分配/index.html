@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-资源分配 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="所有这些内存数量约束了整个系统中的block数量个threads数量。真正工作的threads数量在不同应用之间是不同的。  SM资源分割: GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大。增加资源占量后导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降。使用CUDA Occ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-资源分配">
+<meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="所有这些内存数量约束了整个系统中的block数量个threads数量。真正工作的threads数量在不同应用之间是不同的。  SM资源分割: GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大。增加资源占量后导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降。使用CUDA Occ">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-02-20T01:27:25.000Z">
+<meta property="article:modified_time" content="2020-02-20T01:42:09.584Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-资源分配" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" class="article-date">
+  <time datetime="2020-02-20T01:27:25.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-资源分配
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>所有这些<font color="red" size="4">内存数量</font>约束了整个系统中的<code>block</code>数量个<code>threads</code>数量。真正工作的<code>threads</code>数量在不同应用之间是不同的。 </p>
+<p>SM资源分割:</p>
+<p>GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大。增加资源占量后导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降。使用<code>CUDA Occupancy Calculator</code>工具可以修改某一资源的数值，得到其他资源的相应变化。</p>
+<ol>
+<li><p>一个<code>SM</code>中的Registers数量是有限的</p>
+<p> 这些寄存器要划分给这个SM中的所有threads。所以如果每个thread使用的寄存器过多时，这个SM中实际使用的threads数会减少，使得资源占用率下降。</p>
+<p> 比如一个SM中有768个threads，含有8k个registers。要想最大并行化，即使用所有的threads，那么就要保证每个thread分配最多10个registers，此时<code>10x768=7680</code>个registers，没有超过8k个。但是如果每个threads分配11个registers，此时<code>11x768=8448</code>个registers，此时算数上最多只能使用727个threads（<code>8000/11=727.27</code>），实际情况会比727还要少，因为超出限制后，减少的threads是以<font color="red" size="4">block为粒度</font>的：如果一个block有256个threads，那么可用threads数就不是<code>从768减到727</code>，而是<code>从768减到512</code>，只要threads数减少，就以<font color="red">block为单位（粒度）</font>地减少，如果要减少threads超过256（一个block的threads数），如257，那么实际就要减少<code>2个block（256+1，2个blocks）</code>。</p>
+<p> 分析一个资源分配的例子：一个SM有<code>768</code>个threads，<code>8000</code>个registers。如果每个threads使用<code>11</code>个registers，并且每个block含有<code>256</code>个threads。（上面计算过：最大并行化的register的分配是每个thread10个registers。）</p>
+<ul>
+<li><p>一个SM驻扎的threads个数有多少</p>
+<p>  可用threads个数：<code>8000/11=727</code>个threads，而且<code>2x256=512</code>，<code>3x256=768</code>超过了<code>727</code>，所以这个SM驻扎<code>2</code>个blocks（512threads，与上述相符合）。</p>
+</li>
+<li><p>一个SM驻扎的warp数量有多少</p>
+<p>  <code>2</code>个blocks共有<code>512</code>个threads，所以<code>512/32=16</code>个warps，这个SM驻扎<code>16</code>个warps。而理论极限是驻扎<code>768/32=24</code>个warps。16远小于24.</p>
+</li>
+<li><p>warp数量减少意味着什么</p>
+<p>  通过上述计算，没有合理分配registers的结果是，存在资源的浪费，不能最大并行化。</p>
+</li>
+</ul>
+</li>
+</ol>
+<ol start="2">
+<li><p>同样的，一个<code>SM</code>中的<code>shared memory</code>的大小也是有限的</p>
+<p> 回忆：<code>shared memory</code>在同一个<code>block</code>的<code>threads</code>间共享。</p>
+<p> 一个SM中实际使用的block数量也是与<font color="orange">每个block被分配的shared memory的大小有关</font>。</p>
+<p> 比如：一个SM有<code>8</code>个blocks，可使用shared memory为<code>16kB</code>。所以想要充分使用所有的blocks，每个block被分配shared memory最多为<code>2kB（16kB/8）</code>. 换句话说，为了最大并行化，充分使用SM的计算资源，这个SM中每个block可使用的shared memory最多为<code>2kB</code>。</p>
+<p> 假如，每个block使用<code>4kB</code>，则实际只是用了<code>4个（16kB/4kB）blocks</code>，相较于上一种中情况只是用了一半的threads。</p>
+<p> 假如，每个block使用<code>5kB</code>，则实际只用了<code>3个（16kB/5kB）blocks</code>，此种情况可使用的threads就更少了。</p>
+</li>
+</ol>
+<p><font color="purple" size="5">敲黑板</font>Registers数量和每个block分配到的shared memory的大小，<font color="red">共同约束了</font>整个系统中的block数量个threads数量。实际应用中也要尽量少的使用存储资源，从而最大化并行程度。<font color="red">内存是竞争资源</font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" data-id="ck6u3fo16000316fzfas1fzld" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-线程同步-线程调度
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">安装使用MinGW Cmake在windows</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">22</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/">CUDA-例-规约</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/">CUDA-例-向量相乘</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/">CUDA-线程同步-线程调度</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/">CUDA-资源分配</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

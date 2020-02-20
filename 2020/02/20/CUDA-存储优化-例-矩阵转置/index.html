@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-存储优化-例-矩阵转置 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="存储优化  重叠内存传输和计算，组团传输减少小块数据的频繁传输。  现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是  避免凌乱无规律的访存  避免一个线程访问连续的一段空间。 将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足C">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-存储优化-例-矩阵转置">
+<meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="存储优化  重叠内存传输和计算，组团传输减少小块数据的频繁传输。  现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是  避免凌乱无规律的访存  避免一个线程访问连续的一段空间。 将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足C">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-02-20T01:53:50.000Z">
+<meta property="article:modified_time" content="2020-02-20T01:55:17.489Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-存储优化-例-矩阵转置" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" class="article-date">
+  <time datetime="2020-02-20T01:53:50.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-存储优化-例-矩阵转置
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>存储优化</p>
+<p> 重叠内存传输和计算，组团传输减少小块数据的频繁传输。</p>
+<p> 现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是</p>
+<ul>
+<li><p>避免凌乱无规律的访存</p>
+</li>
+<li><p>避免一个线程访问连续的一段空间。</p>
+<p>将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足Coalescing Access。<font color="orange">shared memory的设计目的之一就是通过对它的编程，来规则化访存模式。</font></p>
+<p>回忆：shared memory的架构是连续32it的地址被分配到连续的板块中。见下图：</p>
+<p>&lt;&gt;pic7&lt;&gt;</p>
+<p>对于bank冲突，注意理解<font color="orange">地址的编号和bank的编号的不同</font>。</p>
+</li>
+</ul>
+</li>
+<li><p>注意</p>
+<p> Coalescing access是就global memory而言的。</p>
+</li>
+<li><p>存储优化，优化实列：矩阵转置</p>
+<ul>
+<li><p>未优化的矩阵转置</p>
+<p>  对global memory的读和写总有一个，对global存储的地址访问不是连续的，这就不能最大化coalescing access。看下图：</p>
+<p>  &lt;&gt;pic8&lt;&gt;</p>
+<p>  <font color="red">每个block负责矩阵的一个子块，所有子块并行执行。</font></p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">    __<span class="function">global__ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">        <span class="comment">// 每个线程的id</span></span><br><span class="line">        <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">        <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">        <span class="keyword">int</span> index_a = idx + WIDTH * idy;</span><br><span class="line">        <span class="keyword">int</span> index_b = idy + HEIGHT * idx;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 转置操作</span></span><br><span class="line">        b[index_b] = a[index_a];</span><br><span class="line">    &#125;</span><br><span class="line">    ``` </span><br><span class="line">    所以：</span><br><span class="line"></span><br><span class="line">* 使用shared memory优化的矩阵转置</span><br><span class="line"></span><br><span class="line">    在写入global memory之前，先从global中将所读取的元素存入shared memory中，当shared memory中有了所有元素，将此时的shared memory转置一下，最后将结果再写（&lt;font color=red&gt;合并地&lt;/font&gt;）入global memory。</span><br><span class="line"></span><br><span class="line">    &lt;font color=orange&gt;如此一来对global的读和写，地址都是被连续访问的&lt;/font&gt;。看下图：</span><br><span class="line"></span><br><span class="line">    &lt;&gt;pic9&lt;&gt;</span><br><span class="line"></span><br><span class="line">    实现：</span><br><span class="line"></span><br><span class="line">    ```cpp</span><br><span class="line">    __global_ <span class="keyword">void</span> transpose(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)&#123;</span><br><span class="line"></span><br><span class="line">        __shared__ <span class="keyword">float</span> tile[TILE_DIM][TILE_DIM];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 每个线程的id</span></span><br><span class="line">        <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">        <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line">        <span class="keyword">int</span> index_in = idx + idy * WIDTH;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">        idx = threadIdx.x + TILE_DIM * blockIdx.y;</span><br><span class="line">        idy = threadIdx.y + TILE_DIM * blockIdx.x;</span><br><span class="line">        <span class="keyword">int</span> index_out = idx + idy * HEIGHT;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 从a中写入到bank中，会产生冲突。(马上解决)</span></span><br><span class="line">        tile[threadIdx.y][threadIdx.x] = a[index_in];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 等待这个block对应的tile中的 元素都有了之后，再执行下后续操作。</span></span><br><span class="line">        __syncthreads();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 转置操作</span></span><br><span class="line">        b[index_out] = tile[threadIdx.x][threadIdx.y];</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>解决上述过程中的bank冲突</p>
+<p>  对于上述实现过程中<code>tile[threadIdx.y][threaadIdx.x] = a[index_in];</code>，如果tile的大小是16x16，那么这一句会产生16路的bank冲突。  <font color="red">！！！如何理解bank的编号！！！</font></p>
+<p>  如何解决bank冲突，看下图：</p>
+<p>  &lt;&gt;pic10&lt;&gt;</p>
+<p>  实现中只需更tile的定义为<code>__shared__ float tile[TILE_DIM][TILE_DIM+1];</code>，列中的数据存于相同的bank。</p>
+<p>  如此一来，不论是对tile行或列的访存，都不会产生bank冲突。相同的颜色在不同的行和列。</p>
+</li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" data-id="ck6u3fo14000116fz1b2780xh" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-例-规约</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">22</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/">CUDA-例-规约</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/">CUDA-例-向量相乘</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/">CUDA-线程同步-线程调度</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/">CUDA-资源分配</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
