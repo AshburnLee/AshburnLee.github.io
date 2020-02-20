@@ -64,6 +64,181 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-杂记待归类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/" class="article-date">
+  <time datetime="2020-02-20T02:40:58.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol start="4">
+<li><p>向量数据类型</p>
+<p> 同时适用于Host和Device，通过<code>make_&lt;type name&gt;</code>来构造，如</p>
+<p> <code>int2 i2 = make_int2(3,4)</code>：i2向量含有3和4两个元素。<br> <code>float4 f4 = make_float4(1.0f, 2.0f, 3.0f, 4.0f)</code>：f4是含有4个元素的数组。</p>
+<p> 访问方式如下：</p>
+<p> <code>int x = i2.x; int y = i2.y;</code></p>
+</li>
+<li><p>CUDA程序调试和开发</p>
+<ul>
+<li>可以使用<code>ssh</code>登路远程含有CUDA enabled GPU的服务器。</li>
+<li>通常使用双GPU的系统开发CUDA程序，一个GPU负责显示，另一个负责计算，可以使用<code>Nsight</code>等工具。</li>
+<li>只有一个GPU时，在Linux系统中可以关闭桌面环境（释放桌面环境对GPU的占用），只在命令行中使用<code>CUDA-gdb</code>调试</li>
+</ul>
+</li>
+<li><p>CUDA开发的任务</p>
+<p><font color="red" size="4">有效的数据并行算法</font> + <font color="gree" size="4">针对GPU架构特性的优化</font> = 获得并行<font color="orange" size="4">最优性能</font></p>
+</li>
+<li><p>OpenCL</p>
+<p>OpenCL使用起来繁琐，而且运行速度远远低于CUDA运行速度。OpenCL与CUDA的主要功能有着十分相似之处，一个CUDA程序员很容易掌握OpenCL编程。</p>
+</li>
+<li><p>half-warp </p>
+<p>截图</p>
+</li>
+<li><p>Streams-流</p>
+<p>任务并行（Task Parallelism），不同于在大量的数据上执行相同的任务（SIMD），而是同时执行多个不同的任务。</p>
+</li>
+<li><p>CUDA数据并行原语</p>
+<p>啥是原语，就是这个领域的基本操作。CUDA并行原语库（CUDA Data Parallel Primitive Library, CUDPP）. 含有并行前缀和，并i选哪个排序，并行规约等。<font color="orange">这些原语为许多数据并行算法提供了重要基础</font>。如果你正在编写某个复杂算法，那么CUDPP很可能已经提供了这个算法。</p>
+<p>CUDPP 下载地址：<a href="http://code.google.com/p/cudpp" target="_blank" rel="noopener">http://code.google.com/p/cudpp</a></p>
+<p>for more information：CUDA By Example 178页 </p>
+</li>
+</ol>
+<ol start="26">
+<li><p>想清楚一个问题</p>
+<p>如果使用shared memory，每个block对用自己的shared memory，<font color="red">当这个block中threads的ID更新后，这个block并没有再被分配新的shared memory</font>. 也就是说如果使用两个blocks, 两个blocks有两段shared memory, block中threads 的ID更新后, 所计算结果会写入这个thread所在block的shared memory中. <font color="red">thread ID变了, 但所属的block不变</font>.  </p>
+</li>
+</ol>
+<ol start="27">
+<li><p>理解SIMD，SIMT</p>
+<p>Single Instruction Multiple Data（Thread）. </p>
+<ul>
+<li>Single：相同的操作，kernel函数只有一个</li>
+<li>Instruction：kernel函数所做的事情</li>
+<li>Multiple：所处理的数据量大，要拆分为一批一批</li>
+<li>Data：大的数据量</li>
+<li>Threads：一个SP上的大量thread超快速切换，获得延时隐藏</li>
+</ul>
+</li>
+<li><p>warp中的divergence</p>
+<p>已经知道，再一个warp中，所有的threads执行相同的指令，但是如果指令中含有条件分支语句，很大程度上会发生divergence。比如<code>12-优化并行归于</code> 中的描述：一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</p>
+<p>总之，分支发散使得性能明显下降。但是，注意<font color="orange">divergence只发生在一个warp中</font>。</p>
+<p>可以中和算法的上下文，将divergence的粒度变为32（warp的大小）的倍数，从而避免warp内的分支发散。比如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (tid%<span class="number">2</span> == <span class="number">0</span>)&#123;</span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>偶数id的thread把100写入偶数编号的地址，奇数id的thread将200写入奇数编号的地址。会发生分支发散。如果将分支的粒度定为32，则没有了divergence：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( tid%<span class="number">32</span> == <span class="number">0</span> )&#123;</span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是两者的结果的是不同的，实际中，考虑根据算法上下文结合此方法。</p>
+<p>使用<code>brand_efficiency</code>指标来查看divergence的情况：</p>
+<p><code>$ nvprof --mereics brand_efficiency ./out</code>, 但是CUDA编译器会进行优化，将短的，有条件的代码段的断定指令取代了分支指令。所以，会看到虽然代码中有分支，却显示分支效率100%。</p>
+</li>
+</ol>
+<ol start="41">
+<li><p>数据预读取</p>
+<p><font color="orange">在一次读取global memory的操作和使用这个数据之间，插入独立于以上数据的操作，可以隐藏访问延迟</font>。如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> m = dev_a[i];  <span class="comment">// 1. 从global memory中读取</span></span><br><span class="line"><span class="keyword">float</span> f = a * b;     <span class="comment">// 2. 与m无关的操作 </span></span><br><span class="line"><span class="keyword">float</span> f2 = m*f;      <span class="comment">// 3. 使用m</span></span><br></pre></td></tr></table></figure>
+<p>分析：在warp切换中，</p>
+</li>
+<li><p>指令优化</p>
+<p>GPU中执行指令时很快速的，所以通常不用太在意指令的优化。优化顺序一般是存储优化，后执行配置优化，最后可以考虑指令优化。</p>
+<p>比如：除以<code>2^n</code>，使用移位操作<code>&gt;&gt;n</code>，以<code>2^n</code>求模，使用<code>&amp;(2^n - 1)</code>；避免从double到float的自动转换，<code>float a = 0.0</code>，使用<code>float a = 0.0f</code>。</p>
+<p>还比如，两种运行时数学库函数的取舍，精度高的速度低，精度低的速度高。使用<code>-use-fast-math</code>编译选项后，强制将速度慢的<code>func()</code>转化为速度快的<code>__func()</code>。</p>
+<p>还比如循环展开。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/" data-id="ck6u563vo0001oofz0u6164u2" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-扫描算法" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/" class="article-date">
+  <time datetime="2020-02-20T02:39:23.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>扫描算法</p>
+<p> Scan，是并行编程的一个重要原语，作为基本模块使用与很多不同的算法。Scan做的是什么事呢？看下图：</p>
+<p> &lt;&gt;pic17&lt;&gt;</p>
+<p> 其特点是，输出的每一个值有前缀依赖性，就是说每个输出依赖前面的所有输入。两种基本的扫描的过程如下：</p>
+</li>
+</ol>
+<pre><code><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">T</span> <span class="title">scan1</span>(<span class="title">T</span>* <span class="title">out</span>, <span class="title">T</span>* <span class="title">in</span>, <span class="title">size_t</span> <span class="title">N</span>)&#123;</span></span><br><span class="line">    T sum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> <span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">        out[i] = sum;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">T</span> <span class="title">scan2</span>(<span class="title">T</span>* <span class="title">out</span>, <span class="title">T</span>* <span class="title">in</span>, <span class="title">size_t</span> <span class="title">N</span>)&#123;</span></span><br><span class="line">    T sum=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)&#123;</span><br><span class="line">        out[i] = sum;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+无需解释。
+
+因为其每个元素的前缀依赖性，</code></pre><ol start="2">
+<li><p>Blelloch并行扫描算法</p>
+<p> 这个方法在前元素后依赖的情况下，并行实现。Blelloch算法分了两段执行。过程如下图：</p>
+<p> &lt;&gt;pic18&lt;&gt;</p>
+<p> 每个阶段的操作虽然容易想到，但是，<font color="orange" size="5">这个框架是很值得借鉴的</font>。图中实例，每两行之间的操作是并行的，而且这两行之间的并行操作必须全部执行完毕，才能向下执行，所以需要同步操作，尤其是当存在线程ID更新时。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/" data-id="ck6u563vl0000oofzdy6pfrg2" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-再看规约-一段规约" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" class="article-date">
@@ -803,241 +978,6 @@ for循环中，每一个thread循环球集合`Sphere *s`中的所有球`s[i]`，
 
 
   
-    <article id="post-CUDA-例-向量相乘" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" class="article-date">
-  <time datetime="2020-02-20T01:46:34.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/">CUDA-例-向量相乘</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ol>
-<li><p>矩阵相乘CPU版本</p>
-<p> 思路：三重循环，</p>
-<ul>
-<li><p>外层：遍历结果矩阵所有行，</p>
-</li>
-<li><p>中层：对结果矩阵每一行，遍历所有列，</p>
-</li>
-<li><p>内层：结果矩阵某一行某一列元素的得到，需要A矩阵对应行，B矩阵对应列，的元素相乘后累加，这需要一个循环。内层循环结束后，就得到结果矩阵中的一个元素。</p>
-<p>看图：&lt;&gt;pic11&lt;&gt;</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">matrixMultiplicationCPU</span><span class="params">(<span class="keyword">float</span>* M, <span class="keyword">float</span>* N, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">                             <span class="keyword">int</span> A_height, <span class="keyword">int</span> Awidth_Bheight, <span class="keyword">int</span> B_width)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i &lt; A_height; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j &lt; B_width; j++)&#123;</span><br><span class="line">            <span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k=<span class="number">0</span>; k &lt; Awidth_Bheight; k++)&#123;</span><br><span class="line">                <span class="keyword">float</span> a = M[i * Awidth_Bheight + k];</span><br><span class="line">                <span class="keyword">float</span> b = M[k * B_width + j];</span><br><span class="line">                sum += a * b;</span><br><span class="line">            &#125;</span><br><span class="line">            P[i * B_width + j] = sum;  </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其中，M的大小为<code>（A_height x Awidth_Bheight）</code>，N的大小为<code>（Awidth_Bheight x B_width）</code>. 注意中括号内，索引的计算。</p>
-</li>
-</ul>
-</li>
-<li><p>未优化的矩阵相乘kernel：</p>
-<p> 参数：</p>
-<ul>
-<li><p>AColBRow：AxB中A的列数，也是B的行数</p>
-</li>
-<li><p>BCol：B的列数</p>
-</li>
-<li><p>a，b矩阵的元素索引按行标注索引</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">simpleMultiply2</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">float</span>* b, <span class="keyword">float</span> *c)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> row = threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = threadIdx.x;</span><br><span class="line">    <span class="keyword">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; AColBRow; i++) &#123;</span><br><span class="line">        sum += a[row * AColBRow + i] * b[i * BCol + col];</span><br><span class="line">    &#125;</span><br><span class="line">    c[row * BCol + col] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这种方法中<code>每一个线程</code>负责乘累加<code>结果的一个元素</code>，这个元素的得到是通过循环读取a矩阵的一行，b矩阵的一列，后乘累加得到。这个过程中因为不涉及到结果间的依赖，所以不需要同步机制。</p>
-<p>缺点：</p>
-</li>
-<li><p>观察<code>row</code>和<code>col</code>的定义，发现这个实现只使用了一个block。对于大的矩阵相乘，一个block不足以覆盖所有元素。</p>
-</li>
-<li><p>这个过程中对global memory的读写是频繁的。所以速度慢。</p>
-</li>
-</ul>
-</li>
-<li><p>多blocks分块处理矩阵相乘</p>
-<p> 参数：</p>
-<ul>
-<li><p>AColBRow：AxB中A的列数，也是B的行数</p>
-</li>
-<li><p>BCol：B的列数</p>
-</li>
-<li><p>a，b矩阵的元素索引按行标注索引</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">simpleMultiply2</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">float</span>* b, <span class="keyword">float</span> *c)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> row = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; AColBRow; i++) &#123;</span><br><span class="line">        sum += a[row * AColBRow + i] * b[i * BCol + col];</span><br><span class="line">    &#125;</span><br><span class="line">    c[row * BCol + col] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>与上一种方法相比，优势是，使用多个blocks，每个block负责结果矩阵中的一个矩形块中的元素。<br>每个thread的操作细节看下图：</p>
-<p>&lt;&gt;pic1&lt;&gt;</p>
-<p>有了kernel，如何调用kernel</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// block的个数</span></span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">((A的行数+<span class="number">1</span>)/tile的行数，(B的列数+<span class="number">1</span>)/tile的列数)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 每个block中的线程数</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(tile的行数，tile的列数)</span></span></span><br><span class="line">simpleMultiply2&lt;&lt;&lt;grid, block&gt;&gt;&gt;(a, b, c)</span><br></pre></td></tr></table></figure>
-
-<p>比如图中</p>
-</li>
-<li><p>定义tileRow=2，tileCol=2.</p>
-</li>
-<li><p>A的行数为ARow=4，列数ACol=3；</p>
-</li>
-<li><p>B的行数为BRow=3，列数BCol=4；</p>
-<p>那么，有如下对kernel的配置，自然地每个tile的大小为2x2，每个block大的大小也是2x2. <font color="red">block与block之间相互不影响，所以所有blocks并行执行</font>。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// block的个数，共有4个</span></span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">(<span class="number">2</span>，<span class="number">2</span>)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 每个block中的线程数，有4个</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">2</span>，<span class="number">2</span>)</span></span></span><br><span class="line">simpleMultiply2&lt;&lt;&lt;grid, block&gt;&gt;&gt;(a, b, c)</span><br></pre></td></tr></table></figure>
-
-<p>其中<code>tile</code>是一个block处理区域的大小，也就是一个block的大小，比如2x2，3x4. 是开发者根据问题情况自己定义的（通常是32 的倍数）。通过结果矩阵的行列数和<code>tile</code>的行列数，可以计算出，所需block数量个blocks阵大小。</p>
-<p>这个优化算然可以处理任何大小的矩阵相乘，但是对global memory的读写并没有做优化。</p>
-</li>
-</ul>
-</li>
-<li><p>global memory慢</p>
-<p> 假如一个GPU的性能峰值时346.5 Gflops。所以需要<code>346.5x4bit=1386 GB/s</code>的带宽才能达到峰值。但是这个GPU的存储实际带宽可能只有86.4GB/s，也就是<code>86.4GB/s / 4bit=21.6 Gflops</code>的性能。而实际上代码运行的速度可能只有15 Gflops。只有峰值的1/20. 所以要尽量减少对global memory的访存。</p>
-<p> 对于矩阵相乘，可以使用shared memory来减少对global memory的访存。<font color="orange">始终要有这个意识</font>。</p>
-</li>
-<li><p>优化实列：使用shared memory优化矩阵相乘</p>
-<p> <font color="orange" size="4">Shared memory这么使用：</font></p>
-<p> 思路是，因为使用了若干个block来分块结果矩阵，每一个block有自己单独的shared memory，这个存储空间由这个block内的所有threads共享，而且就矩阵相乘这个问题，A矩阵的每一行，和B矩阵的每一列在计算这个块时会不止一次被使用。所以将结果阵中这一块对应的A和B中行列存入这个block对应的shared memory中，如此避免了对global memory的频繁访问。进一步，由于A和B会很大，存入shared memory中的A行，和B列也是分段的，避免了shared memory不够用。</p>
-<p> Bare in mind，每一个thread处理一个结果阵中的一个元素，也就是说，kernel函数是一个thread得到一个结果矩阵中的一个元素。</p>
-<p> 注意，整个过程中有两处同步操作，因为涉及到线程间的同步。</p>
-<p> &lt;&gt;pic2&lt;&gt;</p>
-<p> 过程见下图：</p>
-<p> &lt;&gt;pic3&lt;&gt;</p>
-<p> 伪码</p>
-<p> <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#shared-memory" target="_blank" rel="noopener">https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#shared-memory</a></p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">MatMulKernel</span><span class="params">(Matrix A, Matrix B, Matrix C)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// block的行ID和列ID</span></span><br><span class="line">    <span class="keyword">int</span> blockRow = blockIdx.y;</span><br><span class="line">    <span class="keyword">int</span> blockCol = blockIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个block计算结果矩阵中的一块</span></span><br><span class="line">    Matrix Csub = GetSubMatrix(C, blockRow, blockCol);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 灭个thread计算结果矩阵中的一个元素，</span></span><br><span class="line">    <span class="comment">// 这个结果通过累加存入Cvalue</span></span><br><span class="line">    <span class="keyword">float</span> Cvalue = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// thread的行ID和列ID</span></span><br><span class="line">    <span class="keyword">int</span> row = threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Loop over all the sub-matrices of A and B that are</span></span><br><span class="line">    <span class="comment">// required to compute Csub</span></span><br><span class="line">    <span class="comment">// Multiply each pair of sub-matrices together</span></span><br><span class="line">    <span class="comment">// and accumulate the results to Cvalue</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> m = <span class="number">0</span>; m &lt; (A.width / BLOCK_SIZE); ++m) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 得到这个block在这次循环中的A的子矩阵</span></span><br><span class="line">        Matrix Asub = GetSubMatrix(A, blockRow, m);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 得到这个block在这次循环中的B的子矩阵</span></span><br><span class="line">        Matrix Bsub = GetSubMatrix(B, m, blockCol);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 保存A的子矩阵和B的子矩阵</span></span><br><span class="line">        __shared__ <span class="keyword">float</span> As[BLOCK_SIZE][BLOCK_SIZE];</span><br><span class="line">        __shared__ <span class="keyword">float</span> Bs[BLOCK_SIZE][BLOCK_SIZE];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Load Asub and Bsub from device memory to shared memory</span></span><br><span class="line">        <span class="comment">// 每个thread加载A的子矩阵中一个元素，和B的子矩阵中的一个元素</span></span><br><span class="line">        As[row][col] = GetElement(Asub, row, col);</span><br><span class="line">        Bs[row][col] = GetElement(Bsub, row, col);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Synchronize to make sure the sub-matrices are loaded</span></span><br><span class="line">        <span class="comment">// before starting the computation</span></span><br><span class="line">        <span class="comment">// 将A中这部分所有的元素，和B中元素都写入到shared memory中后，</span></span><br><span class="line">        <span class="comment">// 才能开始下面的操作。</span></span><br><span class="line">        __syncthreads();  </span><br><span class="line"></span><br><span class="line">        <span class="comment">// 计算当前A的子矩阵与B的子矩阵，相乘后累加结果。</span></span><br><span class="line">        <span class="comment">// 当外层循环结束，表示累加每一块累加的结果完成，</span></span><br><span class="line">        <span class="comment">// 得到最后的C中这个位置的结果。</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> e = <span class="number">0</span>; e &lt; BLOCK_SIZE; ++e)</span><br><span class="line">            Cvalue += As[row][e] * Bs[e][col];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Synchronize to make sure that the preceding</span></span><br><span class="line">        <span class="comment">// computation is done before loading two new</span></span><br><span class="line">        <span class="comment">// sub-matrices of A and B in the next iteration</span></span><br><span class="line">        <span class="comment">// 等待这一阶段的 加类乘完成后，才能过更新shared memory中的内容。</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Write Csub to device memory</span></span><br><span class="line">    <span class="comment">// Each thread writes one element</span></span><br><span class="line">    SetElement(Csub, row, col, Cvalue);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p> 那么对global memory 的访问减少了多少倍呢?</p>
-<p> 看下图：</p>
-<p> &lt;&gt;pic4&lt;&gt;</p>
-<p> 减少了tile的宽，这么多倍。极限情况下，如果shared memory有足够的空间，可以把A，B都放入每个block的shared memory中。此情况下对global memory的访问最少。</p>
-<p> 上述优化方法中确定块tile的宽度要考虑shared memory的大小：</p>
-<p> <font color="red" size="4">尽量最大化tile，block的大小</font></p>
-<p> 假如一个GPU每个SM有<code>16kB</code>的shared memory，并且每个SM有<code>8</code>个blocks。可以算出每个block可以使用<code>2kB</code>的shared memory。</p>
-<p> 其中<code>1kB</code>存矩阵A的相关元素，<code>1kB</code>存B的相关元素。假设数据类型是float，占<code>4bits</code>。所以可以计算出<code>16x16x4=1kB</code>。block的大小为<code>16x16</code>. 也就是一个block有<code>16x16</code>个threads。</p>
-<p> 这种情况充分使用了SM的threads和shared memory资源，最大化<font color="orange">资源占用率</font>。</p>
-</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" data-id="ck6u3fo1b000c16fzfymjh6on" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-线程同步-线程调度" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" class="article-date">
-  <time datetime="2020-02-20T01:44:16.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/">CUDA-线程同步-线程调度</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ol>
-<li><p>线程同步（一个block内的同步）</p>
-<p> 一个block内的所有threads有时候是需要同步的（如使用shared memory优化的矩阵相乘中），方法是在kernel函数中的适当位置加上<code>__syncthreads()</code>。</p>
-<p> 当一个thread执行到<code>__syncthreadas()</code>时，这个thread会看它所在的block内的其他<font color="orange">所有</font>threads情况，如果发现还有其他threads没有执行到这个位置，则这个thread等待其他threads。直到block中<font color="orange">所有</font>active的threads都执行到此，接着向下执行。</p>
-<p> 注意这个同步只是这个block内的threads同步。而非是全局同步，CUDA中没有全局通过不的原因是，全局同步的系统开销会很大。     </p>
-<p> 并行系统中<font color="red" size="4">负载均衡</font>：要求线程的执行时间尽量接近。如果不均衡，在需要线程同步时，所有线程会等待最慢的那个thread，此时整体的速度就时最慢的那个thread的速度，其他速度快的threads 的优势完全没有了。</p>
-<p> <font color="orange">block与block之间是异步的，不存在相互等待。而同一个warp内的threads天然同步</font>。</p>
-<p> 注意线程同步，可能导致<font color="red">死锁</font>，比如下情况：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (func())&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span>&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p> 产生死锁，执行不同分支的threads相互等待，谁也等不到谁。</p>
-</li>
-<li><p>线程调度</p>
-<ol>
-<li><p>SP和threads</p>
-<p> 为什么GPU的threads数量远远多于物理执行单元（SP）。因为每个SM中与CPU一样也含有<font color="red" size="4">上下文空间</font>，用于执行上下文切换，从而实现多线程。</p>
-<p> 这里有个<code>SP</code>和<code>threads</code>的关系。以GPU G80为例：</p>
-<p> G80 的硬件信息：<code>16</code>个SM，每个SM含有<code>8</code>个SP，（共有<code>16x8=128</code>个SP），每个SM最多驻扎<code>768</code>个threads，总共同时执行<code>12288</code>个threads。（所以可以通过每个SM中最多可以驻扎的threads数，除以每个SM中的SP数，就得到了）</p>
-<p> 解释：</p>
-<ul>
-<li><p>16，表是芯片实际含有16个SM</p>
-</li>
-<li><p>8， 表示每个SM含有8个SP（Streaming Processors），真正执行指令的工人。</p>
-</li>
-<li><p>12288，表示这个芯片上可以同时有12288个threads进行调度。调度不意味着一定要实际执行。</p>
-</li>
-<li><p>128个SP，表示每个时钟周期内实际并行执行的指令流为128个。但总共有12288个指令流间不停的切换。切换的目的是达到<font color="orange" size="4">延时隐藏</font>效果。</p>
-<p>warp的调度是<font color="red">零开销</font>的。因为<font color="orange">warp的上下文是存在与物理空间中的，需要了这个warp干活时，程序切换到这个warp上去即可</font>。 </p>
-<p>warp中的所有threads执行相同的指令。当有分支时，由于warp内threads天然的同步，所以含有分支时的执行会有性能下降。</p>
-</li>
-</ul>
-</li>
-<li><p>warp和SP</p>
-<p> 每个warp含有<code>32</code>个threads，假如每个SM只有<code>8</code>个SP，此时一个SM如何调度一个warp?</p>
-<ul>
-<li><p>第一个周期内，有8个threads进入SP</p>
-</li>
-<li><p>第二，三，四个周期SP各进入8个threads</p>
-</li>
-<li><p>如此循环，直到所有指令执行完毕</p>
-</li>
-<li><p>所以此情况一个SM调度一个warp，需要4个周期（4个周期只是调度完成，指令执行完成需要4的倍数个周期）</p>
-<p>现代GPU的SP数已经远远大于32了。所以不存在上述问题了。</p>
-</li>
-</ul>
-</li>
-<li><p>调度warp实现延时隐藏</p>
-<p> 一个实例：有一个kernel含有</p>
-<ul>
-<li><p>一个对global memory的读操作，这个操作耗时200个时钟周期。</p>
-</li>
-<li><p>4个独立的乘或加操作，一个乘或加操作耗时4个时钟周期。</p>
-<p>那么需要多少个warp才可以将对global memory访问的延迟隐藏掉?</p>
-<p>首先每个warp需要执行4个独立的乘或加操作，共耗时4x4=16个始终周期。要覆盖200个时钟周期，就需要200/16=12.5，即13个warp<font color="red">串行</font>，才能有效隐藏对global memory的访问延时。</p>
-<p>回忆：<font color="orange" size="4">每个SM一次只能执行一个warp</font>。待确认。。。。</p>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" data-id="ck6u3fo17000516fz66ev7rl5" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1053,7 +993,7 @@ for循环中，每一个thread循环球集合`Sphere *s`中的所有球`s[i]`，
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">32</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">34</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
     </div>
   </div>
 
@@ -1063,7 +1003,7 @@ for循环中，每一个thread循环球集合`Sphere *s`中的所有球`s[i]`，
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">28</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">30</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1082,7 +1022,7 @@ for循环中，每一个thread循环球集合`Sphere *s`中的所有球`s[i]`，
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">11</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">13</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1095,6 +1035,14 @@ for循环中，每一个thread循环球集合`Sphere *s`中的所有球`s[i]`，
       <ul>
         
           <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
             <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
           </li>
         
@@ -1104,14 +1052,6 @@ for循环中，每一个thread循环球集合`Sphere *s`中的所有球`s[i]`，
         
           <li>
             <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/">CUDA-原子操作-例-直方图</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
           </li>
         
       </ul>
