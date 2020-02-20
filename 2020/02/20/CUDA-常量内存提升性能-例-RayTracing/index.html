@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-常量内存提升性能-例-RayTracing | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="constants 常量必须在函数外声明  cudaMemcpyToSymbol()  这个函数是特殊版本的cudaMemcpy(), 唯一的不同是，cudaMemcpyToSymbol()将数据复制到常量内存constant memory，cudaMemcpy()将数据复制到global memory。  常量内存为什么能提升性能-Ray tracing  __constant__ 把变量的访">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-常量内存提升性能-例-RayTracing">
+<meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="constants 常量必须在函数外声明  cudaMemcpyToSymbol()  这个函数是特殊版本的cudaMemcpy(), 唯一的不同是，cudaMemcpyToSymbol()将数据复制到常量内存constant memory，cudaMemcpy()将数据复制到global memory。  常量内存为什么能提升性能-Ray tracing  __constant__ 把变量的访">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-02-20T02:09:40.000Z">
+<meta property="article:modified_time" content="2020-02-20T02:11:34.331Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-常量内存提升性能-例-RayTracing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" class="article-date">
+  <time datetime="2020-02-20T02:09:40.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-常量内存提升性能-例-RayTracing
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>constants 常量必须在函数外声明</p>
+</li>
+<li><p><code>cudaMemcpyToSymbol()</code></p>
+<p> 这个函数是特殊版本的<code>cudaMemcpy()</code>, 唯一的不同是，<code>cudaMemcpyToSymbol()</code>将数据复制到<font color="red">常量内存constant memory</font>，<code>cudaMemcpy()</code>将数据复制到global memory。</p>
+</li>
+<li><p>常量内存为什么能提升性能-Ray tracing</p>
+<p> <code>__constant__</code> 把变量的访问限制为<code>read-only</code>，有了这个限制，必然获得某种回报。这个回报是：<font>与从global memory中读取数据相比，从constant memory中读取相同的数据可以节约内存带宽</font>，有两个原因：</p>
+<ol>
+<li>对constant memory的<font color="red">单次读</font>操作可以广播到其他<font>临近</font>的threads。 </li>
+<li>constant memory的数据将会缓存起来，因此<font color="red">相同地址的连续读操作</font>不会产生额外的内存通信。</li>
+</ol>
+</li>
+</ol>
+<pre><code>half-warp的 广播是一把双刃剑。当16 个threads都读取constant memory&lt;font color=red&gt;相同&lt;/font&gt;的地址的时，性能极大地提升。但是当16个threads分别读取从constant memory&lt;font color=red&gt;不同&lt;/font&gt;的地址时，读操作会被串行化，性能会下降，这种情况就不如从global中读取。
+
+从`Ray-Tracing`实例中体会：
+
+要使用到的数据结构：
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INF 2e10f</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Sphere</span> &#123;</span></span><br><span class="line">    <span class="keyword">float</span> r,b,g;</span><br><span class="line">    <span class="keyword">float</span> radius;</span><br><span class="line">    <span class="keyword">float</span> x,y,z;</span><br><span class="line">    <span class="comment">// 假设有一个观察平面，那么（ox，oy）是这个观察平面中一个像素的坐标，这个方法将计算从这个像素中发射出的光线是否与这个球面相交。如果相交，则计算从这个像素点到这个球面的距离。当光线命中多个球时，只有最近的球面才会被看到。</span></span><br><span class="line">    __<span class="function">device__ <span class="keyword">float</span> <span class="title">hit</span><span class="params">( <span class="keyword">float</span> ox, <span class="keyword">float</span> oy, <span class="keyword">float</span> *n )</span> </span>&#123;</span><br><span class="line">        <span class="keyword">float</span> dx = ox - x;</span><br><span class="line">        <span class="keyword">float</span> dy = oy - y;</span><br><span class="line">        <span class="keyword">if</span> (dx*dx + dy*dy &lt; radius*radius) &#123;</span><br><span class="line">            <span class="keyword">float</span> dz = sqrtf( radius*radius - dx*dx - dy*dy );</span><br><span class="line">            *n = dz / sqrtf( radius * radius );</span><br><span class="line">            <span class="keyword">return</span> dz + z;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> -INF;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+kernel函数输入一个bitmap：
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> *ptr )</span> </span>&#123;</span><br><span class="line">    <span class="comment">// map from threadIdx/BlockIdx to pixel position</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> y = threadIdx.y + blockIdx.y * blockDim.y;</span><br><span class="line">    <span class="keyword">int</span> offset = x + y * blockDim.x * gridDim.x;</span><br><span class="line">    <span class="keyword">float</span> ox = (x - DIM/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> oy = (y - DIM/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> r=<span class="number">0</span>, g=<span class="number">0</span>, b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> maxz = -INF;</span><br><span class="line">    <span class="comment">// 每个线程考察所有的球，得到每个距离每个像素最近的球面。</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SPHERES; i++) &#123;</span><br><span class="line">        <span class="keyword">float</span> n;</span><br><span class="line">        <span class="keyword">float</span> t = s[i].hit( ox, oy, &amp;n );</span><br><span class="line">        <span class="keyword">if</span> (t &gt; maxz) &#123;</span><br><span class="line">            <span class="keyword">float</span> fscale = n;</span><br><span class="line">            r = s[i].r * fscale;</span><br><span class="line">            g = s[i].g * fscale;</span><br><span class="line">            b = s[i].b * fscale;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">0</span>] = (<span class="keyword">int</span>)(r * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">1</span>] = (<span class="keyword">int</span>)(g * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">2</span>] = (<span class="keyword">int</span>)(b * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">3</span>] = <span class="number">255</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+for循环中，每一个thread循环球集合`Sphere *s`中的所有球`s[i]`，得到每个像素的一个颜色值。这里的模式是：&lt;font color=red&gt;所有threads都会只读相同的存储地址&lt;/font&gt;。考虑上述的关于constant的特点，使用constant memory 进行优化。
+
+优化前的main函数如下：其中`s`是声明在global memory中的。用constant memory优化只需要将下面code中的`&lt;1&gt;&lt;2&gt;`分别修改为
+* &lt;1&gt; `__constant__ Sphere s[SPHERES]`;
+* &lt;2&gt; `HANDLE_ERROR( cudaMemcpyToSymbol( s, temp_s, sizeof(Sphere) * SPHERES) );`
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cpu_bitmap.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> rnd( x ) (x * rand() / RAND_MAX)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPHERES 20</span></span><br><span class="line">Sphere *s; <span class="comment">// &lt;1&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="function">CPUBitmap <span class="title">bitmap</span><span class="params">( DIM, DIM )</span></span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> *dev_bitmap;</span><br><span class="line">    <span class="comment">// allocate memory on the GPU for the output bitmap</span></span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;dev_bitmap, bitmap.image_size() ) );</span><br><span class="line">    <span class="comment">// allocate memory for the Sphere dataset</span></span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;s, <span class="keyword">sizeof</span>(Sphere) * SPHERES ) ); <span class="comment">// &lt;2&gt;</span></span><br><span class="line"></span><br><span class="line">    Sphere *temp_s = (Sphere*)<span class="built_in">malloc</span>( <span class="keyword">sizeof</span>(Sphere) * SPHERES );</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SPHERES; i++) &#123;</span><br><span class="line">        temp_s[i].r = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].g = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].b = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].x = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].y = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].z = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].radius = rnd( <span class="number">100.0f</span> ) + <span class="number">20</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( s, temp_s, <span class="keyword">sizeof</span>(Sphere) * SPHERES,</span><br><span class="line">                                cudaMemcpyHostToDevice ) );</span><br><span class="line">    <span class="built_in">free</span>( temp_s );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// generate a bitmap from our sphere data</span></span><br><span class="line">    <span class="function">dim3 <span class="title">grids</span><span class="params">(DIM/<span class="number">16</span>,DIM/<span class="number">16</span>)</span></span>;</span><br><span class="line">    <span class="function">dim3 <span class="title">threads</span><span class="params">(<span class="number">16</span>,<span class="number">16</span>)</span></span>;</span><br><span class="line">    kernel&lt;&lt;&lt;grids,threads&gt;&gt;&gt;( dev_bitmap );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// copy our bitmap back from the GPU for display</span></span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( bitmap.get_ptr(), dev_bitmap, bitmap.image_size(),</span><br><span class="line">                                cudaMemcpyDeviceToHost ) );</span><br><span class="line">    bitmap.display_and_exit();</span><br><span class="line">    <span class="comment">// free our memory</span></span><br><span class="line">    cudaFree( dev_bitmap );</span><br><span class="line">    cudaFree( s );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+上述过程使用constant memory保存只读对象。感受这个模式：&lt;font color=red&gt;每个threads都访问相同的只读数据时，将获得额外的性能提升&lt;/font&gt;. 前面说了的两个原因：第一，这种模式将读取操作在半个warp中广播，第二，芯片上包含了常量内存缓存。
+
+在许多算法中，内存带宽都是瓶颈，因此要时刻想着改善这种情况，</code></pre>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" data-id="ck6u49ut5000334fz5yz01au3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-原子操作-例-直方图
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-死锁-例-点积</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">26</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/">CUDA-原子操作-例-直方图</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/">CUDA-死锁-例-点积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

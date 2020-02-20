@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-死锁-例-点积 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="好好体会-Dot product  （CUDA by example 55页）  这个例子值得好好感悟  点积：两个长度相同的向量A和B，对应元素相乘后相加。  CUDA实现思路：每个线程分别读取A和B中对应位置的元素，紧接着执行相乘操作，最后将相乘结果存入shared memory的对应位置。  注意，当向量元素个数远远超过一个block中的threads数量时的处理。  1234567891">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-死锁-例-点积">
+<meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="好好体会-Dot product  （CUDA by example 55页）  这个例子值得好好感悟  点积：两个长度相同的向量A和B，对应元素相乘后相加。  CUDA实现思路：每个线程分别读取A和B中对应位置的元素，紧接着执行相乘操作，最后将相乘结果存入shared memory的对应位置。  注意，当向量元素个数远远超过一个block中的threads数量时的处理。  1234567891">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-02-20T02:06:51.000Z">
+<meta property="article:modified_time" content="2020-02-20T02:08:53.380Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-死锁-例-点积" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/" class="article-date">
+  <time datetime="2020-02-20T02:06:51.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-死锁-例-点积
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>好好体会-Dot product</p>
+<p> （CUDA by example 55页）</p>
+<p> <font color="orange" size="3">这个例子值得好好感悟</font></p>
+<p> 点积：两个长度相同的向量A和B，对应元素相乘后相加。</p>
+<p> CUDA实现思路：每个线程分别读取A和B中对应位置的元素，紧接着执行相乘操作，最后将相乘结果存入shared memory的对应位置。</p>
+<p> 注意，当向量元素个数远远超过一个block中的threads数量时的处理。</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> N = <span class="number">33</span>*<span class="number">1025</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> threadsPerBlock = <span class="number">256</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> blocksPerGrid = (N+threadsPerBlock<span class="number">-1</span>)/threadsPerBlock;</span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">dotProduction</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">/// 第一步：thread计算得到a和b对应元素的乘积，</span></span><br><span class="line">    <span class="comment">// 存入这个thread对应的shared memory中的位置</span></span><br><span class="line">    <span class="comment">// 每个block对应的shared memory的大小为这个block中的threads数量</span></span><br><span class="line">    __shared__ <span class="keyword">float</span> cache[threadsPerBlock];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x*blocIdx.x;</span><br><span class="line">    <span class="comment">// 每个block的shared memory的索引就是threadIdx.x，与blockIdx.x 无关,</span></span><br><span class="line">    <span class="comment">// 这个block和那个block中的thread的ID是一摸一样的。</span></span><br><span class="line">    <span class="keyword">int</span> cacheIndex = threadsIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行乘法操作</span></span><br><span class="line">    <span class="keyword">float</span> tmp = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">while</span> (tid&lt;N)&#123;</span><br><span class="line">        tmp += a[tid]*b[tid];</span><br><span class="line">        tid += blockDim.x*gridDim.x;</span><br><span class="line">    &#125;</span><br><span class="line">    cache[cacheIndex] = tmp;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 同步这个block中的所有threads</span></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="comment">// 确保所有threads完成工作之后，执行后续指令</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/// 第二步：对于每个block对应的shared memory中的元素，进行规约求和。</span></span><br><span class="line">    <span class="comment">// 其中threadPerBlock必须是2的指数。</span></span><br><span class="line">    <span class="keyword">int</span> i = blockDim.x/<span class="number">2</span>;</span><br><span class="line">    <span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (cacheIndex &lt;i )</span><br><span class="line">            cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">        <span class="comment">// 确保上一轮所有和得到，所以要同步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">        i /= <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 把每个shared memory中的第一个元素，也就是这个shared memory中</span></span><br><span class="line">    <span class="comment">// 所有元素之和，写入c中对应的位置。</span></span><br><span class="line">    <span class="keyword">if</span>(cacheIndex == <span class="number">0</span>)</span><br><span class="line">        c[blockIdx.x] = cache[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="comment">// 在主函数中，把c从device拷贝到host，以及之后：</span></span><br><span class="line">cudaMemcpy(h_c, c, cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在CPU上将h_c中的结果求和，于此同时GPU上可以后其他任务执行。</span></span><br><span class="line"><span class="comment">// CPU和GPU并行执行。隐藏延时</span></span><br><span class="line"><span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i &lt; blocksPerGrid; i++)&#123;</span><br><span class="line">    sum += h_c[i];</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// sum即是最终点积结果。</span></span><br></pre></td></tr></table></figure>
+
+<p> 分析：</p>
+<ul>
+<li><p>技能：<font color="orange" size="4">多个blocks中的各个shared memory 缓存同时被s操作</font>。</p>
+</li>
+<li><p>其中这一部分：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> tmp = <span class="number">0.0f</span>;</span><br><span class="line"><span class="keyword">while</span> (tid&lt;N)&#123;</span><br><span class="line">    tmp += a[tid]*b[tid];</span><br><span class="line">    tid += blockDim.x*gridDim.x; <span class="comment">// 更新tid，自加不是1，而是所有threads数量。</span></span><br><span class="line">&#125;</span><br><span class="line">cache[cacheIndex] = tmp;</span><br></pre></td></tr></table></figure>
+
+<p>  当所有threads的数目小于a或b中的元素个数时（不论有多少个blocks），上述保证正确，与<font color="red">stride更新</font>效果相同。当threads个数等于元素个数时，也正确。所以这样写，分析见下图：</p>
+<p>  &lt;&gt;pick12&lt;&gt;-1</p>
+<p>  而下面这种实现：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (tid&lt;N)&#123;</span><br><span class="line">    cache[tid%threadsPerBlock] = a[tid]*b[tid];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  只适用于thread个数等于元素个数时。但通常元素个数会远大于threads数。所以不适用此法。</p>
+<p>  &lt;&gt;pic12&lt;&gt;-2</p>
+</li>
+<li><p>为什么要将最后的结果传回host计算？</p>
+<p>  因为，事实证明，<font color="orange">想GPU这种大规模并行机器在执行最后的规约步骤时，通常会浪费计算资源，因为此时的数据集非常小。比如，当使用480 个threads将32 个数相加时，将难以充分使用每一个threads</font>。</p>
+<p>总结一下，使用shared memory优化dot-production为什么有效，因为减少了写入global memory的次数，并且复制回host的数据量减少。性能增加。</p>
+</li>
+</ul>
+</li>
+</ol>
+<ol start="2">
+<li><p>__syncthreads() 放错位置会导致死锁</p>
+<p> 规约程序中：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i=blockDim.x/<span class="number">2</span>;</span><br><span class="line"><span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">    <span class="keyword">if</span> (cacheIndex &lt;i )</span><br><span class="line">        cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">    __syncthreads();</span><br><span class="line">    i /= <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 如果将<code>__syncthreads()</code>放入if语句，会产生死锁：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i=blockDim.x/<span class="number">2</span>;</span><br><span class="line"><span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">    <span class="keyword">if</span> (cacheIndex &lt;i )&#123;</span><br><span class="line">        cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    i /= <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 解释一下，当出现线程发散时，发散的分支会使得某些threads处于空闲状态，而其他threads将执行分支中的代码。而对于<code>__syncthreads()</code>而言，<font color="orange" size="4">CUDA架构确保，一个block中的所有threads都执行到<code>__syncthreads()</code>，才能执行<code>__syncthreads()</code>之后的语句</font>。这样一来，上述代码块，只要有一个threads没有执行if语句，也就不能够执行<code>__syncthreads()</code>，其他执行了if语句的threads会等待哪一个thread，一直等下去，造成死锁。</p>
+<p> 所以，对于<code>__syncthreads()</code>要谨慎使用。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/" data-id="ck6u49ut3000134fzh0fm5y6y" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-常量内存提升性能-例-RayTracing
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-存储优化-例-矩阵转置</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">26</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/">CUDA-原子操作-例-直方图</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/">CUDA-死锁-例-点积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

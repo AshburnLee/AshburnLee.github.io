@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-原子操作-例-直方图 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="原子操作  atomicAdd(), atomicSub(), atomicXor()...  原子操作要排队，所以，能不用就不要使用。  原子操作-直方图  前面说过了，原子操作能不用就不使用。但是有些情况只能使用原子操作，当成千上万个threads同时修改同一个内存地址时，大规模并行系统会带来负担，在硬件中支持的原子操作可以减轻这种负担。比如计算直方图：计算一个数组中元素的出现频率。许多算法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-原子操作-例-直方图">
+<meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="原子操作  atomicAdd(), atomicSub(), atomicXor()...  原子操作要排队，所以，能不用就不要使用。  原子操作-直方图  前面说过了，原子操作能不用就不使用。但是有些情况只能使用原子操作，当成千上万个threads同时修改同一个内存地址时，大规模并行系统会带来负担，在硬件中支持的原子操作可以减轻这种负担。比如计算直方图：计算一个数组中元素的出现频率。许多算法">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-02-20T02:11:52.000Z">
+<meta property="article:modified_time" content="2020-02-20T02:14:10.384Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-原子操作-例-直方图" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/" class="article-date">
+  <time datetime="2020-02-20T02:11:52.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-原子操作-例-直方图
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>原子操作</p>
+<p> <code>atomicAdd(), atomicSub(), atomicXor()...</code></p>
+<p> 原子操作要排队，所以，能不用就不要使用。</p>
+</li>
+<li><p>原子操作-直方图</p>
+<p> 前面说过了，原子操作能不用就不使用。但是有些情况只能使用原子操作，<font color="orange">当成千上万个threads同时修改同一个内存地址时，大规模并行系统会带来负担</font>，在硬件中支持的原子操作可以减轻这种负担。比如计算直方图：计算一个数组中元素的出现频率。许多算法需要计算直方图，比如图像处理。</p>
+<p> 这里给出计算直方图的3种方法，CPU，未优化的GPU，优化后的GPU。</p>
+<p> 假如有一个很大的字符数组，实际中可能是像素的颜色值，或者是音频的采样数据。计算这个字符数组的直方图。由于每个随机的字符（一个char型占1 byte）都有<code>2x2x2x2x2x2x2x2=256</code>个不同的可能取值。所以直方图中要包含256个元素。</p>
+</li>
+</ol>
+<pre><code>1. CPU版本
+
+    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE (100*1024*1024)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> main&#123;</span><br><span class="line">    <span class="comment">// 1) 生成100MB的随机数据</span></span><br><span class="line">    <span class="keyword">char</span>* buffer = (<span class="keyword">char</span>*)big_random_block( SIZE );</span><br><span class="line">    <span class="comment">// 2) 将buffer数组初始化为0</span></span><br><span class="line">    <span class="keyword">int</span> histo[<span class="number">256</span>];</span><br><span class="line">    <span class="keyword">for</span> (itn i=<span class="number">0</span>;i&lt;<span class="number">256</span>;i++)&#123;</span><br><span class="line">        histo[i] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 3) 计算每个字符出现的频率</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;SIZE;i++)&#123;</span><br><span class="line">        histo[buffer[i]]++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 4) 回收资源</span></span><br><span class="line">    <span class="built_in">free</span>(buffer);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    不必解释。
+
+2. 未优化的GPU
+
+    计算直方图的特点是，读取buffer中的每一个元素，在histo数组中找到这个元素，后这个元素的频数加一得到最后的直方图。如果使用并行计算，看到了吧，问题在哪？每一个thread读取buffer中不同的地址，取元素，没毛病。但是当写入histo数组时，&lt;font color=red&gt;会同时有多个threads写入histo的同一个位置，只必然造成Race condition（竞争）&lt;/font&gt;。所以多个threads写入同一个地址时，将写操作串行。
+
+    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)big_random_block( SIZE );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *dev_buffer;</span><br><span class="line">    <span class="keyword">int</span> *dev_histo;</span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;dev_buffer, SIZE ) );</span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( dev_buffer, buffer, SIZE, cudaMemcpyHostToDevice ) );</span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;dev_histo, <span class="number">256</span> * <span class="keyword">sizeof</span>( <span class="keyword">long</span> ) ) );</span><br><span class="line">    <span class="comment">// dev_histo的初始化使用cudaMemset(), 将所有元素值设为0</span></span><br><span class="line">    HANDLE_ERROR( cudaMemset( dev_histo, <span class="number">0</span>, <span class="number">256</span> * <span class="keyword">sizeof</span>( <span class="keyword">int</span> ) ) );</span><br><span class="line"></span><br><span class="line">    kernel&lt;&lt;&lt;&gt;&gt;&gt;();  <span class="comment">//！！！</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> histo[<span class="number">256</span>];</span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( histo, dev_histo, <span class="number">256</span> * <span class="keyword">sizeof</span>(<span class="keyword">int</span>), cudaMemcpyDeviceToHost ) );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 验证GPU上计算的正确性，执行逆向运算，</span></span><br><span class="line">    <span class="comment">// 判断最后histo数组是否全为零（看是否可以会到初始值）</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SIZE; i++)</span><br><span class="line">        histo[buffer[i]]--;  </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">256</span>; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (histo[i] != <span class="number">0</span>)</span><br><span class="line">            <span class="built_in">printf</span>( <span class="string">"Failure at %d!\n"</span>, i );</span><br><span class="line">    &#125;</span><br><span class="line">    cudaFree( dev_histo );</span><br><span class="line">    cudaFree( dev_buffer );</span><br><span class="line">    <span class="built_in">free</span>( buffer );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    现在只剩下kernel函数。结果直方图数组有`256`个元素，所以考虑每个block含有`256`个threads。其实可以有其他的配置，比如`100MB`数据共有`104,857,600`个字节，所以可以启动一个block，让每个thread处理`409,600`个数据，或者可以启动`409600`个blocks，每个thread处理1个元素。
+
+    最有的配置方案介于这两种极端情况之间。实验发现，&lt;font color=orange&gt;当block的数量是芯片SM数量的2倍时，将达到最有性能。&lt;/font&gt;
+
+    所以要先超硬件信息得到所使用GPU的SM数量：
+    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cudaDeviceProp prop;</span><br><span class="line">HANDLE_ERROR( cudaGetDeviceProperties( &amp;prop, <span class="number">0</span> ) ); <span class="comment">// 使用0号GPU</span></span><br><span class="line"><span class="keyword">int</span> numSM = prop.multiProcessorCount;</span><br><span class="line">kernel&lt;&lt;&lt;numSM*<span class="number">2</span>, <span class="number">256</span>&gt;&gt;&gt;(dev_buffer, SIZE, dev_histo); <span class="comment">// 未实现</span></span><br></pre></td></tr></table></figure>
+
+    下面实现kernel。
+
+    kernel的参数有三个：一个指向输入数组的指针，输入数组的长度，一个指向输出直方图数组的指针。
+
+    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">histo_kernel</span><span class="params">( <span class="keyword">char</span> *buffer,</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">long</span> size,</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> *histo )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// stride loop</span></span><br><span class="line">    <span class="keyword">while</span> (i &lt; size) &#123;</span><br><span class="line">        atomicAdd( &amp;(histo[buffer[i]]), <span class="number">1</span> );</span><br><span class="line">        i += stride;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    其中`atomicAdd( &amp;(histo[buffer[i]]), 1 )`展示了如何使用原子操作：`atomicAdd( add, y )`, 这个操作读取地址add中值，将y加到add的值上。这个例子中add就是直方图中相应元素的位置。
+
+    性能结果怎样呢？实验得GPU版本比CPU版本性能差许多被。分析原因：
+    * 第一，kernel函数实际上只包含了非常少的计算工作，而对global的访问远远多于计算，并且对global的访问相当慢。&lt;font color=orange&gt;计算少，访存多，撞上性能瓶颈&lt;/font&gt;。
+    * 第二，当上&lt;font color=red&gt;万&lt;/font&gt;个threads访问&lt;font color=red&gt;少量&lt;/font&gt;（256）的内存位置时，发生&lt;font color=red&gt;严重&lt;/font&gt;的race condition。而且原子操作为了保证结果的正确性，对于相同的内存位置都将&lt;font color=red&gt;串行化&lt;/font&gt;。这导致排了&lt;font color=red&gt;非常长&lt;/font&gt;的队伍，因此抵消了并行带来的性能提升。
+
+    所以尝试优化GPU
+
+3. 使用shared memory优化原子操作
+
+    &lt;&gt;pic13&lt;&gt;
+
+    主要问题并不是使用了过多的原子操作，而是有&lt;font color=orange&gt;太多的threads写入太少的地址造成的竞争&lt;/font&gt;。考虑使用两端操作：
+
+    第一段，让每个并行的block计算它所处理的数据，将结果写入各自block对应的shared memory中。这样做的好处有：
+    * 第一，所有blocks之间的计算是&lt;font color=orange&gt;并行的&lt;/font&gt;。
+    * 第二，写入shared memory效率远高于写入global memory。
+    * 第三，这种方式仍然需要原子操作，但是此时是&lt;font color=orange&gt;256个threads在256个地址上的竞争，竞争程度显著减少&lt;/font&gt;。
+
+    所以，第一阶段计算得到每个block的临时直方图，比如，有三个blocks, 那么遍历完所有元素后会得到三个临时直方图。当得到所有三个临时直方图后（要同步），开始第二个计算阶段。
+
+    第二段，将得到的全部临时直方图合并为最终直方图，也应该是原子操作。这一段是，会有&lt;font color=orange&gt;block数量个threads在256个地址上的竞争，竞争程度又显著减少&lt;/font&gt;。
+
+
+    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">histo_kernel</span><span class="params">( <span class="keyword">char</span>* buffer,</span></span></span><br><span class="line"><span class="function"><span class="params">                              <span class="keyword">long</span> size,</span></span></span><br><span class="line"><span class="function"><span class="params">                              <span class="keyword">int</span>* histo )</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">    __shared__ <span class="keyword">unsigned</span> <span class="keyword">int</span> temp[<span class="number">256</span>];</span><br><span class="line">    temp[threadIdx.x] = <span class="number">0</span>;</span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> offset = blockDim.x * gridDim.x;</span><br><span class="line">    <span class="comment">// 第一段计算</span></span><br><span class="line">    <span class="keyword">while</span> (i &lt; size) &#123;</span><br><span class="line">        atomicAdd( &amp;temp[buffer[i]], <span class="number">1</span> );</span><br><span class="line">        i += offset;</span><br><span class="line">    &#125;</span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//第二段计算</span></span><br><span class="line">    atomicAdd( &amp;(histo[threadIdx.x]), temp[threadIdx.x] );</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="comment">// kernel 的配置如下</span></span><br><span class="line">kernel&lt;&lt;&lt;numSM*<span class="number">2</span>, <span class="number">256</span>&gt;&gt;&gt;(dev_buffer, SIZE, dev_histo);</span><br></pre></td></tr></table></figure>
+    在实际SP和threads执行中，上述代码（指令）被复制很多份，有多少个threads就复制多少份。这些拷贝的不同在于，`threadIdx.x`，`blockIdx.x`这些值会被自动赋值，`0, 1, 2, 3, ...`
+
+    性能如何？比CPU版本的&lt;font color=red&gt;快了一个数量级&lt;/font&gt;。
+
+总结：使用了一种两阶段的算法，从而降低了在global memory上访存的竞争程度。这种降低竞争的策略总能获得不错的效果，所以当使用原子操作时，记住这种操作。</code></pre>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/" data-id="ck6u49utd000934fz7fbn8805" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-ComputeCapacity-SM_version6.1的参数值
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-常量内存提升性能-例-RayTracing</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">26</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/">CUDA-原子操作-例-直方图</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/">CUDA-死锁-例-点积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

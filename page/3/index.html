@@ -64,6 +64,710 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-map-set-二" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/" class="article-date">
+  <time datetime="2019-12-24T12:54:50.000Z" itemprop="datePublished">2019-12-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/">LeetCode-方法论-map&amp;set-二</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>454, </p>
+<h1 id="454-4Sum-II"><a href="#454-4Sum-II" class="headerlink" title="#454 4Sum II"></a>#454 4Sum II</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">A &#x3D; [ 1, 2]</span><br><span class="line">B &#x3D; [-2,-1]</span><br><span class="line">C &#x3D; [-1, 2]</span><br><span class="line">D &#x3D; [ 0, 2]</span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line">2</span><br><span class="line"></span><br><span class="line">Explanation:</span><br><span class="line">The two tuples are:</span><br><span class="line">1. (0, 0, 0, 1) -&gt; A[0] + B[0] + C[0] + D[1] &#x3D; 1 + (-2) + (-1) + 2 &#x3D; 0</span><br><span class="line">2. (1, 1, 0, 0) -&gt; A[1] + B[1] + C[0] + D[0] &#x3D; 2 + (-1) + (-1) + 0 &#x3D; 0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<pre><code>第一步：将A和B中元素的可能和作为key放入map1，value为这个和出现的频数。
+第二步：将C和D中元素的可能和作为key放入map2，value为这个和出现的频数。
+第三步：对于map1中的每个元素，在map2中查找这个元素对应的负数，如果找到，则结果中加上(这个元素的频数)×(map2中这个元素负数的频数)  DONE。</code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fourSumCount</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; A, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; B, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; C, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; D)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp1;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> a:A)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> b:B)</span><br><span class="line">            mp1[a+b]++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp2;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> c: C)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> d: D)</span><br><span class="line">            mp2[c+d]++;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 第三步</span></span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> &amp; itr : mp1)&#123;</span><br><span class="line">        <span class="keyword">if</span> (mp2.find(-(itr.first)) != mp2.end())</span><br><span class="line">            res += (itr.second) * (mp2[-(itr.first)]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><font color="green" size="5">敲黑板</font>理清楚逻辑后再实现。</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/" data-id="ck5bbuogq001va2fz2lgnc82c" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-大话-线性代数" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/20/%E5%A4%A7%E8%AF%9D-%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0/" class="article-date">
+  <time datetime="2019-12-20T09:36:38.000Z" itemprop="datePublished">2019-12-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linear-Algebra/">Linear Algebra</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/20/%E5%A4%A7%E8%AF%9D-%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0/">大话-线性代数</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>把线性代数(LA)中每个概念理解清楚，并且理清概念间的来龙去脉。<br>几乎所有的LA内容都是围绕下面这组等价命题展开的:</p>
+<pre><code>对于方阵A(n*n)： 
+    1.A可逆(A是非奇异阵)
+    2.&lt;=&gt; 线性系统 Ax=0 有唯一解，零解
+    3.&lt;=&gt; 线性系统 Ax=b 有唯一解
+    4.&lt;=&gt; A的最简化行阶梯矩阵 rref(A)=I 是单位矩阵
+    5.&lt;=&gt; A可以表示称一系列初等矩阵的乘积
+    6.&lt;=&gt; A的列向量线性无关
+    7.&lt;=&gt; A的列向量可以生成n维空间
+    8.&lt;=&gt; A的列向量是n维空间的基
+    9.&lt;=&gt; A的行秩==A的列秩==n
+    10.&lt;=&gt; A满秩(r==n)
+    11.&lt;=&gt; A的行空间维度==A的列空间维度==n
+    12.&lt;=&gt; A的行向量线性无关
+    13.&lt;=&gt; A的行列式 det(A)!=0
+    14.&lt;=&gt; 0不是A的特征值</code></pre><p>因为真实世界通常是多维度的，单个数已经不足以来描述真实世界。线性代数研究的就是一组数，也就是向量。</p>
+<blockquote>
+<p>向量</p>
+</blockquote>
+<p>向量是一组有序的数，表示方向，如物理世界中。又可以表示多维世界。有序说明了(a, b)和(b, a)是两个不同的向量。</p>
+<p>向量有其基本的运算：</p>
+<pre><code>1.向量加法
+2.数量乘法</code></pre><p>由这两个基本操作想到了向量空间。</p>
+<blockquote>
+<p>向量空间</p>
+</blockquote>
+<p>空间是一个集合，我们经常说的2D，3D空间，实际上是欧几里得空间。现在知道，欧几里得空间是点集，又是起点为（0,0）的向量集合。此处所讨论的向量空间默认指的是欧几里得向量空间。</p>
+<p>向量空间是个集合，其中的元素必须定义两个基本运算：</p>
+<pre><code>1.向量加法
+2.数量乘法</code></pre><p>这两个基本运算又必须满足十条性质。(这是向量空间的定义)                                                                </p>
+<p>这两个运算十分重要，因为这使得向量成为向量。</p>
+<p>之所以把向量默认为欧几里得空间的向量，是因为现实世界中，欧几里得空间是最常见的。</p>
+<p>把不是欧几里得空间的其他空间称为“广义线性空间”。比如，所有的2*2的方阵构成一个向量空间，其中定义向两加法为矩阵加法，定义数量乘法为矩阵的数量乘法。可以证明这个空间中的2*2方阵满足十条性质。</p>
+<p>有了空间，就有子空间。</p>
+<blockquote>
+<p>子空间</p>
+</blockquote>
+<p>啥是子空间：如果V是一个向量空间，S是V的子集，而且S也是一个向量空间(或者说，S对加法和数量乘法封闭)，那么称S是V的一个子空间。</p>
+<p>比如，2维欧几里得空间是一个向量空间V，现在有一条过（0,0）的直线，所有这条直线上的向量构成V的一个子空间S。可以证明S对加法和数量乘法封闭。</p>
+<p>而假如现在由一条不过（0,0）的直线，所有在这条直线的向量空间不是V的子空间。可以证明，这个空间对加法和数量乘法不封闭。</p>
+<p>补充一点，之所以（0,0）点是个关键，是因为欧几里得空间的向量起点一定要是（0,0）。</p>
+<p>上述例子进一步说，S空间是过（0,0）的一条直线。那么任何这条只直线上的非零向量v都可表示空间S中的其他任何向量，也就是说v可以生成S中的所有向量。那么这个非零向量v就是这个子空间中的一组基，子空间的维度为1。</p>
+<p>有一点需要注意，如果一个欧几里得空间中每个实数元素组包含n个元素，这个空间维度一定是n吗？错！正如上述，过原点的一条直线是二维欧几里得空间的一个子空间，这个子空间中每个元素含有x，y两个元素，但是这个子空间的维度是1，非2。</p>
+<p>那么什么是空间的一组基呢？</p>
+<blockquote>
+<p>空间的基</p>
+</blockquote>
+<p>先看两个命题：</p>
+<pre><code>命题1：如果m个向量生成n维空间，则m最小为n。
+命题2：如果m个n维向量线性无关，则m最大为n。</code></pre><p>由上述两个命题，可以得到空间基的定义：<br>若一组向量可以生成整个n维空间，且线性无关，则这组向量一定有n个。这样一组向量是n维空间的的一组基。</p>
+<p>基的作用是啥：在n维空间中，如果给定一组基，任何一个向量(或点)都可以表示成这组基的线性组合。而且表示方法唯一。</p>
+<p>比如2维欧几里得空间中由无数组基，其中最常使用的是标准正交基：(e1，e2)。e1与e2正交，就是垂直，且模为1。</p>
+<p>实际上，我们常说的一个向量，如(12,8)，默认是使用二维欧几里得空间的基来表示的，也就是说，(12,8)左边是默认左乘(e1, e2)=((1,0)T,(0,1)T)。这个乘法表示的含义是，在(1,0)T这个方向上移动12个单位，在(0,1)T这个方向上移动8个单位，后得到的点或坐标(12,8)。</p>
+<p>同样这个点也可以使用其他的基来表示。如(u,v)=((4,1)T,(2,3)T)。在这个基中，(12,8)用(2,2)来表示，就是说，在方向(4,1)T上移动2个单位，在(2,3)T方向上移动2个单位，就移动到了(12,8)。所以在(u,v)这组基下(2,2)来表示同一个点。</p>
+<p>由上述，可以理解：矩阵A的列向量线性无关+矩阵A可以生成n维空间=&gt;A是方阵且A的列向量是n为空间的基。也就是等假命题6，7，8。</p>
+<p>只是用标准正交基不行吗，为什么还要由其他基。因为对于特定的问题，把问题放到其他基会更容易解决问题。</p>
+<p>知道了什么是空间的基，那什么是空间的维度呢？</p>
+<blockquote>
+<p>空间的维度</p>
+</blockquote>
+<p>空间维度的定义是：一个空间的基中，向量的个数，称为空间的维度。</p>
+<p>如二维欧几里得空间的基(e1,e2)这个基中由两个向量，所以dim()=2。</p>
+<p>回看空间基的两个命题，什么叫线性无关? 什么又是“生成n维空间”?</p>
+<blockquote>
+<p>线性无关</p>
+</blockquote>
+<p>定义：对于p个n维向量，存在一组k（p个）全为零时才有，v与对应k相乘后相加的结果为0。则称p个v线性无关。</p>
+<p>也就是说，任何一个v都是独立存在的，不能由其他向量的线性组合来代替。</p>
+<p>反过来，如果一组向量线性相关，那么表示其中有一个向量可以由其他向量线性表示，这个向量对应的k为0。也就是说，被线性表示的向量不能增加系统的信息量，系统有信息冗余。</p>
+<p>把上述“v与对应k相乘后相加”称作v的线性组合。</p>
+<blockquote>
+<p>线性组合</p>
+</blockquote>
+<p>就是向量相乘后相加，体现了向量的两种最基本运算：向量相加，数量乘法。</p>
+<p>从矩阵的列视角来看，矩阵与向量的乘法也是个线性组合，是矩阵列向量的线性组合。其中的v以列向量的形式构成矩阵，所有的k构成向量。</p>
+<p>另一个例子，Guass-Jordan 消元法，结果的每一行，是原来矩阵各行的一个线性组合。注意，消元法的结果描述的是原矩阵列向量的关系。</p>
+<blockquote>
+<p>生成空间</p>
+</blockquote>
+<p>假如有两个线性无关的二维向量(u,v)，在二维欧几里得空间中的任何一个向量都可以表示成u，v的线性组合，则称u，v可以生成整个二维空间。</p>
+<p>可以拓展到n维空间。</p>
+<p>但是既然u，v可以生成整个二维空间，那么再增加任意一个向量w，这三个向量u，v，w也能生成整个二维空间。只需要w前的系数为0。问题来了，至少需要多少个向量才能生成整个二维空间呢?结论是：对于n维空间，至少需要n个向量才能生成。用反证法，把问题转化齐次线性方程组解的问题。</p>
+<blockquote>
+<p>看待矩阵的4大视角</p>
+</blockquote>
+<p>视角：</p>
+<pre><code>空间视角：列向量  (坐标系或空间)
+系统视角：线性方程组
+函数视角：行向量 （与线性变换相关）
+数据视角：记录与特征</code></pre><blockquote>
+<p>线性系统</p>
+</blockquote>
+<p>啥是线性？所有未知数是一次的。</p>
+<p>线性系统就是多个一次方程联立。线性系统中存在一个矩阵叫做增广矩阵。对这个矩阵的操作使用Guass-Jordan消元，返回一个阶梯矩阵。使用这个操作来判断这个线性方程组解的结构。解的结构本质上是经过消元后，方程组的个数与未知数个数的关系。</p>
+<p>线性系统中，当等号右边全为零时，叫做其次方程组。</p>
+<p>许多LA相关问题都可以经由线性系统的视角，证明线性方程组的解，来证明。</p>
+<p>比如：方阵的逆与线性相关的关系。如何判断线性相关否，根据定义来：这几个向量的线性组合（等号右边为0）是否只有零解，若只有零解，表示定义中的k全为零，全为零啥意思，就是所有k对应的所有向量线性无关（线性无关的定义）。 如果方阵A可逆，那么Ax=0 &lt;=&gt; A的逆*A = A的逆*0，即I*x=0（0矩阵）,所以x=0。</p>
+<p>也就是说，方阵A可逆，则A的列向量线性无关。</p>
+<blockquote>
+<p>线性变换</p>
+</blockquote>
+<p>变换是一个函数，一个线性变换T(x)必须满足两个条件：</p>
+<p><code>T(u+v)=T(u)+T(v)</code><br><code>T(C*u)=C*T(u)</code>, C属于1D欧几里得空间</p>
+<p>看，又是<font color="gree" size="3">加法</font>和<font color="gree" size="3">数量乘法</font>。<br>一个线性变换对应一个矩阵。而且所有矩阵都对应一个线性变换。</p>
+<p>从几何角度理解特征值特征向量时，因为只给出了一个<font color="gree" size="3">变换</font>，所以首先那需要判断这个变换是否是一个<font color="gree" size="3">线性变换</font>，若果是，那么就对应一个矩阵。有了矩阵，才能根据定义找到特征值和特征向量。</p>
+<blockquote>
+<p>基与坐标系</p>
+</blockquote>
+<blockquote>
+<p>行空间</p>
+</blockquote>
+<blockquote>
+<p>列空间</p>
+</blockquote>
+<blockquote>
+<p>方阵的秩</p>
+</blockquote>
+<blockquote>
+<p>标准正交基</p>
+</blockquote>
+<blockquote>
+<p>方阵的行列式</p>
+</blockquote>
+<p>行列式只是方阵的一个属性，对于非方阵是没有行列式这一说的(暂时)。方阵A的行列式用<code>det(A)</code> 表示。对于二维欧几里得空间，它由无数个基，怎样来区分彼此呢？可以使用基构成的<font color="gree" size="3">面积</font>的大小来区分。对于3D欧几里得空间，就是体积了。</p>
+<p>所以行列式的几何意义就明确了。由于行列式有正负之分的，所以更确切的说，行列式的几何意义是有向面积或有向体积。</p>
+<p>行列式其实是用于研究特征值和特征矩阵的。</p>
+<p>行列式的计算在大学是着重练习的，但其实计算不是重点。这里由个通用的计算行列式的方法：</p>
+<pre><code>进行Guass消元，
+过程中不做归一化，
+行置换列置换操作，每一次置换操作，符号改变一次没所以要记录置换了多少次，
+最终化为上三角矩阵，即对角线以下为0。</code></pre><p>堆中行列式的结果，就是对角向上元素累乘。</p>
+<p>补充一点，啥是<code>初等矩阵</code>：对单位矩阵进行初等行操作得到的矩阵。</p>
+<p>还有一部分内容是关于<code>行列式的代数表达</code>，涉及到余子式，代数余子式，伴随矩阵，Cramer法则等。代数表达在数学上很优美，但是咋实际计算行列式值时，很低效。行列式中重要的是其性质，之后的LA高阶内容都会用到行列式性质。</p>
+<blockquote>
+<p>特征值特征向量</p>
+</blockquote>
+<p>这又是方阵的另外两个属性。是把方阵作为基，从<font color="gree" size="3">变换</font>的角度看的。这个变换拥有一些特征，这些特征被特征向量特征值描述。</p>
+<p>一个向量在基<code>A</code>中的表达是<code>u</code>，在标准正交基<code>E</code>中的表达是<code>v</code>，如果变换满足<code>A*u=lambda*E*v</code>，而<code>E*v=u</code>，给出一个向量，默认都是用<code>E</code>基表达。<code>lambda</code>为标量。</p>
+<p>也就是<code>A*u=lambda*u</code>，也就是说，<code>u</code>和<code>v</code> <font color="gree" size="3">同方向</font>。<code>lambda</code>称作方阵<code>A</code>的特征值，<code>u</code>为<code>A</code>对于<code>lambda</code>的特征向量。</p>
+<ul>
+<li><p>如何求一个方阵的特征值和特征向量？</p>
+<p>  对于<code>A*u=lambda*u</code>.</p>
+<ul>
+<li><p>当<code>u</code>为零向量时，不论A是啥，等号都成立，所以<code>u=0</code>是平凡解。也就是说，<code>u=0</code><font color="gree" size="3">不是</font>任何方阵的特征向量。不能表达A的特性。</p>
+</li>
+<li><p>当<code>lambda=0</code>时，不是平凡解。<code>lambda=0</code>，即<code>A*u=0</code>。是齐次线性方程组。上一条说过了，<code>u</code>不能为0向量。也就是说，<code>A*u=0</code>有非零解。<br>回忆：[若A可逆，A*u=0只有零解]，现在条件是，u是其非零解，即A不可逆。<br>总结：若<code>lambda=0</code>是<code>A</code>的特征值， 那么<code>A</code>不可逆。即不可逆方阵的一个特征值可以是0.</p>
+<p>接着求，<code>A*u=lambda*E*v</code> =&gt; <code>A*u - I*lambda*u = 0</code> =&gt; <code>(A-lambda*I)*u=0</code> 我希望这个表达式有非零解。</p>
+<p>若有非零解，则<code>(A-lambda*I)</code> 不可逆，就是说<code>det(A-lambda*I)=0</code>. （看到了把，行列式在此出现）。</p>
+<p>根据<code>det(A-lambda*I)=0</code>可以求出A的若干特征值<code>lambda</code>，进一步，把<code>lambda</code>带入<code>A*u=lambda*u</code>便可以求得这个lambda对应的特征向量组。</p>
+</li>
+</ul>
+</li>
+</ul>
+<pre><code>理解的重点：
+
+* A的特征向量不可能是0向量，
+* 同一个向量在不同的基中的表示同方向或逆方向，
+* 特征值特征向量与变换有关。</code></pre><ul>
+<li><p>特征值与特征向量的一些性质：</p>
+<ul>
+<li>如果u值A对应于lambda的一个特征向量，则k*u也是lambda的一个特征向量。</li>
+<li>如果A的一个lambda=0，则A不可逆。</li>
+<li>对角矩阵，上三角矩阵，下三角矩阵的特征值，就是主对角线上元素的值。</li>
+<li>如果lambda是A是特征值，则lambda^m 是A^m的特值。</li>
+<li>如果lambda是A的特征值，则1/lambda是A的逆的特征值。</li>
+</ul>
+</li>
+<li><p>从几何角度理解特征值和特征向量</p>
+<p>  几何中，一个变换，比如投影变换：2D中将任意向量投影到向量(2,3)所在的直线。不一定对应一个矩阵。所以要先判断这个变换是一个线性变换。根据线性变换的内容：满足下面两个条件才是线性变换：<br>  <code>T(u+v)=T(u)+T(v)</code><br>  <code>T(C*u)=C*T(u)</code>, C属于1D欧几里得空间<br>  显然投影变换满足上述条件，所以可以得到矩阵A。不过我们不求矩阵A，也可以从几何角度的到这个变换的特征值特征向量。</p>
+<p>  投影变换的特征值是什么呢？因为从定义看，特征向量经过变换后与变换前同方向。所以秩序在投影变换图中找那些向量满足变换前后同方向。</p>
+<p>  显然对于过(0,0)和(2,3)两点的直线l，其上向量俊满足上述条件。对于特征值，英文l上的 向量投影到自身，还是自身，所以lambda=1。</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/20/%E5%A4%A7%E8%AF%9D-%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0/" data-id="ck5c9ovpr0003r4fzdhda86ad" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-数组相关-三" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/" class="article-date">
+  <time datetime="2019-12-20T09:17:12.000Z" itemprop="datePublished">2019-12-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/">LeetCode-方法论-数组相关-三</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接着记录leetcode问题：<br>1002, 4, 215, 88, 674, 950</p>
+<p>提炼技术：</p>
+<ul>
+<li>记录字符频数</li>
+<li>实时更新</li>
+<li>额外变量</li>
+<li>逻辑中由插入操作，考虑使用<font color="red" size="4">队列</font></li>
+</ul>
+<h1 id="1002"><a href="#1002" class="headerlink" title="#1002"></a>#1002</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">找到单词的共有字符：</span><br><span class="line">Input: [&quot;bella&quot;,&quot;label&quot;,&quot;roller&quot;]</span><br><span class="line">Output: [&quot;e&quot;,&quot;l&quot;,&quot;l&quot;]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  假设输入单词的列表是：[‘bcdc’, ‘dcc’, ‘cddcb’]<br>  过程如下：</p>
+<pre><code>loop：对于每一个单词记录其中字母出现的频数count，根据这个count，更新count26。
+        当所有单词统计过后，count26就包含了最终每个单词共有的字符出现的频数。
+最后一步：将count26中频数大于0的字母放入res数组。</code></pre><p>  其中，count26把元素初始化为可能的最大值；而且是个全局变量，对于每个单词都实时更新其值，节省了空间。</p>
+  <div align="center"><img src="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/1002.png" width="650"></div>
+
+<p>  最终返回两个c一个d：[‘c’,’c’,’d’]。</p>
+</li>
+<li><p>看图说话</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">string</span>&gt; commonChars(<span class="built_in">vector</span>&lt;<span class="built_in">string</span>&gt;&amp; A)&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; count26(<span class="number">26</span>, INT_MAX);</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">string</span>&gt; res;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> word: A)&#123;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 统计每个单词中每个字母出现的频数</span></span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; count(<span class="number">26</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">auto</span> chara: word)&#123;</span><br><span class="line">            count[chara - <span class="string">'a'</span>]++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 每一个单词统计频数后更新count26</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">26</span>; i++)&#123;</span><br><span class="line">            count26[i] = min(count26[i], count[i]);  <span class="comment">// online update</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 最终的count26中记录了每个字母出现的次数</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">26</span>; i++)</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;count26[i]; j++)</span><br><span class="line">            res.push_back(<span class="built_in">string</span>(<span class="number">1</span>, i+<span class="string">'a'</span>));  <span class="comment">// 索引0对应‘a’</span></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">记录字符频数</font>，<font color="red" size="4">实时更新</font>，</p>
+<h1 id="4-Median-of-Two-Sorted-Arrays"><a href="#4-Median-of-Two-Sorted-Arrays" class="headerlink" title="#4 Median of Two Sorted Arrays"></a>#4 Median of Two Sorted Arrays</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">There are two sorted arrays nums1 and nums2 of size m and n respectively.</span><br><span class="line">Find the median of the two sorted arrays.</span><br><span class="line"></span><br><span class="line">nums1 &#x3D; [1, 2]</span><br><span class="line">nums2 &#x3D; [3, 4]</span><br><span class="line">The median is (2 + 3)&#x2F;2 &#x3D; 2.5</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+<ul>
+<li><p>思路</p>
+<p>  思路直接：第一步：merge两个有序数组，第二步：找到median。</p>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">findMedianSortedArrays</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> m = nums1.size();</span><br><span class="line">    <span class="keyword">int</span> n = nums2.size();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// aux 数组记录merge后的数组</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; aux(n+m ,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// merge two sorted arrays</span></span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">0</span>,j=<span class="number">0</span>,k=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (k=<span class="number">0</span>; k&lt; m+n; k++)&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (i&gt;=m)   <span class="comment">// 如果i超过了nums1的长度，表示nums1中元素遍历完毕</span></span><br><span class="line">            aux[k] = nums2[j++];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (j&gt;=n) <span class="comment">// 如果j超过了nums2 的长度，表示nums2中元素遍历完毕 </span></span><br><span class="line">            aux[k] = nums1[i++];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(nums1[i] &lt; nums2[j] &amp;&amp; i&lt;m &amp;&amp; j&lt;n) <span class="comment">// 如果两个数组都没有遍历完毕</span></span><br><span class="line">            aux[k] = nums1[i++];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (nums1[i] &gt;= nums2[j] &amp;&amp; i&lt;m &amp;&amp; j&lt;n) <span class="comment">// 如果两个数组都没有遍历完毕</span></span><br><span class="line">            aux[k] = nums2[j++];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 计算中间两个数的median</span></span><br><span class="line">    <span class="keyword">double</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span>((m+n)%<span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line">        res = <span class="number">0.5</span>*(aux[(m+n)/<span class="number">2</span>] + aux[(m+n)/<span class="number">2</span><span class="number">-1</span>]);</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>((m+n)%<span class="number">2</span> == <span class="number">1</span>)</span><br><span class="line">        res = (aux[(m+n)/<span class="number">2</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：merge操作的情况要考虑清楚</p>
+<h1 id="215-Kth-largest-element"><a href="#215-Kth-largest-element" class="headerlink" title="#215 Kth largest element"></a>#215 Kth largest element</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,2,1,5,6,4] and k &#x3D; 2</span><br><span class="line">Output: 5</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  当数组中的元素可以使任何整数时：</p>
+<pre><code>先排序，后直接取第k个元素</code></pre><p>  当数组中的元素中只含有0~9这10个，可以有其他方法：</p>
+<pre><code>使用频数数组记录每个digit出现的次数，根据这个频数与k的关系取到最终值。</code></pre></li>
+</ul>
+<ul>
+<li><p>实现</p>
+<ol>
+<li><p>第一种情况：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Increase</span>&#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span>&amp; a, <span class="keyword">const</span> <span class="keyword">int</span>&amp; b)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> a&gt;b;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findKthLargestElement</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> k)</span></span>&#123;</span><br><span class="line">    sort(nums.begin(), nums.end(), Increase());</span><br><span class="line">    <span class="keyword">return</span> nums[k<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>第二种情况可以使用如下方式：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">findKthLargestElement</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> k)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> res = <span class="number">1</span>;  <span class="comment">// 与k比较</span></span><br><span class="line">	<span class="keyword">int</span> count[<span class="number">10</span>] = &#123;<span class="number">0</span>&#125;;  <span class="comment">// 频数记录</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">		count[nums[i]]++;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">9</span>; i&gt;=<span class="number">0</span>; i--)&#123;    </span><br><span class="line">		<span class="keyword">if</span> (count[i] == <span class="number">0</span>) <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;=count[i]; j++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (res &lt; k) res+=<span class="number">1</span>;  </span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span>(res == k) <span class="keyword">return</span> i;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">throw</span> invalid_argument(<span class="string">"no return"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+</li>
+</ul>
+<h1 id="88-Merge-Two-Array"><a href="#88-Merge-Two-Array" class="headerlink" title="#88 Merge Two Array"></a>#88 Merge Two Array</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">nums1 &#x3D; [1,2,3,0,0,0], m &#x3D; 3</span><br><span class="line">nums2 &#x3D; [2,5,6],       n &#x3D; 3</span><br><span class="line"></span><br><span class="line">Output: [1,2,2,3,5,6]</span><br><span class="line"></span><br><span class="line">NOTE: num1&amp;num2 are sorted</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  其实就是实现Merge Sort的一个树结点的操作</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; merge2(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="keyword">int</span> m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2, <span class="keyword">int</span> n) &#123;</span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">0</span>; <span class="comment">//def num1 的index</span></span><br><span class="line">    <span class="keyword">int</span> j=<span class="number">0</span>;  <span class="comment">//def num2 的index</span></span><br><span class="line">    <span class="keyword">int</span> k=<span class="number">0</span>; <span class="comment">//def  结果array的index</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; arr(m+n);</span><br><span class="line">    <span class="keyword">while</span>(i&lt;m || j&lt;n)&#123;</span><br><span class="line">        <span class="keyword">if</span>(nums1[i] &lt;= nums2[j])</span><br><span class="line">            arr[k++] = nums1[i++];</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            arr[k++] = nums2[j++];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> arr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="674-最长连续递增子序列的长度"><a href="#674-最长连续递增子序列的长度" class="headerlink" title="#674 最长连续递增子序列的长度"></a>#674 最长连续递增子序列的长度</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">比如：nums&#x3D;[1,3,7,5,6,8,9]</span><br><span class="line"></span><br><span class="line">返回4. 最长递增子序列是[5,6,8,9]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  用变量<code>start</code>标记每个递增子序列的第一个数的索引。<br>  遍历<code>nums</code>数组，只要<code>nums[i]&lt;=nums[i-1]</code>，更新<code>start</code>为当前索引<code>i</code>。<br>  <code>i</code>每次加1，<code>res</code>更新一次：<code>res=max(res, i-start+1)</code>.</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">func</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> start = <span class="number">0</span>;  <span class="comment">// extra variable </span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;nums.size();i++)&#123;</span><br><span class="line">        <span class="keyword">if</span>(i&gt;<span class="number">0</span> &amp;&amp; nums[i]&lt;=nums[i<span class="number">-1</span>])</span><br><span class="line">            start=i;</span><br><span class="line">        res = max(res, i-start+<span class="number">1</span>); <span class="comment">// update</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关键： <font color="red" size="4">额外变量</font>，<font color="red" size="4">实时更新</font>，<font color="red" size="4">先手动实现</font>，</p>
+</li>
+</ul>
+<h1 id="950-Reveal-Cards-In-Increasing-Order"><a href="#950-Reveal-Cards-In-Increasing-Order" class="headerlink" title="#950 Reveal Cards In Increasing Order"></a>#950 Reveal Cards In Increasing Order</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">给出一个序列，含若干个元素，任意顺序，现在确定一种顺序S，使得这个顺序的序列执行如下操作的过程中，第一步取出元素为递增顺序。这个操作如下：</span><br><span class="line">    1. 取出序列的第一个元素</span><br><span class="line">    2. 如果此时序列中还有元素，将第一个元素放到序列尾部。</span><br><span class="line">    3. 只要序列中有元素，就执行1,2步骤。 </span><br><span class="line"></span><br><span class="line">返回S。</span><br><span class="line"></span><br><span class="line">例：</span><br><span class="line">Input: [17,13,11,2,3,5,7]</span><br><span class="line">Output: [2,13,3,11,5,17,7]</span><br><span class="line">Explanation: </span><br><span class="line">We get the deck in the order [17,13,11,2,3,5,7] (this order doesn&#39;t matter), and reorder it.</span><br><span class="line">After reordering, the deck starts as [2,13,3,11,5,17,7], where 2 is the top of the deck.</span><br><span class="line">We reveal 2, and move 13 to the bottom.  The deck is now [3,11,5,17,7,13].</span><br><span class="line">We reveal 3, and move 11 to the bottom.  The deck is now [5,17,7,13,11].</span><br><span class="line">We reveal 5, and move 17 to the bottom.  The deck is now [7,13,11,17].</span><br><span class="line">We reveal 7, and move 13 to the bottom.  The deck is now [11,17,13].</span><br><span class="line">We reveal 11, and move 17 to the bottom.  The deck is now [13,17].</span><br><span class="line">We reveal 13, and move 17 to the bottom.  The deck is now [17].</span><br><span class="line">We reveal 17.</span><br><span class="line">Since all the cards revealed are in increasing order, the answer is correct.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<ol>
+<li><p>既然初始序列<code>deck</code>是任意的，所以先排序，从大到小排序得到新<code>deck</code>。</p>
+</li>
+<li><p>过程中需要插入序列第二个位置，所以考虑使用双端队列为容器<code>dq</code>。把第一个元素放入队列，从第二个元素开始。</p>
+<ul>
+<li>第一步 将队列的最后元素插入队列的第一个位置。</li>
+<li>第二步 将当前序列中的元素<code>deck[i]</code> 插入队列首。</li>
+<li>第三步 将此时的队列中最后元素删除。</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; deckRevealedIncreasing(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; deck)&#123;</span><br><span class="line">    sort(deck.begin(), deck.end(), [](<span class="keyword">int</span>&amp; a, <span class="keyword">int</span>&amp; b)-&gt;<span class="keyword">bool</span>&#123;</span><br><span class="line">                <span class="keyword">return</span> a&gt;b;</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">deque</span>&lt;<span class="keyword">int</span>&gt; dq;</span><br><span class="line">    dq.push_front(deck[<span class="number">0</span>]);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt; deck.size(); i++)&#123;</span><br><span class="line">        dq.insert(dq.begin(), *(dq.end()<span class="number">-1</span>));</span><br><span class="line">        dq.push_front(deck[i]);</span><br><span class="line">        dq.pop_back();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(dq.begin(), dq.end());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键： <font color="red" size="4">已知结果求原因，反推过去</font>，<br>逻辑中由插入操作，考虑使用<font color="red" size="4">队列</font>、<br>双端队列常用方法： <code>push_front()</code>, <code>push_back()</code>, <code>pop_back()</code>, <code>pop_front()</code>, <code>insert()</code></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/" data-id="ck5bbuohp002wa2fz10q182g8" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-数组相关-二" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/" class="article-date">
+  <time datetime="2019-12-19T05:25:32.000Z" itemprop="datePublished">2019-12-19</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/">LeetCode-方法论-数组相关-二</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接着记录数组相关问题。<br>56, 74, 240, 136, 1122, 1009, 868, 985,  </p>
+<p>常用技术：</p>
+<ul>
+<li>粗调+精调</li>
+<li>XOR性质</li>
+<li>额外变量的使用</li>
+<li>数进制间的对应(相互为等价信息)</li>
+<li>移位操作</li>
+<li>首先想到的方法不是好的方法</li>
+</ul>
+<h1 id="56-Merge-intervals-合并区间"><a href="#56-Merge-intervals-合并区间" class="headerlink" title="#56 Merge intervals 合并区间"></a>#56 Merge intervals 合并区间</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: [[1,3],[2,6],[8,10],[15,18]]</span><br><span class="line">Output: [[1,6],[8,10],[15,18]]</span><br><span class="line">Explanation: Since intervals [1,3] and [2,6] overlaps, merge them into [1,6].</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<pre><code>第一步：按区间左边界排序
+第二步：把第一个interval[0]放入结果容器res中，从第二个interval[1]开始：
+    如果interval[1]的左边界 &gt;= res的最后一个interval的右边界，表示两者无交集，
+        把interval[1] append到res中；
+    如果interval[1]的左边界 &lt; res的最后一个interval的右边界，表示两者有交集，
+        把interval[1]的右边界写入res最后一个interval的右边界。</code></pre><p>  第二部过程间下示意图</p>
+</li>
+</ul>
+<pre><code>&lt;div align=&quot;center&quot;&gt;&lt;img src=&quot;LeetCode-方法论-数组相关-二/interval.png&quot; width=600&gt;&lt;/div&gt;</code></pre><ul>
+<li><p>看图说话实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">bool</span> <span class="title">compare</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; a , <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; b)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a[<span class="number">0</span>] &lt; b[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; merge(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; intervals) &#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; res;</span><br><span class="line">    <span class="keyword">if</span> (intervals.size()==<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    <span class="keyword">if</span> (intervals.size()==<span class="number">1</span>)&#123;</span><br><span class="line">        res.push_back(intervals[<span class="number">0</span>]);</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 区间左端点从小到大排序</span></span><br><span class="line">    sort(intervals.begin(), intervals.end(), compare); </span><br><span class="line"></span><br><span class="line">    res.push_back(intervals[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span>(i &lt; intervals.size())&#123;</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; last = res.back();  <span class="comment">// 注意</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (last[<span class="number">1</span>] &lt; intervals[i][<span class="number">0</span>])&#123;</span><br><span class="line">            res.push_back(intervals[i]);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            last[<span class="number">1</span>] = max(last[<span class="number">1</span>], intervals[i][<span class="number">1</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">        i++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键： <code>vector&lt;int&gt;&amp; last = res.back();</code> 定义last 的类型是reference。由逻辑，<font color="red" size="4">凡是last被修改，就是res.back()被修改</font>，所以last和res.back()为一个对象。</p>
+<h1 id="64-Search-2D-matrix"><a href="#64-Search-2D-matrix" class="headerlink" title="#64 Search 2D matrix"></a>#64 Search 2D matrix</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">matrix &#x3D; [</span><br><span class="line">[1,   3,  5,  7],</span><br><span class="line">[10, 11, 16, 20],</span><br><span class="line">[23, 30, 34, 50]</span><br><span class="line">]</span><br><span class="line">target &#x3D; 16</span><br><span class="line">Output: true</span><br><span class="line"></span><br><span class="line">1.Integers in each row are sorted from left to right.</span><br><span class="line">2.The first integer of each row is greater than the last integer of the previous row.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路 </p>
+<p>  根据问题的特点，设计<code>粗调+精调</code>方法：</p>
+<pre><code>粗调：把每一行的最后一个元素放入新的数组中（m长度）: [7, 20, 50].
+    用target与其中的每个元素比较，找到第一个比target大的元素并返回index。
+    如：20 是第一个大于target的元素，返回1，即target在index=1的行。
+精调：在index=1的行中搜索target。</code></pre></li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">searchMatrix</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; matrix, <span class="keyword">int</span> target)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> row = matrix.size();</span><br><span class="line">    <span class="keyword">int</span> col = matrix[<span class="number">0</span>].size();</span><br><span class="line"></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; station(row, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> r=<span class="number">0</span>; r&lt;row; r++)</span><br><span class="line">        station[r] = matrix[r][col<span class="number">-1</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// rough-tuning</span></span><br><span class="line">    <span class="keyword">int</span> pr = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;station.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (target == station[i])</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">if</span> (target &lt; station[i])&#123;</span><br><span class="line">            pr = i;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// fine-tuning</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> c=<span class="number">0</span>; c&lt;col; c++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (matrix[pr][c] == target)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>关键： <font color="red" size="4">粗调&amp;精调</font></p>
+</li>
+</ul>
+<h1 id="240-Search-2D-matrix-II"><a href="#240-Search-2D-matrix-II" class="headerlink" title="#240 Search 2D matrix II"></a>#240 Search 2D matrix II</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Consider the following matrix:</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">[1,   4,  7, 11, 15],</span><br><span class="line">[2,   5,  8, 12, 19],</span><br><span class="line">[3,   6,  9, 16, 22],</span><br><span class="line">[10, 13, 14, 17, 24],</span><br><span class="line">[18, 21, 23, 26, 30]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">Given target &#x3D; 5, return true.</span><br><span class="line"></span><br><span class="line">Given target &#x3D; 20, return false.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">1.Integers in each row are sorted in ascending from left to right.</span><br><span class="line">2.Integers in each column are sorted in ascending from top to bottom.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路 </p>
+<p>  与#74不同，对于方阵，可以使用粗调精调，但是对于非方阵，此法复杂。考虑新的方法，如下图：</p>
+  <div align="center"><img src="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/matrix.png" width="500"></div>
+
+<p>  从右上角或(左下角开始)，target与所到元素比较：</p>
+<pre><code>if (target &gt; matrix[i][j]) i++;    // 向下走
+else if (target &lt; matrix[i][j]) j--;    // 向右走
+else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
+<li><p>看图说话</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">searchMatrix</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; matrix, <span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> row = matrix.size();</span><br><span class="line">    <span class="keyword">if</span> (row == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">int</span> col = matrix[<span class="number">0</span>].size();</span><br><span class="line">    <span class="keyword">if</span> (col == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">if</span> (target &lt; matrix[<span class="number">0</span>][<span class="number">0</span>] || target &gt; matrix[row<span class="number">-1</span>][col<span class="number">-1</span>])</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> r = row<span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">int</span> c = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(r &gt;= <span class="number">0</span> &amp;&amp; c &lt; col )&#123;</span><br><span class="line">        <span class="keyword">if</span> (target == matrix[r][c]) <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (target &gt; matrix[r][c]) c++;</span><br><span class="line">        <span class="keyword">else</span> r--;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="136-Single-Number"><a href="#136-Single-Number" class="headerlink" title="#136 Single Number"></a>#136 Single Number</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Given a non-empty <span class="built_in">array</span> of integers, every element appears twice except <span class="keyword">for</span> one. Find that single one.</span><br><span class="line"></span><br><span class="line">Input: [<span class="number">4</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">1</span>,<span class="number">2</span>]</span><br><span class="line">Output: <span class="number">4</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  方法一： map<br>  方法二： set<br>  方法三： XOR 使用XOR的数学性质，可以很快地解决问题</p>
+<pre><code>XOR 数学性质
+    I)   a^0=a (a!=0)
+    II)  a^a=0 (a!=0)
+    III) a^b^a = a^a^b = b^a^a = b </code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">singleNumber</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> i: nums)</span><br><span class="line">        res ^= i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键: <font color="red" size="4">XOR行为</font></p>
+<h1 id="1122-Relative-Sort-Array"><a href="#1122-Relative-Sort-Array" class="headerlink" title="#1122  Relative Sort Array"></a>#1122  Relative Sort Array</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Given two arrays arr1 and arr2, the elements of arr2 are distinct, and all elements in arr2 are also in arr1.</span><br><span class="line"></span><br><span class="line">Sort the elements of arr1 such that the relative ordering of items in arr1 are the same as in arr2.  Elements that don&#39;t appear in arr2 should be placed at the end of arr1 in ascending order.</span><br><span class="line"></span><br><span class="line">Input: arr1 &#x3D; [2,3,1,3,2,4,6,7,9,2,19], arr2 &#x3D; [2,1,4,3,9,6]</span><br><span class="line">Output: [2,2,2,1,4,3,3,9,6,7,19]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  很直接，遍历arr2，对于arr2中所有元素，在arr1中找到这个元素，并且放到合适的位置，这个位置由变量index指示。看下图：</p>
+  <div align="center"><img src="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/relative.png" width="450"></div>
+
+
+
+</li>
+</ul>
+<ul>
+<li><p>看图说话</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; relativeSortArray(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; arr1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; arr2)&#123;</span><br><span class="line">    <span class="keyword">int</span> index = <span class="number">0</span>;    <span class="comment">// extra variable</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;arr2.size(); i++)&#123;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=index; j&lt;arr1.size(); j++)&#123;</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">if</span> (arr1[j]==arr2[i])&#123;</span><br><span class="line">                swap(arr1[j], arr1[index]);</span><br><span class="line">                index++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    sort(arr1.begin()+index, arr1.end());</span><br><span class="line">    <span class="keyword">return</span> arr1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键： <font color="red" size="4">额外变量的使用</font></p>
+<h1 id="1009-Complement-of-Base-10-Integer"><a href="#1009-Complement-of-Base-10-Integer" class="headerlink" title="#1009 Complement of Base 10 Integer"></a>#1009 Complement of Base 10 Integer</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: 10</span><br><span class="line">Output: 5</span><br><span class="line">Explanation: 10 is &quot;1010&quot; in binary, with complement &quot;0101&quot; in binary, which is 5 in base-10.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路  </p>
+<p>  找到对应的111…1，减去已知，的结果。<br>  假设N=5，规律：</p>
+<table>
+<thead>
+<tr>
+<th>binary</th>
+<th>dec</th>
+<th>公式</th>
+<th>判断</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>1</td>
+<td>0*2+1</td>
+<td>5&gt;1</td>
+</tr>
+<tr>
+<td>11</td>
+<td>3</td>
+<td>1*2+1</td>
+<td>5&gt;3</td>
+</tr>
+<tr>
+<td>111</td>
+<td>7</td>
+<td>3*2+1</td>
+<td>5&lt;7 =&gt;7-5=2</td>
+</tr>
+<tr>
+<td>1111</td>
+<td>15</td>
+<td>7*1+1</td>
+<td></td>
+</tr>
+<tr>
+<td>11111</td>
+<td>31</td>
+<td>15*2+1</td>
+<td></td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<ul>
+<li><p>看图说话</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bitwiseComplement</span><span class="params">(<span class="keyword">int</span> N)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (N&gt;x)</span><br><span class="line">        x = x*<span class="number">2</span>+<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> x-N;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">找到规律</font>，<font color="red" size="4">数进制间的对应</font>，</p>
+<h1 id="868-Binay-Bap"><a href="#868-Binay-Bap" class="headerlink" title="#868 Binay Bap"></a>#868 Binay Bap</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Input: 22</span><br><span class="line">Output: 2</span><br><span class="line">Explanation: </span><br><span class="line">22 in binary is 0b10110.</span><br><span class="line"></span><br><span class="line">1 &lt;&#x3D; N &lt;&#x3D; 10^9</span><br><span class="line">其中相邻1与1之间距离最大的是2，所以返回2.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  规律：一个整数的奇偶与其二进制的尾数相关，奇数对应位二进制的尾数是1；偶数对应二进制的尾数是0. 假如N=22：</p>
+<table>
+<thead>
+<tr>
+<th>N</th>
+<th>左移一位结果</th>
+<th>结果的二进制</th>
+<th>与N的关系</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>22</td>
+<td></td>
+<td>10110</td>
+<td>N左移0位</td>
+</tr>
+<tr>
+<td>22&gt;&gt;1</td>
+<td>11</td>
+<td>01011</td>
+<td>N左移1位</td>
+</tr>
+<tr>
+<td>11&gt;&gt;1</td>
+<td>5</td>
+<td>00101</td>
+<td>N左移2位</td>
+</tr>
+<tr>
+<td>5&gt;&gt;1</td>
+<td>2</td>
+<td>00010</td>
+<td>N左移3位</td>
+</tr>
+<tr>
+<td>2&gt;&gt;1</td>
+<td>1</td>
+<td>00001</td>
+<td>N左移4位</td>
+</tr>
+<tr>
+<td>1&gt;&gt;1</td>
+<td>0</td>
+<td>00000</td>
+<td>N左移5位</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">移位操作</font>，<font color="red" size="4">找到问题的等价信息</font></p>
+<h1 id="985-Sum-of-Even-Numbers-After-Queries"><a href="#985-Sum-of-Even-Numbers-After-Queries" class="headerlink" title="#985 Sum of Even Numbers After Queries"></a>#985 Sum of Even Numbers After Queries</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Input: A &#x3D; [1,2,3,4], queries &#x3D; [[1,0],[-3,1],[-4,0],[2,3]]</span><br><span class="line">Output: [8,6,2,4]</span><br><span class="line">Explanation: </span><br><span class="line">At the beginning, the array is [1,2,3,4].</span><br><span class="line">After adding 1 to A[0], the array is [2,2,3,4], and the sum of even values is 2 + 2 + 4 &#x3D; 8.</span><br><span class="line">After adding -3 to A[1], the array is [2,-1,3,4], and the sum of even values is 2 + 4 &#x3D; 6.</span><br><span class="line">After adding -4 to A[0], the array is [-2,-1,3,4], and the sum of even values is -2 + 4 &#x3D; 2.</span><br><span class="line">After adding 2 to A[3], the array is [-2,-1,3,6], and the sum of even values is -2 + 6 &#x3D; 4.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  第一步：原始A数组偶数求和sum</p>
+<p>  第二步：对于queries中的每个元素执行如下操作：</p>
+<pre><code>1. 如果A中待改变索引的数为even，则从sum中把这个索引对应的数减去。(因为不知道更新后的实际是偶)
+2. 更新A数组。
+3. 更新后的A中被修改的数如果是even，则把他加到sum中。(更新后的奇偶知道了)
+4. 记录sum。</code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; sumEvenAfterQueries(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; A, <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; queries) &#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; res;</span><br><span class="line">    <span class="keyword">int</span> sum = accumulate(A.begin(), A.end(), <span class="number">0</span>, [](<span class="keyword">int</span> s, <span class="keyword">int</span> a)&#123;</span><br><span class="line">            <span class="keyword">return</span> s+(a%<span class="number">2</span>==<span class="number">0</span>?a:<span class="number">0</span>);</span><br><span class="line">            &#125;);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> q:queries)&#123;</span><br><span class="line">        <span class="keyword">if</span>(A[q[<span class="number">1</span>]]%<span class="number">2</span>==<span class="number">0</span>) sum-=A[q[<span class="number">1</span>]];  <span class="comment">// 1.</span></span><br><span class="line">        A[q[<span class="number">1</span>]] += q[<span class="number">0</span>];               <span class="comment">//2.</span></span><br><span class="line">        <span class="keyword">if</span> (A[q[<span class="number">1</span>]]%<span class="number">2</span>==<span class="number">0</span>) sum+=A[q[<span class="number">1</span>]]; <span class="comment">//3.</span></span><br><span class="line">        res.push_back(sum);            <span class="comment">// 4.</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">直接想到的方法通常不是最好的</font>，<font color="red" size="4">lambda函数</font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/" data-id="ck5bbuohq002ya2fz9vl34llw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-vim-neovim" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/12/18/vim-neovim/" class="article-date">
@@ -727,268 +1431,6 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
 
 
   
-    <article id="post-CUDA-Performance-Metrics" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/11/27/CUDA-Performance-Metrics/" class="article-date">
-  <time datetime="2019-11-27T14:46:48.000Z" itemprop="datePublished">2019-11-27</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="Implement-Performance-Metrics-in-CUDA"><a href="#Implement-Performance-Metrics-in-CUDA" class="headerlink" title="Implement Performance Metrics in CUDA"></a>Implement Performance Metrics in CUDA</h1><p>“Before we jump into these performance measurement techniques, we need to discuss how to synchronize execution between the host and device.”<br>why? 因为有些指令同步执行，有些指令异步执行。只有知道了区别才可以正确测量性能。</p>
-<p>遇到<code>cudaMemcpy()</code> 执行变成同步的，也就是说，所有指令必须等待其他指令执行到此，才可以一起向下继续执行。如果没有<code>cudaMemcpy()</code>，可以使用<code>cudaDeviceSynchronize()</code>实现同步。</p>
-<h2 id="使用CPU的timer"><a href="#使用CPU的timer" class="headerlink" title="使用CPU的timer"></a>使用CPU的timer</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">t1 = myCPUTimer();</span><br><span class="line">saxpy&lt;&lt;&lt;(N+<span class="number">255</span>)/<span class="number">256</span>, <span class="number">256</span>&gt;&gt;&gt;(N, <span class="number">2.0</span>, d_x, d_y);</span><br><span class="line">cudaDeviceSynchronize();   <span class="comment">// </span></span><br><span class="line">t2 = myCPUTimer();</span><br><span class="line"></span><br><span class="line">cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br></pre></td></tr></table></figure>
-
-<p>“we use the explicit synchronization barrier <code>cudaDeviceSynchronize()</code> to block CPU execution until all previously issued commands on the device have completed. Without this barrier, this code would measure the kernel launch time and not the kernel execution time.” 在这里犯过错，CPU负责控制，当执行到kernel函数时，是CPU调用kernel函数，但是在GPU上执行，CPU调用之后，马上执行下面的语句，如果没有<code>cudaDeviceSynchronize()</code>，CPU会执行t2，如此一来t2-t1测的是调用kernel的时间，而非kernel执行的时间。也就是说，CPU与GPU是异步的，只有加上<code>cudaDeviceSynchronize()</code>，告诉CPU等待GPU把kernel执行完毕，后一同执行t2. </p>
-<h2 id="Timing-using-CUDA-Events"><a href="#Timing-using-CUDA-Events" class="headerlink" title="Timing using CUDA Events"></a>Timing using CUDA Events</h2><p>A problem with using host-device synchronization points, such as <code>cudaDeviceSynchronize()</code>, is that they stall the GPU pipeline. For this reason, CUDA offers a relatively light-weight alternative to CPU timers via the CUDA event API. The CUDA event API includes calls to create and destroy events, record events, and compute the elapsed time in milliseconds between two recorded events.</p>
-<p> A CUDA stream is simply a sequence of operations that are performed in order on the device. Operations in different streams can be interleaved and in some cases overlapped—a property that can be used to hide data transfers between the host and the device </p>
-<p>默认使用的stream 0，<br> Up to now, all operations on the GPU have occurred in the default stream, or stream 0 (also called the “Null Stream”).</p>
-<p> here is an example:</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">cudaEvent_t start, stop;</span><br><span class="line">cudaEventCreate(&amp;start);</span><br><span class="line">cudaEventCreate(&amp;stop);</span><br><span class="line"></span><br><span class="line">cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">cudaEventRecord(start);</span><br><span class="line">saxpy&lt;&lt;&lt;(N+<span class="number">255</span>)/<span class="number">256</span>, <span class="number">256</span>&gt;&gt;&gt;(N, <span class="number">2.0f</span>, d_x, d_y);</span><br><span class="line">cudaEventRecord(stop);</span><br><span class="line"></span><br><span class="line">cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">cudaEventSynchronize(stop);</span><br><span class="line"><span class="keyword">float</span> milliseconds = <span class="number">0</span>;</span><br><span class="line">cudaEventElapsedTime(&amp;milliseconds, start, stop);</span><br></pre></td></tr></table></figure>
-
-<p> 这个计时器记录的是核函数的执行时间。</p>
-<p> CUDA events are of type <code>cudaEvent_t</code> and are created and destroyed with <code>cudaEventCreate()</code> and <code>cudaEventDestroy()</code>. In the above code <code>cudaEventRecord()</code> places the start and stop events into the default stream, <code>stream 0</code>. The device will record a time stamp for the event when it reaches that event in the stream. The function <code>cudaEventSynchronize()</code> blocks CPU execution until the specified event is recorded. The <code>cudaEventElapsedTime()</code> function returns in the first argument the number of milliseconds time elapsed between the recording of start and stop. This value has a resolution of approximately one half microsecond.</p>
-<h2 id="Memory-Bandwidth"><a href="#Memory-Bandwidth" class="headerlink" title="Memory Bandwidth"></a>Memory Bandwidth</h2><p> 我们需要知道极限带宽，和实际带宽。</p>
-<h3 id="极限带宽（理论带宽）"><a href="#极限带宽（理论带宽）" class="headerlink" title="极限带宽（理论带宽）"></a>极限带宽（理论带宽）</h3><p> Theoretical bandwidth can be calculated using hardware specifications available in the product literature. For example, the NVIDIA Tesla M2050 GPU uses DDR (double data rate) RAM with a memory clock rate of <code>1,546 MHz</code> and a <code>384-bit</code> wide memory interface. Using these data items, the peak theoretical memory bandwidth of this GPU can be computed using the following:</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BWTheoretical &#x3D; 1546 * 10^6 * (384&#x2F;8) * 2 &#x2F; 10^9 &#x3D; 148 GB&#x2F;s</span><br></pre></td></tr></table></figure>
-
-<p>解释：In this calculation, we convert the memory clock rate to Hz, multiply it by the interface width (divided by 8, to convert bits to bytes) and multiply by 2 due to the double data rate. Finally, we divide by 109 to convert the result to GB/s.</p>
-<h3 id="实际带宽"><a href="#实际带宽" class="headerlink" title="实际带宽"></a>实际带宽</h3><p>We calculate effective bandwidth by timing specific program activities and by knowing how our program accesses data. We use the following equation.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BWEffective &#x3D; (RB + WB) &#x2F; (t * 10^9)</span><br></pre></td></tr></table></figure>
-
-<p>Here, <code>BWEffective</code> is the effective bandwidth in units of GB/s, <code>RB</code> is the number of bytes read per kernel, <code>WB</code> is the number of bytes written per kernel, and <code>t</code> is the elapsed time given in seconds.</p>
-<p>实例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">__global__</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = blockIdx.x*blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) y[i] = a*x[i] + y[i];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> N = <span class="number">20</span> * (<span class="number">1</span> &lt;&lt; <span class="number">20</span>);</span><br><span class="line">    <span class="keyword">float</span> *x, *y, *d_x, *d_y;</span><br><span class="line">    x = (<span class="keyword">float</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">    y = (<span class="keyword">float</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">    cudaMalloc(&amp;d_x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>)); </span><br><span class="line">    cudaMalloc(&amp;d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">        x[i] = <span class="number">1.0f</span>;</span><br><span class="line">        y[i] = <span class="number">2.0f</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cudaEvent_t start, stop;</span><br><span class="line">    cudaEventCreate(&amp;start);</span><br><span class="line">    cudaEventCreate(&amp;stop);</span><br><span class="line"></span><br><span class="line">    cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">    cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">    cudaEventRecord(start);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">    saxpy&lt;&lt;&lt;(N+<span class="number">511</span>)/<span class="number">512</span>, <span class="number">512</span>&gt;&gt;&gt;(N, <span class="number">2.0f</span>, d_x, d_y);</span><br><span class="line"></span><br><span class="line">    cudaEventRecord(stop);</span><br><span class="line"></span><br><span class="line">    cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">    cudaEventSynchronize(stop);</span><br><span class="line">    <span class="keyword">float</span> milliseconds = <span class="number">0</span>;</span><br><span class="line">    cudaEventElapsedTime(&amp;milliseconds, start, stop);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> maxError = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">        maxError = max(maxError, <span class="built_in">abs</span>(y[i]<span class="number">-4.0f</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Max error: %fn"</span>, maxError);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Effective Bandwidth (GB/s): %fn"</span>, N*<span class="number">4</span>*<span class="number">3</span>/milliseconds/<span class="number">1e6</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>In the bandwidth calculation, N*4 is the number of bytes transferred per array read or write, and the factor of three represents the reading of x and the reading and writing of y. The elapsed time is stored in the variable milliseconds to make units clear. Note that in addition to adding the functionality needed for the bandwidth calculation, we have also changed the array size and the thread-block size.</p>
-<p>CUDA events use the GPU timer and therefore avoid the problems associated with host-device synchronization</p>
-<p>原文作者Mark Harris<br>原文<a href="https://devblogs.nvidia.com/how-implement-performance-metrics-cuda-cc/" target="_blank" rel="noopener">链接</a></p>
-<hr>
-<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/11/27/CUDA-Performance-Metrics/" data-id="ck5bbuofh000aa2fz5i66ea3s" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-Unified-Memory" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/11/27/CUDA-Unified-Memory/" class="article-date">
-  <time datetime="2019-11-27T14:42:44.000Z" itemprop="datePublished">2019-11-27</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/27/CUDA-Unified-Memory/">CUDA-Unified Memory</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Unified-Memory"><a href="#Unified-Memory" class="headerlink" title="Unified Memory"></a>Unified Memory</h2><p>Unified Memory 是个逻辑概念，就像字面上所说，把Host内存和Device内存逻辑上放到一起，如此一来，对于程序员来说，就没有Host和Device之分了，表面上就更容易编写程序了。如下图所示。<br>“Unified Memory creates a pool of managed memory that is shared between the CPU and GPU, bridging the CPU-GPU divide. Managed memory is accessible to both the CPU and GPU using a single pointer. The key is that the system automatically migrates data allocated in Unified Memory between host and device so that it looks like CPU memory to code running on the CPU, and like GPU memory to code running on the GPU.”</p>
-<div align="center"><img src="/2019/11/27/CUDA-Unified-Memory/um.png"></div>
-
-<p>如下是使用Unified memory一般情况：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Allocate Unified Memory -- accessible from CPU or GPU</span></span><br><span class="line"><span class="keyword">float</span> *x, *y;</span><br><span class="line">cudaMallocManaged(&amp;x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">cudaMallocManaged(&amp;y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">...</span><br><span class="line">kernel&lt;&lt;&lt;grid, threads&gt;&gt;&gt;();</span><br><span class="line">cudaDeviceSynchronize()</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// Free memory</span></span><br><span class="line">cudaFree(x);</span><br><span class="line">cudaFree(y);</span><br></pre></td></tr></table></figure>
-<p>但是注意了，使用这种方式时，要加上<code>cudaDeviceSynchronize()</code>。保证<br>“Just one more thing: I need the CPU to wait until the kernel is done before it accesses the results (because CUDA kernel launches don’t block the calling CPU thread). To do this I just call <code>cudaDeviceSynchronize()</code> before doing the final error checking on the CPU.”</p>
-<p>这种方法使得在逻辑上，xy不区分是存在于host 还是存在于device</p>
-<p>原文作者Mark Harris<br>原文<a href="https://devblogs.nvidia.com/unified-memory-in-cuda-6/" target="_blank" rel="noopener">链接</a></p>
-<hr>
-<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/11/27/CUDA-Unified-Memory/" data-id="ck5bbuof90005a2fzcbfghsma" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-Vectorized-Memory-Access" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/11/26/CUDA-Vectorized-Memory-Access/" class="article-date">
-  <time datetime="2019-11-26T15:36:13.000Z" itemprop="datePublished">2019-11-26</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/26/CUDA-Vectorized-Memory-Access/">CUDA:-Vectorized Memory Access</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Increase-Performance-with-Vectorized-Memory-Access"><a href="#Increase-Performance-with-Vectorized-Memory-Access" class="headerlink" title="Increase Performance with Vectorized Memory Access"></a>Increase Performance with Vectorized Memory Access</h2><p>Many CUDA kernels are bandwidth bound, and the increasing ratio of flops to bandwidth in new hardware results in more bandwidth bound kernels. This makes it very important to take steps to mitigate bandwidth bottlenecks in your code. In this post, I will show you how to use vector loads and stores in CUDA C/C++ to help increase bandwidth utilization while decreasing the number of executed instructions.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_scalar_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123; </span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N; i += blockDim.x * gridDim.x) &#123; </span><br><span class="line">    d_out[i] = d_in[i]; </span><br><span class="line">  &#125; </span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_scalar</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>; </span><br><span class="line">  <span class="keyword">int</span> blocks = min((N + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);  </span><br><span class="line">  device_copy_scalar_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>We can inspect the assembly for this kernel using the cuobjdump tool included with the CUDA Toolkit.<code>%&gt; cuobjdump -sass executable</code>.<br>The SASS for the body of the scalar copy kernel is the following:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0058*/</span> IMAD R6.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x140</span>]                </span><br><span class="line"><span class="comment">/*0060*/</span> IMAD.HI.X R7, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x144</span>]              </span><br><span class="line"><span class="comment">/*0068*/</span> IMAD R4.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*0070*/</span> LD.E R2, [R6]                                   </span><br><span class="line"><span class="comment">/*0078*/</span> IMAD.HI.X R5, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span> ST.E [R4], R2</span><br></pre></td></tr></table></figure>
-
-<p>Here we can see a total of six instructions associated with the copy operation. The four <code>IMAD</code> instructions compute the load and store addresses and the <code>LD.E</code> and <code>ST.E</code> load and store 32 bits from those addresses.</p>
-<p>We can improve performance of this operation by using the vectorized load and store instructions <code>LD.E.{64,128}</code> and <code>ST.E.{64,128}</code>. </p>
-<p>These operations also load and store data but do so in 64- or 128-bit widths. Using vectorized loads reduces the total number of instructions, reduces latency, and improves bandwidth utilization.</p>
-<p>The easiest way to use vectorized loads is to use the vector data types defined in the CUDA C/C++ standard headers, such as <code>int2</code>, <code>int4</code>, or <code>float2</code>. You can easily use these types via type casting in C/C++. For example in C++ you can recast the <code>int</code> pointer <code>d_in</code> to an <code>int2</code> pointer using <code>reinterpret_cast&lt;int2*&gt;(d_in)</code>. In C99 you can do the same thing using the casting operator: <code>(int2*(d_in))</code>.</p>
-<p>Dereferencing those pointers will cause the compiler to generate the vectorized instructions. However, there is one important caveat: these instructions require aligned data. Device-allocated memory is automatically aligned to a multiple of the size of the data type, but if you offset the pointer the offset must also be aligned. For example <code>reinterpret_cast&lt;int2*&gt;(d_in+1)</code> is invalid because <code>d_in+1</code> is not aligned to a multiple of <code>sizeof(int2)</code>.</p>
-<p>You can safely offset arrays if you use an “aligned” offset, as in <code>reinterpret_cast&lt;int2*&gt;(d_in+2)</code>. You can also generate vectorized loads using structures as long as the structure is a power of two bytes in size.</p>
-<p>Now that we have seen how to generate vectorized instructions let’s modify the memory copy kernel to use vector loads.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector2_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">2</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final element (if there is one)</span></span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">2</span> &amp;&amp; N%<span class="number">2</span>==<span class="number">1</span>)</span><br><span class="line">    d_out[N<span class="number">-1</span>] = d_in[N<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector2</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">  threads = <span class="number">128</span>; </span><br><span class="line">  blocks = min((N/<span class="number">2</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS); </span><br><span class="line"></span><br><span class="line">  device_copy_vector2_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>This kernel has only a few changes. First, the loop now executes <span style="color:red">only N/2 times because each iteration processes two elements</span>. Second, we use the casting technique described above in the copy. Third, we handle any <span style="color:red">remaining elements</span> which may arise if N is not divisible by 2. Finally, we launch half as many threads as we did in the scalar kernel.</p>
-<p>Inspecting the SASS we see the following.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0088*/</span>                IMAD R10.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span>                IMAD.HI.X R11, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD R8.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x148</span>]             </span><br><span class="line"><span class="comment">/*00a0*/</span>                LD.E<span class="number">.64</span> R6, [R10]                                      </span><br><span class="line"><span class="comment">/*00a8*/</span>                IMAD.HI.X R9, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]           </span><br><span class="line"><span class="comment">/*00c8*/</span>                ST.E<span class="number">.64</span> [R8], R6</span><br></pre></td></tr></table></figure>
-<p>Notice that now the compiler generates LD.E.64 and ST.E.64. All the other instructions are the same. However, it is important to note that there will be half as many instructions executed because the loop only executes N/2 times. This 2x improvement in instruction count is very important in instruction-bound or latency-bound kernels.</p>
-<p>We can also write a vector4 version of the copy kernel.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector4_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span>(<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">4</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final elements (if there are any)</span></span><br><span class="line">  <span class="keyword">int</span> remainder = N%<span class="number">4</span>;</span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">4</span> &amp;&amp; remainder!=<span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">while</span>(remainder) &#123;</span><br><span class="line">      <span class="keyword">int</span> idx = N - remainder--;</span><br><span class="line">      d_out[idx] = d_in[idx];</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector4</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>;</span><br><span class="line">  <span class="keyword">int</span> blocks = min((N/<span class="number">4</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);</span><br><span class="line"></span><br><span class="line">  device_copy_vector4_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>The corresponding SASS is the following:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0090*/</span>                IMAD R10.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD.HI.X R11, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*00a0*/</span>                IMAD R8.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*00a8*/</span>                LD.E<span class="number">.128</span> R4, [R10]                               </span><br><span class="line"><span class="comment">/*00b0*/</span>                IMAD.HI.X R9, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]             </span><br><span class="line"><span class="comment">/*00d0*/</span>                ST.E<span class="number">.128</span> [R8], R4</span><br></pre></td></tr></table></figure>
-<p>Here we can see the generated LD.E.128 and ST.E.128. This version of the code has reduced the instruction count by a factor of 4.</p>
-<p>In almost all cases vectorized loads are preferable to scalar loads. Note however that using vectorized loads increases register pressure and reduces overall parallelism. So if you have a kernel that is already register limited or has very low parallelism, you may want to stick to scalar loads. Also, as discussed earlier, if your pointer is not aligned or your data type size in bytes is not a power of two you cannot use vectorized loads.</p>
-<p>Vectorized loads are a fundamental CUDA optimization that you should use when possible, because they increase bandwidth, reduce instruction count, and reduce latency. In this post, I’ve shown how you can easily incorporate vectorized loads into existing kernels with relatively few changes.</p>
-<hr>
-<p>原文作者Justin Luitjens 原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-increase-performance-with-vectorized-memory-access/" target="_blank" rel="noopener">链接</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/11/26/CUDA-Vectorized-Memory-Access/" data-id="ck5bbuofd0006a2fzgbjv1utb" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-Grid-stride-Loop" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/11/26/CUDA-Grid-stride-Loop/" class="article-date">
-  <time datetime="2019-11-26T15:29:29.000Z" itemprop="datePublished">2019-11-26</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/26/CUDA-Grid-stride-Loop/">CUDA-Grid stride Loop</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Grid-stride-loop"><a href="#Grid-stride-loop" class="headerlink" title="Grid-stride loop"></a>Grid-stride loop</h2><p>Grid-stride loop 长这个样子：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> index = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = index; i &lt; n; i += stride)</span><br><span class="line">    y[i] = x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当有足够的线程可以覆盖所有需要处理的数据时，一个线程处理一个数据。线程ID不需要更新，一次并行执行结束，如下:<br>Common CUDA guidance is to launch one thread per data element, which means to parallelize the above SAXPY loop we write a kernel that assumes we have enough threads to more than cover the array size:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) </span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>一个grid可以覆盖所有数据，这种方式的kernel被称作<em>monolithic kernel</em>. 如下kernel可以一次处理1M的数据量:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">4096</span>,<span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
-<p>但是，当数据量很大时，超过可用的线程数，那么所有线程由不能只干一次活了，所有线程做完一批后更新ID接着做下一批。这种方式被称作<em>grid-stride loop</em>，如下边的kernel:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">         i &lt; n; </span><br><span class="line">         i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">          y[i] = a * x[i] + y[i];</span><br><span class="line">      &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>自然地，更新ID的方式就是，让ID加上grid的大小，即所有线程个数。一个grid 的所有线程个数就是<code>blockDim.x * gridDim.x</code>。<br>这个值可以称作为ID更新步长。加入我有1280个线程，那么线程0 将会处理元素0,1280,2560，…。这样做的好处是，保证了相邻的线程处理相邻的数据，这是效率最高的执行方式。如本文所讲“we ensure that all addressing within warps is unit-stride, so we get maximum memory coalescing, just as in the monolithic version.”</p>
-<p>总结下<em>grid-stride loop</em>的优势:</p>
-<p>1) <strong>Scalability and thread reuse</strong>. </p>
-<p>保证可以处理任何量的数据，一批一批地串行就可以啦，没办法，可用线程数有限，这可以保证所有数据正确被处理。另一方面，可以限制block的数量，做微调，尝试提升性能。<br>“By using a loop, you can support <span style="color:red">any problem size</span>. even if it exceeds the largest grid size your CUDA device supports. Moreover, you can <span style="color:red">limit the number of blocks</span> you use to tune performance. For example, it’s often useful to launch a number of blocks <span style="color:red">that is a multiple of the number of multiprocessors on the device</span>, to balance utilization. As an example, we might launch the loop version of the kernel like this:”</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> numSMs;</span><br><span class="line">cudaDeviceGetAttribute(&amp;numSMs, cudaDevAttrMultiProcessorCount, devId);</span><br><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">32</span>*numSMs, <span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span> &lt;&lt; <span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
-<p>When you limit the number of blocks in your grid, threads are reused for multiple computations. Thread reuse amortizes thread creation and destruction cost along with any other processing the kernel might do before or after the loop (such as thread-private or shared data initialization).</p>
-<p>2) <strong>Debugging</strong></p>
-<p>方便Debug，只是用一个线程，使整个过程变为串行处理，通过使用打印语句，找到错误，便于修改。<br>By using a loop instead of a <em>monolithic kernel</em>, you can easily switch to serial processing by launching one block with one thread. </p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saxpy&lt;&lt;&lt;<span class="number">1</span>,<span class="number">1</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
-<p>This makes it easier to emulate a serial host implementation to validate results, and it can make printf debugging easier by <span style="color:red">serializing the print order</span>. Serializing the computation also allows you to eliminate numerical variations caused by changes in the order of operations from run to run, helping you to verify that your numerics are correct before tuning the parallel version.</p>
-<p>3) <strong>Portability and readability</strong></p>
-<p>The grid-stride loop code is more like the original sequential loop code than the monolithic kernel code, making it clearer for other users. In fact we can pretty easily write a version of the kernel that compiles and runs either as a parallel CUDA kernel on the GPU or as a sequential loop on the CPU. The Hemi library provides a <code>grid_stride_range()</code> helper that makes this trivial using C++11 range-based for loops. </p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HEMI_LAUNCHABLE</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> i : hemi::grid_stride_range(<span class="number">0</span>, n)) &#123;</span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>We can launch the kernel using this code, which generates a kernel launch when compiled for CUDA, or a function call when compiled for the CPU. <code>hemi::cudaLaunch(saxpy, 1&lt;&lt;20, 2.0, x, y);</code><br>Grid-stride loops are a great way to make your CUDA kernels flexible, scalable, debuggable, and even portable. </p>
-<p>原文内容来自 Mark Harris<br>原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/" target="_blank" rel="noopener">链接</a></p>
-<hr>
-<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/11/26/CUDA-Grid-stride-Loop/" data-id="ck5bbuoer0000a2fzdisg3x3t" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1004,7 +1446,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
     </div>
   </div>
 
@@ -1014,7 +1456,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">22</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">26</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1033,7 +1475,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1046,23 +1488,23 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
       <ul>
         
           <li>
+            <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/">CUDA-原子操作-例-直方图</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/">CUDA-死锁-例-点积</a>
+          </li>
+        
+          <li>
             <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/">CUDA-例-规约</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/">CUDA-例-向量相乘</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/">CUDA-线程同步-线程调度</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/">CUDA-资源分配</a>
           </li>
         
       </ul>
