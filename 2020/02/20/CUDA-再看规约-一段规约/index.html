@@ -5,14 +5,19 @@
   
 
   
-  <title>Category: C++ | Junhui&#39;s Journal</title>
+  <title>CUDA-再看规约-一段规约 | Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Junhui&#39;s Journal">
-<meta property="og:url" content="http://yoursite.com/categories/C/index.html">
+  <meta name="description" content="一阶段规约  使用原子操作和shared memory的组合可以避免第二个kernel的调用。使用一个（global还是shared）变量记录哪个block已经做完了自己的工作。一旦所有的block都完成后，使用一个block执行最有的规约。  【CUDA专家手册 269页】  更简洁的一段规约  在之前的二段归约中，每一阶段的第一步是每个block的每个thread得到部分和，由于block间">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-再看规约-一段规约">
+<meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/index.html">
 <meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="一阶段规约  使用原子操作和shared memory的组合可以避免第二个kernel的调用。使用一个（global还是shared）变量记录哪个block已经做完了自己的工作。一旦所有的block都完成后，使用一个block执行最有的规约。  【CUDA专家手册 269页】  更简洁的一段规约  在之前的二段归约中，每一阶段的第一步是每个block的每个thread得到部分和，由于block间">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-02-20T02:27:03.000Z">
+<meta property="article:modified_time" content="2020-02-20T02:28:35.012Z">
 <meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
@@ -62,154 +67,70 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/09/08/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%BA%8C/" class="archive-article-date">
-  <time datetime="2019-09-08T14:16:00.000Z" itemprop="datePublished">Sep 8</time>
+        <section id="main"><article id="post-CUDA-再看规约-一段规约" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" class="article-date">
+  <time datetime="2020-02-20T02:27:03.000Z" itemprop="datePublished">2020-02-20</time>
 </a>
-      
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/09/08/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%BA%8C/">回顾cpp-继承-二</a>
+    <h1 class="article-title" itemprop="name">
+      CUDA-再看规约-一段规约
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/" class="archive-article-date">
-  <time datetime="2019-09-05T10:37:14.000Z" itemprop="datePublished">Sep 5</time>
-</a>
+    <div class="article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/">回顾cpp-继承-一</a>
-    </h1>
-  
+        <ol>
+<li><p>一阶段规约</p>
+<p> 使用原子操作和shared memory的组合可以避免第二个kernel的调用。使用一个（global还是shared）变量记录哪个block已经做完了自己的工作。一旦所有的block都完成后，使用一个block执行最有的规约。</p>
+<p> 【CUDA专家手册 269页】</p>
+</li>
+<li><p>更简洁的一段规约</p>
+<p> 在之前的二段归约中，每一阶段的第一步是每个block的每个thread得到部分和，由于block间是不能同步的，所以才有了第二阶段。</p>
+<p> 现在是使用一个寄存器来存储每个thread对应的自己的部分和，最后使用 原子操作对这些部分和再求和：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个thread得到自己的部分和，</span></span><br><span class="line">    <span class="keyword">int</span> partialSum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        partialSum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用原子操作，求部分和的和</span></span><br><span class="line">    atomicAdd(out, partialSum);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">    cudaMemset(res, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line">    reductionKernel&lt;&lt;&lt;numBlock, threadsPerBlock&gt;&gt;&gt;(answer, in ,N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" class="archive-article-date">
-  <time datetime="2019-08-31T13:30:26.000Z" itemprop="datePublished">Aug 31</time>
-</a>
+<p> 注意一点，要写入<code>out数组</code>，那么<code>out数组</code>的初始值必须设为0；</p>
+</li>
+</ol>
+
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/">回顾cpp-多态-RTTI</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/" class="archive-article-date">
-  <time datetime="2019-08-30T04:44:59.000Z" itemprop="datePublished">Aug 30</time>
-</a>
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" data-id="ck6u4mj2u0000g6fz7snman12" class="article-share-link">Share</a>
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/">回顾cpp-多态-接口类</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/" class="archive-article-date">
-  <time datetime="2019-08-29T04:41:49.000Z" itemprop="datePublished">Aug 29</time>
-</a>
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/">回顾cpp-多态-虚函数表</a>
-    </h1>
-  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
 
-    </header>
+    </footer>
   </div>
-</article>
   
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/" class="archive-article-date">
-  <time datetime="2019-08-28T04:38:51.000Z" itemprop="datePublished">Aug 28</time>
-</a>
-      
+<nav id="article-nav">
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/">回顾cpp-多态-虚函数</a>
-    </h1>
   
+    <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CUDA-再看规约-循环展开</div>
+    </a>
+  
+</nav>
 
-    </header>
-  </div>
+  
 </article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/" class="archive-article-date">
-  <time datetime="2019-07-29T07:16:11.000Z" itemprop="datePublished">Jul 29</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/">CXX可调用对象</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
-
 
 </section>
         

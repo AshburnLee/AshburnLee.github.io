@@ -64,6 +64,72 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-optimize-data-transfer" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/28/CUDA-optimize-data-transfer/" class="article-date">
+  <time datetime="2019-11-28T15:06:15.000Z" itemprop="datePublished">2019-11-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Optimize-Data-Transfers"><a href="#Optimize-Data-Transfers" class="headerlink" title="Optimize Data Transfers"></a>Optimize Data Transfers</h1><p>The peak bandwidth between the device memory and the GPU is much higher (<strong>144 GB/s</strong> on the NVIDIA Tesla C2050, for example) than the peak bandwidth between host memory and device memory (<strong>8 GB/s</strong> on PCIe x16 Gen2). This disparity means that your implementation of data transfers between the host and GPU devices can make or break your overall application performance. <br>Let’s start with a few general guidelines for host-device data transfers.</p>
+<ol>
+<li>Minimize the amount of data transferred between host and device when possible, even if that means running kernels on the GPU that get little or no speed-up compared to running them on the host CPU.</li>
+<li>Higher bandwidth is possible between the host and the device when using page-locked (or “pinned”) memory.</li>
+<li>Batching many small transfers into one larger transfer performs much better because it eliminates most of the per-transfer overhead.</li>
+<li>Data transfers between the host and device can sometimes be overlapped with kernel execution and other data transfers.</li>
+</ol>
+<p>We investigate the first three guidelines above in this post, and we dedicate the next post to <strong>overlapping data transfers</strong>. First I want to talk about how to measure time spent in data transfers without modifying the source code.</p>
+<h2 id="Measuring-Data-Transfer-Times-with-nvprof"><a href="#Measuring-Data-Transfer-Times-with-nvprof" class="headerlink" title="Measuring Data Transfer Times with nvprof"></a>Measuring Data Transfer Times with nvprof</h2><p>To measure the time spent in each data transfer, we could record a CUDA event before and after each transfer and use cudaEventElapsedTime(), as we described in a previous post.  However, we can get the elapsed transfer time without instrumenting the source code with CUDA events by using <strong>nvprof</strong>.<br>推荐使用nvprof，测试间。</p>
+<p>使用实例.假如有一源文件·<code>profile.cu</code>, 编译: </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ nvcc profile.cu</span><br><span class="line">$ nvprof ./a.out</span><br></pre></td></tr></table></figure>
+
+<p>It returns as follow:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ nvprof ./a.out </span><br><span class="line">======== NVPROF is profiling a.out...</span><br><span class="line">======== Command: a.out</span><br><span class="line">======== Profiling result:</span><br><span class="line">Time(%)     Time  Calls      Avg      Min      Max Name</span><br><span class="line">  <span class="number">50.08</span> <span class="number">718.11u</span>s      <span class="number">1</span> <span class="number">718.11u</span>s <span class="number">718.11u</span>s <span class="number">718.11u</span>s [CUDA <span class="built_in">memcpy</span> DtoH]</span><br><span class="line">  <span class="number">49.92</span> <span class="number">715.94u</span>s      <span class="number">1</span> <span class="number">715.94u</span>s <span class="number">715.94u</span>s <span class="number">715.94u</span>s [CUDA <span class="built_in">memcpy</span> HtoD]</span><br></pre></td></tr></table></figure>
+
+<h2 id="Minimizing-Data-Transfers"><a href="#Minimizing-Data-Transfers" class="headerlink" title="Minimizing Data Transfers"></a>Minimizing Data Transfers</h2><p>如果可以不传输数据，就不要传输。总之，尽量少用PCIe。</p>
+<h2 id="Pinned-Host-Memory"><a href="#Pinned-Host-Memory" class="headerlink" title="Pinned Host Memory"></a>Pinned Host Memory</h2><p>测试使用P106 和 GTX1060，使用pinned memory 并没有显著提高。</p>
+<h2 id="Batching-Small-Transfers"><a href="#Batching-Small-Transfers" class="headerlink" title="Batching Small Transfers"></a>Batching Small Transfers</h2><p>Due to the overhead associated with each transfer, it is preferable to batch many small transfers together into a single transfer. This is easy to do by using a temporary array, preferably pinned, and packing it with the data to be transferred.</p>
+<p>For two-dimensional array transfers, you can use <code>cudaMemcpy2D()</code>.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cudaMemcpy2D(dest, dest_pitch, src, src_pitch, w, h, cudaMemcpyHostToDevice)</span><br></pre></td></tr></table></figure>
+<p>The arguments here are a pointer to the first destination element and the pitch of the destination array, a pointer to the first source element and pitch of the source array, the width and height of the submatrix to transfer, and the memcpy kind. There is also a cudaMemcpy3D() function for transfers of rank three array sections.</p>
+<p>原文作者 Mark Harris<br>原文<a href="https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/" target="_blank" rel="noopener">链接</a></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/28/CUDA-optimize-data-transfer/" data-id="ck5bbuofj000ca2fz4gse3ty2" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-overlap-data-transfer" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/11/28/CUDA-overlap-data-transfer/" class="article-date">
@@ -634,71 +700,6 @@
 
 
   
-    <article id="post-CUDA-几点要记住-更新ID" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/" class="article-date">
-  <time datetime="2019-10-04T13:14:31.000Z" itemprop="datePublished">2019-10-04</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/">CUDA-几点要记住-更新ID</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="Bare-in-mind"><a href="#Bare-in-mind" class="headerlink" title="Bare in mind:"></a>Bare in mind:</h1><ul>
-<li>不管你的数据是一维的二维的还是更高维度的，在GPU端，高维被扁平化，都将被看成一维的，所以么有必要在Device上开辟，比如，一个二维数组。</li>
-<li>CUDA code 需要你并行地思考：<code>Think parallel</code>. </li>
-<li>当你在写CUDA code， 实际上你是在为一个thread 写串行code，而每一个thread都执行这个段相同的串行code。看下图体会。</li>
-<li>可以这样理解，对于简单问题，把CPU code的for 循环去掉，其实就得到了GPU code。每个thread 有自己唯一的ID，其他都一样。<div align="center"><img src="/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/parallel.png" width="800"></div>
-
-</li>
-</ul>
-<h1 id="配置kernel"><a href="#配置kernel" class="headerlink" title="配置kernel"></a>配置kernel</h1><ul>
-<li><p>当GPU可用的thread非常多，而当前所需解决的任务规模并不大时，可以一次invoke 足量的threads，这样便不用更新threads ID。如下：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 1&lt;&lt;7</span></span><br><span class="line">...</span><br><span class="line">	<span class="function"><span class="keyword">int</span> <span class="title">block</span><span class="params">(<span class="number">1024</span>)</span></span>;</span><br><span class="line">	<span class="function"><span class="keyword">int</span> <span class="title">grid</span> <span class="params">((N + block.x - <span class="number">1</span>) / block.x )</span></span>;</span><br><span class="line"></span><br><span class="line">	kernal_func &lt;&lt;&lt;grid, block &gt;&gt;&gt;(d_c, d_a, d_b);</span><br></pre></td></tr></table></figure>
-
-<p>  或者二维的configuration：</p>
-  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 1&lt;&lt;7</span></span><br><span class="line">...</span><br><span class="line">	<span class="function">dim3 <span class="title">block</span> <span class="params">(<span class="number">1024</span>, <span class="number">1024</span>)</span></span>;</span><br><span class="line">	<span class="function">dim3 <span class="title">grid</span> <span class="params">(( N + block.x <span class="number">-1</span>) / block.x, (N + block.y <span class="number">-1</span>) / block.y )</span></span>;</span><br><span class="line"></span><br><span class="line">	kernel_func &lt;&lt;&lt;grid, block &gt;&gt;&gt;(dev_m, dev_mt);</span><br></pre></td></tr></table></figure>
-
-<p>  当然所有的configuration都应该在你的GPU硬件极限内。</p>
-</li>
-<li><p>当数据量很大时，所有CUDA cores 就需要工作不止一波，第一波后，就需要更新threads ID 继续工作下一波：</p>
-  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> *a, <span class="keyword">int</span> *b, <span class="keyword">int</span> *c)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">	<span class="keyword">while</span> (tid &lt; N) &#123;</span><br><span class="line">		c[tid] = a[tid] + b[tid];</span><br><span class="line">		<span class="comment">// OPERATIONS</span></span><br><span class="line">		tid += blockDim.x * gridDim.x;     <span class="comment">// update id when #threads are less than #elements </span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  此处的<code>while</code>循环 表示，只要threads ID 还小于元素个数N，就更新ID。</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/" data-id="ck5bbuofw000qa2fz40rbam51" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -714,7 +715,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">31</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">32</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
     </div>
   </div>
 
@@ -724,7 +725,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">27</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">28</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -743,7 +744,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">11</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -754,6 +755,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
         
           <li>
             <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/">CUDA-再看规约-循环展开</a>
@@ -769,10 +774,6 @@
         
           <li>
             <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/">CUDA-死锁-例-点积</a>
           </li>
         
       </ul>
