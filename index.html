@@ -101,7 +101,7 @@
 <ul>
 <li>可以使用<code>ssh</code>登路远程含有CUDA enabled GPU的服务器。</li>
 <li>通常使用双GPU的系统开发CUDA程序，一个GPU负责显示，另一个负责计算，可以使用<code>Nsight</code>等工具。</li>
-<li>只有一个GPU时，在Linux系统中可以关闭桌面环境（释放桌面环境对GPU的占用），只在命令行中使用<code>CUDA-gdb</code>调试</li>
+<li>只有一个GPU时，在Linux系统中可以关闭桌面环境（释放桌面环境对GPU的占用），只在命令行中使用<code>CUDA-gdb</code>调试。（实际上，实验阶段不关闭桌面环境，也是可以正确执行的）</li>
 </ul>
 </li>
 <li><p>CUDA开发的任务</p>
@@ -124,7 +124,7 @@
 </ol>
 <ol start="26">
 <li><p>想清楚一个问题</p>
-<p>如果使用shared memory，每个block对用自己的shared memory，<font color="red">当这个block中threads的ID更新后，这个block并没有再被分配新的shared memory</font>. 也就是说如果使用两个blocks, 两个blocks有两段shared memory, block中threads 的ID更新后, 所计算结果会写入这个thread所在block的shared memory中. <font color="red">thread ID变了, 但所属的block不变</font>.  </p>
+<p>如果使用shared memory，每个block对应自己的shared memory，<font color="red">当这个block中threads的ID更新后，这个block并没有再被分配新的shared memory</font>. 也就是说如果使用两个blocks, 两个blocks有两段shared memory, block中threads 的ID更新后, 所计算结果会写入这个thread所在block的shared memory中. <font color="red">thread ID变了, 但所属的block不变</font>.  </p>
 </li>
 </ol>
 <ol start="27">
@@ -135,17 +135,17 @@
 <li>Instruction：kernel函数所做的事情</li>
 <li>Multiple：所处理的数据量大，要拆分为一批一批</li>
 <li>Data：大的数据量</li>
-<li>Threads：一个SP上的大量thread超快速切换，获得延时隐藏</li>
+<li>Threads：<font color="orange">一个SP上的大量thread超快速切换，获得延时隐藏</font></li>
 </ul>
 </li>
 <li><p>warp中的divergence</p>
-<p>已经知道，再一个warp中，所有的threads执行相同的指令，但是如果指令中含有条件分支语句，很大程度上会发生divergence。比如<code>12-优化并行归于</code> 中的描述：一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</p>
+<p>已经知道，在一个warp中，所有的threads执行相同的指令，但是如果指令中含有条件分支语句，很大程度上会发生divergence。比如<code>优化并行归约</code> 中的描述：一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</p>
 <p>总之，分支发散使得性能明显下降。但是，注意<font color="orange">divergence只发生在一个warp中</font>。</p>
-<p>可以中和算法的上下文，将divergence的粒度变为32（warp的大小）的倍数，从而避免warp内的分支发散。比如：</p>
+<p>可以综合算法的上下文，将divergence的粒度变为32（warp的大小）的倍数，从而避免warp内的分支发散。比如：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (tid%<span class="number">2</span> == <span class="number">0</span>)&#123;</span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>偶数id的thread把100写入偶数编号的地址，奇数id的thread将200写入奇数编号的地址。会发生分支发散。如果将分支的粒度定为32，则没有了divergence：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( tid%<span class="number">32</span> == <span class="number">0</span> )&#123;</span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>但是两者的结果的是不同的，实际中，考虑根据算法上下文结合此方法。</p>
+<p>但是两者的结果的是不同的，实际中，需要根据算法上下文考虑结合此方法。</p>
 <p>使用<code>brand_efficiency</code>指标来查看divergence的情况：</p>
 <p><code>$ nvprof --mereics brand_efficiency ./out</code>, 但是CUDA编译器会进行优化，将短的，有条件的代码段的断定指令取代了分支指令。所以，会看到虽然代码中有分支，却显示分支效率100%。</p>
 </li>
@@ -915,13 +915,15 @@
       
         <ol>
 <li><p>优化实列：并行规约（parallel reduction）</p>
-<p> 规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合结合率。</p>
+<p> 规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
 <ul>
 <li><p>未优化的规约</p>
-<p>  过程看图&lt;&gt;pic5&lt;&gt;</p>
+<p>  过程看图：</p>
+  <div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="600"></div>
+
 <p>  过程实现（假如在shared memory中实现）：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作，但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只使用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作（因为是在同一个warp中），但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
 </li>
 <li><p>优化后规约</p>
 <p>  由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>

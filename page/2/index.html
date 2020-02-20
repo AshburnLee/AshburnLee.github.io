@@ -325,14 +325,16 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>所有这些<font color="red" size="4">内存数量</font>约束了整个系统中的<code>block</code>数量个<code>threads</code>数量。真正工作的<code>threads</code>数量在不同应用之间是不同的。 </p>
+        <p>GPU系统中的各种<font color="red" size="4">内存数量</font>约束了整个系统中的<code>block</code>数量个<code>threads</code>数量。每个<code>thread</code>使用各种存储的多少影响着可以使用<code>threads</code>的数量。 </p>
 <p>SM资源分割:</p>
-<p>GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大。增加资源占量后导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降。使用<code>CUDA Occupancy Calculator</code>工具可以修改某一资源的数值，得到其他资源的相应变化。</p>
+<p>GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大，所以每个thread不管使用多少global memory，对可调用的threads数量几乎没有影响（本来设计kernel的原则之一就是最少的使用Global memory）。</p>
+<p>增加资源占量后（<code>thread</code>占用<code>Registers</code>的数量或<code>block</code>占用<code>Shared memory</code>的数量）导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降。使用<code>CUDA Occupancy Calculator</code>工具可以修改某一资源的数值，得到其他资源的相应变化。</p>
 <ol>
 <li><p>一个<code>SM</code>中的Registers数量是有限的</p>
-<p> 这些寄存器要划分给这个SM中的所有threads。所以如果每个thread使用的寄存器过多时，这个SM中实际使用的threads数会减少，使得资源占用率下降。</p>
-<p> 比如一个SM中有768个threads，含有8k个registers。要想最大并行化，即使用所有的threads，那么就要保证每个thread分配最多10个registers，此时<code>10x768=7680</code>个registers，没有超过8k个。但是如果每个threads分配11个registers，此时<code>11x768=8448</code>个registers，此时算数上最多只能使用727个threads（<code>8000/11=727.27</code>），实际情况会比727还要少，因为超出限制后，减少的threads是以<font color="red" size="4">block为粒度</font>的：如果一个block有256个threads，那么可用threads数就不是<code>从768减到727</code>，而是<code>从768减到512</code>，只要threads数减少，就以<font color="red">block为单位（粒度）</font>地减少，如果要减少threads超过256（一个block的threads数），如257，那么实际就要减少<code>2个block（256+1，2个blocks）</code>。</p>
-<p> 分析一个资源分配的例子：一个SM有<code>768</code>个threads，<code>8000</code>个registers。如果每个threads使用<code>11</code>个registers，并且每个block含有<code>256</code>个threads。（上面计算过：最大并行化的register的分配是每个thread10个registers。）</p>
+<p> 这些寄存器要被划分给这个SM中的所有threads。所以如果每个thread使用的寄存器过多时，这个SM中实际使用的threads数会减少，使得资源（应用程序对GPU处理单元）占用率下降。</p>
+<p> 比如一个SM中有768个threads，含有8k个registers。要想最大并行化（最大化占用率），即使用所有的threads，那么就要保证每个thread分配最多10个registers，这种情况下共使用<code>10x768=7680</code>个registers，没有超过8k个。</p>
+<p> 但是如果每个threads分配11个registers，此时<code>11x768=8448</code>个registers，此时算数上最多只能使用727个threads（<code>8000/11=727.27</code>），实际情况会比727还要少，因为超出限制后，threads数的减少是以<font color="red" size="4">block为粒度</font>的减少：如果一个block有256个threads，那么可用threads数就不是<code>从768减少到727</code>，而是<code>从768减少到512</code>，只要threads数减少，就以<font color="red">block为单位（粒度）</font>地减少。如果要减少threads超过256（一个block的threads数），如257，那么实际就要减少<code>2个block（256+1，2个blocks）</code>。</p>
+<p> 分析一个资源分配的例子：一个SM有<code>768</code>个threads，<code>8000</code>个registers。如果每个threads使用<code>11</code>个registers，并且每个block含有<code>256</code>个threads。（上面计算过：最大并行化的register的分配是每个thread使用10个registers。）</p>
 <ul>
 <li><p>一个SM驻扎的threads个数有多少</p>
 <p>  可用threads个数：<code>8000/11=727</code>个threads，而且<code>2x256=512</code>，<code>3x256=768</code>超过了<code>727</code>，所以这个SM驻扎<code>2</code>个blocks（512threads，与上述相符合）。</p>
@@ -348,13 +350,14 @@
 </ol>
 <ol start="2">
 <li><p>同样的，一个<code>SM</code>中的<code>shared memory</code>的大小也是有限的</p>
-<p> 回忆：<code>shared memory</code>在同一个<code>block</code>的<code>threads</code>间共享。</p>
+<p> 回忆：在同一个<code>block</code>的<code>threads</code>共享同一块<code>shared memory</code>。</p>
 <p> 一个SM中实际使用的block数量也是与<font color="orange">每个block被分配的shared memory的大小有关</font>。</p>
 <p> 比如：一个SM有<code>8</code>个blocks，可使用shared memory为<code>16kB</code>。所以想要充分使用所有的blocks，每个block被分配shared memory最多为<code>2kB（16kB/8）</code>. 换句话说，为了最大并行化，充分使用SM的计算资源，这个SM中每个block可使用的shared memory最多为<code>2kB</code>。</p>
-<p> 假如，每个block使用<code>4kB</code>，则实际只是用了<code>4个（16kB/4kB）blocks</code>，相较于上一种中情况只是用了一半的threads。</p>
+<p> 假如，每个block使用了<code>4kB</code>，则实际只是用了<code>4个（16kB/4kB）blocks</code>，相较于上一种中情况只是用了一半的threads。</p>
 <p> 假如，每个block使用<code>5kB</code>，则实际只用了<code>3个（16kB/5kB）blocks</code>，此种情况可使用的threads就更少了。</p>
 </li>
 </ol>
+<p>回忆实战中，有一回，对kernel的配置没有超过硬件极限，但是实际上每个block只能使用256个threads，超过256，程序就不会得到正确结果。当时不清楚为什么，通过这篇笔记，可以解释了。是因为每个threads使用了过多的Registers（当时程序中没有使用Shared memory）的原因。导致可用threads数减少。</p>
 <p><font color="purple" size="5">敲黑板</font>Registers数量和每个block分配到的shared memory的大小，<font color="red">共同约束了</font>整个系统中的block数量个threads数量。实际应用中也要尽量少的使用存储资源，从而最大化并行程度。<font color="red">内存是竞争资源</font></p>
 
       
