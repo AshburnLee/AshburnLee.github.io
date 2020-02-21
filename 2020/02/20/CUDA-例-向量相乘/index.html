@@ -19,7 +19,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic1.png">
 <meta property="og:image" content="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic2.png">
 <meta property="article:published_time" content="2020-02-20T01:46:34.000Z">
-<meta property="article:modified_time" content="2020-02-21T11:50:59.301Z">
+<meta property="article:modified_time" content="2020-02-21T12:02:22.750Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -105,7 +105,7 @@
 <li>内层：结果矩阵某一行某一列元素的得到，需要A矩阵对应行，B矩阵对应列，的元素相乘后累加，这需要一个循环。内层循环结束后，就得到结果矩阵中的一个元素。</li>
 </ul>
 <p>看图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic11.png" width="600"></div>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic11.png" width="700"></div>
 
 <p>实现：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">matrixMultiplicationCPU</span><span class="params">(<span class="keyword">float</span>* M, <span class="keyword">float</span>* N, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> A_height, <span class="keyword">int</span> Awidth_Bheight, <span class="keyword">int</span> B_width)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i &lt; A_height; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j &lt; B_width; j++)&#123;</span><br><span class="line">            <span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k=<span class="number">0</span>; k &lt; Awidth_Bheight; k++)&#123;</span><br><span class="line">                <span class="keyword">float</span> a = M[i * Awidth_Bheight + k];</span><br><span class="line">                <span class="keyword">float</span> b = M[k * B_width + j];</span><br><span class="line">                sum += a * b;</span><br><span class="line">            &#125;</span><br><span class="line">            P[i * B_width + j] = sum;  </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -132,11 +132,11 @@
 </ul>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">simpleMultiply2</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">float</span>* b, <span class="keyword">float</span> *c)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> row = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; AColBRow; i++) &#123;</span><br><span class="line">        sum += a[row * AColBRow + i] * b[i * BCol + col];</span><br><span class="line">    &#125;</span><br><span class="line">    c[row * BCol + col] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>此情况的线程结构是<code>2D block，2D thread</code>，注意线程组织的index，事实上是这样的：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/org.png" width="600"></div>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/org.png" width="700"></div>
 
 <p>注意：<font color="orange">横向，index的第一个分量递增；纵向，index的第二个分量递增</font>。</p>
 <p>与上一种方法相比，优势是，使用多个blocks，每个block负责结果矩阵中的一个矩形块中的元素。<br>每个thread的操作细节看下图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic1.png" width="600"></div>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic1.png" width="700"></div>
 
 <p>注意，C/C++中矩阵元素是按行排列的。假设线程组织是<code>2D thread 2D block</code>，也就是<code>tile</code>是<code>2x2</code>的。那么跟踪上述code可得到结果矩阵中的第14个元素：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">row = 3;</span><br><span class="line">col = 2;</span><br><span class="line">i=0: a[row * 3 + i] * b[i * 4 + col] = a[9] *b[2];</span><br><span class="line">i=1: a[row * 3 + i] * b[i * 4 + col] = a[10]*b[6];</span><br><span class="line">i=2: a[row * 3 + i] * b[i * 4 + col] = a[11]*b[10];</span><br><span class="line">GET sum;</span><br><span class="line">WRITE sum INTO c[row * 4 + col] = c[14];</span><br></pre></td></tr></table></figure>
@@ -165,7 +165,7 @@
 <li>将结果阵中这一块对应的A中行和B中列存入这个block对应的shared memory中，如此避免了对global memory的频繁访问。如下图：</li>
 <li>进一步，由于A和B会很大，存入shared memory中的A行，和B列也是分段的，避免了shared memory不够用。如下图：</li>
 </ul>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic2.png" width="700"></div>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic2.png" width="900"></div>
 
 <p>其中橘色是这个block的Shared memory空间，循环所有的<code>Asub</code>和<code>Bsub</code>，将每次的元素放入Shared memory，求得结果累加到<code>Cvalue</code>。循环结束后将最终的Cvalue写入最终位置，见图中箭头，</p>
 <p>kernel函数包含二重循环：</p>

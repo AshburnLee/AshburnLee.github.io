@@ -7,15 +7,15 @@
   
   <title>CUDA-存储优化-例-矩阵转置 | Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="存储优化  重叠内存传输和计算，组团传输减少小块数据的频繁传输。  现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是  避免凌乱无规律的访存  避免一个线程访问连续的一段空间。 将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足C">
+  <meta name="description" content="存储优化重叠内存传输和计算，组团传输减少小块数据的频繁传输。 现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是  避免凌乱无规律的访存 避免一个线程访问连续的一段空间。  将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足Coale">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CUDA-存储优化-例-矩阵转置">
 <meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/index.html">
 <meta property="og:site_name" content="Junhui&#39;s Journal">
-<meta property="og:description" content="存储优化  重叠内存传输和计算，组团传输减少小块数据的频繁传输。  现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是  避免凌乱无规律的访存  避免一个线程访问连续的一段空间。 将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足C">
+<meta property="og:description" content="存储优化重叠内存传输和计算，组团传输减少小块数据的频繁传输。 现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是  避免凌乱无规律的访存 避免一个线程访问连续的一段空间。  将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足Coale">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2020-02-20T01:53:50.000Z">
-<meta property="article:modified_time" content="2020-02-20T02:45:03.370Z">
+<meta property="article:modified_time" content="2020-02-21T12:04:04.720Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -93,29 +93,25 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <ol>
-<li><p>存储优化</p>
-<p> 重叠内存传输和计算，组团传输减少小块数据的频繁传输。</p>
-<p> 现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是</p>
+        <h1 id="存储优化"><a href="#存储优化" class="headerlink" title="存储优化"></a>存储优化</h1><p>重叠内存传输和计算，组团传输减少小块数据的频繁传输。</p>
+<p>现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是</p>
 <ul>
-<li><p>避免凌乱无规律的访存</p>
-</li>
-<li><p>避免一个线程访问连续的一段空间。</p>
+<li>避免凌乱无规律的访存</li>
+<li>避免一个线程访问连续的一段空间。</li>
+</ul>
 <p>将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足Coalescing Access。<font color="orange">shared memory的设计目的之一就是通过对它的编程，来规则化访存模式。</font></p>
 <p>回忆：shared memory的架构是连续32it的地址被分配到连续的板块中。见下图：</p>
 <p>&lt;&gt;pic7&lt;&gt;</p>
+<div align="center"><img src></div>
+
 <p>对于bank冲突，注意理解<font color="orange">地址的编号和bank的编号的不同</font>。</p>
-</li>
-</ul>
-</li>
-<li><p>注意</p>
-<p> Coalescing access是就global memory而言的。</p>
-</li>
-<li><p>存储优化，优化实列：矩阵转置</p>
-<ul>
+<h1 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h1><p>Coalescing access是就global memory而言的。</p>
+<h1 id="存储优化，优化实列：矩阵转置"><a href="#存储优化，优化实列：矩阵转置" class="headerlink" title="存储优化，优化实列：矩阵转置"></a>存储优化，优化实列：矩阵转置</h1><ul>
 <li><p>未优化的矩阵转置</p>
 <p>  对global memory的读和写总有一个，对global存储的地址访问不是连续的，这就不能最大化coalescing access。看下图：</p>
 <p>  &lt;&gt;pic8&lt;&gt;</p>
+  <div align="center"><img src></div>
+
 <p>  <font color="red">每个block负责矩阵的一个子块，所有子块并行执行</font>。</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    <span class="keyword">int</span> index_a = idx + WIDTH * idy;</span><br><span class="line">    <span class="keyword">int</span> index_b = idy + HEIGHT * idx;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_b] = a[index_a];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -125,6 +121,8 @@
 <p>  在写入global memory之前，先从global中将所读取的元素存入shared memory中，当shared memory中有了所有元素，将此时的shared memory转置一下，最后将结果再写（<font color="red">合并地</font>）入global memory。</p>
 <p>  <font color="orange">如此一来对global的读和写，地址都是被连续访问的</font>。看下图：</p>
 <p>  &lt;&gt;pic9&lt;&gt;</p>
+  <div align="center"><img src></div>
+
 <p>  实现：</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global_ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> tile[TILE_DIM][TILE_DIM];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line">    <span class="keyword">int</span> index_in = idx + idy * WIDTH;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    idx = threadIdx.x + TILE_DIM * blockIdx.y;</span><br><span class="line">    idy = threadIdx.y + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> index_out = idx + idy * HEIGHT;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从a中写入到bank中，会产生冲突。(马上解决)</span></span><br><span class="line">    tile[threadIdx.y][threadIdx.x] = a[index_in];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待这个block对应的tile中的 元素都有了之后，再执行下后续操作。</span></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_out] = tile[threadIdx.x][threadIdx.y];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 </li>
@@ -132,12 +130,12 @@
 <p>  对于上述实现过程中<code>tile[threadIdx.y][threaadIdx.x] = a[index_in];</code>，如果tile的大小是16x16，那么这一句会产生16路的bank冲突。  <font color="red">！！！如何理解bank的编号！！！</font></p>
 <p>  如何解决bank冲突，看下图：</p>
 <p>  &lt;&gt;pic10&lt;&gt;</p>
+  <div align="center"><img src></div>
+
 <p>  实现中只需更tile的定义为<code>__shared__ float tile[TILE_DIM][TILE_DIM+1];</code>，列中的数据存于相同的bank。</p>
 <p>  如此一来，不论是对tile行或列的访存，都不会产生bank冲突。相同的颜色在不同的行和列。</p>
 </li>
 </ul>
-</li>
-</ol>
 
       
     </div>
