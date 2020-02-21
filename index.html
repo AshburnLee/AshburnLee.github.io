@@ -820,42 +820,40 @@
 <li>避免一个线程访问连续的一段空间。</li>
 </ul>
 <p>将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足Coalescing Access。<font color="orange">shared memory的设计目的之一就是通过对它的编程，来规则化访存模式。</font></p>
-<p>回忆：shared memory的架构是连续32it的地址被分配到连续的板块中。见下图：</p>
-<p>&lt;&gt;pic7&lt;&gt;</p>
-<div align="center"><img src></div>
+<p>回忆：shared memory的架构是连续<code>32 bits(即4 Bytes)</code>的地址被分配到连续的bank中。见下图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/bank.png"></div>
 
+<p>原图来自<a href="https://www.microway.com/hpc-tech-tips/gpu-memory-types-performance-comparison/" target="_blank" rel="noopener">这里</a>。里面有不少其他资源可参考。</p>
 <p>对于bank冲突，注意理解<font color="orange">地址的编号和bank的编号的不同</font>。</p>
 <h1 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h1><p>Coalescing access是就global memory而言的。</p>
-<h1 id="存储优化，优化实列：矩阵转置"><a href="#存储优化，优化实列：矩阵转置" class="headerlink" title="存储优化，优化实列：矩阵转置"></a>存储优化，优化实列：矩阵转置</h1><ul>
+<h1 id="存储优化，优化实列：矩阵转置"><a href="#存储优化，优化实列：矩阵转置" class="headerlink" title="存储优化，优化实列：矩阵转置"></a>存储优化，优化实列：矩阵转置</h1><ol>
 <li><p>未优化的矩阵转置</p>
-<p>  对global memory的读和写总有一个，对global存储的地址访问不是连续的，这就不能最大化coalescing access。看下图：</p>
-<p>  &lt;&gt;pic8&lt;&gt;</p>
-  <div align="center"><img src></div>
+<p> 对global memory的读和写总有一个，对global存储的地址访问不是连续的，这就不能最大化coalescing access。看下图：</p>
+<p> &lt;&gt;pic8&lt;&gt;</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic8.png" width="600"></div>
 
-<p>  <font color="red">每个block负责矩阵的一个子块，所有子块并行执行</font>。</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    <span class="keyword">int</span> index_a = idx + WIDTH * idy;</span><br><span class="line">    <span class="keyword">int</span> index_b = idy + HEIGHT * idx;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_b] = a[index_a];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  所以：</p>
+<p> <font color="red">每个block负责矩阵的一个子块（tile），所有子块并行执行。<code>TILE_DIM=blockDIm.x</code></font>。</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    <span class="keyword">int</span> index_a = idx + WIDTH * idy;</span><br><span class="line">    <span class="keyword">int</span> index_b = idy + HEIGHT * idx;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_b] = a[index_a];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 所以：</p>
 </li>
 <li><p>使用shared memory优化的矩阵转置</p>
-<p>  在写入global memory之前，先从global中将所读取的元素存入shared memory中，当shared memory中有了所有元素，将此时的shared memory转置一下，最后将结果再写（<font color="red">合并地</font>）入global memory。</p>
-<p>  <font color="orange">如此一来对global的读和写，地址都是被连续访问的</font>。看下图：</p>
-<p>  &lt;&gt;pic9&lt;&gt;</p>
-  <div align="center"><img src></div>
+<p> 在写入global memory之前，先从global中将所读取的元素存入shared memory中，当shared memory中有了所有元素，将此时的shared memory转置一下，最后将结果再写（<font color="red">合并地</font>）入global memory。</p>
+<p> <font color="orange">如此一来对global的读和写，地址都是被连续访问的</font>。看下图：</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic9.png" width="600"></div>
 
-<p>  实现：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global_ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> tile[TILE_DIM][TILE_DIM];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line">    <span class="keyword">int</span> index_in = idx + idy * WIDTH;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    idx = threadIdx.x + TILE_DIM * blockIdx.y;</span><br><span class="line">    idy = threadIdx.y + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> index_out = idx + idy * HEIGHT;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从a中写入到bank中，会产生冲突。(马上解决)</span></span><br><span class="line">    tile[threadIdx.y][threadIdx.x] = a[index_in];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待这个block对应的tile中的 元素都有了之后，再执行下后续操作。</span></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_out] = tile[threadIdx.x][threadIdx.y];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 实现：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global_ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> tile[TILE_DIM][TILE_DIM];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line">    <span class="comment">// idx 与 idy 线性组合 得到原矩阵的Index</span></span><br><span class="line">    <span class="keyword">int</span> index_in = idx + idy * WIDTH;  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    idx = threadIdx.x + TILE_DIM * blockIdx.y;</span><br><span class="line">    idy = threadIdx.y + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="comment">// // idx 与 idy 线性组合 得到转置后矩阵的Index</span></span><br><span class="line">    <span class="keyword">int</span> index_out = idx + idy * HEIGHT;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从a中写入到bank中，会产生冲突。(马上解决)</span></span><br><span class="line">    tile[threadIdx.y][threadIdx.x] = a[index_in];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待这个block对应的tile中的 元素都有了之后，再执行下后续操作。</span></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_out] = tile[threadIdx.x][threadIdx.y];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 在Shared memory中存在bank冲突，如何解决。</p>
 </li>
 <li><p>解决上述过程中的bank冲突</p>
-<p>  对于上述实现过程中<code>tile[threadIdx.y][threaadIdx.x] = a[index_in];</code>，如果tile的大小是16x16，那么这一句会产生16路的bank冲突。  <font color="red">！！！如何理解bank的编号！！！</font></p>
-<p>  如何解决bank冲突，看下图：</p>
-<p>  &lt;&gt;pic10&lt;&gt;</p>
-  <div align="center"><img src></div>
+<p> 对于上述实现过程中<code>tile[threadIdx.y][threadIdx.x] = a[index_in];</code>，如果tile的大小是16x16，那么这一句会产生16路的bank冲突。  <font color="red">！！！如何理解bank的编号！！！</font></p>
+<p> 如何解决bank冲突，看下图：</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic10.png" width="700"></div>
 
-<p>  实现中只需更tile的定义为<code>__shared__ float tile[TILE_DIM][TILE_DIM+1];</code>，列中的数据存于相同的bank。</p>
-<p>  如此一来，不论是对tile行或列的访存，都不会产生bank冲突。相同的颜色在不同的行和列。</p>
+<p> 实现中只需更tile的定义为<code>__shared__ float tile[TILE_DIM][TILE_DIM+1];</code>，列中的数据存于相同的bank。</p>
+<p> 如此一来，不论是对tile行或列的访存，都不会产生bank冲突。相同的颜色在不同的行和列。</p>
 </li>
-</ul>
+</ol>
 
       
     </div>
@@ -898,51 +896,38 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <ol>
-<li><p>优化实列：并行规约（parallel reduction）</p>
-<p> 规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
-<ol>
-<li><p>未优化的规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</p>
-<p> 过程看图：</p>
- <div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
+        <h1 id="优化实列：并行规约（parallel-reduction）"><a href="#优化实列：并行规约（parallel-reduction）" class="headerlink" title="优化实列：并行规约（parallel reduction）"></a>优化实列：并行规约（parallel reduction）</h1><p>规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
+<h1 id="未优化的规约（为便于图中展示，假设warp大小为2）"><a href="#未优化的规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="未优化的规约（为便于图中展示，假设warp大小为2）"></a>未优化的规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>过程看图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
 
-<p> 其中</p>
+<p>其中</p>
 <ul>
-<li><p><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</p>
-</li>
-<li><p>n个元素需要<code>lg(n)</code>次平行。</p>
+<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
+<li>n个元素需要<code>lg(n)</code>次平行。</li>
+</ul>
 <p><font color="gree">warp大小为2，从一开始的第一次并行，就存在divergence</font>。</p>
 <p>过程实现（假如在shared memory中实现）：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只使用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作（因为是在同一个warp中），但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
-</li>
-</ul>
-</li>
-<li><p>优化后规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</p>
-<p> 由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
-<p> 这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程相邻位置的数据</font>. </p>
-<p> 所以改进如图：</p>
- <div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
+<h1 id="优化后规约（为便于图中展示，假设warp大小为2）"><a href="#优化后规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="优化后规约（为便于图中展示，假设warp大小为2）"></a>优化后规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
+<p>这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程相邻位置的数据</font>. </p>
+<p>所以改进如图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
 
-<p> 其中：</p>
+<p>其中：</p>
 <ul>
-<li><p><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</p>
-</li>
-<li><p>n个元素需要<code>lg(n)</code>次平行。</p>
-</li>
-<li><p>当数据元素更多时，橙色虚线框对应的threads与其他threads（很多时候）不属于同个warp，所以threads所用资源较前一个实现提前释放。</p>
+<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
+<li>n个元素需要<code>lg(n)</code>次平行。</li>
+<li>当数据元素更多时，橙色虚线框对应的threads与其他threads（很多时候）不属于同个warp，所以threads所用资源较前一个实现提前释放。</li>
+</ul>
 <p><font color="gree">warp大小为2，图中所有次并行计算都不存在divergence</font>。</p>
 <p>实现：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 4，2，1</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=blockDim.x/<span class="number">2</span>; stride &gt; <span class="number">0</span>; stride /= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对特定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; stride)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>为什么此法好？</p>
-</li>
-</ul>
 <ol>
-<li><p>每一轮都有一半的 thread不需要工作，资源释放掉。让warp提前完工，释放资源。</p>
-</li>
-<li><p>block中的warp，没有了<font color="red" size="4">分支发散</font>，或者说是最小化了分支发散。回忆<font clolor="red">warp</font>：</p>
-<ul>
+<li>每一轮都有一半的 thread不需要工作，资源释放掉。让warp提前完工，释放资源。</li>
+<li>block中的warp，没有了<font color="red" size="4">分支发散</font>，或者说是最小化了分支发散。回忆<font clolor="red">warp</font>：<ul>
 <li><font color="gree" size="4">在一个block中，连续的32个threads一组构成一个warp; </font></li>
 <li>warp 是最基本的调度单元</li>
 <li>warp中的threads在同步执行相同的指令（SIMT）</li>
@@ -953,13 +938,9 @@
 <li>warp中的分支发散不总是问题，但是如有很多分支语句的话，每个thread就需要执行所有的分支。</li>
 <li>在设计程序时，不应个这样：<code>if (threadIdx.x &gt; 15){...}</code> 而应该这样<code>if (threadIdx.x &gt; 32-1) {...}</code>。后者，表示说，第一个warp干他的事，第二个warp执行这个分支。</li>
 </ul>
+</li>
+</ol>
 <p>就这个优化，当元素的个数小于32（warp的大小）时，<font color="red">不可避免</font>的会产生分支发散。</p>
-</li>
-</ol>
-</li>
-</ol>
-</li>
-</ol>
 
       
     </div>
