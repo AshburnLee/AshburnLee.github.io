@@ -64,6 +64,58 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-在Device上初始化" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" class="article-date">
+  <time datetime="2019-10-06T11:45:39.000Z" itemprop="datePublished">2019-10-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/">CUDA-在Device上初始化</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="在GPU上初始化"><a href="#在GPU上初始化" class="headerlink" title="在GPU上初始化"></a>在GPU上初始化</h1><p>绝大多数CUDA教材，都会提出一般CUDA程序的标准步骤，其中一步是将Host的数据拷贝到Device。也就是说Host中数据要先被初始化，后才能拷贝到Device。其实，可以直接在Device中初始化数据，如此既可以避免Host到Device的数据传输，又可以加快数据初始化的速度。如下是一个小例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cuda_runtime.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"device_launch_parameters.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 10</span></span><br><span class="line"><span class="comment">//#define N 16384 // N*N = 268435456   // 1GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*2 // N*N = 268435456*4   // 4GB 4Bytes </span></span><br><span class="line"><span class="comment">//#define N 16384*4 // N*N = 268435456*16   // 16GB 4Bytes </span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">initOnGPU</span><span class="params">(<span class="keyword">int</span>* dev_a)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> ix = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">	<span class="keyword">int</span> iy = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">	<span class="keyword">int</span> tid = ix * N + iy;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ix &lt; N &amp;&amp; iy &lt; N)&#123;</span><br><span class="line">        <span class="comment">// initialize on Device</span></span><br><span class="line">		dev_a[tid] = <span class="number">321</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1) </span></span><br><span class="line">	<span class="keyword">int</span>* h_a;</span><br><span class="line">	h_a = (<span class="keyword">int</span>*)<span class="built_in">malloc</span>(N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span>* dev_a;</span><br><span class="line">	cudaMalloc((<span class="keyword">int</span>**)&amp;dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2) init on gpu</span></span><br><span class="line">	<span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">2</span>, <span class="number">2</span>)</span></span>;</span><br><span class="line">	<span class="function">dim3 <span class="title">grid</span><span class="params">((N + block.x - <span class="number">1</span>), (N + block.y - <span class="number">1</span>))</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">clock_t</span> start = clock();</span><br><span class="line">	initOnGPU &lt;&lt;&lt; grid, block &gt;&gt;&gt;(dev_a);</span><br><span class="line">	<span class="keyword">clock_t</span> <span class="built_in">end</span> = clock();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"Time init on GPU: %.10f \n"</span>, (<span class="keyword">double</span>)(<span class="built_in">end</span> - start) / CLOCKS_PER_SEC);</span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 3) </span></span><br><span class="line">	cudaMemcpy(h_a, dev_a, N*N*<span class="keyword">sizeof</span>(<span class="keyword">int</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 4) show h_a</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N*N; i++)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"%d "</span>, h_a[i]);</span><br><span class="line">		<span class="keyword">if</span> ((i + <span class="number">1</span>) % N == <span class="number">0</span>)</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5) </span></span><br><span class="line">	<span class="built_in">free</span>(h_a);</span><br><span class="line">	cudaFree(dev_a);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解释一下：<br>1）分别在Host和Device上开辟空间<code>h_a</code>和<code>dev_a</code>。<br>2）调用kernel，这个kernel的作用是初始化<code>dev_a</code>。注意并不是从Host中拷贝过去的。以及其他需要在GPU上执行的操作。<br>3）GPU上的操作完成后，得到的最终数据保存在<code>dev_a</code>中。拷贝到Host<code>h_a</code>中。<br>4）显示最终计算结果。<br>5）释放资源。</p>
+<p>其中kernel函数<code>initOnGPU</code>的作用是初始化<code>dec_a</code>中元素为321。</p>
+<p>结果如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Time init on GPU: <span class="number">0.0000160000</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> </span><br><span class="line"><span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span> <span class="number">321</span></span><br></pre></td></tr></table></figure>
+
+<p>所以说，直接在Device上初始化，相对先在Host上初始化后拷贝到Device，是更高效的。<br>CPU与GPU的通信是通过PCIe 实现的。PCIe第三代 的极限速度是 16GB每秒。相比较，费米架构的GPU中，GPU芯片与GPU存储之间的数据交换速度高达144GB 每秒。所以说Host和Device间的数据传输是CUDA应用的 性能瓶颈。</p>
+<p><font color="green" size="5">敲黑板</font> CUDA程序的一个基本规则是，尽可能减少host 与device间的数据交换。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" data-id="ck71en4je0016hefz7h6252c9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-二维kernel的全局ID" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/10/06/CUDA-%E4%BA%8C%E7%BB%B4kernel%E7%9A%84%E5%85%A8%E5%B1%80ID/" class="article-date">
@@ -102,7 +154,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E4%BA%8C%E7%BB%B4kernel%E7%9A%84%E5%85%A8%E5%B1%80ID/" data-id="ck6ux09js001044fz57u4471v" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E4%BA%8C%E7%BB%B4kernel%E7%9A%84%E5%85%A8%E5%B1%80ID/" data-id="ck71en4j8000rhefzft4kany6" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -169,7 +221,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/" data-id="ck6ux09k5001z44fz7a0u1ztp" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/" data-id="ck71en4jo001xhefz5ogn7eu5" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -234,7 +286,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/" data-id="ck6ux09ju001644fz7w8e9tg9" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/" data-id="ck71en4kl003vhefz5cp47is6" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -302,7 +354,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/04/CUDA-Linux%E4%B8%8B%E8%AE%A1%E6%97%B6%E5%99%A8-GPU%E4%BF%A1%E6%81%AF-Device%E5%87%BD%E6%95%B0%E4%BF%AE%E9%A5%B0%E8%AF%8D/" data-id="ck6ux09je000644fz2ppb29f6" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/10/04/CUDA-Linux%E4%B8%8B%E8%AE%A1%E6%97%B6%E5%99%A8-GPU%E4%BF%A1%E6%81%AF-Device%E5%87%BD%E6%95%B0%E4%BF%AE%E9%A5%B0%E8%AF%8D/" data-id="ck71en4j0000ahefz6nzp27nr" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -359,7 +411,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/" data-id="ck6ux09jj000b44fz1gnz36uo" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/10/04/CUDA-PCIe%E9%80%9F%E7%8E%87/" data-id="ck71en4km003yhefz3jhf1ykr" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
@@ -420,7 +472,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/09/08/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%BA%8C/" data-id="ck6ux09lh003s44fz2ccm4r7c" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/09/08/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%BA%8C/" data-id="ck71en4ki003lhefzga655wq4" class="article-share-link">Share</a>
       
       
     </footer>
@@ -574,7 +626,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/" data-id="ck6ux09li003u44fz2xh2gasg" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/" data-id="ck71en4kj003ohefz1sms1u36" class="article-share-link">Share</a>
       
       
     </footer>
@@ -652,7 +704,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" data-id="ck6ux09lg003p44fzcc5n73st" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" data-id="ck71en4kh003jhefz0lmn5hrv" class="article-share-link">Share</a>
       
       
     </footer>
@@ -749,160 +801,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/" data-id="ck6ux09le003l44fz6afc5n0g" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-回顾cpp-多态-二-虚函数表" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/" class="article-date">
-  <time datetime="2019-08-29T04:41:49.000Z" itemprop="datePublished">2019-08-29</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/">回顾cpp-多态-虚函数表</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>封装-&gt;继承-&gt;多态</p>
-<ul>
-<li>普通虚函数 check</li>
-<li>虚析构函数 check</li>
-<li>纯虚函数 </li>
-<li>抽象类</li>
-<li>接口类</li>
-<li>RTTI</li>
-<li>异常处理 </li>
-<li>隐藏 覆盖    check</li>
-<li>早绑定 晚绑定  check</li>
-<li>虚函数表     check</li>
-</ul>
-<h1 id="虚函数实现原理"><a href="#虚函数实现原理" class="headerlink" title="虚函数实现原理"></a>虚函数实现原理</h1><p>虚函数实现原理是</p>
-<p>函数指针：<br>    对象指针—&gt;指针指向对象<br>    函数指针—&gt;指针指向函数<br>函数存在内存中，可以通过指针指向这段代码的开头，那么函数就会从头一直向下执行。如图：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/func-ptr.png" width="600"></div>
-
-<p>比如可以通过<code>Func1_ptr</code> 得到<code>fun3()</code>函数入口，并开始执行。函数指针与普通指针一样，存储着内存的地址，这个地址就是函数的首地址。</p>
-<hr>
-<p>虚函数实现原理是<strong>虚函数表指针</strong>。假如有两个类<code>Shape</code>和<code>Circle</code>类：<br>父类<code>Shape</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;  <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iEdge;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>此时，当<strong>实例化一个<code>Shape</code>对象</strong>时，<strong>此<code>Shape</code>对象中包含如下左侧内容</strong>：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable1.png" width="600"></div>
-
-<p>此<code>Shape对象</code>中，除了<code>m_iEdge</code>外，还有一个成员<strong>vftable_ptr</strong>，<strong>称为虚函数表指针</strong>。</p>
-<ol>
-<li>这个指针指向一个虚函数表，此<strong>虚函数表与Shape类的定义同时出现</strong>。</li>
-<li>此表占空间，从起始位置<code>0xCCFF</code>处开始，也就是<code>vftable_ptr</code>处存储内容为<code>0xCCFF</code>。</li>
-<li><strong>此表只有一个</strong>，通过Shape实例化出的<strong>所有对象</strong>都指向<strong>同一个</strong>虚函数表，即所有通过<code>Shape</code>实例化的对象，其<code>vftable_ptr</code>都存储<code>0xCCFF</code>。也就是说每一个实例的<code>vftable_ptr</code>都指向<strong>Shape类</strong>的虚函数表。言外之意，虚函数表属于类，而非类对象。</li>
-</ol>
-<p>在父类<code>Shape</code>的虚函数表中一定定义了一个函数指针：<code>calcArea_ptr</code>，它是<code>calcArea</code>函数入口地址，即<code>calcArea_ptr</code>中存储<code>0x3355</code>（<code>0x3355</code>是<code>Shape类</code>中<code>calcArea</code>函数地址）。调用<code>calcArea</code>时，先通过<code>vftable_ptr</code> 找到虚函数表，再通过位置偏移找到虚函数的入口地址，从而最终找到<code>calcArea</code>计算面积。</p>
-<hr>
-<p>上述过程实例化Shape父类对象。<br>当定义了子类Circle：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;   <span class="comment">// 共有继承Shape</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r);</span><br><span class="line">    <span class="comment">// 没有自己的calcArea</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>注意Circle中并没有<code>calcArea()</code>函数，也就说，<strong>Circle使用Shape类的<code>calcArea</code>计算面积</strong>。<br>当实例化<code>Circle</code>子类对象后。此<code>Circle</code>对象中存储的内容如下：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-2.png" width="600"></div>
-
-<p>因为<code>Circle</code>中没有定义虚函数，但它从父类中继承了虚函数<code>calcArea</code>，所以在实例化一个<code>Circle</code>对象时，也会产生一个虚函数表。注意<strong>此虚函数表是Circle类自己的虚函数表，起始地址为<code>0x6688</code></strong>，而Shape类的虚函数表起始地址是<code>0xCCFF</code>。但是<code>Circle</code>虚函数表中计算面积的指针<code>calcArea_ptr</code>是一样的，都存储<code>0x3355</code>(因为是继承过来的)。<br>这就能够保证在<code>Circle</code>中访问父类Shape的<code>calcArea</code>时，也能够通过虚函数表指针找到自己的虚函数表，从而找到父类Shape的<code>calcArea</code>。</p>
-<hr>
-<p>如果子类Circle定义中定义了自己的<code>calcArea</code>函数，即子类的<code>calcArea</code>有自己的函数地址<code>0x4B2C</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;   <span class="comment">// 共有继承Shape</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r);</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>;   <span class="comment">// 定义了自己的calcArea，覆盖父类calcArea</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>当实例化一个Circle类对象时，Shape类没有任何变化(当然，父类不会因为子类的变化而改变呀！)，但是Circle会有变化：如图：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-3.png" width="600"></div>
-
-<p><code>Circle</code>虚函数表是一样的(即表地址是一样的)，但是因为<code>Circle</code>自己定义了自己的<code>calcArea</code>方法，所以<code>calcArea_ptr</code>所指向的也是Circle自己的<code>calcArea</code>地址<code>0x4B2C</code>，换句话说，原先<code>calcArea_ptr</code>中父类的<code>calcArea</code>地址被Circle自己的<code>calcArea</code>地址<strong>覆盖</strong>。所以，此时如果使用Shape的指针指向Circle的对象，执行子类的虚函数<code>calcArea</code>。</p>
-<p>上述过程就是多态原理。</p>
-<h1 id="函数的覆盖与隐藏"><a href="#函数的覆盖与隐藏" class="headerlink" title="函数的覆盖与隐藏"></a>函数的覆盖与隐藏</h1><ul>
-<li><p><strong>覆盖</strong>即上述过程：</p>
-<p>  当Circle没有自己的<code>calcArea()</code>时，Circle的虚函数表中<code>calcArea_ptr</code>存的是<code>0x3355</code>，即父类<code>calcArea()</code>的地址。</p>
-<p>  当Circle有自己的calcArea()时，Circle的虚函数表中calcArea_ptr存的是0x4B2C，即子类自己的calcArea()的地址。<br>  此时虚函数表中，<strong>子类的虚函数地址覆盖父类虚函数地址</strong>。</p>
-</li>
-<li><p><strong>隐藏</strong>：</p>
-<p>  与多态（virtual）无关，即当父类子类中没有<code>virtual</code>虚函数时，父类子类出现了同名函数，且<font color="red" size="4">父类指针</font>分别指向<font color="red" size="4">子类对象</font>，父类同名函数隐藏了子类同名函数。（毕竟这个子类对象类型是父类，回顾<a href>继承篇</a>）</p>
-</li>
-</ul>
-<p><font color="gree" size="5">敲黑板</font>当父类指针指向子类对象（没有virtual）：<br>当发生“覆盖”时，执行子类同名函数；当发生“隐藏”时，执行父类同名函数。</p>
-<h1 id="虚析构函数原理"><a href="#虚析构函数原理" class="headerlink" title="虚析构函数原理"></a>虚析构函数原理</h1><p>回顾上一篇笔记，当父类子类中<strong>析构函数</strong>都为<strong>虚析构函数</strong>时，通过父类指针指向子类对象，最后通过<code>delete</code> 接父类指针就可以，先执行子类析构函数紧接着执行父类析构函数。这个过程与<strong>虚函数表</strong>有关。</p>
-<p>强调一下前提：先执行子类析构函数紧接着执行父类析构函数（也就是说通过父类指针执行到了子类的析构函数，这就是为什么先执行子类析构函数）</p>
-<p>在父类Shape中加上虚虚析构函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>&#123;  <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Shape()&#123;&#125;        <span class="comment">// 虚析构函数</span></span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iEdge;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-
-<p>定义子类，写上子类虚析构函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;   <span class="comment">// </span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r)&#123;&#125;;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>&#123;&#125;;   </span><br><span class="line">    <span class="keyword">virtual</span> ~Circle()&#123;&#125;;         <span class="comment">// 子类虚析构函数</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>此时用父类指针指向子类对象，且delete接父类指针：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mian</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Shape* shape = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">delete</span> shape;</span><br><span class="line">    shape = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>虚函数表如何工作：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-4.png" width="600"></div>
-
-<p>当在Shape中定义了虚析构函数，Shape类的虚函数表中就会有一个Shape类的虚函数指针<code>～Shape_ptr</code>（指向父类析构函数），</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-5.png" width="600"></div>
-
-<p>同时在Circle类中也会产生一个子类析构函数的函数指针<code>～Circle_ptr</code>（指向子类析构函数）。注意上述<strong>两个析构函数指针同时出现</strong>。</p>
-<p>如果使用Shape的指针指向Circle的对象，执行子类的虚函数calcArea。当delete接Shape指针时，<strong>通过Shape找到Circle类的vftable_ptr</strong>(Shape类指针指向Circle类对象)，进而找到虚函数表，最后找到Circle类的析构函数，从而使得Circle类析构函数得意执行。最后执行Shape类析构函数。</p>
-<p>{有疑惑，父类指针指向子类对象，会执行子类虚函数？（delete父类的指针时，程序会去找父类的指针指向的地址，该地址就是子类头部虚函数表指针的地址，进而找到子类虚函数表，最后执行子类析构函数） delete时，发生了什么？回顾<a href>继承篇</a>}  </p>
-<h1 id="现实中的虚函数"><a href="#现实中的虚函数" class="headerlink" title="现实中的虚函数"></a>现实中的虚函数</h1><p>明确概念：</p>
-<ol>
-<li>对象的大小：实例化对象中数据成员所占内存大小，（不包括成员函数）。</li>
-<li>对象的地址：通过类实例化一个对象，这个对象的所占的内存单元的首地址。</li>
-<li>对象成员的地址：一个对象中每一个成员所占据的地址。因为每个成员的数据类型不同，所以占用不同大小的内存。</li>
-<li>虚函数表指针：当实例化一个对象后，这个对象的第一个内存中所存储的指针，这个指针就是虚函数表的指针。就是上述所有的<code>vftable_ptr</code>。可以根据这个特点，通过计算对象的大小来证明虚函数表示的存在。</li>
-</ol>
-<h2 id="当没有virtual时"><a href="#当没有virtual时" class="headerlink" title="当没有virtual时"></a>当没有virtual时</h2><p>假如有两个类：</p>
-<p>父类Shape：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span>   </span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Shape()&#123;&#125;</span><br><span class="line">    ~Shape()&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123; </span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"Shape-&gt;calc area"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>子类Circle：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">int</span> r)&#123; m_iR = r; &#125;</span><br><span class="line">    ~Circle()&#123;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iR;   </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>执行1：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Shape shape;                  <span class="comment">// 实例化一个对象</span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;<span class="keyword">sizeof</span>(shape)&lt;&lt;<span class="built_in">endl</span>;    <span class="comment">// 该对象的大小</span></span><br><span class="line"><span class="keyword">int</span>* p = (<span class="keyword">int</span>*)&amp;shape;        <span class="comment">// 该对象的地址</span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;p&lt;&lt;<span class="built_in">endl</span>;                <span class="comment">// 对象起始地址</span></span><br></pre></td></tr></table></figure>
-
-<p>结果1：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1                 // 对于一个数据成员都没有的类对象，c++ 用一个内存单元来标记它。 </span><br><span class="line">0x7fff478ce38f    // 对象起始地址</span><br></pre></td></tr></table></figure>
-
-<p>执行2：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Circle <span class="title">circle</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;<span class="keyword">sizeof</span>(circle)&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"><span class="keyword">int</span>* q= (<span class="keyword">int</span>*)&amp;circle;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;q&lt;&lt;<span class="built_in">endl</span>;         <span class="comment">// 指针q中内容</span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*q)&lt;&lt;<span class="built_in">endl</span>;  <span class="comment">// 指针q中内容的内容</span></span><br></pre></td></tr></table></figure>
-
-<p>结果2：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">4                  // int 型数据占4个内存单元</span><br><span class="line">0x7ffdca8b3e20    // 对象起始地址</span><br><span class="line">100               // 起始地址中的内容</span><br></pre></td></tr></table></figure>
-<h2 id="当有virtual时"><a href="#当有virtual时" class="headerlink" title="当有virtual时"></a>当有virtual时</h2><p>父类与子类：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Shape()&#123;&#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Shape()&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123; &#125; <span class="comment">// 虚函数</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">int</span> r)&#123; m_iR = r; &#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Circle()&#123;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>执行：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Shape shape;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;<span class="keyword">sizeof</span>(shape)&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"><span class="keyword">int</span>* p = (<span class="keyword">int</span>*)&amp;shape;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*p)&lt;&lt;<span class="built_in">endl</span>;   </span><br><span class="line"></span><br><span class="line"><span class="function">Circle <span class="title">circle</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line"><span class="keyword">int</span>* q= (<span class="keyword">int</span>*)&amp;circle;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*q)&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">q++;   </span><br><span class="line">q++;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*q)&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
-
-<p>返回：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">8              </span><br><span class="line">4198160</span><br><span class="line">4198120</span><br><span class="line">100</span><br></pre></td></tr></table></figure>
-<p>shape对象大小是<code>8</code>，Shape类对象地址中第一个内容是虚函数表地址<code>4198160</code>；<br>Circle类对象地址中的第一个内容是虚函数表地址<code>4198120</code>，之后移动指针2次，便是存储数据成员100的位置。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/" data-id="ck6ux09ma005344fz6p6fbmz2" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/" data-id="ck71en4kg003ihefz67ef2ycz" class="article-share-link">Share</a>
       
       
     </footer>
@@ -927,7 +826,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">34</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">34</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li></ul>
     </div>
   </div>
 
@@ -937,7 +836,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">30</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">11</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">30</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -956,7 +855,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">13</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">14</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -967,6 +866,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
         
           <li>
             <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
@@ -982,10 +885,6 @@
         
           <li>
             <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/">CUDA-再看规约-循环展开</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
           </li>
         
       </ul>
