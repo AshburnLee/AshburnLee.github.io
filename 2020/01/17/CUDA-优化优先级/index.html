@@ -15,7 +15,7 @@
 <meta property="og:description" content="高优先级： 为最大化开发者的效率，使用程序分析工具来找到程序最耗时的部分，找到效率瓶颈。  最大化地利用CUDA， 首先想办法把原程序中的串行代码并行化。  使用程序使用的有效带宽最为测量性能和优化效果的指标。  理论带宽   理论带宽可以从硬件的商品指标计算得到。比如NVIDIA Tesla V100 使用 HBM2 (double data rate) RAM 时钟频率是 877 MHz。存储">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2020-01-17T12:49:36.000Z">
-<meta property="article:modified_time" content="2020-01-17T16:10:51.558Z">
+<meta property="article:modified_time" content="2020-02-27T11:11:17.076Z">
 <meta property="article:author" content="Junhui">
 <meta name="twitter:card" content="summary">
   
@@ -121,11 +121,11 @@
 <p>  中间数据应在Device内存中创建，销毁，由设备操作。此外，由于与每个传输相关联的开销，将许多小的传输批处理为一个较大的传输要比分别进行每个传输好得多。</p>
 <p>  此外，当使用<code>pinned memory</code>时，Device和Host间的带宽更高。</p>
 </li>
-<li><p>尽可能确保Global memory的访问时，地址是连续的。记住，连续的threads访问连续的地址，效率是最高的。</p>
+<li><p>尽可能确保Global memory的访问时，地址是连续的。记住，<font color="orange">连续的threads访问连续的地址，效率是最高的</font>。</p>
 </li>
 <li><p>尽量少用Global memory，尽量多的使用Shared memory。</p>
 <p>  内存指令（Memory instructions）包括读取或写入shared，local或Global内存的任何指令。当访问未缓存的local或Global内存时，内存延迟有数百个时钟周期。 </p>
-<p>  下边这个例子，的赋值运算符，由很高的吞吐量，但是从Global的读操作，会由上百个时钟周期的延迟。</p>
+<p>  下边这个例子，的赋值运算符，由很高的吞吐量，但是从Global的读操作，会有上百个时钟周期的延迟。</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">__shared__ <span class="keyword">float</span> shared[<span class="number">32</span>];</span><br><span class="line">__device__ <span class="keyword">float</span> device[<span class="number">32</span>]; </span><br><span class="line">shared[threadIdx.x] = device[threadIdx.x];</span><br></pre></td></tr></table></figure>
 
 <p>  如果在等待Global内存访问完成的同时，可以发出足够的独立算术指令，则线程调度程序（thread scheduler）可以隐藏大部分全局内存延迟。但是，最好尽可能避免访问全局内存。这种操作称为<code>Overlap</code></p>

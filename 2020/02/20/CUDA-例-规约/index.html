@@ -17,7 +17,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png">
 <meta property="og:image" content="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png">
 <meta property="article:published_time" content="2020-02-20T01:51:24.000Z">
-<meta property="article:modified_time" content="2020-02-21T13:38:43.471Z">
+<meta property="article:modified_time" content="2020-02-27T10:20:17.100Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -110,7 +110,7 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只使用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作（因为是在同一个warp中），但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
 <h1 id="优化后规约（为便于图中展示，假设warp大小为2）"><a href="#优化后规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="优化后规约（为便于图中展示，假设warp大小为2）"></a>优化后规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
-<p>这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程相邻位置的数据</font>. </p>
+<p>这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程处理相邻位置的数据</font>. </p>
 <p>所以改进如图：</p>
 <div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
 
@@ -134,7 +134,7 @@
 <li>warp中threads需要执行不同 的路径时（分支发散），warp中每个threads都要执行所有的分支，因为是同步的。比如一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</li>
 <li>warp之间时没有关系的。</li>
 <li>warp间的切换时没有代价的。多warp工作可以隐藏延时</li>
-<li>warp的分割，连续32个threadIdx.x 为一组（一个warp）0<del>31，32</del>63，…</li>
+<li>warp的分割，连续32个threadIdx.x 为一组（一个warp）0到31，32到63，…</li>
 <li>warp中的分支发散不总是问题，但是如有很多分支语句的话，每个thread就需要执行所有的分支。</li>
 <li>在设计程序时，不应个这样：<code>if (threadIdx.x &gt; 15){...}</code> 而应该这样<code>if (threadIdx.x &gt; 32-1) {...}</code>。后者，表示说，第一个warp干他的事，第二个warp执行这个分支。</li>
 </ul>
