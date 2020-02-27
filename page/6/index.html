@@ -518,6 +518,109 @@
 
 
   
+    <article id="post-文本分类-一-几类模型" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/23/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2019-08-23T11:23:04.000Z" itemprop="datePublished">2019-08-23</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/23/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/">文本分类(一)-几类模型</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>文本分类任务中，输入为一条由词语组成的文本，模型判断这条文本的类别。</p>
+<h2 id="1-基本文本模型"><a href="#1-基本文本模型" class="headerlink" title="1.基本文本模型"></a>1.基本文本模型</h2><p>模型一：使用RNN(LSTM)的最后一个状态判断类别，是最基本的RNN模型。如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>LSTM的最后一个状态，或者说是该LSTM结点的最后一个time step 包含了整个句子的信息。将这个信息传入一个普通的全连接的神经网络。最终得到一个分类。比如一个句子传入模型后被判断为威胁类别。如果是二分类，使用sigmoid实现，若是多分类，使用softmax实现。</p>
+<p>这个过程中涉及到embedding，就是用向量来表示一个词语，或者说是对词语的进一步编码。第一次编码是将词语转化为数字，两者一一对应。</p>
+<p>不使用one-hot 编码，深度学习领域使用embedding的方式对词语进行编码。具体如何做，如下：</p>
+<table>
+<thead>
+<tr>
+<th align="right">词语</th>
+<th align="right">id1</th>
+<th align="right">id2</th>
+<th align="right">id3</th>
+<th align="right">id4</th>
+<th align="right">id5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">海洋</td>
+<td align="right">0.11</td>
+<td align="right">0.52</td>
+<td align="right">0.45</td>
+<td align="right">1.27</td>
+<td align="right">0.72</td>
+</tr>
+<tr>
+<td align="right">阳光</td>
+<td align="right">0.63</td>
+<td align="right">0.24</td>
+<td align="right">1.12</td>
+<td align="right">0.27</td>
+<td align="right">1.27</td>
+</tr>
+<tr>
+<td align="right">冲浪</td>
+<td align="right">0.72</td>
+<td align="right">0.22</td>
+<td align="right">0.23</td>
+<td align="right">0.37</td>
+<td align="right">0.46</td>
+</tr>
+</tbody></table>
+<p>我把每一个出现了的词用长度为5的向量表示。并且embedding中的数值是变量，在训练模型时，所有数值是要被学习(更新)的。从而使得每个词语对应的向量与词语意思更相关。</p>
+<p>当把输入编码成一个向量时，过程就更类似对图像的处理了(两者还是很不一样)。输入与输出都是向量。</p>
+<h2 id="2-双向文本模型"><a href="#2-双向文本模型" class="headerlink" title="2.双向文本模型"></a>2.双向文本模型</h2><p>上述基本模型有个问题：虽然LSTM可以选择性地保存信息，但是，随后一个词语还是会与其较近的词语由更大的关系，而弱化较早以前的词语。所以更早些的信息可能不会被保存下来。双向RNN就是用来解决这个问题的，如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>特点：</p>
+<ul>
+<li>信息正向传播，并且逆向传播。</li>
+<li>把每一个词语经过这个LSTM的输出，做组合(拼接，pooling等)</li>
+<li>最终将组合结果传入一个全连接层</li>
+</ul>
+<h2 id="3-HAN"><a href="#3-HAN" class="headerlink" title="3.HAN"></a>3.HAN</h2><p>特点：</p>
+<ul>
+<li>分层，第一层词语编码，第二层句编码。</li>
+<li>每一层增加一个类似LSTM内部门的操作，成为Attention 机制</li>
+</ul>
+<h2 id="4-CNN解决文本问题"><a href="#4-CNN解决文本问题" class="headerlink" title="4.CNN解决文本问题"></a>4.CNN解决文本问题</h2>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/23/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" data-id="ck74urao100004nfz9fd04tgp" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-方法论-回溯法" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/" class="article-date">
@@ -645,7 +748,7 @@
 </a>
     
   <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+    <a class="article-category-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a>
   </div>
 
   </div>
@@ -963,14 +1066,14 @@
 
 
   
-    <article id="post-LeetCode-方法论-二叉树与递归" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-Deep-Learning-杂记" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" class="article-date">
-  <time datetime="2019-08-07T10:28:54.000Z" itemprop="datePublished">2019-08-07</time>
+    <a href="/2019/08/08/Deep-Learning-%E6%9D%82%E8%AE%B0/" class="article-date">
+  <time datetime="2019-08-08T14:48:42.000Z" itemprop="datePublished">2019-08-08</time>
 </a>
     
   <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+    <a class="article-category-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a>
   </div>
 
   </div>
@@ -981,7 +1084,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/">LeetCode-方法论-二叉树与递归</a>
+      <a class="article-title" href="/2019/08/08/Deep-Learning-%E6%9D%82%E8%AE%B0/">Deep Learning 杂记</a>
     </h1>
   
 
@@ -989,289 +1092,88 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>226, 112, 589, 337, 508, 107, 637, 108, 199, 109, </p>
-<h1 id="写在前面："><a href="#写在前面：" class="headerlink" title="写在前面："></a>写在前面：</h1><ul>
-<li>别忘了递归终止条件。</li>
-<li>明确递归函数的定义，并确保实现中函数保持定义不变。</li>
-<li>理解问题。分析出递归结构。</li>
-<li>大脑不适应递归，像盗梦空间，你需要跳进跳出。一层一层跳入，到底，再一层一层跳出。令人恍惚的是每一层的变量都长一样！</li>
-<li>用彩色笔画递归树，不同颜色表示不同层，你就不懵了。</li>
-<li>除了多见类似的问题，训练大脑。目前找不出其他方法让大脑适应递归。</li>
-<li>深度优先遍历，回朔，都是递归。</li>
-<li>递归函数占用额外空间，调用递归函数需要额外开销。</li>
-<li>由于二叉树天然具有递归性，解决问题时可以从树中拿出一个合适大小的子树，来构建出初步代码。</li>
-<li>大多问题与二叉树的4种常见的<font color="red" size="4">遍历</font>方法有关。</li>
-<li>一个模式：<font color="red" size="4">移动控制+结点操作</font></li>
+        <p>杂记：</p>
+<ul>
+<li><p>使用Mini-batch 梯度下降。如果每一次都在整个数据集上计算梯度，计算量巨大，可能内存不够。如果使用随机梯度(SGD)下降，即每使用一个样本就计算一次梯度，在一个样本上得到的梯度不能反应整个数据集的梯度方向，所以收敛速度慢。所以一般使用Mini-batch 梯度下降。</p>
+</li>
+<li><p>上述三种梯度下降法都存在一个缺点：会陷入局部最小值和鞍点。可以使用动量梯度下降(SGD+Momentum)。其特点是：如果当前步的方向与上一步的方向呈锐角，实际方向在二者之间，且步长较大，，若是钝角，则步长小。也就是说，刚开始积累动量，加速学习，局部震荡时，由于动量的存在，实际梯度为零，跳出局部最优值，缓解震荡。</p>
+</li>
+<li><p>CNN由全连接到局部连接：每个神经元在图片上移动时，其卷积核参数不变，而不同的神经元间的卷积核参数不同。相比较于全连接，参数量减少了很多。参数共享。一个卷积核提取一个特征。</p>
+</li>
+</ul>
+<ul>
+<li><p>一个卷积核3通道分别与输入的3通道计算，得到的3通道计算结果相加作为输出的一个通道。如下图：<br>即一个卷积核得到一个输出通道，<br>所以n个卷积核得到n个输出通道。<br>一个卷积核提取一个特征，<br>所以6个卷积核提取6个特征。<br>其中<code>28 =（32-5)/1+1</code>，即<code>输出长=(输入长-卷积核长)/stride步长+1</code>(步长为1)。<br></p>
+<div align="center"><img src="/2019/08/08/Deep-Learning-%E6%9D%82%E8%AE%B0/conv.png" width="600"></div>
+</li>
+<li><p>线性激活函数，对于网络无效，因为是全等变换，无论网络由多少层，都相当于只有一层。我们说激活函数的作用是非线性变换，而现行变换无效果。</p>
+</li>
+<li><p>Pooling 特点：</p>
+<ul>
+<li>池化核移动不重叠，</li>
+<li>不补零，</li>
+<li>无可训练过参数，</li>
+<li>作用：降采样，为下一层减少尺寸，减少计算量，减少训练参数，</li>
+<li>平移鲁棒性</li>
+</ul>
+</li>
+<li><p>全连接层fc：将上一层输出展开并连接到每一个神经元上。2D变1D，没有了2D信息，所以不能再加卷基层。实际上就是普通的NN。全连接层的参数很多，一般占整个模型参数量的60%~80%。</p>
+</li>
+<li><p>各个优化算法：</p>
+<ul>
+<li><p>SGD：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> <span class="literal">true</span>:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    x += lr * dx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>动量SGD，解决鞍点和局部最优值，问题，每个维度的学习速率都一样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Vx = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    Vx = rho * Vx + dx</span><br><span class="line">    x += lr * Vx</span><br></pre></td></tr></table></figure></li>
+<li><p>AdaBrad：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured += dx * dx    <span class="comment"># 积累平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+<p>缺点：当learning rate较大时，分母敏感，使梯度爆炸。后期分母变大，使更新变得很小，提前结束训练。</p>
+</li>
+<li><p>RMSProp：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured = delay_rate * grad_sqaured + (<span class="number">1</span>-delay_rate) * dx * dx    <span class="comment"># 平均平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+<p>解决了后期训练提前结束的问题。</p>
+</li>
+<li><p>Adam：<br>结合了动量SGD和RMSProp优点</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">frst_moment = <span class="number">0</span></span><br><span class="line">scnd_moment = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    frst_moment = beta1 * frst_moment + (<span class="number">1</span>-beta1) * dx</span><br><span class="line">    scnd_moment = beta2 * scnd_moment + (<span class="number">1</span>-beta2) * dx * dx</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 校准</span></span><br><span class="line">    frst_unbias = frst_moment/(<span class="number">1</span>-beta1**t)</span><br><span class="line">    scnd_unbias = scnd_moment/(<span class="number">1</span>-beta2**t)</span><br><span class="line">    x -= lr * frst_unbias / (np.sqrt(scnd_unbias)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+<p>使得开始训练时frst_moment和scnd_moment变大来加速训练。一般使用Adam算法，从经验来讲，beta1=0.9， beta2=0.999，lr=1e-3。</p>
+</li>
+<li><p>lr自适应方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Exponetial Decay:</span></span><br><span class="line">lr = lr * e**(-kt)</span><br><span class="line"><span class="comment"># 1/t Decay:</span></span><br><span class="line">lr = lr / (<span class="number">1</span>+kt)</span><br></pre></td></tr></table></figure>
+<p>SGD训练时间长但效果好，不过需要好的初始化，和lr自适应，如果不能找到好的初始化和lr自适应，用Adam。如果要训练更深更复杂的网络，且要求收敛速度快，推荐使用Adam。</p>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>激活函数：</p>
+<p>  深层网络不适用<code>sigmoid</code>，因其计算复杂，输出均值非0，且会发生梯度消失，即更深的层参数得不到更新。<br>tanh虽然输出均值为0，但计算复杂，有和sigmoid相同的问题。<br>ReLU首次在AlexNet中使用，计算简单，但输出均值非0，会存在dead 神经元。<br>Leaky ReLU解决了ReLU的dead 神经源问题。<br>ELU输出均值接近于0，<br>MaxOut是ReLU的泛华版本，没有dead神经元，但参数会翻倍。<br>总结：一般使用Leaky ReLU，ELU，MaxOut。</p>
+</li>
+<li><p>网络需要初始化，好的初始化使训练速度快，且达到一个好的结果。多层网络不适用0来初始化。</p>
+<p>  如何判断初始化的好坏？查看初始化后各层的激活函数的分布，如果分布在一个区间内，好；如果输出集中在某个值上，不好。<br>一般使用均值为0方差为0.02的正态分布来初始化。<br>对于tanh使用Xavior初始化：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in)</span><br></pre></td></tr></table></figure>
+<p>  对于ReLU使用He-ReLU初始化：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in/<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>  其网络每一层分布都相近。</p>
+</li>
+<li><p>批归一化，通用的归一化方法：</p>
+<ul>
+<li>为了使得每层激活函数的分布一致，在得到激活函数值后，把输出做归一化处理：减去均值，除以方差，使得其值分布在均值为0，方差为1 的分分布上。</li>
+<li>缺点：表示在每一批上做归一化，但是，一批的分布不能反应整个数据集的分布，结果是，得到一个特征，批归一化后，这个特征不能在批不批间区分样本了，即特征无效了。</li>
+<li>解决：设置alpha&amp;beta两个参数做逆归一化：<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数学公式 填坑</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>数据增强，多尺度剪裁。</p>
+</li>
+<li><p>Fine-Tuning：在已经训练好的网络上进行微调。使用已经微调好的模型来初始化。见Fine-tuning博客。</p>
+</li>
 </ul>
 <hr>
-<h1 id="226-Invert-Binary-Tree"><a href="#226-Invert-Binary-Tree" class="headerlink" title="#226 Invert Binary Tree"></a>#226 Invert Binary Tree</h1><ul>
-<li><p>描述：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line"></span><br><span class="line">    <span class="number">4</span></span><br><span class="line">/   \</span><br><span class="line"><span class="number">2</span>     <span class="number">7</span></span><br><span class="line">/ \   / \</span><br><span class="line"><span class="number">1</span>   <span class="number">3</span> <span class="number">6</span>   <span class="number">9</span></span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line"></span><br><span class="line">    <span class="number">4</span></span><br><span class="line">/   \</span><br><span class="line"><span class="number">7</span>     <span class="number">2</span></span><br><span class="line">/ \   / \</span><br><span class="line"><span class="number">9</span>   <span class="number">6</span> <span class="number">3</span>   <span class="number">1</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  递归树：</p>
-  <div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/bt-1.png" width="600"></div>
-
-<p>  要想实现问题描述的Invert，就需要从下往上Swap。具体说：<br>先执行灰三角A，swap(空，空)；执行灰三角B，swap(空，空)；执行绿三角，swap(9子树, 6子树)；<br>先执行灰三角C，swap(空，空)；执行灰三角D，swap(空，空)；执行红三角，swap(3子树, 1子树)；<br>最后执行黄三角，swap(2子树, 7子树)<br>结束。</p>
-</li>
-</ul>
-<ul>
-<li><p>代码实现：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义：交换以root为跟的左右子树，返回交换后的root。</span></span><br><span class="line"><span class="function">TreeNode* <span class="title">invertTree</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    invertTree(root-&gt;left);</span><br><span class="line">    invertTree(root-&gt;right);</span><br><span class="line">    swap(root-&gt;left, root-&gt;right);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> root;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  这个过程其实是Binary Tree的后续遍历：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义：打印输出root的值。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">postOrder</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    postOrder(root-&gt;left);</span><br><span class="line">    postOrder(root-&gt;right);</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;root-&gt;val&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  除了返回值，唯一的不同是<strong>前者执行交换root的左右子树，后者执行打印root-&gt;val。本质一样：后续遍历</strong>。</p>
-</li>
-</ul>
-<p>相似问题：#337 #508</p>
-<h1 id="112-Path-Sum"><a href="#112-Path-Sum" class="headerlink" title="#112 Path Sum"></a>#112 Path Sum</h1><p>描述：</p>
-<pre><code><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Given the below binary tree and sum = 26,</span><br><span class="line"></span><br><span class="line">    5</span><br><span class="line">    / \</span><br><span class="line">    4   8</span><br><span class="line">/   / \</span><br><span class="line">11  13  4</span><br><span class="line"><span class="built_in">return</span> <span class="literal">true</span>,</span><br><span class="line">as there exist a root-to-leaf path 5-&gt;8-&gt;13 <span class="built_in">which</span> sum is 26.</span><br></pre></td></tr></table></figure></code></pre><ul>
-<li><p>思路</p>
-<p>  两种思路，先序遍历，保存所有root-to-leaf的路径值，后搜索。见<a href="https://github.com/AshburnLee/LeetCode/blob/master/_112SumPath/Solution.h" target="_blank" rel="noopener">这里</a>，效率低。</p>
-<p>  另一种思路，递归树：</p>
-  <div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/bt-2.png" width="600"></div>
-
-<p>  执行过程，即是<strong>先序遍历</strong>，每“跳进”一个新的子树，就更新sum值。最终可以找到<code>sum:13==13</code>，</p>
-</li>
-<li><p>实现：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义： 以root为根的数中是否含有和为sum的路径</span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasPathSum</span><span class="params">(TreeNode* root, <span class="keyword">int</span> sum)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// if root is NULL</span></span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if this root is a leaf</span></span><br><span class="line">    <span class="keyword">if</span> (root-&gt;left == <span class="literal">nullptr</span> &amp;&amp; root-&gt;right == <span class="literal">nullptr</span>)</span><br><span class="line">        <span class="keyword">return</span> root-&gt;val == sum;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if root has the left child</span></span><br><span class="line">    <span class="keyword">if</span> (hasPathSum(root-&gt;left, sum-root-&gt;val))</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if root has the right child</span></span><br><span class="line">    <span class="keyword">if</span> (hasPathSum(root-&gt;right, sum-root-&gt;val))</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  本质上还是先序遍历。<font color="green" size="5">敲黑板</font>sum值在“跳进”后，变小，<strong>“跳出”后，又变回原来值</strong>。<strong>“跳进”表示，递归调用自己，“跳出”表示，这次递归调用执行到return语句</strong>。就本问题而言，但遍历到结点13时，满足<code>sum 13==13</code>，所以在此返回<code>true</code>。遍历不再执行，所以右下角结点4从未被遍历到。</p>
-</li>
-</ul>
-<h1 id="589-N-ary-Tree-Preorder-Traversal"><a href="#589-N-ary-Tree-Preorder-Traversal" class="headerlink" title="#589 N-ary Tree Preorder Traversal"></a>#589 N-ary Tree Preorder Traversal</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Given an n-ary tree, return the preorder traversal of its nodes&#39; values.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  多叉树的先序遍历，思路很直接：先遍历root，后对于这个root的所有子节点，以子节点为新的root做同样的操作。<br>  这里的<font color="red" size="4">操作</font>具体说是将节点值放入vector。</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">travel</span><span class="params">(Node* root, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; res)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    res.push_back(root-&gt;val);  <span class="comment">// root</span></span><br><span class="line">    <span class="keyword">for</span> (Node* chld : root-&gt;children) <span class="comment">// all children of root</span></span><br><span class="line">        travel(chld, res);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; preorder(Node* root)&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; res;</span><br><span class="line">    travel(root, res);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// The definition of Node</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    <span class="built_in">vector</span>&lt;Node*&gt; children;</span><br><span class="line"></span><br><span class="line">    Node() &#123;&#125;</span><br><span class="line"></span><br><span class="line">    Node(<span class="keyword">int</span> _val, <span class="built_in">vector</span>&lt;Node*&gt; _children) &#123;</span><br><span class="line">        val = _val;</span><br><span class="line">        children = _children;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p><font color="green" size="6">敲黑板</font>这里有个模式：对于几乎所有树的问题，本质上都是树的遍历。遍历本质上是结点的<font color="red" size="5">移动控制</font>。而对于当前节点来说，它的value是可得到的，对这个value的操作称之为<font color="red" size="5">结点操作</font>。</p>
-<h1 id="257-Binary-Tree-Paths"><a href="#257-Binary-Tree-Paths" class="headerlink" title="#257 Binary Tree Paths"></a>#257 Binary Tree Paths</h1><h1 id="437-Path-Sum-III"><a href="#437-Path-Sum-III" class="headerlink" title="#437 Path Sum III"></a>#437 Path Sum III</h1>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" data-id="ck71en4k0002phefz48qz8uur" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-方法论-DP-一" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" class="article-date">
-  <time datetime="2019-08-07T07:11:57.000Z" itemprop="datePublished">2019-08-07</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/">LeetCode-方法论-DP-一</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>总结一下与DP相关的问题。</p>
-<p>64, 300(LIS), LCS, 120, 62, 303, 198, </p>
-<p><strong>DP特点</strong>：</p>
-<ul>
-<li>把重复计算的结果保存下来，避免重复计算（记忆机制）。</li>
-<li>DP自下而上执行，通过可计算的最小子结构逐步向上求值，直到得到最终值。</li>
-<li>通常问题是要求最优值。</li>
-</ul>
-<p><strong>实现DP方法</strong>：</p>
-<ul>
-<li>画递归树，自顶向下思考，自下而上实现</li>
-<li>找到合适的<strong>状态</strong>及<strong>状态转移方程</strong><ul>
-<li>状态：递归树的结点啥定义，即每一步记忆的内容是啥<code>memo[i]</code>，即函数是啥。</li>
-<li>状态转移方程：结点怎样实现，即怎样得到<code>memo[i]</code>，即函数怎么做。</li>
-</ul>
-</li>
-</ul>
-<h1 id="64-Minimum-Sum-Path"><a href="#64-Minimum-Sum-Path" class="headerlink" title="#64 Minimum Sum Path"></a>#64 Minimum Sum Path</h1><p>问题描述：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Given a m x n grid filled with non-negative numbers, find a path from **top left** to **bottom right** which minimizes the sum of all numbers along its path.</span><br><span class="line">Note: You can only move either *down* or *right* at any point in time.</span><br><span class="line"></span><br><span class="line">Input:</span><br><span class="line">[</span><br><span class="line">  [1,3,1],</span><br><span class="line">  [1,5,1],</span><br><span class="line">  [4,2,1]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">Output: 7</span><br><span class="line">the path 1→3→1→1→1 minimizes the sum, which is 7.</span><br></pre></td></tr></table></figure>
-<ul>
-<li><p>思路</p>
-<p>  记忆的逐步实现：</p>
-<ul>
-<li><p>初始化：memo所有元素初始化为0，且第一行第一列特殊处理。</p>
-</li>
-<li><p>状态定义：<code>memo[i][j]</code>表示从左上角到<code>Input[i][j]</code>的最短路径。</p>
-</li>
-<li><p>状态转移方程：<code>memo[i][j] = Input[i][j] + min(memo[i][j-1], memo[i-1][j])</code>。</p>
-</li>
-<li><p>返回值：<code>memo[i-1][j-1]</code></p>
-<p>图示：</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/dp1.png" width="700"></div>
-
-<p>最终返回memo右下角值：7。</p>
-</li>
-</ul>
-</li>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minPathSum</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; grid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> m = grid.size();</span><br><span class="line">    <span class="keyword">int</span> n = grid[<span class="number">0</span>].size();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)</span><br><span class="line">        grid[i][<span class="number">0</span>] += grid[i<span class="number">-1</span>][<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;n; i++)</span><br><span class="line">        grid[<span class="number">0</span>][i] += grid[<span class="number">0</span>][i<span class="number">-1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            grid[i][j] += min(grid[i][j<span class="number">-1</span>], grid[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> grid[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="300-Longest-Increasing-Subsequence"><a href="#300-Longest-Increasing-Subsequence" class="headerlink" title="#300 Longest Increasing Subsequence"></a>#300 Longest Increasing Subsequence</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input: [10,9,2,5,3,7,101,18]</span><br><span class="line">Output: 4 </span><br><span class="line">Explanation: The longest increasing subsequence is [2,3,7,101], therefore the length is 4. </span><br><span class="line"></span><br><span class="line">返回最长公共子序列的长度。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<ul>
-<li>初始化：mem数组为全1。</li>
-<li>状态的定义：定义<code>mem[i]</code>为以<code>nums[i]</code> 为结尾的最长上升子序列的长度。</li>
-<li>状态转移方程：当前元素<code>nums[i]</code>与其前元素逐个比较，如果当前元素大于其前某个元素<code>nums[j]</code>，更新<code>mem[i]=max(mem[i], 1+mem[j])</code>.</li>
-<li>最终：找到<code>mem</code>数组中最大的值即可。DONE</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lengthOfLIS</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// calculate memo</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;i; j++)&#123;</span><br><span class="line">            <span class="keyword">if</span> (nums[i]&gt;nums[j])</span><br><span class="line">                memo[i] = max(memo[i], <span class="number">1</span>+memo[j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// get max length</span></span><br><span class="line">    <span class="keyword">int</span> res = memo[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;memo.size(); i++)</span><br><span class="line">        res = max(res, memo[i]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">由最小已知求未知，接着根据当前的已知求进一步的未知</font>， <font color="red" size="4">状态的定义</font>，<font color="red" size="4">找到状态转移方程</font>，</p>
-<h1 id="LCS-Longest-Common-Subsequence"><a href="#LCS-Longest-Common-Subsequence" class="headerlink" title="#LCS Longest Common Subsequence"></a>#LCS Longest Common Subsequence</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">给定两个字符数组，求其公共的子序列。公共子序列的元素在原序列中可以不连续。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>逻辑</li>
-</ul>
-<ul>
-<li>实现</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">getLCS</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; s1, <span class="keyword">const</span> <span class="built_in">string</span>&amp; s2)</span></span>&#123;</span><br><span class="line">		<span class="keyword">int</span> m = s1.size();</span><br><span class="line">		<span class="keyword">int</span> n = s2.size();</span><br><span class="line">		</span><br><span class="line">		<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m ,<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">		<span class="comment">// initilize memo</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[i]==s2[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=i; k&lt;m; k++)</span><br><span class="line">					memo[k][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s2[j]==s1[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=j; k&lt;n; k++)</span><br><span class="line">					memo[<span class="number">0</span>][k]=<span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// DP progress for the rest</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)&#123;</span><br><span class="line">				<span class="keyword">if</span> (s1[i]==s2[j])</span><br><span class="line">					memo[i][j] = <span class="number">1</span> + memo[i<span class="number">-1</span>][j<span class="number">-1</span>];</span><br><span class="line">				<span class="keyword">else</span></span><br><span class="line">					memo[i][j] = max(memo[i<span class="number">-1</span>][j], memo[i][j<span class="number">-1</span>]);</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;<span class="string">"The lenght of the LCS: "</span>&lt;&lt;memo[m<span class="number">-1</span>][n<span class="number">-1</span>]&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">		<span class="comment">// get the longest common sequence</span></span><br><span class="line">		<span class="built_in">string</span> res = <span class="string">""</span>;</span><br><span class="line">		<span class="keyword">while</span> (m&gt;=<span class="number">0</span> &amp;&amp; n&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[m] == s2[n])&#123;</span><br><span class="line">				res = s1[m] + res;</span><br><span class="line">				m--;</span><br><span class="line">				n--;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (m==<span class="number">0</span>) n--;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (n==<span class="number">0</span>) m--;</span><br><span class="line">			<span class="keyword">else</span>&#123;</span><br><span class="line">				<span class="keyword">if</span> (memo[m<span class="number">-1</span>][n]&gt;memo[m][n<span class="number">-1</span>]) m--;</span><br><span class="line">				<span class="keyword">else</span> n--;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> res;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="120-Triangle"><a href="#120-Triangle" class="headerlink" title="#120 Triangle"></a>#120 Triangle</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Given a triangle, find the minimum path sum from top to bottom. </span><br><span class="line">Each step you may move to adjacent numbers on the row below.</span><br><span class="line"></span><br><span class="line">For example, given the following triangle</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">     [2],</span><br><span class="line">    [3,4],</span><br><span class="line">   [6,5,7],</span><br><span class="line">  [4,1,8,3]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 &#x3D; 11).</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  bottom-up DP或者Top-down DP。使用Top-down：</p>
-<ul>
-<li><p>状态定义：<code>triangle[i][j]</code> 表示从顶端到第<code>i</code>行第<code>j</code>个位置的最小路径</p>
-</li>
-<li><p>状态转移方程：见下图</p>
-<p>Top-down DP过程如下图表示：其中椭圆结点构成的triangle为源triangle，矩形结点构成的triangle就是DP的<code>mem</code>，即状态。</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/120.png" width="650"></div>
-
-
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minimumTotal</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; triangle)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = triangle.size();  <span class="comment">// height of this triangle</span></span><br><span class="line"></span><br><span class="line">    triangle[<span class="number">0</span>][<span class="number">0</span>] = triangle[<span class="number">0</span>][<span class="number">0</span>];  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i&lt;n; i++)&#123;    <span class="comment">// </span></span><br><span class="line">        <span class="comment">// 这一行第一个值</span></span><br><span class="line">        triangle[i][<span class="number">0</span>] += triangle[i<span class="number">-1</span>][<span class="number">0</span>];  </span><br><span class="line">        <span class="comment">// 这一行最后一个值</span></span><br><span class="line">        triangle[i][i] += triangle[i<span class="number">-1</span>][i<span class="number">-1</span>];</span><br><span class="line">        <span class="comment">// 这一行其他值</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>;j&lt;i;j++)</span><br><span class="line">            triangle[i][j] += min(triangle[i<span class="number">-1</span>][j<span class="number">-1</span>], triangle[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 源triangle被修改了，所以最终结果在这个triangle的最后一层找最小值即可</span></span><br><span class="line">    <span class="keyword">return</span> *min_element(triangle[n<span class="number">-1</span>].begin(), triangle[n<span class="number">-1</span>].end());</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：当处理最值相关问题，考虑DP</p>
-<h1 id="62-Unique-Path"><a href="#62-Unique-Path" class="headerlink" title="#62 Unique Path"></a>#62 Unique Path</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">从grid的左上角位置到右下角位置有几种走法？只能向下走或向右走。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  Top-down DP或者Bottom-up DP，使用Bottom-up：</p>
-<ul>
-<li>状态定义：从<code>(i,j)</code>出发到终点<code>(m-1,n-1)</code>由多少条路径。</li>
-<li>状态转移方程：同Fibonacci()，<code>numPath(i,j) = numPath(i,j+1) + numPath(i+1,j)</code>;</li>
-<li>初始化最右边和最下边值为1. 过程从这里开始<code>up</code>。</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-<ul>
-<li>Bottom-up<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line">    <span class="comment">// 初始化最下行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][n<span class="number">-1</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最右行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[m<span class="number">-1</span>][j] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// Bottom up</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = m<span class="number">-2</span>; i&gt;=<span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> j = n<span class="number">-2</span>; j&gt;=<span class="number">0</span>; j-- )</span><br><span class="line">            memo[i][j] = memo[i][j+<span class="number">1</span>] + memo[i+<span class="number">1</span>][j];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> memo[<span class="number">0</span>][<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li>Top-down <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 初始化第一行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最左行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[<span class="number">0</span>][j] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// top-down</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>;i&lt;m; i++)</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            memo[i][j] = memo[i<span class="number">-1</span>][j] + memo[i][j<span class="number">-1</span>];</span><br><span class="line">    <span class="keyword">return</span> memo[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<h1 id="303-Range-Sum-Query-Immutable"><a href="#303-Range-Sum-Query-Immutable" class="headerlink" title="#303 Range Sum Query - Immutable"></a>#303 Range Sum Query - Immutable</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Given an integer array nums, find the sum of the elements between indices i and j (i ≤ j), inclusive.</span><br><span class="line"></span><br><span class="line">Example:</span><br><span class="line">Given nums &#x3D; [-2, 0, 3, -5, 2, -1]</span><br><span class="line"></span><br><span class="line">sumRange(0, 2) -&gt; 1</span><br><span class="line">sumRange(2, 5) -&gt; -1</span><br><span class="line">sumRange(0, 5) -&gt; -3</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  从nums[i] 到nums[j] 元素累加就可以了。这种方法对于一条query，没问题。但是query一般频繁的。最好可以把结果提前计算出来，之后的query操作秩序做一次减法，便可以得到结果。所以使用DP。</p>
-<ul>
-<li>状态定义：mem[0]=0，mem[i]表示从第一个数到第i个数的和。</li>
-<li>状态转移方程：<code>memo[i+1] = memo[i] + nums[i]</code>;</li>
-<li>初始化mem为全零。</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NumArray2</span>&#123;</span></span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        NumArray2(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)&#123;</span><br><span class="line">            <span class="comment">// n+1个元素。</span></span><br><span class="line">            memo = <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(nums.size()+<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)</span><br><span class="line">                memo[i+<span class="number">1</span>] = memo[i] + nums[i];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 频繁操作只需求一次减法。效率高</span></span><br><span class="line">        <span class="function"><span class="keyword">int</span> <span class="title">sumRange</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>&#123;</span><br><span class="line">            <span class="keyword">return</span> memo[j+<span class="number">1</span>] - memo[i];</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="198-House-Robber"><a href="#198-House-Robber" class="headerlink" title="#198 House Robber"></a>#198 House Robber</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">一条街上有若干房子，现在要抢劫房子，从街头到街尾，所抢的房子不能直接相邻，求可能的最大收益。</span><br><span class="line"></span><br><span class="line">Input: [2,7,9,3,1]</span><br><span class="line">Output: 12</span><br><span class="line">Explanation: Rob house 1 (money &#x3D; 2), rob house 3 (money &#x3D; 9) and rob house 5 (money &#x3D; 1).</span><br><span class="line">             Total amount you can rob &#x3D; 2 + 9 + 1 &#x3D; 12.</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<ul>
-<li><p>状态定义：mem[i]表示抢[0~i]可获得的最大收益。</p>
-</li>
-<li><p>状态转移方程：<code>memo[i] = max(memo[i-1], nums[i]+tmp</code>;</p>
-<p>下图为抢house=[5,2,3,1,1,5]的DP过程：</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/198.png" width="500"></div>
-</li>
-</ul>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 切入口：前两个值特殊处理</span></span><br><span class="line">    memo[<span class="number">0</span>] = nums[<span class="number">0</span>];  </span><br><span class="line">    memo[<span class="number">1</span>] = max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 开始切~~</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="comment">// 求tmp：当前位置之前可抢劫最大收益（不包括与当前位置紧邻的房子）</span></span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;    </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)</span><br><span class="line">            <span class="keyword">if</span> (memo[j]&gt;tmp)</span><br><span class="line">                tmp = memo[j];</span><br><span class="line"></span><br><span class="line">        memo[i] = max(memo[i<span class="number">-1</span>], nums[i]+tmp);</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> memo[nums.size()<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关键：<font color="red" size="4">mem[],以初始化的值为切入点，一个一个计算。</font>，</p>
-</li>
-</ul>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" data-id="ck71en4l9004mhefzddo3c8xv" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/08/Deep-Learning-%E6%9D%82%E8%AE%B0/" data-id="ck74urap2000i4nfze2fd7ofw" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
@@ -1287,7 +1189,7 @@
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/5/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/7/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/5/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/7/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -1298,7 +1200,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">34</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Net-Algorithms/">Deep Net Algorithms</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">10</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">34</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1308,7 +1210,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">14</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">30</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">30</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1318,7 +1220,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 15px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+      <a href="/tags/Algorithms/" style="font-size: 16.67px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
     </div>
   </div>
 
@@ -1327,7 +1229,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">14</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">16</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">14</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>文本分类(二)-文本预处理II-词编码 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="接文本预处理(一)，这篇笔记记录把分词后的记录编码为计算机可识别的数值型序列，如将[你好 呀 ， 参加 比赛 了 吗]编码为[91, 57, 1, 31, 14, 6, 5]。同时编码类别。 词编码在上一篇笔记中得到的vocab_file，再看一下其内容： 1234567891011121314151617181920212223241 &lt;UNK&gt;   100000002 ，  187">
+<meta property="og:type" content="article">
+<meta property="og:title" content="文本分类(二)-文本预处理II-词编码">
+<meta property="og:url" content="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="接文本预处理(一)，这篇笔记记录把分词后的记录编码为计算机可识别的数值型序列，如将[你好 呀 ， 参加 比赛 了 吗]编码为[91, 57, 1, 31, 14, 6, 5]。同时编码类别。 词编码在上一篇笔记中得到的vocab_file，再看一下其内容： 1234567891011121314151617181920212223241 &lt;UNK&gt;   100000002 ，  187">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/batch.png">
+<meta property="article:published_time" content="2019-08-03T15:12:59.000Z">
+<meta property="article:modified_time" content="2020-02-27T14:30:57.563Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Test Analysis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/batch.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-文本分类-二-文本预处理II-词编码" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" class="article-date">
+  <time datetime="2019-08-03T15:12:59.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      文本分类(二)-文本预处理II-词编码
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接文本预处理(一)，这篇笔记记录把分词后的记录编码为计算机可识别的数值型序列，如将<code>[你好 呀 ， 参加 比赛 了 吗]</code>编码为<code>[91, 57, 1, 31, 14, 6, 5]</code>。同时编码类别。</p>
+<h1 id="词编码"><a href="#词编码" class="headerlink" title="词编码"></a>词编码</h1><p>在上<a href="https://ashburnlee.github.io/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86/" target="_blank" rel="noopener">一篇笔记</a>中得到的<code>vocab_file</code>，再看一下其内容：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>每个词与其编号一一对应，可以用词的标号来编码词。这就是下面主要做的事。</p>
+<h2 id="1-一一对应"><a href="#1-一一对应" class="headerlink" title="1. 一一对应"></a>1. 一一对应</h2><p>首先读取<code>vocab_file</code>，得到每个词，其编号，其频数，以<code>{词：编号}</code>为元素存入一个字典。同时指定一个整数<code>threshold</code>，当一个词的词频小于<code>threshold</code>，不再考虑该词，原因是频数太低的词没有统计意义。对每一条数据执行此操作，实现过程如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_read_dict</span><span class="params">(self, filename)</span>:</span></span><br><span class="line">    <span class="string">""" read filename and generate &#123;word: id&#125; dict """</span></span><br><span class="line">    <span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># 读词与词频</span></span><br><span class="line">        word, frequency = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        frequency = int(frequency)</span><br><span class="line">        <span class="keyword">if</span> frequency &lt; self._num_word_threshold:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        idx = len(self._word_to_id)  <span class="comment"># idx随_word_to_id大小递增</span></span><br><span class="line">        <span class="keyword">if</span> word == <span class="string">'&lt;UNK&gt;'</span>:   <span class="comment"># 特殊处理UNK</span></span><br><span class="line">            self._unk = idx</span><br><span class="line">        self._word_to_id[word] = idx  <span class="comment"># 构建处字典：&#123;词： idx&#125;</span></span><br></pre></td></tr></table></figure>
+<p>最终得到目标dict：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'&lt;UNK&gt;'</span>: 0, <span class="string">'，'</span>: 1, <span class="string">'的'</span>: 2, <span class="string">'。'</span>: 3, <span class="string">'在'</span>: 4, <span class="string">'、'</span>: 5, <span class="string">'了'</span>: 6, <span class="string">'是'</span>: 7,...,<span class="string">'铭记'</span>: 20350, <span class="string">'多时'</span>: 20351, <span class="string">'轩然大波'</span>: 20352,...,<span class="string">'孵化器'</span>: 39545, <span class="string">'党史'</span>: 39546, <span class="string">'纸飞机'</span>: 39547,...&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="2-编码"><a href="#2-编码" class="headerlink" title="2. 编码"></a>2. 编码</h2><p>第二步，对于一个清洗后样本<code>[你好 呀 ， 参加 比赛 了 吗]</code>，从上一步得到的<code>dict</code>中找每一个<code>key</code>对应的<code>value</code>，从而生成<code>[91, 57, 1, 31, 14, 6, 5]</code>。实现过程：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sentence_to_id</span><span class="params">(self, sentence)</span>:</span></span><br><span class="line">    <span class="string">""" 用词的idx编码每个句子 """</span></span><br><span class="line">    <span class="comment"># 切分句子后的每个词，找它的idx，</span></span><br><span class="line">    word_ids = [self.word_to_id(cur_word) <span class="keyword">for</span> cur_word <span class="keyword">in</span> sentence.split()]</span><br><span class="line">    <span class="keyword">return</span> word_ids</span><br></pre></td></tr></table></figure>
+<p>现在用一个样本做测试：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test_word = <span class="string">'你好 呀 ， 参加 比赛 了 吗'</span></span><br></pre></td></tr></table></figure>
+<p>返回实际结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[9901, 5667, 1, 381, 124, 6, 445]</span><br></pre></td></tr></table></figure>
+<p>同样的方法，处理<code>label</code>，如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">科技的id： 8</span><br></pre></td></tr></table></figure>
+
+<p>上述完整过程在<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/encodeWords.py" target="_blank" rel="noopener">这里</a></p>
+<hr>
+<p>到此到此为止，所有的样本都已用数字编码。下一步为模型提供数据，batch by batch</p>
+<h1 id="生成batch"><a href="#生成batch" class="headerlink" title="生成batch"></a>生成batch</h1><p>首先读取清洗后的样本文件，对于每一条记录中的类别和内容按照上述方式编码，并分别存储与两个<code>list</code>。编码完一条记录，加入到<code>list</code>中。最终的到的内容list和类别list。</p>
+<p>实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># for each line,</span></span><br><span class="line">    label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">    <span class="comment"># convert label and content to sequence of ids</span></span><br><span class="line">    id_label = self._catego_dict.category_to_id(label)</span><br><span class="line">    id_words = self._vocab_dict.sentence_to_id(content)</span><br><span class="line">    id_words = id_words[<span class="number">0</span>: self._encoded_length]           <span class="comment"># cut</span></span><br><span class="line">    padding_length = self._encoded_length - len(id_words)  <span class="comment"># pad</span></span><br><span class="line">    id_words = id_words + [self._vocab_dict.unk <span class="keyword">for</span> _ <span class="keyword">in</span> range(padding_length)]</span><br><span class="line"></span><br><span class="line">    self._input.append(id_words)</span><br><span class="line">    self._output.append(id_label)</span><br><span class="line"><span class="comment"># convert to numpy array</span></span><br><span class="line">self._input = np.asarray(self._input, dtype=np.int32)</span><br><span class="line">self._output = np.asarray(self._output, dtype=np.int32)</span><br></pre></td></tr></table></figure>
+<p><code>self._input</code>中存储编码后的每一条内容，<code>self._output</code>中存储编码后的每一条对应的类别。特别说明，因为实际每条编码后的记录长度都不同，有的长，有的短。所以在代码中<code>self._encoded_length</code>表示每条记录保留多少个词。长的切去，短的用<code>-1</code>补全。</p>
+<p>额外地对<code>self._input</code>和<code>self._output</code>做一个随机洗牌操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">p = np.random.permutation(len(self._input))</span><br><span class="line">self._input = self._input[p]</span><br><span class="line">self._output = self._output[p]</span><br></pre></td></tr></table></figure>
+<p>这个操作使每个<code>batch</code>中数据<strong>分布尽可能一致</strong>，尽可能可以<strong>代表整个数据集的分布</strong>。</p>
+<p>第二步，生成<code>batch</code>。其过程如下图：</p>
+<div align="center">
+    <img src="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/batch.png" width="600">
+</div>
+
+<p>当最后的数据<code>#*</code>不足一个<code>batch</code>时，所有数据随机洗牌，这样就可以再得到一个<code>batch</code>。当然最后一个batch中有部分重复使用，这没关系。 代码实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">next_batch</span><span class="params">(self, batch_size)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    get next batch data</span></span><br><span class="line"><span class="string">    :param batch_size:</span></span><br><span class="line"><span class="string">    :return: the next batch of input and output</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    end_indicator = self._indicator + batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        self._random_shuffle()</span><br><span class="line">        self._indicator = <span class="number">0</span></span><br><span class="line">        end_indicator = batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"batch size : %d is too large"</span> % batch_size)</span><br><span class="line"></span><br><span class="line">    batch_input = self._input[self._indicator: end_indicator]</span><br><span class="line">    batch_ouput = self._output[self._indicator: end_indicator]</span><br><span class="line">    self._indicator = end_indicator</span><br><span class="line">    <span class="comment"># return what we require</span></span><br><span class="line">    <span class="keyword">return</span> batch_input, batch_ouput</span><br></pre></td></tr></table></figure>
+<p>测试：当<code>_encoded_length</code>为50，<code>batch_size</code>为2时，可能输出如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(array([[ 5639,  5529, 28692, 14277,   108,     0,   825,    87,  7763,</span><br><span class="line">        22153, 17930,    17,   250,    16,   156,   481,   456,    45,</span><br><span class="line">            6,   102,    45,     1,  5639, 20799,    30, 39057,   949,</span><br><span class="line">         3640, 22153,    92,    15,  5639,    30, 20562, 21187,    14,</span><br><span class="line">         3193, 18589,    30,  5529,    17, 24157,     0,    16,   831,</span><br><span class="line">         3810,     4,  4406,  2849,  3092],</span><br><span class="line">       [24102, 11066,  1375,    52,  7379,   224,  1027,   956,  2962,</span><br><span class="line">        17510,    17,   250,    16,     4,   138, 13230,     2, 10477,</span><br><span class="line">         1375,    21,     1,    13,   119,   406,  3380,    41,     1,</span><br><span class="line">        13230,    17,  1647,    16, 32614,     2,     0,   147,   216,</span><br><span class="line">            6,  5447,     5,     0,   136,     5,  8616,     5, 41351,</span><br><span class="line">        25425,   136,     5, 12401,    45]], dtype=int32), array([1, 4], dtype=int32))</span><br></pre></td></tr></table></figure>
+<p>两条记录，第一条记录的类别为1，另一条的类别为4。</p>
+<p>整个过程完整代码看<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/createEncodedDataset.py" target="_blank" rel="noopener">这里</a>。数据准备完成，便可以用于训练模型了。</p>
+<hr>
+<p>完成<br><br>原始数据预处理及编码</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" data-id="ck74uraor00044nfzcfte9uk7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          文本分类(三)-构建模型I-built-in-LSTM
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">文本分类(二)-文本预处理I-词频统计</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">34</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">30</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 16.67px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">14</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/">CUDA-再看规约-循环展开</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
