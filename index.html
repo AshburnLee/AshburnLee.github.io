@@ -64,6 +64,78 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-并行一维卷积" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" class="article-date">
+  <time datetime="2020-02-28T13:17:08.000Z" itemprop="datePublished">2020-02-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>卷积操作应用于许多领域，而其特点：计算量大，每个输出元素的计算都是相互独立的。这两个特点是并行计算期望处理的。卷积中对于边界的处理影响着分块算法的效率。</p>
+<h1 id="一维卷积基本形式"><a href="#一维卷积基本形式" class="headerlink" title="一维卷积基本形式"></a>一维卷积基本形式</h1><p>假设一维数组N是被操作对象，一维数组M是卷积核，一维数组P为卷积结果。假如对于边界元素（幽灵元素）的处理是赋值为0，也就是说幽灵元素与对应的M元素的乘积为0.</p>
+<p>每个thread负责P数组中的一个元素，那么一维卷积的基本形式如下图：</p>
+<p>&lt;&gt;pic1&lt;&gt;</p>
+<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
+
+<div align="center">图：一维卷积基本形式</div>
+
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">conv1D</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* M, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">int</span> kernelSize, <span class="keyword">int</span> NLength)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">	<span class="keyword">float</span> Pvalue = <span class="number">0.0f</span>;</span><br><span class="line">	<span class="keyword">int</span> start = tid-kernelSize/<span class="number">2</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;kernelSize; j++)&#123;</span><br><span class="line">		<span class="keyword">if</span>(start + j &gt;= <span class="number">0</span> &amp;&amp; start + j &lt;= NLength)&#123;</span><br><span class="line">			Pvalue += N[start + j] * M[j]; 	</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>一般卷积核的长度是奇数，这样计算过程是对称的。</p>
+<p>上述实现的缺点：</p>
+<ul>
+<li>代码中这句<code>Pvalue += N[start + j] * M[j];</code>包含两次对Global 的访存，和两次算术运算（一个乘法，一个加法）。<font color="red">运算访存比</font>仅为1.0。性能有限。 </li>
+<li>对边界的处理出现Divergence。</li>
+</ul>
+<h1 id="Constant-Memory优化的一维卷积"><a href="#Constant-Memory优化的一维卷积" class="headerlink" title="Constant Memory优化的一维卷积"></a>Constant Memory优化的一维卷积</h1><p>卷积操作有三个特点：</p>
+<ol>
+<li>考虑到卷积计算的过程，以及实际中的卷积操作，比如在Google Inception Net<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积</a>，MobileNet<a href="https://ashburnlee.github.io/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" target="_blank" rel="noopener">深度可分离卷积</a>，ResNet中的<a href="https://ashburnlee.github.io/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" target="_blank" rel="noopener">残差学习单元</a>，中的描述，卷积核大小都是3x3, 1x1, 1x7, 7x1，5x5很小的卷积核。</li>
+<li>卷积核的内容是不变的。</li>
+<li>所有的threads都访问卷积核，并且访问顺序是一样的。</li>
+</ol>
+<p>根据这些特点结合Ray-Tracing这篇笔记中<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" target="_blank" rel="noopener">Constant Memory</a><br>描述的Constant Memory的特性。考虑将卷积核放入Constant Memory。</p>
+<p>这里补充一点，Constant Memory中的内容对于所有Blocks可见。使用<code>.totalConstMem</code>可以查询其大小。</p>
+<p>与Ray-Tracing中的使用一样：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_KERNEL_LENGTH 10;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[MAX_KERNEL_LENGTH];</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在main函数中使用cudaMemcpy的特殊版本函数</span></span><br><span class="line">cudaMemcpyToSymbol(M, h_M, kernel_length*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>kernel函数与基本形式一样，除了参数列表中不需要再传入卷积核数组M。</p>
+<p>虽然Constant Memory在Global中，但是cuda知道Constant Memory中的内容是不变的。所以直接将其放入告诉缓存中（L1缓存）。</p>
+<p><font color="gree" size="4">补充</font><br><br>高速缓存的层次结构。DRAM</p>
+<h1 id="分块并行卷积"><a href="#分块并行卷积" class="headerlink" title="分块并行卷积"></a>分块并行卷积</h1><h1 id="Shared-memory优化的分块并行卷积"><a href="#Shared-memory优化的分块并行卷积" class="headerlink" title="Shared memory优化的分块并行卷积"></a>Shared memory优化的分块并行卷积</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" data-id="ck767cchg0000odfzb9r43xl9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-方法论-stack" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" class="article-date">
@@ -935,88 +1007,6 @@
 
 
   
-    <article id="post-CUDA-存储优化-例-矩阵转置" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" class="article-date">
-  <time datetime="2020-02-20T01:53:50.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="存储优化"><a href="#存储优化" class="headerlink" title="存储优化"></a>存储优化</h1><p>重叠内存传输和计算，组团传输减少小块数据的频繁传输。</p>
-<p>现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是</p>
-<ul>
-<li>避免凌乱无规律的访存</li>
-<li>避免一个线程访问连续的一段空间。</li>
-</ul>
-<p>将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足Coalescing Access。<font color="orange">shared memory的设计目的之一就是通过对它的编程，来规则化访存模式。</font></p>
-<p>回忆：shared memory的架构是连续<code>32 bits(即4 Bytes)</code>的地址被分配到连续的bank中。见下图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/bank.png"></div>
-
-<p>原图来自<a href="https://www.microway.com/hpc-tech-tips/gpu-memory-types-performance-comparison/" target="_blank" rel="noopener">这里</a>。里面有不少其他资源可参考。</p>
-<p>对于bank冲突，注意理解<font color="orange">地址的编号和bank的编号的不同</font>。</p>
-<h1 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h1><p>Coalescing access是就global memory而言的。</p>
-<h1 id="存储优化，优化实列：矩阵转置"><a href="#存储优化，优化实列：矩阵转置" class="headerlink" title="存储优化，优化实列：矩阵转置"></a>存储优化，优化实列：矩阵转置</h1><ol>
-<li><p>未优化的矩阵转置</p>
-<p> 对global memory的读和写总有一个，对global存储的地址访问不是连续的，这就不能最大化coalescing access。看下图：</p>
- <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic8.png" width="600"></div>
-
-<p> <font color="red">每个block负责矩阵的一个子块（tile），所有子块并行执行。<code>TILE_DIM=blockDIm.x</code></font>。</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    <span class="keyword">int</span> index_a = idx + WIDTH * idy;</span><br><span class="line">    <span class="keyword">int</span> index_b = idy + HEIGHT * idx;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_b] = a[index_a];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p> 所以：</p>
-</li>
-<li><p>使用shared memory优化的矩阵转置</p>
-<p> 在写入global memory之前，先从global中将所读取的元素存入shared memory中，当shared memory中有了所有元素，将此时的shared memory转置一下，最后将结果再写（<font color="red">合并地</font>）入global memory。</p>
-<p> <font color="orange">如此一来对global的读和写，地址都是被连续访问的</font>。看下图：</p>
- <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic9.png" width="600"></div>
-
-<p> 实现：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global_ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> tile[TILE_DIM][TILE_DIM];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line">    <span class="comment">// idx 与 idy 线性组合 得到原矩阵的Index</span></span><br><span class="line">    <span class="keyword">int</span> index_in = idx + idy * WIDTH;  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    idx = threadIdx.x + TILE_DIM * blockIdx.y;</span><br><span class="line">    idy = threadIdx.y + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="comment">// // idx 与 idy 线性组合 得到转置后矩阵的Index</span></span><br><span class="line">    <span class="keyword">int</span> index_out = idx + idy * HEIGHT;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从a中写入到bank中，会产生冲突。(马上解决)</span></span><br><span class="line">    tile[threadIdx.y][threadIdx.x] = a[index_in];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待这个block对应的tile中的 元素都有了之后，再执行下后续操作。</span></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_out] = tile[threadIdx.x][threadIdx.y];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p> 在Shared memory中存在bank冲突，如何解决。</p>
-</li>
-<li><p>解决上述过程中的bank冲突</p>
-<p> 对于上述实现过程中<code>tile[threadIdx.y][threadIdx.x] = a[index_in];</code>，如果tile的大小是16x16，那么这一句会产生16路的bank冲突。  <font color="red">！！！如何理解bank的编号！！！</font></p>
-<p> 如何解决bank冲突，看下图：</p>
- <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic10.png" width="700"></div>
-
-<p> 实现中只需更tile的定义为<code>__shared__ float tile[TILE_DIM][TILE_DIM+1];</code>，列中的数据存于相同的bank。</p>
-<p> 如此一来，不论是对tile行或列的访存，都不会产生bank冲突。相同的颜色在不同的行和列。</p>
-</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" data-id="ck71en4ji001fhefz5g7v8p7r" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1032,7 +1022,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">34</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1042,7 +1032,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">30</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1061,7 +1051,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">14</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1072,6 +1062,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+          </li>
         
           <li>
             <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
@@ -1087,10 +1081,6 @@
         
           <li>
             <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/">CUDA-再看规约-循环展开</a>
           </li>
         
       </ul>

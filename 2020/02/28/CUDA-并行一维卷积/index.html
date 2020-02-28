@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-并行一维卷积 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="卷积操作应用于许多领域，而其特点：计算量大，每个输出元素的计算都是相互独立的。这两个特点是并行计算期望处理的。卷积中对于边界的处理影响着分块算法的效率。 一维卷积基本形式假设一维数组N是被操作对象，一维数组M是卷积核，一维数组P为卷积结果。假如对于边界元素（幽灵元素）的处理是赋值为0，也就是说幽灵元素与对应的M元素的乘积为0. 每个thread负责P数组中的一个元素，那么一维卷积的基本形式如下图：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-并行一维卷积">
+<meta property="og:url" content="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="卷积操作应用于许多领域，而其特点：计算量大，每个输出元素的计算都是相互独立的。这两个特点是并行计算期望处理的。卷积中对于边界的处理影响着分块算法的效率。 一维卷积基本形式假设一维数组N是被操作对象，一维数组M是卷积核，一维数组P为卷积结果。假如对于边界元素（幽灵元素）的处理是赋值为0，也就是说幽灵元素与对应的M元素的乘积为0. 每个thread负责P数组中的一个元素，那么一维卷积的基本形式如下图：">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png">
+<meta property="article:published_time" content="2020-02-28T13:17:08.000Z">
+<meta property="article:modified_time" content="2020-02-28T13:18:03.700Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-并行一维卷积" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" class="article-date">
+  <time datetime="2020-02-28T13:17:08.000Z" itemprop="datePublished">2020-02-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-并行一维卷积
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>卷积操作应用于许多领域，而其特点：计算量大，每个输出元素的计算都是相互独立的。这两个特点是并行计算期望处理的。卷积中对于边界的处理影响着分块算法的效率。</p>
+<h1 id="一维卷积基本形式"><a href="#一维卷积基本形式" class="headerlink" title="一维卷积基本形式"></a>一维卷积基本形式</h1><p>假设一维数组N是被操作对象，一维数组M是卷积核，一维数组P为卷积结果。假如对于边界元素（幽灵元素）的处理是赋值为0，也就是说幽灵元素与对应的M元素的乘积为0.</p>
+<p>每个thread负责P数组中的一个元素，那么一维卷积的基本形式如下图：</p>
+<p>&lt;&gt;pic1&lt;&gt;</p>
+<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
+
+<div align="center">图：一维卷积基本形式</div>
+
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">conv1D</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* M, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">int</span> kernelSize, <span class="keyword">int</span> NLength)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">	<span class="keyword">float</span> Pvalue = <span class="number">0.0f</span>;</span><br><span class="line">	<span class="keyword">int</span> start = tid-kernelSize/<span class="number">2</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;kernelSize; j++)&#123;</span><br><span class="line">		<span class="keyword">if</span>(start + j &gt;= <span class="number">0</span> &amp;&amp; start + j &lt;= NLength)&#123;</span><br><span class="line">			Pvalue += N[start + j] * M[j]; 	</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>一般卷积核的长度是奇数，这样计算过程是对称的。</p>
+<p>上述实现的缺点：</p>
+<ul>
+<li>代码中这句<code>Pvalue += N[start + j] * M[j];</code>包含两次对Global 的访存，和两次算术运算（一个乘法，一个加法）。<font color="red">运算访存比</font>仅为1.0。性能有限。 </li>
+<li>对边界的处理出现Divergence。</li>
+</ul>
+<h1 id="Constant-Memory优化的一维卷积"><a href="#Constant-Memory优化的一维卷积" class="headerlink" title="Constant Memory优化的一维卷积"></a>Constant Memory优化的一维卷积</h1><p>卷积操作有三个特点：</p>
+<ol>
+<li>考虑到卷积计算的过程，以及实际中的卷积操作，比如在Google Inception Net<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积</a>，MobileNet<a href="https://ashburnlee.github.io/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" target="_blank" rel="noopener">深度可分离卷积</a>，ResNet中的<a href="https://ashburnlee.github.io/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" target="_blank" rel="noopener">残差学习单元</a>，中的描述，卷积核大小都是3x3, 1x1, 1x7, 7x1，5x5很小的卷积核。</li>
+<li>卷积核的内容是不变的。</li>
+<li>所有的threads都访问卷积核，并且访问顺序是一样的。</li>
+</ol>
+<p>根据这些特点结合Ray-Tracing这篇笔记中<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" target="_blank" rel="noopener">Constant Memory</a><br>描述的Constant Memory的特性。考虑将卷积核放入Constant Memory。</p>
+<p>这里补充一点，Constant Memory中的内容对于所有Blocks可见。使用<code>.totalConstMem</code>可以查询其大小。</p>
+<p>与Ray-Tracing中的使用一样：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_KERNEL_LENGTH 10;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[MAX_KERNEL_LENGTH];</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在main函数中使用cudaMemcpy的特殊版本函数</span></span><br><span class="line">cudaMemcpyToSymbol(M, h_M, kernel_length*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>kernel函数与基本形式一样，除了参数列表中不需要再传入卷积核数组M。</p>
+<p>虽然Constant Memory在Global中，但是cuda知道Constant Memory中的内容是不变的。所以直接将其放入告诉缓存中（L1缓存）。</p>
+<p><font color="gree" size="4">补充</font><br><br>高速缓存的层次结构。DRAM</p>
+<h1 id="分块并行卷积"><a href="#分块并行卷积" class="headerlink" title="分块并行卷积"></a>分块并行卷积</h1><h1 id="Shared-memory优化的分块并行卷积"><a href="#Shared-memory优化的分块并行卷积" class="headerlink" title="Shared memory优化的分块并行卷积"></a>Shared memory优化的分块并行卷积</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" data-id="ck767cchg0000odfzb9r43xl9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">LeetCode-方法论-stack</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 16.67px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
