@@ -16,7 +16,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png">
 <meta property="article:published_time" content="2020-02-28T13:17:08.000Z">
-<meta property="article:modified_time" content="2020-02-28T13:18:03.700Z">
+<meta property="article:modified_time" content="2020-02-28T14:46:15.635Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -109,7 +109,7 @@
 <p>一般卷积核的长度是奇数，这样计算过程是对称的。</p>
 <p>上述实现的缺点：</p>
 <ul>
-<li>代码中这句<code>Pvalue += N[start + j] * M[j];</code>包含两次对Global 的访存，和两次算术运算（一个乘法，一个加法）。<font color="red">运算访存比</font>仅为1.0。性能有限。 </li>
+<li>代码中这句 <code>Pvalue += N[start + j] * M[j]</code>包含两次对Global 的访存，和两次算术运算（一个乘法，一个加法）。<font color="red">运算访存比</font>仅为1.0。性能有限。 </li>
 <li>对边界的处理出现Divergence。</li>
 </ul>
 <h1 id="Constant-Memory优化的一维卷积"><a href="#Constant-Memory优化的一维卷积" class="headerlink" title="Constant Memory优化的一维卷积"></a>Constant Memory优化的一维卷积</h1><p>卷积操作有三个特点：</p>
@@ -124,7 +124,8 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_KERNEL_LENGTH 10;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[MAX_KERNEL_LENGTH];</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在main函数中使用cudaMemcpy的特殊版本函数</span></span><br><span class="line">cudaMemcpyToSymbol(M, h_M, kernel_length*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
 <p>kernel函数与基本形式一样，除了参数列表中不需要再传入卷积核数组M。</p>
 <p>虽然Constant Memory在Global中，但是cuda知道Constant Memory中的内容是不变的。所以直接将其放入告诉缓存中（L1缓存）。</p>
-<p><font color="gree" size="4">补充</font><br><br>高速缓存的层次结构。DRAM</p>
+<p><font color="gree" size="4">补充</font><br><br>高速缓存的层次结构。从DRAM中访问一个变量需要数百上千个时钟周期，而且处理器处理数据要比访存快得多。DRAM的长延迟和有限带宽成了现代处理器的性能瓶颈，称为<font color="red" size="4">存储器墙</font>。现在的处理器都会有片内的高速缓存，来减少DRAM的访存次数。</p>
+<p><font color="red" size="4">缓存一致性</font></p>
 <h1 id="分块并行卷积"><a href="#分块并行卷积" class="headerlink" title="分块并行卷积"></a>分块并行卷积</h1><h1 id="Shared-memory优化的分块并行卷积"><a href="#Shared-memory优化的分块并行卷积" class="headerlink" title="Shared memory优化的分块并行卷积"></a>Shared memory优化的分块并行卷积</h1>
       
     </div>
