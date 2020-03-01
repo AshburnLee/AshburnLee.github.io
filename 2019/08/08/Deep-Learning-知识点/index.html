@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Deep Learning 知识点 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="杂记： Loss Fucntion与训练 为啥会有Loss Function目标函数：如果要调整一个东西，让它符合一个事件的话，首先需要定义需要符合的事件是啥，这就是目标函数。也就是说，要基于什么样的目标来调整这个东西（模型）。   常使用的目标函数：  平方差损失函数。样本标签值与预测值的距离之和 交叉熵损失函数。衡量两个分布间的差距   训练目的：调整参数，使得模型在训练集上的损失函数值最小。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Deep Learning 知识点">
+<meta property="og:url" content="http://yoursite.com/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="杂记： Loss Fucntion与训练 为啥会有Loss Function目标函数：如果要调整一个东西，让它符合一个事件的话，首先需要定义需要符合的事件是啥，这就是目标函数。也就是说，要基于什么样的目标来调整这个东西（模型）。   常使用的目标函数：  平方差损失函数。样本标签值与预测值的距离之和 交叉熵损失函数。衡量两个分布间的差距   训练目的：调整参数，使得模型在训练集上的损失函数值最小。">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/conv.png">
+<meta property="article:published_time" content="2019-08-08T14:48:42.000Z">
+<meta property="article:modified_time" content="2020-03-01T18:38:44.029Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Algorithms">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/conv.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Deep-Learning-知识点" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" class="article-date">
+  <time datetime="2019-08-08T14:48:42.000Z" itemprop="datePublished">2019-08-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Deep Learning 知识点
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>杂记：</p>
+<h1 id="Loss-Fucntion与训练"><a href="#Loss-Fucntion与训练" class="headerlink" title="Loss Fucntion与训练"></a>Loss Fucntion与训练</h1><ul>
+<li><p>为啥会有Loss Function目标函数：如果要调整一个东西，让它符合一个事件的话，首先需要定义需要符合的事件是啥，这就是目标函数。也就是说，要基于什么样的目标来调整这个东西（模型）。 </p>
+</li>
+<li><p>常使用的目标函数：</p>
+<ul>
+<li>平方差损失函数。样本标签值与预测值的距离之和</li>
+<li>交叉熵损失函数。衡量两个分布间的差距</li>
+</ul>
+</li>
+<li><p>训练目的：调整参数，使得模型在训练集上的损失函数值最小。</p>
+</li>
+<li><p>如何训练：直接解方程？不得行。所以有了以GD为代表的学习算法。</p>
+</li>
+<li><p>使用<code>Mini-batch梯度下降</code>。如果每一次都在整个数据集上计算梯度，计算量巨大，可能内存不够。如果使用随机梯度(<code>SGD</code>)下降，即每使用一个样本就计算一次梯度，在一个样本上得到的梯度不能反应整个数据集的梯度方向，所以收敛速度慢。所以一般使用<code>Mini-batch梯度下降</code>。</p>
+</li>
+<li><p>上述三种梯度下降法都存在一个缺点：会陷入局部最小值和鞍点。可以使用动量梯度下降(<code>SGD+Momentum</code>)。其特点是,如果当前步的方向与上一步的方向呈锐角，实际方向在二者之间，且步长较大，若是钝角，则步长小。也就是说:</p>
+<ul>
+<li>刚开始积累动量，加速学习。</li>
+<li>局部震荡时，梯度为0，由于动量的存在，跳出局部最优。</li>
+<li>梯度方向改变时，动量缓解震荡。</li>
+</ul>
+</li>
+</ul>
+<h1 id="CNN"><a href="#CNN" class="headerlink" title="CNN"></a>CNN</h1><ul>
+<li><p>为啥有CNN。在传统的NN处理图像时，由于全连接，导致</p>
+<ol>
+<li><p>计算量大</p>
+</li>
+<li><p>参数过多，使得过拟合</p>
+<p>CNN灵感来与生物的视觉感受野，其特点是局部连接，每个神经元在图片上移动时，其卷积核参数不变（参数共享），而不同的神经元间的卷积核参数不同。相比较于全连接，参数量减少了很多。参数共享：一个卷积核提取一个特征。所以CNN解决上述两个问题：</p>
+</li>
+<li><p>局部连接</p>
+</li>
+<li><p>参数共享</p>
+</li>
+</ol>
+</li>
+<li><p>一个卷积核3通道分别与输入的3通道计算，得到的3通道计算结果相加作为输出的一个通道。如下图：</p>
+<ul>
+<li><p>即一个卷积核得到一个输出通道，所以n个卷积核得到n个输出通道。</p>
+</li>
+<li><p>一个卷积核提取一个特征，所以6个卷积核提取6个特征。</p>
+</li>
+<li><p>其中<code>28 =（32-5)/1+1</code>，即<code>输出长=(输入长-卷积核长)/stride步长+1</code>(步长为1)。<br></p>
+<div align="center"><img src="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/conv.png" width="600"></div>
+
+<p>注意图中的参数个数和计算量的计算与输入尺寸无关。参数计算=（核长×核宽）×（输入通道数×输出通道数）。与图中一致。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="激活函数选择（添加图示）"><a href="#激活函数选择（添加图示）" class="headerlink" title="激活函数选择（添加图示）"></a>激活函数选择（添加图示）</h1><ul>
+<li>线性激活函数，对于网络无效，因为是全等变换，无论网络由多少层，都相当于只有一层。我们说激活函数的作用是非线性变换，而现行变换无效果。</li>
+<li>深层网络不适用<code>sigmoid</code>，因其计算复杂，输出均值非0，且会发生梯度消失，即更深的层参数得不到更新。</li>
+<li><code>tanh</code>虽然输出均值为0，但计算复杂，有和<code>sigmoid</code>相同的问题。</li>
+<li><code>ReLU</code>首次在AlexNet中使用，计算简单，但输出均值非0，会存在dead 神经元。</li>
+<li><code>Leaky ReLU</code>解决了<code>ReLU</code>的dead 神经源问题。</li>
+<li><code>ELU</code>输出均值接近于0，</li>
+<li><code>MaxOut</code>是<code>ReLU</code>的泛华版本，没有dead神经元，但参数会翻倍。</li>
+</ul>
+<p>总结：一般使用<code>Leaky ReLU</code>，<code>ELU</code>，<code>MaxOut</code>。</p>
+<h1 id="Pooling"><a href="#Pooling" class="headerlink" title="Pooling"></a>Pooling</h1><p>max-pooling,average-pooling, 特点：</p>
+<ul>
+<li>池化核移动不重叠，</li>
+<li>不补零，</li>
+<li>无可训练过参数，</li>
+<li>作用：降采样，为下一层减少尺寸，减少计算量，减少训练参数，</li>
+<li>平移鲁棒性</li>
+</ul>
+<h1 id="全连接层FC"><a href="#全连接层FC" class="headerlink" title="全连接层FC"></a>全连接层FC</h1><p>将上一层输出展开并连接到每一个神经元上。<code>2D</code>变<code>1D</code>，没有了<code>2D</code>信息，所以不能再加卷基层。实际上就是普通的<code>NN</code>。全连接层的参数很多，一般占整个模型参数量的60%~80%。</p>
+<h1 id="优化算法"><a href="#优化算法" class="headerlink" title="优化算法"></a>优化算法</h1><ul>
+<li><p>SGD：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    x += lr * dx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>动量SGD，解决鞍点和局部最优值，问题，每个维度的学习速率都一样：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Vx = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    Vx = rho * Vx + dx</span><br><span class="line">    x += lr * Vx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>AdaBrad：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured += dx * dx    <span class="comment"># 积累平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  缺点：当learning rate较大时，分母敏感，使梯度爆炸。后期分母变大，使更新变得很小，提前结束训练。</p>
+</li>
+<li><p>RMSProp：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured = delay_rate * grad_sqaured + (<span class="number">1</span>-delay_rate) * dx * dx    <span class="comment"># 平均平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  解决了后期训练提前结束的问题。</p>
+</li>
+<li><p>Adam：</p>
+<p>  结合了动量SGD和RMSProp优点</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">frst_moment = <span class="number">0</span></span><br><span class="line">scnd_moment = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    frst_moment = beta1 * frst_moment + (<span class="number">1</span>-beta1) * dx</span><br><span class="line">    scnd_moment = beta2 * scnd_moment + (<span class="number">1</span>-beta2) * dx * dx</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 校准</span></span><br><span class="line">    frst_unbias = frst_moment/(<span class="number">1</span>-beta1**t)</span><br><span class="line">    scnd_unbias = scnd_moment/(<span class="number">1</span>-beta2**t)</span><br><span class="line">    x -= lr * frst_unbias / (np.sqrt(scnd_unbias)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  使得开始训练时frst_moment和scnd_moment变大来加速训练。一般使用Adam算法，从经验来讲，beta1=0.9， beta2=0.999，lr=1e-3。</p>
+</li>
+<li><p>lr自适应方法：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Exponetial Decay:</span></span><br><span class="line">lr = lr * e**(-kt)</span><br><span class="line"><span class="comment"># 1/t Decay:</span></span><br><span class="line">lr = lr / (<span class="number">1</span>+kt)</span><br></pre></td></tr></table></figure>
+<p>  SGD训练时间长但效果好，不过需要好的初始化，和lr自适应，如果不能找到好的初始化和lr自适应，用Adam。如果要训练更深更复杂的网络，且要求收敛速度快，推荐使用Adam。</p>
+</li>
+</ul>
+<h1 id="网络需要初始化-添加图示"><a href="#网络需要初始化-添加图示" class="headerlink" title="网络需要初始化 (添加图示)"></a>网络需要初始化 (添加图示)</h1><p>好的初始化使训练速度快，且达到一个好的结果。多层网络不适用0来初始化。</p>
+<p>如何判断初始化的好坏？查看初始化后各层的激活函数的分布，如果分布在一个区间内，好；如果输出集中在某个值上，不好。<br>一般使用均值为0方差为0.02的正态分布来初始化。<br>对于<code>tanh</code>使用<code>Xavior</code>初始化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in)</span><br></pre></td></tr></table></figure>
+
+<p>对于ReLU使用<code>He-ReLU</code>初始化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in/<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>其网络每一层分布都相近。</p>
+<h1 id="批归一化"><a href="#批归一化" class="headerlink" title="批归一化"></a>批归一化</h1><p>通用的归一化方法：</p>
+<ul>
+<li><p>为了使得每层激活函数的分布一致，在得到激活函数值后，把输出做归一化处理：减去均值，除以方差，使得其值分布在均值为0，方差为1 的分分布上。</p>
+</li>
+<li><p>缺点：表示在每一批上做归一化，但是，一批的分布不能反应整个数据集的分布，结果是，得到一个特征，批归一化后，这个特征不能在批不批间区分样本了，即特征无效了。</p>
+</li>
+<li><p>解决：设置alpha&amp;beta两个参数做逆归一化：</p>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数学公式 填坑</span><br></pre></td></tr></table></figure>
+
+<h1 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h1><p>多尺度剪裁。</p>
+<h1 id="Fine-Tuning"><a href="#Fine-Tuning" class="headerlink" title="Fine-Tuning"></a>Fine-Tuning</h1><p>在已经训练好的网络上进行微调。使用已经微调好的模型来初始化。见Fine-tuning博客。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" data-id="ck79dofgw0000vhfz6a0c6h8i" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CUDA-基本步骤-逻辑概念-物理概念
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">文本分类(三)-构建模型III-LSTM网络参数</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning-Algorithms/">Deep Learning Algorithms</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 16.67px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 20px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
