@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>模型评价-混淆矩阵(Confusion Matrix) | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="这篇笔记记录Confusion Matrix。 当训练好了模型，需要评价它的性能。错误率和准确率是常用的，一般为了测试一个模型的正确性，用这个指标，尤其对于极度均衡的数据。但是对于极度偏斜的数据，用准确率评价模型很可能得到的结果表示，这个模型还不如随机猜测的准确率高。此时准确率不足以衡量模型性能。所以必要使用其他性能指标。 由混淆矩阵得到的Precision， Recall 和 F1度量，F-be">
+<meta property="og:type" content="article">
+<meta property="og:title" content="模型评价-混淆矩阵(Confusion Matrix)">
+<meta property="og:url" content="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="这篇笔记记录Confusion Matrix。 当训练好了模型，需要评价它的性能。错误率和准确率是常用的，一般为了测试一个模型的正确性，用这个指标，尤其对于极度均衡的数据。但是对于极度偏斜的数据，用准确率评价模型很可能得到的结果表示，这个模型还不如随机猜测的准确率高。此时准确率不足以衡量模型性能。所以必要使用其他性能指标。 由混淆矩阵得到的Precision， Recall 和 F1度量，F-be">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-08-06T03:17:11.000Z">
+<meta property="article:modified_time" content="2020-03-03T06:52:30.107Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Algorithms">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-模型评价-混淆矩阵-Confusion-Matrix" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" class="article-date">
+  <time datetime="2019-08-06T03:17:11.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      模型评价-混淆矩阵(Confusion Matrix)
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Confusion Matrix。</p>
+<p>当训练好了模型，需要评价它的性能。错误率和准确率是常用的，一般为了测试一个模型的正确性，用这个指标，尤其对于<strong>极度均衡</strong>的数据。但是对于<strong>极度偏斜</strong>的数据，用准确率评价模型很可能得到的结果表示，这个模型还不如随机猜测的准确率高。此时准确率不足以衡量模型性能。所以必要使用其他性能指标。</p>
+<p>由混淆矩阵得到的Precision， Recall 和 F1度量，F-beta度量。</p>
+<p>其定义不赘述，使用真实数据集算一下。</p>
+<p>引入数据，把它变为极度偏斜的二分类问题：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">digits = datasets.load_digits()</span><br><span class="line">x = digits.data</span><br><span class="line">y = digits.target.copy()</span><br><span class="line"></span><br><span class="line">y[digits.target == <span class="number">9</span>] = <span class="number">1</span></span><br><span class="line">y[digits.target != <span class="number">9</span>] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 分训练样本和测试样本</span></span><br><span class="line">x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=<span class="number">666</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这里使用Logistic Regression对其学习：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line">log_reg = LogisticRegression()</span><br><span class="line">log_reg.fit(x_train, y_train)</span><br><span class="line">acc = log_reg.score(x_test, y_test)</span><br><span class="line">y_log_predict = log_reg.predict(x_test)</span><br><span class="line">print(acc)</span><br></pre></td></tr></table></figure>
+<p>得结果：0.975555555556。注意数据集是很不平衡的，所以这个值不可靠。</p>
+<p>根据混淆矩阵的定义，可得：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">confusion_matrix</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> np.array([[TN(y_true, y_predict), FP(y_true, y_predict)],</span><br><span class="line">                     [FN(y_true, y_predict), TP(y_true, y_predict)]])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印出混淆矩阵：</span></span><br><span class="line">print(confusion_matrix(y_test, y_log_predict))</span><br></pre></td></tr></table></figure>
+<p>结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[[<span class="number">403</span>   <span class="number">2</span>]</span><br><span class="line"> [  <span class="number">9</span>  <span class="number">36</span>]]</span><br></pre></td></tr></table></figure>
+<p>一般来说，最优情况是，其对角线的值最大，斜对角线值为0。详见多分类问题的混淆矩阵。</p>
+<p>Precision=0.947368421053， Recall=0.8。标准是，此而值同时越大模型性能约优。可以说这个模型的性能还不错。</p>
+<p><font color="green" size="5">敲黑板</font>啥是R，“<strong>所有实际为正的样本，我的模型有多少也认为为正</strong>”。啥是P，“<strong>所有我的模型认为为正的样本，有多少确实为正</strong>”。可以体会到，P&amp;R 是不同角度的两个指标。根据信息论观点，<strong>引入相似但不相同的信息有助于减少系统的不确定性</strong>。两个指标同时考虑比单单考虑一个指标更能确定模型的性能。实际上，可能的情况下，对于一个训练好的模型，所有可能的指标都应该看看。<br>另一方面，P&amp;R两者的关注点不同，所以对于不同的实际任务，P&amp;R值的相对大小可以有所不同。举例，对于病例数据，尽可能希望所有实际有病的样本，模型也认为有病。即实际有病的样本模型都可以判断出来，即使没病的模型认为有病，没关系，复查就好了。这就是R值越大模型性能越好。反而P值相对不重要。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" data-id="ck7bjjf5z000qi5fzcbn3gb7k" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          模型评价-F1度量-F_beta度量
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">文本分类(三)-构建模型II-LSTM层结点实现细节</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">38</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

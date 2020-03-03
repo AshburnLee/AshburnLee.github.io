@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>集成学习(ensemble-learning)-(一) | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="类似，生病了找多名专家从不同方面一起确诊。 集成学习将多个学习器进行结合，通常可以获得比单一的学习器更优的泛化性能。 集成学习可以得带3中不同结果：提升性能，不起作用，起负作用。 所以要想获得好的集成结果，每个学习器应该“好而不同”，即每个学习器要有一定的准确性，同时，每个学习器各不相同。即“多样性”。 实际上，如何产生“好而不同”的基学习器，是集成学习的核心。  构建使用数据集： 1x, y">
+<meta property="og:type" content="article">
+<meta property="og:title" content="集成学习(ensemble-learning)-(一)">
+<meta property="og:url" content="http://yoursite.com/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="类似，生病了找多名专家从不同方面一起确诊。 集成学习将多个学习器进行结合，通常可以获得比单一的学习器更优的泛化性能。 集成学习可以得带3中不同结果：提升性能，不起作用，起负作用。 所以要想获得好的集成结果，每个学习器应该“好而不同”，即每个学习器要有一定的准确性，同时，每个学习器各不相同。即“多样性”。 实际上，如何产生“好而不同”的基学习器，是集成学习的核心。  构建使用数据集： 1x, y">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-08-20T14:28:32.000Z">
+<meta property="article:modified_time" content="2020-01-11T10:30:04.131Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Algorithms">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-集成学习-ensemble-learning-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-20T14:28:32.000Z" itemprop="datePublished">2019-08-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      集成学习(ensemble-learning)-(一)
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li>类似，生病了找多名专家从不同方面一起确诊。</li>
+<li>集成学习将多个学习器进行结合，通常可以获得比单一的学习器更优的泛化性能。</li>
+<li>集成学习可以得带3中不同结果：提升性能，不起作用，起负作用。</li>
+<li>所以要想获得好的集成结果，每个学习器应该“好而不同”，即每个学习器要有一定的准确性，同时，每个学习器各不相同。即“多样性”。</li>
+<li>实际上，如何产生“好而不同”的基学习器，是集成学习的核心。</li>
+</ul>
+<h1 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h1><p>使用数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x, y = datasets.make_moons(n_samples=<span class="number">500</span>, noise=<span class="number">0.2</span>, random_state=<span class="number">321</span>)</span><br></pre></td></tr></table></figure>
+<p>构建三个基学习器：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#1） 使用逻辑回归</span></span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line">log = LogisticRegression()</span><br><span class="line">log.fit(x_train, y_train)</span><br><span class="line">print(log.score(x_test, y_test))   <span class="comment">#  0.896</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#2) 使用SVM</span></span><br><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVC</span><br><span class="line">svm = SVC()</span><br><span class="line">svm.fit(x_train, y_train)</span><br><span class="line">print(svm.score(x_test, y_test))   <span class="comment">#  0.952</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#3) 使用决策树分类</span></span><br><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier</span><br><span class="line">tree = DecisionTreeClassifier()</span><br><span class="line">tree.fit(x_train, y_train)</span><br><span class="line">print(tree.score(x_test, y_test))  <span class="comment">#  0.944</span></span><br></pre></td></tr></table></figure>
+<p>结果分别为 0.896, 0.952, 0.944.</p>
+<p>投票操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># voting</span></span><br><span class="line">y_pre1 = log.predict(x_test)</span><br><span class="line">y_pre2 = svm.predict(x_test)</span><br><span class="line">y_pre3 = tree.predict(x_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 少数服从多数</span></span><br><span class="line"><span class="comment"># 对于三个模型的预测值，至少2个模型判断它为1，我才认为它是1：</span></span><br><span class="line">y_p = np.asarray((y_pre1 + y_pre2 + y_pre3) &gt;= <span class="number">2</span>, dtype=int)</span><br><span class="line">print(y_pre1[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 0]</span></span><br><span class="line">print(y_pre2[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br><span class="line">print(y_pre3[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br><span class="line">print(y_p[:<span class="number">10</span>])      <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br></pre></td></tr></table></figure>
+
+<p>判断集成效果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> accuracy_score</span><br><span class="line">acc = accuracy_score(y_test, y_p)</span><br><span class="line">print(acc)     <span class="comment">#  0.96</span></span><br></pre></td></tr></table></figure>
+<p>最终集成性能是0.96。</p>
+<h2 id="Hard-voting"><a href="#Hard-voting" class="headerlink" title="Hard voting"></a>Hard voting</h2><p>hard voting 即少数服从多数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> VotingClassifier</span><br><span class="line"></span><br><span class="line">voting = VotingClassifier(estimators=[</span><br><span class="line">    (<span class="string">'log'</span>, LogisticRegression()),</span><br><span class="line">    (<span class="string">'svm'</span>, SVC()),</span><br><span class="line">    (<span class="string">'tree'</span>, DecisionTreeClassifier())</span><br><span class="line">], voting=<span class="string">'hard'</span>)</span><br><span class="line"></span><br><span class="line">voting.fit(x_train, y_train)</span><br><span class="line">print(voting.score(x_test, y_test))    <span class="comment">#  0.96</span></span><br></pre></td></tr></table></figure>
+
+<p>实际中，通常把基学习器调参到最优，后再集成。</p>
+<h2 id="Soft-voting"><a href="#Soft-voting" class="headerlink" title="Soft voting"></a>Soft voting</h2><p>hard voting 其实是“少数服从多数”，而 soft voting 带权投票，如歌唱的专业评审团的投票权重就大。如：</p>
+<p>5个学习器把同一个样本分为A类或B类的概率分别如下：</p>
+<pre><code>            A类    B类
+学习器#0   99.0%  1.0%
+学习器#1   49.0%  51.0%
+学习器#2   43.0%  57.0%
+学习器#3   98.0%  2.0%
+学习器#4   34.0%  64.0%</code></pre><p>如果使用hard voting 该样本最终本分为B类。</p>
+<p>但是，显然学习器#0和#3有很大的把握认为该样本属于A类，而其他三个学习器并没有很确定该样本的类别。所以“少数服从多数”不合适。使用Soft voting 计算<br>属于A类：(99.0%+49.0%+43.0%+98.0%+34.0%) / 5 = 64.6%. <br>属于B类：(1.0%+51.0%+57.0%+2.0%+64.0%) / 5 = 35.0%.<br> 所以该样本应该被分类为A。</p>
+<p>使用 soft voting 的基学习器要求都应该估计概率，即可以调用 predict_proba 函数。SVM模型把probability设为true，便可以进行概率估计。调用VotingClassifier时指明voting方式为soft即可：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> VotingClassifier</span><br><span class="line">voting2 = VotingClassifier(estimators=[</span><br><span class="line">    (<span class="string">'log'</span>, LogisticRegression()),</span><br><span class="line">    (<span class="string">'svm'</span>, SVC(probability=<span class="literal">True</span>)),</span><br><span class="line">    (<span class="string">'tree'</span>, DecisionTreeClassifier())</span><br><span class="line">], voting=<span class="string">'soft'</span>)</span><br><span class="line"></span><br><span class="line">voting2.fit(x_train, y_train)</span><br><span class="line">print(voting2.score(x_test, y_test))   <span class="comment">#  0.976</span></span><br></pre></td></tr></table></figure>
+
+<p>所以，当基学习器可以求出样本概率估计时，Soft voting 比 hard voting 性能优。 </p>
+<p><font color="green" size="5">敲黑板</font>理解当前问题，才能找到已有方法的不足，才能找到更合适的方法。就如本文表达的用Soft voting 替代已有的Hard voting。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" data-id="ck7bjjf60000si5fz59f5drtq" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          集成学习-(二)-Bagging
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">回顾决策树(一)</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">38</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

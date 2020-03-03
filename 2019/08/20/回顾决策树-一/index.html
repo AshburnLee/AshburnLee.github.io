@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>回顾决策树(一) | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="决策树是非参数学习算法 天然解决多分类问题 有很好的可解释性 关键问题是使用哪个特征做为根节点 对于连续值的特征，在哪个值上做划分  使用iris数据集，调用sklearn的Decision Tree 模型： 12345678910111213141516iris &#x3D; datasets.load_iris()# 只是用数据2个特征x &#x3D; iris.data[:, 2:]y &#x3D; iris.targ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="回顾决策树(一)">
+<meta property="og:url" content="http://yoursite.com/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="决策树是非参数学习算法 天然解决多分类问题 有很好的可解释性 关键问题是使用哪个特征做为根节点 对于连续值的特征，在哪个值上做划分  使用iris数据集，调用sklearn的Decision Tree 模型： 12345678910111213141516iris &#x3D; datasets.load_iris()# 只是用数据2个特征x &#x3D; iris.data[:, 2:]y &#x3D; iris.targ">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/tree1.png">
+<meta property="article:published_time" content="2019-08-19T16:00:11.000Z">
+<meta property="article:modified_time" content="2020-03-03T06:56:41.587Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Algorithms">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/tree1.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-回顾决策树-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-19T16:00:11.000Z" itemprop="datePublished">2019-08-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      回顾决策树(一)
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li>决策树是非参数学习算法</li>
+<li>天然解决多分类问题</li>
+<li>有很好的可解释性</li>
+<li>关键问题是使用哪个特征做为根节点</li>
+<li>对于连续值的特征，在哪个值上做划分</li>
+</ul>
+<p>使用iris数据集，调用sklearn的Decision Tree 模型：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">iris = datasets.load_iris()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 只是用数据2个特征</span></span><br><span class="line">x = iris.data[:, <span class="number">2</span>:]</span><br><span class="line">y = iris.target</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier</span><br><span class="line"></span><br><span class="line">tree_clf = DecisionTreeClassifier(max_depth=<span class="number">2</span>, criterion=<span class="string">"entropy"</span>)</span><br><span class="line">tree_clf.fit(x, y)</span><br><span class="line"></span><br><span class="line">plot_decision_boundary(tree_clf, axis=[<span class="number">0.5</span>, <span class="number">7.5</span>, <span class="number">0</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x[y == <span class="number">0</span>, <span class="number">0</span>], x[y == <span class="number">0</span>, <span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y == <span class="number">2</span>, <span class="number">0</span>], x[y == <span class="number">2</span>, <span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y == <span class="number">1</span>, <span class="number">0</span>], x[y == <span class="number">1</span>, <span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<div align="center"><img src="/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/tree1.png" width="500"></div>
+
+<p>划分后使得系统的熵，即不确定性降低。所以对于一个划分，如果划分后的系统信息熵比其他划分后的熵都要小，则当前就是用这个划分。根据这个原理，可以就特征为连续值的数据集进行划分：</p>
+<p>已知特征d，和value， 对x进行划分：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">split</span><span class="params">(x, y, d, value)</span>:</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    index_a = (x[:, d] &lt;= value)</span><br><span class="line">    index_b = (x[:, d] &gt; value)</span><br><span class="line">    <span class="keyword">return</span> x[index_a], x[index_b], y[index_a], y[index_b]</span><br></pre></td></tr></table></figure>
+
+<p>传入label列表，求此时的系统信息熵：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> Counter</span><br><span class="line"><span class="keyword">from</span> math <span class="keyword">import</span> log2</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">cal_entropy</span><span class="params">(y)</span>:</span></span><br><span class="line">    <span class="comment"># counter 为字典，[类别，这个类别所含样本数]</span></span><br><span class="line">    counter = Counter(y)  </span><br><span class="line">    res = <span class="number">0.0</span></span><br><span class="line">    <span class="keyword">for</span> num <span class="keyword">in</span> counter.values():</span><br><span class="line">        p = num / len(y)</span><br><span class="line">        res += -p * log2(p)</span><br><span class="line">    <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+
+<p>定义一次划分，即，搜索找到是熵最小的特征d 和value：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">try_split</span><span class="params">(x, y)</span>:</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 初始值最大</span></span><br><span class="line">    best_entropy = float(<span class="string">'inf'</span>)  </span><br><span class="line">    <span class="comment"># best_e_l, best_e_r = -1, -1</span></span><br><span class="line">    <span class="comment"># 初始化d 和 value</span></span><br><span class="line">    best_d, best_v = <span class="number">-1</span>, <span class="number">-1</span>   </span><br><span class="line">    <span class="comment"># 在x 的所有维度（特征）搜索d：</span></span><br><span class="line">    <span class="keyword">for</span> d <span class="keyword">in</span> range(x.shape[<span class="number">1</span>]):</span><br><span class="line">        <span class="comment"># 在特征d的哪个值上划分：先排序，后找相邻的样本在特征d上的中间值是多少</span></span><br><span class="line">        sorted_index = np.argsort(x[:, d])</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1</span>, len(x)):  <span class="comment"># 遍历所有样本</span></span><br><span class="line">            <span class="keyword">if</span> x[sorted_index[i<span class="number">-1</span>], d] != x[sorted_index[i], d]:</span><br><span class="line">                v = (x[sorted_index[i<span class="number">-1</span>], d] + x[sorted_index[i], d]) / <span class="number">2</span></span><br><span class="line">                <span class="comment"># 有了 d 和 v， split：</span></span><br><span class="line">                x_l, x_r, y_l, y_r = split(x, y, d, v) </span><br><span class="line">                 <span class="comment"># 此时系统熵是多少</span></span><br><span class="line">                e = cal_entropy(y_l) + cal_entropy(y_r)</span><br><span class="line">                <span class="comment"># e_l = cal_entropy(y_l)</span></span><br><span class="line">                <span class="comment"># e_r = cal_entropy(y_r)</span></span><br><span class="line">                <span class="comment"># 判断新的熵e是否小于best_entropy，更新best_entropy</span></span><br><span class="line">                <span class="keyword">if</span> e &lt; best_entropy:</span><br><span class="line">                    best_entropy, best_v, best_d = e, v, d</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> best_entropy, best_d, best_v</span><br></pre></td></tr></table></figure>
+
+<p>调用函数得第一次划分：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第一次划分：</span></span><br><span class="line">best_entropy, best_d, best_v = try_split(x, y)</span><br><span class="line">x1_l, x1_r, y1_l, y1_r = split(x, y, best_d, best_v)</span><br><span class="line"></span><br><span class="line">print(cal_entropy(y1_l))  <span class="comment"># 0.0  </span></span><br><span class="line">print(cal_entropy(y1_r))  <span class="comment"># 1.0</span></span><br></pre></td></tr></table></figure>
+<p>左子树的熵为0，右子树的熵大于0，所以对右子树进行第二次划分：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 对于右边再次划分：</span></span><br><span class="line">best2_entropy, best2_d, best2_v = try_split(x1_r, y1_r)</span><br><span class="line">x2_l, x2_r, y2_l, y2_r = split(x1_r, y1_r, best2_d, best2_v)</span><br><span class="line"></span><br><span class="line">print(cal_entropy(y2_l))  <span class="comment"># 0.44506485705083865</span></span><br><span class="line">print(cal_entropy(y2_r))  <span class="comment"># 0.15109697051711368</span></span><br></pre></td></tr></table></figure>
+<p>可以继续深入划分。</p>
+<p>由于数据集各个特征值是连续的，所以，上述过程通过遍历找到所划分的特征，再遍历这个特征的所有样本，排序后求相邻两个样本的均值作为这个特征的具体划分值，时间复杂度为O(mxn)，即样本个数乘以特征个数。</p>
+<p>对于各个特征值为离散的，使用<strong>信息增益</strong>来找到消除不确定性最强的特征。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/" data-id="ck7bjjf5t0009i5fzhp0123x1" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          集成学习(ensemble-learning)-(一)
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">回看SVM-(三)</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">38</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

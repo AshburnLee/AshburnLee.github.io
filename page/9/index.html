@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Junhui&#39;s Journal">
+<meta property="og:url" content="http://yoursite.com/page/9/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="Junhui">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-文本分类-三-构建模型I-built-in-LSTM" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" class="article-date">
+  <time datetime="2019-08-04T07:58:14.000Z" itemprop="datePublished">2019-08-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/">文本分类(三)-构建模型I-built-in-LSTM</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录使用tensorflow的built-in LSTM创建一个文本分类模型，数据来自<a href="https://ashburnlee.github.io/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" target="_blank" rel="noopener">文本预处理(二)词编码</a>。</p>
+<h1 id="超参数"><a href="#超参数" class="headerlink" title="超参数"></a>超参数</h1><p>首先定义模型使用的超参数，使用<code>tf.contrib.training.HParams()</code>来管理,如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">huper_param</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> tf.contrib.training.HParams(</span><br><span class="line">            num_embedding_size=<span class="number">16</span>,  <span class="comment">#  每一个词所作embedding的向量长度</span></span><br><span class="line">            encoded_length=<span class="number">50</span>,      <span class="comment">#  每一条编码后的样本切取或补充后的长度，</span></span><br><span class="line">            num_word_threshold=<span class="number">20</span>,  <span class="comment">#  词频数&lt;=该值，不考虑</span></span><br><span class="line">            num_lstm_nodes=[<span class="number">32</span>, <span class="number">32</span>],  <span class="comment"># 每一层LSTM的节点个数 </span></span><br><span class="line">            num_lstm_layers=<span class="number">2</span>,       <span class="comment">#  LSTM层数</span></span><br><span class="line">            num_fc_nodes=<span class="number">32</span>,         <span class="comment">#  全连接层节点数</span></span><br><span class="line">            batch_size=<span class="number">100</span>,          <span class="comment">#  每一次输入样本书</span></span><br><span class="line">            learning_rate=<span class="number">0.001</span>,    <span class="comment"># 学习率</span></span><br><span class="line">            clip_lstm_grads=<span class="number">1.0</span>, )   <span class="comment">#  设置LSTM梯度大小，防止梯度爆炸</span></span><br></pre></td></tr></table></figure>
+
+<p>默认每一个参数含初始值，各个参数的含义见注释。其中具体解释两个：</p>
+<ul>
+<li><code>num_embedding_size</code>： 每一个词会用一个向量来表示，该值指明这个向量的大小。而且这个向量是被学习的。</li>
+<li><code>clip_lstm_grads</code>： 这是LSTM<strong>梯度值的上限</strong>，当一个梯度值大于这个上限时，把这个值设置为上限值，来防止<strong>梯度爆炸</strong>。</li>
+</ul>
+<p>调用该函数生成一个对象，可以用<code>对象名.参数名</code>来使用相应的参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hp = huper_param()</span><br><span class="line">encoded_length = hp.encoded_length</span><br></pre></td></tr></table></figure>
+
+<h1 id="定义计算图"><a href="#定义计算图" class="headerlink" title="定义计算图"></a>定义计算图</h1><p>先定义输入：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">inputs = tf.placeholder(tf.int32, (batch_size, encoded_length))</span><br><span class="line">outputs = tf.placeholder(tf.int32, (batch_size, ))</span><br></pre></td></tr></table></figure>
+
+<p>定义DropOut比率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keep_prob = tf.placeholder(tf.float32, name=<span class="string">'keep_prob'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>保存当前训练到了那一步：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">global_step = tf.Variable(tf.zeros([], tf.int64), name=<span class="string">'global_step'</span>, trainable=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-Embedding层"><a href="#1-Embedding层" class="headerlink" title="1. Embedding层"></a>1. Embedding层</h2><p>使用均匀分布来初始化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedding_init = tf.random_uniform_initializer(<span class="number">-1.0</span>, <span class="number">1.</span>)</span><br></pre></td></tr></table></figure>
+
+<p>定义embedding：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">embedding = tf.get_variable(</span><br><span class="line">            <span class="string">'embedding'</span>,</span><br><span class="line">            [vocab_size, hps.embedding_size],   <span class="comment"># size of embedding matrix</span></span><br><span class="line">            tf.float32</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>说明：</p>
+<ul>
+<li>使用<code>get_varable()</code>，当这个变量存在，就重用它，不存在，则创建它。</li>
+<li><font color="red">embedding矩阵</font>：<code>[vocab_size, hps.embedding_size]</code>：一共有多少个词，每个词用多大的向量表示。</li>
+</ul>
+<p>下一步，将每一条输入中每一个词对应的向量在<code>embedding matrix</code>中<font color="red">查找</font>，比如，当前词<code>id</code>为12，就从<code>embedding matrix</code>中把第12行的向量取出来，对一条记录中每个词作此操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[2, 34, 5, 67]-&gt;[[234,565,1,45,57,73],</span><br><span class="line">                 [12,76,23,54,123,48],</span><br><span class="line">                 [43,87,239,57,13,14],</span><br><span class="line">                 [98,64,421,13,63,36]]</span><br></pre></td></tr></table></figure>
+
+<p>用长度为6的向量表示一个词的id。可以看作是对每一条记录的<font color="red" size="4">进一步编码</font>。而且这个编码是要<font color="red" size="4">被学习</font>的。</p>
+<p>给出完整embedding层：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">embedding_init = tf.random_uniform_initializer(<span class="number">-1.0</span>, <span class="number">1.</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'embedding'</span>, initializer=embedding_init):</span><br><span class="line">        embedding = tf.get_variable(</span><br><span class="line">            <span class="string">'embedding'</span>,</span><br><span class="line">            [vocab_size, hps.embedding_size],   <span class="comment"># size of embedding matrix</span></span><br><span class="line">            tf.float32</span><br><span class="line">        )</span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        embedded_inputs = tf.nn.embedding_lookup(embedding, inputs)</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-LSTM-层"><a href="#2-LSTM-层" class="headerlink" title="2. LSTM 层"></a>2. LSTM 层</h2><p>定义initializer：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">scale = <span class="number">1.0</span>/math.sqrt(hps.num_embedding_size + hps.nums_lstm_nodes[<span class="number">-1</span>])/<span class="number">3.0</span></span><br><span class="line">lstm_init = tf.random_uniform_initializer(-scale, scale)</span><br></pre></td></tr></table></figure>
+
+<p>即使用<a href>xavior</a>初始化。</p>
+<p>定义两层LSTM：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">cells = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">2</span>):</span><br><span class="line">    cell = tf.contrib.rnn.BasicLSTMCell(</span><br><span class="line">        hps.nums_lstm_nodes[i],</span><br><span class="line">        state_is_tuple=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line">    cell = tf.contrib.rnn.DropoutWrapper(</span><br><span class="line">        cell,</span><br><span class="line">        output_keep_prob=keep_prob</span><br><span class="line">    )</span><br><span class="line">    cells.append(cell)</span><br></pre></td></tr></table></figure>
+
+<p><code>cells</code>接收每一层，使用<code>BasicLSTMCell</code>创建一LSTM层。紧接着使用<code>DropoutWrapper</code>执行DropOut操作。此时<code>cells</code>中含有两层LSTM。</p>
+<p>然后使用<code>MultiRNNCell</code>合并两LSTM层，第一个<code>cell</code>的输出为第二个<code>cell</code>的输入：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cell = tf.contrib.rnn.MultiRNNCell(cells)</span><br></pre></td></tr></table></figure>
+
+<p>此时就可以把两层的LSTM当作模型中的一层来操作。</p>
+<p>紧接着初始化LSTM单元中的<code>state</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">initialize_state = cell.zero_state(batch_size, tf.float32)</span><br></pre></td></tr></table></figure>
+
+<p>此时便可以使用<code>dynamic_rnn</code>把<font color="red" size="4">序列式的输入</font>传入LSTM层，后得到一系列中间状态和输出值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rnn_outputs, _ = tf.nn.dynamic_rnn(cell, embedded_inputs, initial_state=initialize_state)</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>_</code>表示中间隐含状态，不需要。<code>rnn_outputs</code>中包含了所有中间输出。对于<strong>多对一</strong>的问题，我们只需要最后一个值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">last = rnn_outputs[:, <span class="number">-1</span>, :]</span><br></pre></td></tr></table></figure>
+
+<p>给出完整的LSTM层：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">scale = <span class="number">1.0</span>/math.sqrt(hps.num_embedding_size + hps.nums_lstm_nodes[<span class="number">-1</span>])/<span class="number">3.0</span></span><br><span class="line">lstm_init = tf.random_uniform_initializer(-scale, scale)</span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'lstm'</span>, initializer=lstm_init):</span><br><span class="line">    <span class="comment"># store two LSTM layers</span></span><br><span class="line">    cells = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(hps.num_lstm_layer):</span><br><span class="line">        cell = tf.contrib.rnn.BasicLSTMCell(</span><br><span class="line">            hps.nums_lstm_nodes[i],</span><br><span class="line">            state_is_tuple=<span class="literal">True</span></span><br><span class="line">        )</span><br><span class="line">        cell = tf.contrib.rnn.DropoutWrapper(</span><br><span class="line">            cell,</span><br><span class="line">            output_keep_prob=keep_prob</span><br><span class="line">        )</span><br><span class="line">        cells.append(cell)</span><br><span class="line">    <span class="comment"># combine two LSTM layers: 第一个cell的输出为第二个cell的输入</span></span><br><span class="line">    cell = tf.contrib.rnn.MultiRNNCell(cells)</span><br><span class="line">    <span class="comment"># init state</span></span><br><span class="line">    initialize_state = cell.zero_state(batch_size, tf.float32)</span><br><span class="line">    <span class="comment"># input a sentence to cell, 此时就可以把句子输入到cell中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># rnn_outputs: [batch_size, encoded_length, lstm_output[-1]]</span></span><br><span class="line">    rnn_outputs, _ = tf.nn.dynamic_rnn(</span><br><span class="line">        cell, embedded_inputs, initial_state=initialize_state)</span><br><span class="line">    last = rnn_outputs[:, <span class="number">-1</span>, :]</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-全连接层"><a href="#3-全连接层" class="headerlink" title="3. 全连接层"></a>3. 全连接层</h2><p>使用<code>dence()</code>构建全连接层，指定<code>ReLU</code>为激活函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fc1 = tf.layers.dense(last, hps.num_fc_nodes, activation=tf.nn.relu, name=<span class="string">'fc1'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>紧接着进行<code>dropOut</code>操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fc1_dropout = tf.contrib.layers.dropout(fc1, keep_prob)</span><br></pre></td></tr></table></figure>
+
+<p>最后再接一个全连接层：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits = tf.layers.dense(fc1_dropout, classes_size, name=<span class="string">'fc2'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>给出完整的全连接层：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">fc_init = tf.uniform_unit_scaling_initializer(factor=<span class="number">1.0</span>)</span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'fc'</span>, initializer=fc_init):</span><br><span class="line">    fc1 = tf.layers.dense(last, hps.num_fc_nodes, activation=tf.nn.relu, name=<span class="string">'fc1'</span>)</span><br><span class="line">    fc1_dropout = tf.contrib.layers.dropout(fc1, keep_prob)</span><br><span class="line">    logits = tf.layers.dense(fc1_dropout, classes_size, name=<span class="string">'fc2'</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-模型输出"><a href="#4-模型输出" class="headerlink" title="4. 模型输出"></a>4. 模型输出</h2><p>首先：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=outputs)</span><br></pre></td></tr></table></figure>
+
+<p><code>tf.nn.sparse_softmax_cross_entropy_with_logits()</code>做了三件事：</p>
+<ul>
+<li>填坑</li>
+<li>填坑</li>
+<li>填坑</li>
+</ul>
+<p>其次，传入代价函数，并且算出模型输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">loss = tf.reduce_mean(softmax_loss)</span><br><span class="line">y_pred = tf.argmax(tf.nn.softmax(logits), <span class="number">1</span>, output_type=tf.int32)</span><br></pre></td></tr></table></figure>
+
+<p>最后，用最简单的正确率衡量模型性能：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">correct_pred = tf.equal(outputs, y_pred)</span><br><span class="line">accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))</span><br></pre></td></tr></table></figure>
+
+<p>说明下面二者的不同：</p>
+<ul>
+<li><code>tf.variable_scope</code>：需要初始化</li>
+<li><code>tf.name_scope</code>：无需初始化</li>
+</ul>
+<p>此部分完整实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.name_scope(<span class="string">'metrics'</span>):</span><br><span class="line">    softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(</span><br><span class="line">        logits=logits, labels=outputs</span><br><span class="line">    )</span><br><span class="line">    loss = tf.reduce_mean(softmax_loss)</span><br><span class="line">    y_pred = tf.argmax(tf.nn.softmax(logits), <span class="number">1</span>, output_type=tf.int32)</span><br><span class="line">    correct_pred = tf.equal(outputs, y_pred)</span><br><span class="line">    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-得到train-op"><a href="#5-得到train-op" class="headerlink" title="5. 得到train_op"></a>5. 得到train_op</h2><p>因为之前对梯度值设定了一个上界，所以要把截断后的梯度值得到，作用于所有可训练变量。所以第一步得到所有可训练变量：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">trainable_vars = tf.trainable_variables()</span><br></pre></td></tr></table></figure>
+
+<p>可以查看所有的可训练变量：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> var <span class="keyword">in</span> trainable_vars:</span><br><span class="line">    print(<span class="string">'variable name: %s'</span> % (var.name))</span><br></pre></td></tr></table></figure>
+
+<p>对所有可训练变量求导数，得到实际梯度后对其<font color="red" size="4">执行剪切操作</font>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grads, _ = tf.clip_by_global_norm(tf.gradients(loss, trainable_vars), hps.clip_lstm_grads)</span><br></pre></td></tr></table></figure>
+
+<p>指定优化算法，应用剪切后的梯度于所有可训练变量。最后训练：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">optimizer = tf.train.AdamOptimizer(hps.learning_rate)</span><br><span class="line">train_op = optimizer.apply_gradients(zip(grads, trainable_vars), global_step=global_step)</span><br></pre></td></tr></table></figure>
+
+<p>完整实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.name_scope(<span class="string">'train_op'</span>):</span><br><span class="line">    trainable_vars = tf.trainable_variables()</span><br><span class="line">    <span class="keyword">for</span> var <span class="keyword">in</span> trainable_vars:</span><br><span class="line">        print(<span class="string">'variable name: %s'</span> % (var.name))</span><br><span class="line">    grads, _ = tf.clip_by_global_norm(</span><br><span class="line">        tf.gradients(loss, trainable_vars), hps.clip_lstm_grads</span><br><span class="line">    )</span><br><span class="line">    optimizer = tf.train.AdamOptimizer(hps.learning_rate)</span><br><span class="line">    train_op = optimizer.apply_gradients(</span><br><span class="line">        zip(grads, trainable_vars), global_step=global_step</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<h2 id="6-返回值"><a href="#6-返回值" class="headerlink" title="6. 返回值"></a>6. 返回值</h2><p>最后指定函数返回值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> ((inputs, outputs, keep_prob),  <span class="comment">#  all placeholders</span></span><br><span class="line">        (loss, accuracy),              <span class="comment"># loss &amp; accuracy</span></span><br><span class="line">        (train_op, global_step))      <span class="comment"># tain_op</span></span><br></pre></td></tr></table></figure>
+
+<p>到此位置计算图设计完成。</p>
+<p>假设上述定义计算图可以封装到函数：<code>create_model()</code>。测试一下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataPreProcess <span class="keyword">import</span> encodeWords</span><br><span class="line">vocab_instance = encodeWords.VocabDict(vocab_file, hps.num_word_threshold)</span><br><span class="line">catego_instance = encodeWords.CategoryDict(category_file)</span><br><span class="line">placeholders, metrics, others = create_model(hps,</span><br><span class="line">                                             vocab_instance.size(),</span><br><span class="line">                                             catego_instance.size())</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/encodeWords.py" target="_blank" rel="noopener">encodedWords</a>中是在<em>文本预处理(二)词编码篇</em>实现的两个类<code>VocabDict</code>和<code>CategoryDict</code>。分别调用其<code>.size()</code>方法，可返回词数量和类别数量。</p>
+<p>打印所有可训练变量，控制台结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">variable name: &lt;tf.Variable <span class="string">'embedding/embedding:0'</span> shape=(50513, 16) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel:0'</span> shape=(48, 128) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias:0'</span> shape=(128,) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel:0'</span> shape=(64, 128) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias:0'</span> shape=(128,) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc1/kernel:0'</span> shape=(32, 32) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc1/bias:0'</span> shape=(32,) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc2/kernel:0'</span> shape=(32, 10) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc2/bias:0'</span> shape=(10,) dtype=float32_ref&gt;</span><br></pre></td></tr></table></figure>
+
+<p>注意，训练并没有执行计算，只是打印了计算图中的可训练变量。结果显示有三部分：</p>
+<ul>
+<li>embedding层</li>
+<li>两层LSTM的权值阈值</li>
+<li>两层全连接层的权值和阈值</li>
+</ul>
+<p>并且每部分参数的形状也可知。</p>
+<h1 id="执行计算流程"><a href="#执行计算流程" class="headerlink" title="执行计算流程"></a>执行计算流程</h1><p>先执行<code>create_model()</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">placeholders, metrics, others = create_model(hps,</span><br><span class="line">                                             vocab_instance.size(),</span><br><span class="line">                                             catego_instance.size())</span><br><span class="line">inputs, outputs, keep_prob = placeholders</span><br><span class="line">loss, accuracy = metrics</span><br><span class="line">train_op, global_step = others</span><br></pre></td></tr></table></figure>
+<p>然后初始化整个网络，给训练过程的<code>keep_prob</code>赋值，并指明训练步数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">init_op = tf.global_variables_initializer()</span><br><span class="line">train_keep_prob = <span class="number">0.8</span></span><br><span class="line">num_train_steps = <span class="number">1000</span></span><br></pre></td></tr></table></figure>
+
+<p>最后创建执行图的<code>tf.session</code>，并执行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    <span class="comment"># init whole network</span></span><br><span class="line">    sess.run(init_op)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(num_train_steps):</span><br><span class="line">        batch_inputs, batch_label = train_dataset.next_batch(hps.batch_size)</span><br><span class="line">        <span class="comment"># training: global_step+1 when sess.run() is called</span></span><br><span class="line">        outputs_val = sess.run([loss, accuracy, train_op, global_step],</span><br><span class="line">                               feed_dict=&#123;</span><br><span class="line">                                   inputs: batch_inputs,</span><br><span class="line">                                   outputs: batch_label,</span><br><span class="line">                                   keep_prob: train_keep_prob</span><br><span class="line">                               &#125;)</span><br><span class="line">        <span class="comment"># get three values from output_val</span></span><br><span class="line">        loss_val, accuracy_val, _, global_step_val = outputs_val</span><br><span class="line"></span><br><span class="line">        <span class="comment"># print for every 100 times</span></span><br><span class="line">        <span class="keyword">if</span> global_step_val % <span class="number">20</span> == <span class="number">0</span>:</span><br><span class="line">            print(<span class="string">"step: %5d, loss: %3.3f, accuracy: %3.5f"</span> %</span><br><span class="line">                  (global_step_val, loss_val, accuracy_val)</span><br><span class="line">                  )</span><br></pre></td></tr></table></figure>
+
+<p>其中用到了一个重要方法：给placeholders赋值。所以在运行之前使用训练集创建<code>EncodedDataset</code>对象，就可以调用<code>train_dataset.next_batch(hps.batch_size)</code>了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_dataset &#x3D; createEncodedDataset.EncodedDataset(</span><br><span class="line">        seg_train_file, vocab_instance, catego_instance, hps.encoded_length)</span><br></pre></td></tr></table></figure>
+
+<p>如下时执行1000次的结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">step:   200, loss: 1.732, accuracy: 0.25000</span><br><span class="line">step:   400, loss: 1.720, accuracy: 0.32000</span><br><span class="line">step:   600, loss: 1.537, accuracy: 0.39000</span><br><span class="line">step:   800, loss: 1.279, accuracy: 0.53000</span><br><span class="line">step:  1000, loss: 0.994, accuracy: 0.67000</span><br></pre></td></tr></table></figure>
+
+<p>至少证明模型是正确的。完整实现<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_built_in.py" target="_blank" rel="noopener">看这里</a>。<br>这是第一步，之后便可以进一步优化。本笔记只记录使用<code>tf</code>内置LSTM模块构建基本LSTM文本分类模型，对于优化，调参以后讨论。</p>
+<h1 id="最后一点"><a href="#最后一点" class="headerlink" title="最后一点*"></a>最后一点*</h1><p>在参数列表中有一项<code>num_lstm_nodes</code>，什么意思？！在构建LSTM时的核心函数是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cell &#x3D; tf.contrib.rnn.BasicLSTMCell( hps.nums_lstm_nodes[i], state_is_tuple&#x3D;True)</span><br></pre></td></tr></table></figure>
+
+<p><font color="green" size="5">敲黑板</font></p>
+<p>查看官方文档：首个参数<code>num_units</code>：它表示<font color="red">LSTM单元内部的神经元数量</font>，即<strong>输出神经元数</strong>。<a href="https://ashburnlee.github.io/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" target="_blank" rel="noopener">LSTM结点结构图</a>中有5个主要非线性变换，他们中的每一个都相当于普通神经网络的的<font color="red">一个<strong>神经原</strong></font>，相对于解决异或问题只需要3个神经元(逻辑门)，解决复杂问题的网络神经元数量都<font color="red">远远不止一个</font>。<br><br><font color="red">相同道理</font>，包含5个非线性变换的一个LSTM结点在解决复杂问题时一定也远不只需要一个。图中只是示意图，表示一个结点，实际上会有很多。从LSTM层使用xavior初始化的角度看，<code>sqrt(hps.num_embedding_size + hps.nums_lstm_nodes[-1])</code>定义代表<code>sqrt(输入大小 + 输出大小)</code>，<code>hps.nums_lstm_nodes[-1]</code>正对应这一层的输出大小。<br><br>诶，在图中也有多个LSTM节点呀！？，这些结点是逻辑上按时间序列展开的节点，空间上只有一个。这里讨论的是另一个维度的LSTM结点。并不矛盾。可以从<a href="https://ashburnlee.github.io/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" target="_blank" rel="noopener">下一节笔记</a>的代码实现中体会。</p>
+<p>理解这个很重要！</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" data-id="ck74urap0000f4nfzfcw0bn8k" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-文本分类-二-文本预处理II-词编码" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" class="article-date">
+  <time datetime="2019-08-03T15:12:59.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/">文本分类(二)-文本预处理II-词编码</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接文本预处理(一)，这篇笔记记录把分词后的记录编码为计算机可识别的数值型序列，如将<code>[你好 呀 ， 参加 比赛 了 吗]</code>编码为<code>[91, 57, 1, 31, 14, 6, 5]</code>。同时编码类别。</p>
+<h1 id="词编码"><a href="#词编码" class="headerlink" title="词编码"></a>词编码</h1><p>在上<a href="https://ashburnlee.github.io/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86/" target="_blank" rel="noopener">一篇笔记</a>中得到的<code>vocab_file</code>，再看一下其内容：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>每个词与其编号一一对应，可以<font color="red">用词的标号来对词进行编码</font>。这就是下面主要做的事。</p>
+<h2 id="1-一一对应"><a href="#1-一一对应" class="headerlink" title="1. 一一对应"></a>1. 一一对应</h2><p>首先读取<code>vocab_file</code>，得到每个词，其编号，其频数，以<code>{词：编号}</code>为元素存入一个字典。同时指定一个整数<code>threshold</code>，当一个词的词频小于<code>threshold</code>，不再考虑该词，原因是频数太低的词没有统计意义。对每一条数据执行此操作，实现过程如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_read_dict</span><span class="params">(self, filename)</span>:</span></span><br><span class="line">    <span class="string">""" read filename and generate &#123;word: id&#125; dict """</span></span><br><span class="line">    <span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># 读词与词频</span></span><br><span class="line">        word, frequency = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        frequency = int(frequency)</span><br><span class="line">        <span class="keyword">if</span> frequency &lt; self._num_word_threshold:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        idx = len(self._word_to_id)  <span class="comment"># idx随_word_to_id大小递增</span></span><br><span class="line">        <span class="keyword">if</span> word == <span class="string">'&lt;UNK&gt;'</span>:   <span class="comment"># 特殊处理UNK</span></span><br><span class="line">            self._unk = idx</span><br><span class="line">        self._word_to_id[word] = idx  <span class="comment"># 构建处字典：&#123;词： idx&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>最终得到目标dict：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'&lt;UNK&gt;'</span>: 0, <span class="string">'，'</span>: 1, <span class="string">'的'</span>: 2, <span class="string">'。'</span>: 3, <span class="string">'在'</span>: 4, <span class="string">'、'</span>: 5, <span class="string">'了'</span>: 6, <span class="string">'是'</span>: 7,...,<span class="string">'铭记'</span>: 20350, <span class="string">'多时'</span>: 20351, <span class="string">'轩然大波'</span>: 20352,...,<span class="string">'孵化器'</span>: 39545, <span class="string">'党史'</span>: 39546, <span class="string">'纸飞机'</span>: 39547,...&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-编码"><a href="#2-编码" class="headerlink" title="2. 编码"></a>2. 编码</h2><p>第二步，对于一个清洗后样本<code>[你好 呀 ， 参加 比赛 了 吗]</code>，从上一步得到的<code>dict</code>中找每一个<code>key</code>对应的<code>value</code>，从而生成<code>[91, 57, 1, 31, 14, 6, 5]</code>。实现过程：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sentence_to_id</span><span class="params">(self, sentence)</span>:</span></span><br><span class="line">    <span class="string">""" 用词的idx编码每个句子 """</span></span><br><span class="line">    <span class="comment"># 切分句子后的每个词，找它的idx，</span></span><br><span class="line">    word_ids = [self.word_to_id(cur_word) <span class="keyword">for</span> cur_word <span class="keyword">in</span> sentence.split()]</span><br><span class="line">    <span class="keyword">return</span> word_ids</span><br></pre></td></tr></table></figure>
+
+<p>现在用一个样本做测试：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test_word = <span class="string">'你好 呀 ， 参加 比赛 了 吗'</span></span><br></pre></td></tr></table></figure>
+
+<p>返回实际结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[9901, 5667, 1, 381, 124, 6, 445]</span><br></pre></td></tr></table></figure>
+
+<p>同样的方法，处理<code>label</code>，如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">科技的id： 8</span><br></pre></td></tr></table></figure>
+
+<p>上述完整过程在<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/encodeWords.py" target="_blank" rel="noopener">这里</a></p>
+<hr>
+<p>到此到此为止，所有的样本都已用数字编码。下一步为模型提供数据，batch by batch</p>
+<h1 id="3-生成batch"><a href="#3-生成batch" class="headerlink" title="3. 生成batch"></a>3. 生成batch</h1><p>首先读取清洗后的样本文件，对于每一条记录中的类别和内容按照上述方式编码，并分别存储与两个<code>list</code>。编码完一条记录，加入到<code>list</code>中。最终的到的内容list和类别list。</p>
+<p>实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># for each line,</span></span><br><span class="line">    label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">    <span class="comment"># convert label and content to sequence of ids</span></span><br><span class="line">    id_label = self._catego_dict.category_to_id(label)</span><br><span class="line">    id_words = self._vocab_dict.sentence_to_id(content)</span><br><span class="line">    id_words = id_words[<span class="number">0</span>: self._encoded_length]           <span class="comment"># cut</span></span><br><span class="line">    padding_length = self._encoded_length - len(id_words)  <span class="comment"># pad</span></span><br><span class="line">    id_words = id_words + [self._vocab_dict.unk <span class="keyword">for</span> _ <span class="keyword">in</span> range(padding_length)]</span><br><span class="line"></span><br><span class="line">    self._input.append(id_words)</span><br><span class="line">    self._output.append(id_label)</span><br><span class="line"><span class="comment"># convert to numpy array</span></span><br><span class="line">self._input = np.asarray(self._input, dtype=np.int32)</span><br><span class="line">self._output = np.asarray(self._output, dtype=np.int32)</span><br></pre></td></tr></table></figure>
+
+<p><code>self._input</code>中存储编码后的每一条内容，<code>self._output</code>中存储编码后的每一条对应的类别。特别说明，因为实际每条编码后的记录长度都不同，有的长，有的短。所以在代码中<code>self._encoded_length</code>表示每条记录保留多少个词。长的切去，短的用<code>-1</code>补全。</p>
+<p>额外地对<code>self._input</code>和<code>self._output</code>做一个随机洗牌操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">p = np.random.permutation(len(self._input))</span><br><span class="line">self._input = self._input[p]</span><br><span class="line">self._output = self._output[p]</span><br></pre></td></tr></table></figure>
+
+<p>这个操作使每个<code>batch</code>中数据<strong>分布尽可能一致</strong>，尽可能可以<strong>代表整个数据集的分布</strong>。</p>
+<p>第二步，生成<code>batch</code>。其过程如下图：</p>
+<div align="center"><img src="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/batch.png" width="600"></div>
+<div align="center">洗牌后继续取下一个batch</div>
+
+<p>当图中最后的数据<code>#*</code>不足一个<code>batch</code>时，所有数据随机洗牌，这样就可以再得到一个<code>batch</code>。当然最后一个batch中有部分重复使用，这没关系。 代码实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">next_batch</span><span class="params">(self, batch_size)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    get next batch data</span></span><br><span class="line"><span class="string">    :param batch_size:</span></span><br><span class="line"><span class="string">    :return: the next batch of input and output</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    end_indicator = self._indicator + batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        self._random_shuffle()</span><br><span class="line">        self._indicator = <span class="number">0</span></span><br><span class="line">        end_indicator = batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"batch size : %d is too large"</span> % batch_size)</span><br><span class="line"></span><br><span class="line">    batch_input = self._input[self._indicator: end_indicator]</span><br><span class="line">    batch_ouput = self._output[self._indicator: end_indicator]</span><br><span class="line">    self._indicator = end_indicator</span><br><span class="line">    <span class="comment"># return what we require</span></span><br><span class="line">    <span class="keyword">return</span> batch_input, batch_ouput</span><br></pre></td></tr></table></figure>
+
+<p>测试：当<code>_encoded_length</code>为50，<code>batch_size</code>为2时，可能输出如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(array([[ 5639,  5529, 28692, 14277,   108,     0,   825,    87,  7763,</span><br><span class="line">        22153, 17930,    17,   250,    16,   156,   481,   456,    45,</span><br><span class="line">            6,   102,    45,     1,  5639, 20799,    30, 39057,   949,</span><br><span class="line">         3640, 22153,    92,    15,  5639,    30, 20562, 21187,    14,</span><br><span class="line">         3193, 18589,    30,  5529,    17, 24157,     0,    16,   831,</span><br><span class="line">         3810,     4,  4406,  2849,  3092],</span><br><span class="line">       [24102, 11066,  1375,    52,  7379,   224,  1027,   956,  2962,</span><br><span class="line">        17510,    17,   250,    16,     4,   138, 13230,     2, 10477,</span><br><span class="line">         1375,    21,     1,    13,   119,   406,  3380,    41,     1,</span><br><span class="line">        13230,    17,  1647,    16, 32614,     2,     0,   147,   216,</span><br><span class="line">            6,  5447,     5,     0,   136,     5,  8616,     5, 41351,</span><br><span class="line">        25425,   136,     5, 12401,    45]], dtype=int32), array([1, 4], dtype=int32))</span><br></pre></td></tr></table></figure>
+<p>两条记录，第一条记录的类别为1，另一条的类别为4。</p>
+<p>整个过程完整代码看<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/createEncodedDataset.py" target="_blank" rel="noopener">这里</a>。数据准备完成，便可以用于训练模型了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" data-id="ck74uraor00044nfzcfte9uk7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-文本分类-二-文本预处理I-词频统计" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" class="article-date">
+  <time datetime="2019-08-03T07:22:37.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/">文本分类(二)-文本预处理I-词频统计</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>文本数据与图像数据本质一样，图像本身的每个通道，像素点值就是数据本身。而文本数据要被计算机理解，首先要被处理成数值型，也就是说需要给文本编码，如embedding。这篇笔记记录将<strong>文本数值化</strong>。</p>
+<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><p>一个样本文件有5000条记录，存在于txt中。如下为样本文本中的索引为204的记录：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(train_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line">print(len(lines))</span><br><span class="line">print(lines[<span class="number">204</span>])</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">5000</span><br><span class="line">体育	绿衫军vs热火首发：新老三巨头对抗 小奥单挑大Z新浪体育讯北京时间5月4日，热火和凯尔特人迎来第二回合巅峰对决，本场比赛双方主帅均未对首发名单做出任何更改。而凯尔特人主帅道格-里弗斯赛前也向媒体表示，本场比赛“大鲨鱼”沙奎尔-奥尼尔将继续作壁上观，以下为双方首发名单——凯尔特人：隆多、雷-阿伦、皮尔斯、加内特、杰梅因-奥尼尔热火：毕比、韦德、詹姆斯、波什、伊尔戈斯卡斯(小林)</span><br></pre></td></tr></table></figure>
+
+<p>格式是：类别+样本描述。</p>
+<p>分成label和content：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="分词"><a href="#分词" class="headerlink" title="分词"></a>分词</h2><p>使用<a href="https://github.com/fxsjy/jieba" target="_blank" rel="noopener">jieba</a>对content进行分词：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">word_iter = jieba.cut(content)</span><br><span class="line"></span><br><span class="line">word_content = <span class="string">''</span>         <span class="comment"># 保存每一个词</span></span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> word_iter:     <span class="comment"># 对切分结果中每个词作如下操作</span></span><br><span class="line">    word = word.strip(<span class="string">' '</span>)</span><br><span class="line">    <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">        word_content += word + <span class="string">' '</span></span><br><span class="line">out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))</span><br><span class="line">print(out_line)</span><br></pre></td></tr></table></figure>
+
+<p>写入文件的每一条数据格式：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">体育	vs 热火 首发 ： 新 老三 巨头 对抗 小奥 单挑 大 Z 新浪 体育讯 北京 时间 5 月 4 日 ， 热火 和 凯尔特人 迎来 第二 回合 巅峰 对决 ， 本场 比赛 双方 主帅 均 未 对 首发 名单 做出 任何 更改 。 而 凯尔特人 主帅 道 格 - 里 弗斯 赛前 也 向 媒体 表示 ， 本场 比赛 “ 大 鲨鱼 ” 沙奎尔 - 奥尼尔 将 继续 作壁上观 ， 以下 为 双方 首发 名单 — — 凯尔特人 ： 隆多 、 雷 - 阿伦 、 皮尔斯 、 加内特 、 杰 梅因 - 奥尼尔 热火 ： 毕比 、 韦德 、 詹姆斯 、 波什 、 伊尔 戈斯卡 斯 ( 小林 )</span><br></pre></td></tr></table></figure>
+
+<p>如上述过程将源文件中每一条记录执行此操作后写入目标文件。整理成函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_seg_file</span><span class="params">(input_file, output_seg_file)</span>:</span></span><br><span class="line">    <span class="string">"""对input_file内容分词"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:    <span class="comment"># 读文件</span></span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">with</span> open(output_seg_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:                   <span class="comment"># 写的方式打开写文件</span></span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> lines:                                   <span class="comment"># 对于每一行</span></span><br><span class="line">            label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)  <span class="comment"># 分出lenbel和content</span></span><br><span class="line">            word_iter = jieba.cut(content)                   <span class="comment"># 对content切分成词</span></span><br><span class="line">            word_content = <span class="string">''</span>                                    <span class="comment"># 保存每个次</span></span><br><span class="line">            <span class="keyword">for</span> word <span class="keyword">in</span> word_iter:                               <span class="comment"># 对切分结果中每个词作如下操作：</span></span><br><span class="line">                word = word.strip(<span class="string">' '</span>)</span><br><span class="line">                <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">                    word_content += word + <span class="string">' '</span></span><br><span class="line">            out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))  <span class="comment"># 输入文件每一行的格式</span></span><br><span class="line">            </span><br><span class="line">            f.write(out_line)     <span class="comment"># 写入文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 对三个数据集作同样操作</span></span><br><span class="line">generate_seg_file(train_file, seg_train_file)</span><br><span class="line">generate_seg_file(val_file, seg_val_file)</span><br><span class="line">generate_seg_file(test_file, seg_test_file)</span><br></pre></td></tr></table></figure>
+
+<p>此时三个样本集各自的分词结果。</p>
+<h2 id="统计词频"><a href="#统计词频" class="headerlink" title="统计词频"></a>统计词频</h2><p>对上一步得到的分词后的文件进行词频统计。如对索引为204的记录统计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(output_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">        </span><br><span class="line">word_dict = &#123;&#125;</span><br><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">        word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">        word_dict[word] += <span class="number">1</span></span><br><span class="line">print(word_dict)</span><br></pre></td></tr></table></figure>
+
+<p>结果为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'绿衫'</span>: 1, <span class="string">'军'</span>: 1, <span class="string">'vs'</span>: 1, <span class="string">'热火'</span>: 3, <span class="string">'首发'</span>: 3, <span class="string">'：'</span>: 3, <span class="string">'新'</span>: 1, <span class="string">'老三'</span>: 1, <span class="string">'巨头'</span>: 1, <span class="string">'对抗'</span>: 1, <span class="string">'小奥'</span>: 1, <span class="string">'单挑'</span>: 1, <span class="string">'大'</span>: 2, <span class="string">'Z'</span>: 1, <span class="string">'新浪'</span>: 1, <span class="string">'体育讯'</span>: 1, <span class="string">'北京'</span>: 1, <span class="string">'时间'</span>: 1, <span class="string">'5'</span>: 1, <span class="string">'月'</span>: 1, <span class="string">'4'</span>: 1, <span class="string">'日'</span>: 1, <span class="string">'，'</span>: 4, <span class="string">'和'</span>: 1, <span class="string">'凯尔特人'</span>: 3, <span class="string">'迎来'</span>: 1, <span class="string">'第二'</span>: 1, <span class="string">'回合'</span>: 1, <span class="string">'巅峰'</span>: 1, <span class="string">'对决'</span>: 1, <span class="string">'本场'</span>: 2, <span class="string">'比赛'</span>: 2, <span class="string">'双方'</span>: 2, <span class="string">'主帅'</span>: 2, <span class="string">'均'</span>: 1, <span class="string">'未'</span>: 1, <span class="string">'对'</span>: 1, <span class="string">'名单'</span>: 2, <span class="string">'做出'</span>: 1, <span class="string">'任何'</span>: 1, <span class="string">'更改'</span>: 1, <span class="string">'。'</span>: 1, <span class="string">'而'</span>: 1, <span class="string">'道'</span>: 1, <span class="string">'格'</span>: 1, <span class="string">'-'</span>: 4, <span class="string">'里'</span>: 1, <span class="string">'弗斯'</span>: 1, <span class="string">'赛前'</span>: 1, <span class="string">'也'</span>: 1, <span class="string">'向'</span>: 1, <span class="string">'媒体'</span>: 1, <span class="string">'表示'</span>: 1, <span class="string">'“'</span>: 1, <span class="string">'鲨鱼'</span>: 1, <span class="string">'”'</span>: 1, <span class="string">'沙奎尔'</span>: 1, <span class="string">'奥尼尔'</span>: 2, <span class="string">'将'</span>: 1, <span class="string">'继续'</span>: 1, <span class="string">'作壁上观'</span>: 1, <span class="string">'以下'</span>: 1, <span class="string">'为'</span>: 1, <span class="string">'—'</span>: 2, <span class="string">'隆多'</span>: 1, <span class="string">'、'</span>: 8, <span class="string">'雷'</span>: 1, <span class="string">'阿伦'</span>: 1, <span class="string">'皮尔斯'</span>: 1, <span class="string">'加内特'</span>: 1, <span class="string">'杰'</span>: 1, <span class="string">'梅因'</span>: 1, <span class="string">'毕比'</span>: 1, <span class="string">'韦德'</span>: 1, <span class="string">'詹姆斯'</span>: 1, <span class="string">'波什'</span>: 1, <span class="string">'伊尔'</span>: 1, <span class="string">'戈斯卡'</span>: 1, <span class="string">'斯'</span>: 1, <span class="string">'('</span>: 1, <span class="string">'小林'</span>: 1, <span class="string">')'</span>: 1&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此字典中键为词语，值为键出现的频数。当然这只是对一条记录的统计，对所有记录统计才有意义。</p>
+<p>按词语频数排序，方便之后输入模型的<strong>截取操作</strong>。****</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sorted_word_dict = sorted(</span><br><span class="line">    word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">print(sorted_word_dict)</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[(<span class="string">'、'</span>, 8), (<span class="string">'，'</span>, 4), (<span class="string">'-'</span>, 4), (<span class="string">'热火'</span>, 3), (<span class="string">'首发'</span>, 3), (<span class="string">'：'</span>, 3), (<span class="string">'凯尔特人'</span>, 3), (<span class="string">'大'</span>, 2), (<span class="string">'本场'</span>, 2), (<span class="string">'比赛'</span>, 2), (<span class="string">'双方'</span>, 2), (<span class="string">'主帅'</span>, 2), (<span class="string">'名单'</span>, 2), (<span class="string">'奥尼尔'</span>, 2), (<span class="string">'—'</span>, 2), (<span class="string">'绿衫'</span>, 1), (<span class="string">'军'</span>, 1), (<span class="string">'vs'</span>, 1), (<span class="string">'新'</span>, 1), (<span class="string">'老三'</span>, 1), (<span class="string">'巨头'</span>, 1), (<span class="string">'对抗'</span>, 1), (<span class="string">'小奥'</span>, 1), (<span class="string">'单挑'</span>, 1), (<span class="string">'Z'</span>, 1), (<span class="string">'新浪'</span>, 1), (<span class="string">'体育讯'</span>, 1), (<span class="string">'北京'</span>, 1), (<span class="string">'时间'</span>, 1), (<span class="string">'5'</span>, 1), (<span class="string">'月'</span>, 1), (<span class="string">'4'</span>, 1), (<span class="string">'日'</span>, 1), (<span class="string">'和'</span>, 1), (<span class="string">'迎来'</span>, 1), (<span class="string">'第二'</span>, 1), (<span class="string">'回合'</span>, 1), (<span class="string">'巅峰'</span>, 1), (<span class="string">'对决'</span>, 1), (<span class="string">'均'</span>, 1), (<span class="string">'未'</span>, 1), (<span class="string">'对'</span>, 1), (<span class="string">'做出'</span>, 1), (<span class="string">'任何'</span>, 1), (<span class="string">'更改'</span>, 1), (<span class="string">'。'</span>, 1), (<span class="string">'而'</span>, 1), (<span class="string">'道'</span>, 1), (<span class="string">'格'</span>, 1), (<span class="string">'里'</span>, 1), (<span class="string">'弗斯'</span>, 1), (<span class="string">'赛前'</span>, 1), (<span class="string">'也'</span>, 1), (<span class="string">'向'</span>, 1), (<span class="string">'媒体'</span>, 1), (<span class="string">'表示'</span>, 1), (<span class="string">'“'</span>, 1), (<span class="string">'鲨鱼'</span>, 1), (<span class="string">'”'</span>, 1), (<span class="string">'沙奎尔'</span>, 1), (<span class="string">'将'</span>, 1), (<span class="string">'继续'</span>, 1), (<span class="string">'作壁上观'</span>, 1), (<span class="string">'以下'</span>, 1), (<span class="string">'为'</span>, 1), (<span class="string">'隆多'</span>, 1), (<span class="string">'雷'</span>, 1), (<span class="string">'阿伦'</span>, 1), (<span class="string">'皮尔斯'</span>, 1), (<span class="string">'加内特'</span>, 1), (<span class="string">'杰'</span>, 1), (<span class="string">'梅因'</span>, 1), (<span class="string">'毕比'</span>, 1), (<span class="string">'韦德'</span>, 1), (<span class="string">'詹姆斯'</span>, 1), (<span class="string">'波什'</span>, 1), (<span class="string">'伊尔'</span>, 1), (<span class="string">'戈斯卡'</span>, 1), (<span class="string">'斯'</span>, 1), (<span class="string">'('</span>, 1), (<span class="string">'小林'</span>, 1), (<span class="string">')'</span>, 1)]</span><br></pre></td></tr></table></figure>
+
+<p>整理成函数，对所有记录统计。注意该操作<strong>只针对训练集</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_vocab_file</span><span class="params">(input_seg_file, output_vocab_file)</span>:</span></span><br><span class="line">    <span class="string">"""将input_seg_file中做词频统计，输出到out_put_file中"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    word_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        <span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">            word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">            word_dict[word] += <span class="number">1</span></span><br><span class="line">    <span class="comment"># [(word, frequency), ..., ()]</span></span><br><span class="line">    sorted_word_dict = sorted(</span><br><span class="line">        word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">with</span> open(output_vocab_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">'&lt;UNK&gt;\t10000000\n'</span>)      <span class="comment"># 当在测试集中找不到一个词时，用&lt;UNK&gt; 代替</span></span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> sorted_word_dict:</span><br><span class="line">            f.write(<span class="string">'%s\t%d\n'</span> % (item[<span class="number">0</span>], item[<span class="number">1</span>]))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 只对已知的训练集执行此操作</span></span><br><span class="line">generate_vocab_file(seg_train_file, vocab_file)</span><br></pre></td></tr></table></figure>
+<p>打开结果文件<code>vocab_file</code>查看：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>第一列为序号，表示第几个词，第二列为词（出现的数组和百分比都是文本中的实际数字），第三列为该词出现的频数。两点说明：</p>
+<ul>
+<li>频数太小的词无意义，因为神经网络为<font color="red">概率模型，只出现一次没有统计意义</font>。</li>
+<li>而<font color="red">频数很高但通用的词（停用词）同样无意义</font>，因为通用的词在分类问题中不能提供有用信息，从信息论角度看，使用通用词训练模型不能减少模型的不确定性。这两点之后会处理。</li>
+</ul>
+<p>对label统计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_category_dict</span><span class="params">(input_file, category_file)</span>:</span></span><br><span class="line">    <span class="string">"""统计类别"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    category_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        category_dict.setdefault(label, <span class="number">0</span>)</span><br><span class="line">        category_dict[label] += <span class="number">1</span></span><br><span class="line">    category_number = len(category_dict)</span><br><span class="line">    <span class="keyword">with</span> open(category_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">for</span> category <span class="keyword">in</span> category_dict:</span><br><span class="line">            line = <span class="string">'%s\n'</span> % category</span><br><span class="line">            print(<span class="string">'%s\t%d'</span> % (category, category_dict[category]))</span><br><span class="line">            f.write(line)</span><br><span class="line">            </span><br><span class="line">generate_category_dict(train_file, category_file)</span><br></pre></td></tr></table></figure>
+<p>结果写入<code>catecory_file</code>, 并且控制台输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">体育	5000</span><br><span class="line">娱乐	5000</span><br><span class="line">家居	5000</span><br><span class="line">房产	5000</span><br><span class="line">教育	5000</span><br><span class="line">时尚	5000</span><br><span class="line">时政	5000</span><br><span class="line">游戏	5000</span><br><span class="line">科技	5000</span><br><span class="line">财经	5000</span><br></pre></td></tr></table></figure>
+
+<p>类别频数相同，表示这是一个<font color="orange">极度均匀数据集</font>。这是理想的！</p>
+<p>统计词的频率，是为了截取，每个词的数值化，可用其序号代替。</p>
+<p>整个过程生产5个文件：</p>
+<ul>
+<li>seg_train_file： 分词后的训练集</li>
+<li>seg_val_file： 分词后的验证集</li>
+<li>seg_test_file： 分词后的测试集</li>
+<li>vocab_file： 训练集的词频统计</li>
+<li>category_file： 训练集的类别统计</li>
+</ul>
+<p>完整程序与数据文件<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/preProcess.py" target="_blank" rel="noopener">这里</a>。</p>
+<p><font color="green" size="5">敲黑板</font>对于如本笔记所处理的极度均匀的数据集，评价模型时可以使用准确率。但是对于<font color="red">极度偏斜(Skewed Data)的数据</font>，如在数据集中某类病症的发病样本数与未发病样本书之比远小于1，只使用准确率评价模型是远远不够的。这时就需要使用其他模型评估方法如混淆矩阵(Confusion Matrix)等。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" data-id="ck74urap1000g4nfz947x2yx1" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-Floyd-s-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" class="article-date">
+  <time datetime="2019-08-02T16:08:05.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/">LeetCode-方法论-Floyd&#39;s Algorithm</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题<strong>转化</strong>的。当原问题棘手时，找到合适的方向可以转化为简单问题。</p>
+<p>287, 224, </p>
+<h1 id="141-Linked-List-Cycle"><a href="#141-Linked-List-Cycle" class="headerlink" title="#141 Linked List Cycle"></a>#141 Linked List Cycle</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1</span><br><span class="line">Output: true</span><br><span class="line">Explanation: There is a cycle in the linked list, where tail connects to the second node.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p> 如果存在环，兔子与乌龟会第二次相遇；否则除了起点，龟兔不会再相遇。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasCycle</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    ListNode* rabbit=head;</span><br><span class="line">    ListNode* turtle=head;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(rabbit &amp;&amp; turtle)&#123;</span><br><span class="line">        rabbit = rabbit-&gt;next;</span><br><span class="line">        turtle = turtle-&gt;next;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (rabbit) rabbit=rabbit-&gt;next; <span class="comment">// one step faster than the turtle</span></span><br><span class="line">        <span class="keyword">if</span> (rabbit &amp;&amp; (rabbit==turtle))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="287-Find-the-Duplicate-Number"><a href="#287-Find-the-Duplicate-Number" class="headerlink" title="#287 Find the Duplicate Number"></a>#287 Find the Duplicate Number</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,1,3,4,2]</span><br><span class="line">Output: 3</span><br><span class="line">Note:</span><br><span class="line"></span><br><span class="line">    You must not modify the array (assume the array is read only).</span><br><span class="line">    You must use only constant, O(1) extra space.</span><br><span class="line">    Your runtime complexity should be less than O(n2).</span><br><span class="line">    There is only one duplicate number in the array, but it could be repeated more than once.</span><br><span class="line"></span><br><span class="line">依照本题意，数组中一定有重复元素，找到数组中重复出现的元素。</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  就题意而言，数组元素唯一和数组元素有重复的区别可用下图表示：</p>
+<p>  1) 当给定数组中无重复元素时，如<code>nums={3,4,5,2,1}</code>。以第一行为当前位置，第二行为下一位置。小人从位置0开始走最终走到5停止。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png" width="700"> </div>
+  <div align="center">路经无环</div>
+
+<p>  2) 当给定数组中有重复元素时，如<code>nums={1，4，6，5，6，2，3}</code>。小人从位置0开始走，路经有环始终不会停止。而且被两个箭头指向的节点6为重复元素。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png" width="700"> </div>
+  <div align="center">路经有环</div>
+
+
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findDuplicate</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> turtle = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> rabbit = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        turtle = nums[turtle];      <span class="comment">// one step</span></span><br><span class="line">        rabbit = nums[nums[rabbit]]; <span class="comment">// two steps</span></span><br><span class="line">    &#125;<span class="keyword">while</span>(turtle != rabbit);  </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ptr1 = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> ptr2 = turtle;</span><br><span class="line">    <span class="keyword">while</span>(ptr1 != ptr2)&#123;</span><br><span class="line">        ptr1 = nums[ptr1];</span><br><span class="line">        ptr2 = nums[ptr2];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ptr1;              </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  当龟兔位于同起点，向相同的方向跑，<strong>如果赛道无环，乌龟永远追不上兔子。若赛道有环，兔子会再次追上乌龟</strong>。这就是Floy’s 算法的来源。</p>
+<p>  表面上与龟兔赛跑无关，在<font color="red" size="4">逻辑上构建出类似链表</font>后，就水到渠成了。</p>
+<p>  本题并不复杂，但当经过<font color="red" size="4">转化</font>后时间空间复杂度达到若干方法中较优。时刻有转化问题的意识。</p>
+</li>
+</ul>
+<p>关键：<font color="red" size="4">问题转化</font>，<font color="red" size="4">龟兔赛跑</font></p>
+<h1 id="142-Linked-List-Cycle-II"><a href="#142-Linked-List-Cycle-II" class="headerlink" title="#142 Linked List Cycle II"></a>#142 Linked List Cycle II</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" data-id="ck71en4jw002fhefzcqdrekbd" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-文本分类-一-几类模型" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2019-08-02T11:23:04.000Z" itemprop="datePublished">2019-08-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/">文本分类(一)-几类模型</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>文本分类任务中，输入为一条由词语组成的文本，模型判断这条文本的类别。</p>
+<h2 id="1-基本文本模型"><a href="#1-基本文本模型" class="headerlink" title="1.基本文本模型"></a>1.基本文本模型</h2><p>模型一：使用RNN(LSTM)的最后一个状态判断类别，是最基本的RNN模型。如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>LSTM的最后一个状态，或者说是该LSTM结点的最后一个time step 包含了整个句子的信息。将这个信息传入一个普通的全连接的神经网络。最终得到一个分类。比如一个句子传入模型后被判断为威胁类别。如果是二分类，使用sigmoid实现，若是多分类，使用softmax实现。</p>
+<p>这个过程中涉及到embedding，就是用向量来表示一个词语，或者说是对词语的进一步编码。第一次编码是将词语转化为数字，两者一一对应。</p>
+<p>不使用one-hot 编码，深度学习领域使用embedding的方式对词语进行编码。具体如何做，如下：</p>
+<table>
+<thead>
+<tr>
+<th align="right">词语</th>
+<th align="right">id1</th>
+<th align="right">id2</th>
+<th align="right">id3</th>
+<th align="right">id4</th>
+<th align="right">id5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">海洋</td>
+<td align="right">0.11</td>
+<td align="right">0.52</td>
+<td align="right">0.45</td>
+<td align="right">1.27</td>
+<td align="right">0.72</td>
+</tr>
+<tr>
+<td align="right">阳光</td>
+<td align="right">0.63</td>
+<td align="right">0.24</td>
+<td align="right">1.12</td>
+<td align="right">0.27</td>
+<td align="right">1.27</td>
+</tr>
+<tr>
+<td align="right">冲浪</td>
+<td align="right">0.72</td>
+<td align="right">0.22</td>
+<td align="right">0.23</td>
+<td align="right">0.37</td>
+<td align="right">0.46</td>
+</tr>
+</tbody></table>
+<p>我把每一个出现了的词用长度为5的向量表示。并且embedding中的数值是变量，在训练模型时，所有数值是要被学习(更新)的。从而使得每个词语对应的向量与词语意思更相关。</p>
+<p>当把输入编码成一个向量时，过程就更类似对图像的处理了(两者还是很不一样)。输入与输出都是向量。</p>
+<h2 id="2-双向文本模型"><a href="#2-双向文本模型" class="headerlink" title="2.双向文本模型"></a>2.双向文本模型</h2><p>上述基本模型有个问题：虽然LSTM可以选择性地保存信息，但是，随后一个词语还是会与其较近的词语由更大的关系，而弱化较早以前的词语。所以更早些的信息可能不会被保存下来。双向RNN就是用来解决这个问题的，如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>特点：</p>
+<ul>
+<li>信息正向传播，并且逆向传播。</li>
+<li>把每一个词语经过这个LSTM的输出，做组合(拼接，pooling等)</li>
+<li>最终将组合结果传入一个全连接层</li>
+</ul>
+<h2 id="3-HAN"><a href="#3-HAN" class="headerlink" title="3.HAN"></a>3.HAN</h2><p>特点：</p>
+<ul>
+<li>分层，第一层词语编码，第二层句编码。</li>
+<li>每一层增加一个类似LSTM内部门的操作，成为Attention 机制</li>
+</ul>
+<h2 id="4-CNN解决文本问题"><a href="#4-CNN解决文本问题" class="headerlink" title="4.CNN解决文本问题"></a>4.CNN解决文本问题</h2>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" data-id="ck74urao100004nfz9fd04tgp" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-组成原理缓存置换算法" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" class="article-date">
+  <time datetime="2019-08-02T01:26:37.000Z" itemprop="datePublished">2019-08-02</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/">组成原理-缓存置换算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录了4种缓存置换算法</p>
+<ul>
+<li>随机置换算法</li>
+<li>FIFO</li>
+<li>LRU</li>
+<li>LFU</li>
+</ul>
+<h2 id="FIFO-先进先出算法"><a href="#FIFO-先进先出算法" class="headerlink" title="FIFO(先进先出算法)"></a>FIFO(先进先出算法)</h2><p><strong>原理</strong>：置换缓存时，从硬件角度：当缓存不满时，直接添加所需内容，否则，将最先进入缓存的内容删除，并把需使用的内容添加到缓存。对应的逻辑角度：当缓存不满时，直接添加新节点到链表尾。若缓存满，先将链表头节点删除，并且把新的节点连接到链表尾部。</p>
+<p><strong>实现</strong>：缓存使用双向链表实现<em>DoubleLinkedList</em>，其中节点由<em>Node</em>实现。 </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> DoubleLinkedList <span class="keyword">import</span> Node, DoubleLinkedList</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FIFO</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, capacity)</span>:</span></span><br><span class="line">        self.capacity = capacity</span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line">        self.map = &#123;&#125;   <span class="comment"># &#123;key: node&#125; as search table</span></span><br><span class="line">        self.dlist = DoubleLinkedList(self.capacity)  <span class="comment"># as the cache</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span><span class="params">(self, key)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> self.map:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node = self.map.get(key)</span><br><span class="line">            <span class="keyword">return</span> node.value</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">put</span><span class="params">(self, key, value)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> self.capacity == <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">in</span> self.map:   <span class="comment"># if this key exist in map</span></span><br><span class="line">            node = self.map.get(key)  <span class="comment"># get this key</span></span><br><span class="line">            self.dlist.remove(node)   <span class="comment"># remove the node with this key</span></span><br><span class="line">            node.value = value     <span class="comment"># update the value of that node</span></span><br><span class="line">            self.dlist.append(node)  <span class="comment"># add node to the tail</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">if</span> self.size == self.capacity:   <span class="comment"># if cache is full</span></span><br><span class="line">                node = self.dlist.pop()</span><br><span class="line">                <span class="keyword">del</span> self.map[node.key]   <span class="comment"># delete the node at the head</span></span><br><span class="line">                self.size -= <span class="number">1</span></span><br><span class="line">            node = Node(key, value)</span><br><span class="line">            self.dlist.append(node)   <span class="comment"># add new node to the tail</span></span><br><span class="line">            self.map[key] = node</span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.dlist.print()</span><br></pre></td></tr></table></figure>
+<p>测试：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    cache = FIFO(<span class="number">4</span>)</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">10</span>)</span><br><span class="line">    cache.put(<span class="number">2</span>, <span class="number">20</span>)</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">12</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(<span class="string">"------"</span>)</span><br><span class="line">    cache.put(<span class="number">4</span>, <span class="number">40</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">5</span>, <span class="number">50</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">11</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(cache.get(<span class="number">1</span>))</span><br><span class="line">    print(cache.get(<span class="number">2</span>))</span><br></pre></td></tr></table></figure>
+<p>结果如下，注释体现了FIFO<strong>算法过程</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;1: 10&#125;-&gt;&#123;2: 20&#125;-&gt;&#123;3: 30&#125;            &#x2F;&#x2F; 该时刻的缓存内容</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;            &#x2F;&#x2F; 缓存未满，key&#x3D;1的接点在缓存中，删除头部key&#x3D;1的&#123;1: 10&#125;，尾部加入&#123;1: 12&#125;</span><br><span class="line">------</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;   &#x2F;&#x2F; 缓存未满，key&#x3D;4的节点不存在，所以在尾部加&#123;4: 40&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;5的节点不存在，删除头部&#123;2: 20&#125;，尾部加&#123;5: 50&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;1的节点在缓存中，删除key&#x3D;1的&#123;1: 12&#125;，尾部加&#123;1: 11&#125;</span><br><span class="line">&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;-&gt;&#123;3: 30&#125;   &#x2F;&#x2F; 同理</span><br><span class="line">11                                   &#x2F;&#x2F; 查找key&#x3D;1的value，存在</span><br><span class="line">-1                                   &#x2F;&#x2F; 查找key&#x3D;2的value，不存在</span><br></pre></td></tr></table></figure>
+<h2 id="LRU-最不经常使用算法"><a href="#LRU-最不经常使用算法" class="headerlink" title="LRU(最不经常使用算法)"></a>LRU(最不经常使用算法)</h2><p>待填坑</p>
+<h2 id="LFU-最近最少使用算法"><a href="#LFU-最近最少使用算法" class="headerlink" title="LFU(最近最少使用算法)"></a>LFU(最近最少使用算法)</h2><p>待填坑</p>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><h3 id="Node定义"><a href="#Node定义" class="headerlink" title="Node定义"></a>Node定义</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, key, val)</span>:</span></span><br><span class="line">        self.key = key</span><br><span class="line">        self.value = val</span><br><span class="line">        self.prev = <span class="literal">None</span></span><br><span class="line">        self.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__repr__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br></pre></td></tr></table></figure>
+<h3 id="双向链表DoubleLinkedList定义"><a href="#双向链表DoubleLinkedList定义" class="headerlink" title="双向链表DoubleLinkedList定义"></a>双向链表DoubleLinkedList定义</h3><p>对于<strong>成员函数为什么返回看似无用的node节点</strong>，经验上讲这样做是最优的。在FIFO的实现过程中会发现，如果成员函数返回其他内容，或无返回值，最终的应用回出现逻辑错误。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DoubleLinkedList</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, cap=<span class="number">0xffff</span>)</span>:</span></span><br><span class="line">        self.capacity = cap</span><br><span class="line">        self.head = <span class="literal">None</span></span><br><span class="line">        self.tail = <span class="literal">None</span></span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.head.next = <span class="literal">None</span></span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.head.prev = node</span><br><span class="line">            node.next = self.head</span><br><span class="line">            self.head = node</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># append node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_tail</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            self.tail.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail.next = node</span><br><span class="line">            node.prev = self.tail</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_tail</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node.prev:</span><br><span class="line">            self.tail = node.prev</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            node.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail = self.head = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_head</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:  <span class="comment"># if empty list</span></span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.head  <span class="comment"># assign self.head to a new node</span></span><br><span class="line">        <span class="keyword">if</span> node.next:</span><br><span class="line">            self.head = node.next</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">            node.next = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:  <span class="comment"># only a head exist</span></span><br><span class="line">            self.head = self.tail = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove node in any position</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__remove</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="comment"># if node==None, remove tail by default</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> node:</span><br><span class="line">            node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node == self.tail:</span><br><span class="line">            self.__del_tail()</span><br><span class="line">        <span class="keyword">elif</span> node == self.head:</span><br><span class="line">            self.__del_head()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node.prev.next = node.next</span><br><span class="line">            node.next.prev = node.prev</span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># APIs</span></span><br><span class="line">    <span class="comment"># pop node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pop</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__del_head()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_tail(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_head(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">remove</span><span class="params">(self, node=None)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__remove(node)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        p = self.head</span><br><span class="line">        line = <span class="string">''</span></span><br><span class="line">        <span class="keyword">while</span> p:</span><br><span class="line">            line += <span class="string">'%s'</span> % p</span><br><span class="line">            p = p.next</span><br><span class="line">            <span class="keyword">if</span> p:</span><br><span class="line">                line += <span class="string">'-&gt;'</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> line:</span><br><span class="line">            print(<span class="string">"empty double linked list"</span>)</span><br><span class="line">        print(line)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" data-id="ck7bjjf5y000ni5fz0l6750sl" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Mobile-Net-深度可分离卷积" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" class="article-date">
+  <time datetime="2019-08-01T11:37:36.000Z" itemprop="datePublished">2019-08-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/">MobileNet深度可分离卷积</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录MobileNet的深度可分离卷积操作的特点及实现。</p>
+<p>深度可分离卷积是将输入的<font color="red">每个通道展开</font>，在单个通道上做卷积，最后将结果合并。换句话说，通常的卷积层每个核要扫描输入的所有通道，而深度可分离卷积每个核只读输入的一个通道。与Inception 的<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积单元</a>相似，不同的是每个卷积核只对输入的一个通道操作。</p>
+<h2 id="深度可分离卷积结构"><a href="#深度可分离卷积结构" class="headerlink" title="深度可分离卷积结构"></a>深度可分离卷积结构</h2><p>假设深度可分离层的输入有3个通道，如图表示了该模块的过程：</p>
+<div align="center"><img src="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/seperable_conv_block.png" width="500"></div>
+<div align="center">对每个通道进行卷及操作</div>
+
+<p>下面是就上图结构实现的模块：</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">separable_conv_block</span><span class="params">(x, output_channel_number, name)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    x: input </span></span><br><span class="line"><span class="string">    output_channel_number: the output channel of the entire block, </span></span><br><span class="line"><span class="string">                            又是1x1卷据层的卷积核个数(卷积核个数==输出通道数)</span></span><br><span class="line"><span class="string">    name: namespace</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name):</span><br><span class="line">        <span class="comment"># get channel number:</span></span><br><span class="line">        input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># split channels to a channel list:</span></span><br><span class="line">        <span class="comment"># channel_wise_x: [channel1, channel2, ...]</span></span><br><span class="line">        channel_wise_x = tf.split(x, input_channel, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 对每一个通道分别执行3x3的卷积操作</span></span><br><span class="line">        output_channels = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len(channel_wise_x)):      </span><br><span class="line">            output_channel = tf.layers.conv2d(channel_wise_x[i],</span><br><span class="line">                                              <span class="number">1</span>,</span><br><span class="line">                                              (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                                              strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                              padding = <span class="string">'same'</span>,</span><br><span class="line">                                              activation = tf.nn.relu,</span><br><span class="line">                                              name = <span class="string">'conv_%d'</span> % i)</span><br><span class="line">            output_channels.append(output_channel)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># concat along channel(index=3)</span></span><br><span class="line">        concat_layer = tf.concat(output_channels, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 经过一个1x1的卷积操作</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(concat_layer,</span><br><span class="line">                                   output_channel_number,</span><br><span class="line">                                   (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">    <span class="keyword">return</span> conv1_1</span><br></pre></td></tr></table></figure>
+
+<p>将上述模块放入MobileNet的网络结构就可以搭建完整的MobileNet。实例实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/mobile_net.ipynb" target="_blank" rel="noopener">这里</a></p>
+<hr>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" data-id="ck74tgku90001i2fz1hfmgkvw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Google-Inception-Net-分组卷积单元-Inception-Module" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" class="article-date">
+  <time datetime="2019-08-01T08:53:25.000Z" itemprop="datePublished">2019-08-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/">Google Inception Net-分组卷积单元(Inception Module)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Inception Net的分组卷积操作及Inception Module的作用及实现。</p>
+<p>Google Inception Net V1首次出现在2014年，其有网络结构有22层，比同年出现的VGGNet的19层更深。Inception Net有一下特点：</p>
+<ul>
+<li>同一层上使用多种卷积核</li>
+<li>卷积核大小较小，通常只使用1x1，3x3，5x5的尺寸</li>
+</ul>
+<h2 id="Inception-Module结构"><a href="#Inception-Module结构" class="headerlink" title="Inception Module结构"></a>Inception Module结构</h2><p>其核心是分组卷积，即同一层上使用多种尺寸的卷积核，每一个卷积核得到同一层上<font color="red">不同尺度</font>的特征。不同组之间的特征<font color="red">不交叉</font>计算，如此便减少了计算量。</p>
+<p>多用小尺寸的卷积核，尤其是多次用到1x1的。这是因为<font color="red">1x1的核性价比很高</font>，即<font color="red">消耗很少的计算量就可以增加一层非线性变换</font>。<br>如下图所示，实际会更灵活：</p>
+<div align="center"> <img src="/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/inceptionBlock.png" width="600"> </div>
+<div align="center">分别使用1x1, 3x3, 5x5的卷积核采样。</div>
+
+
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>以下是根据上图的分组卷积结构而实现的python代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">inception_block</span><span class="params">(x, output_channel_for_each_path, name)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name): <span class="comment"># avoid name conflict</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(x,</span><br><span class="line">                                   output_channel_for_each_path[<span class="number">0</span>],</span><br><span class="line">                                   (<span class="number">1</span>, <span class="number">1</span>),            <span class="comment"># 1x1 卷积核</span></span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">        conv3_3 = tf.layers.conv2d(x,</span><br><span class="line">                                   output_channel_for_each_path[<span class="number">1</span>],</span><br><span class="line">                                   (<span class="number">3</span>, <span class="number">3</span>),            <span class="comment">#3x3 卷积核</span></span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv3_3'</span>)</span><br><span class="line">        conv5_5 = tf.layers.conv2d(x,</span><br><span class="line">                                   output_channel_for_each_path[<span class="number">2</span>],</span><br><span class="line">                                   (<span class="number">5</span>, <span class="number">5</span>),             <span class="comment"># 5x5 卷积核</span></span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv5_5'</span>)</span><br><span class="line">        max_pooling = tf.layers.max_pooling2d(x,</span><br><span class="line">                                              (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                              (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                              name = <span class="string">'max_pooling'</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># max_pooling: output = 1/2 input, so need to add 0; </span></span><br><span class="line">    max_pooling_shape = max_pooling.get_shape().as_list()[<span class="number">1</span>:]  <span class="comment"># size of the output</span></span><br><span class="line">    input_shape = x.get_shape().as_list()[<span class="number">1</span>:]                  <span class="comment"># size of the input</span></span><br><span class="line">    </span><br><span class="line">    width_padding = (input_shape[<span class="number">0</span>] - max_pooling_shape[<span class="number">0</span>]) // <span class="number">2</span> <span class="comment"># pad to width</span></span><br><span class="line">    height_padding = (input_shape[<span class="number">1</span>] - max_pooling_shape[<span class="number">1</span>]) // <span class="number">2</span> <span class="comment">#pad to height</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    padded_pooling = tf.pad(max_pooling,</span><br><span class="line">                            [[<span class="number">0</span>, <span class="number">0</span>],</span><br><span class="line">                             [width_padding, width_padding],</span><br><span class="line">                             [height_padding, height_padding],</span><br><span class="line">                             [<span class="number">0</span>, <span class="number">0</span>]])</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># put together all pieses</span></span><br><span class="line">    concat_layer = tf.concat(</span><br><span class="line">                            [conv1_1, conv3_3, conv5_5, padded_pooling],</span><br><span class="line">                            axis = <span class="number">3</span>)</span><br><span class="line">    <span class="keyword">return</span> concat_layer</span><br></pre></td></tr></table></figure>
+
+<p>以上代码片段实现的是Inception V1实际会更灵活。到了Inception V2，用两个3x3代替5x5的卷积核。到了V3，将较大的二维卷积拆成一维卷积，比如将7x7的拆成<font color="red">1x7</font>和<font color="red">7x1</font>两个卷积。到了V4 模型结合了ResNet的<a href="https://ashburnlee.github.io/2019/08/01/ResNet-Residual-Unit/" target="_blank" rel="noopener">残差学习块</a>。</p>
+<p>本笔记记录了分组卷积的作用及实现，完整的Inception Net实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/inception_net.ipynb" target="_blank" rel="noopener">这里</a>。</p>
+<hr>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" data-id="ck74t521j000023fzgzmt53go" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-ResNet-残差学习单元-Residual-Unit" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" class="article-date">
+  <time datetime="2019-08-01T06:12:00.000Z" itemprop="datePublished">2019-08-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/">ResNet 残差学习单元(Residual Unit)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录残差学习块(Residual Unit)的作用及实现。</p>
+<p>ResNet(Residual Neural Network)是在2015年提出，其对于之前的深层网络对大特点是其结构中的残差学习块。<br><br>在网络不断加深的过程中会出现Degradation的现象，也就是说再持续增加网络的<font color="red">深度导致准确率下降</font>。ResNet的灵感源于：一个比较浅的网络达到饱和准确率后，在其后加上几个<code>y=x</code>全等映射层，<font color="red">至少不会使误差增加</font>。</p>
+<h2 id="Residual-Unit"><a href="#Residual-Unit" class="headerlink" title="Residual Unit"></a>Residual Unit</h2><p>假设有一段网络的输入是<code>x</code>，它回经过若干层非线性变换得到结果<code>y</code>，假设其期望输出为<code>y_</code>，同时<code>x</code>也作为输出的一部分加在<code>y</code>中。那么网络的学习目标是<code>y_-x</code>。ResNet相当于改变了学习的目标，它不再是完整的输出<code>y_</code>， 而是输出与输入的差<code>y_-x</code>，也就是Residual(残差)。如下图：</p>
+<div align="center"> 
+<img src="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/resnet.png" width="500"> 
+</div>
+<div align="center">图中x为此残差块的输入，y_为期望输出，y为经过两个卷积层的输出。</div>
+
+<p>为什么ResNet回会有效，可以这样理解：传统的卷积层或全连接层在信息传递时，或多或少存在<font color="red">信息丢失</font>的问题，ResNet从一些程度上解决了这个问题，它通过<font color="red">直接</font>将输入加到输出上，保护了信息的完整性。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">residual_block</span><span class="params">(x, output_channel)</span>:</span></span><br><span class="line">    <span class="string">"""residual connection implementation"""</span></span><br><span class="line">    input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">    <span class="keyword">if</span> input_channel * <span class="number">2</span> == output_channel: <span class="comment">#如果本层的输出通道数是输入通道数的2倍</span></span><br><span class="line">        increase_dim = <span class="literal">True</span></span><br><span class="line">        strides = (<span class="number">2</span>, <span class="number">2</span>)</span><br><span class="line">    <span class="keyword">elif</span> input_channel == output_channel:  <span class="comment">#如果本层的输出通道数与输入通道数相同</span></span><br><span class="line">        increase_dim = <span class="literal">False</span></span><br><span class="line">        strides = (<span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"input channel can't match output channel"</span>)</span><br><span class="line">    conv1 = tf.layers.conv2d(x,</span><br><span class="line">                             output_channel,</span><br><span class="line">                             (<span class="number">3</span>,<span class="number">3</span>),</span><br><span class="line">                             strides = strides,</span><br><span class="line">                             padding = <span class="string">'same'</span>,</span><br><span class="line">                             activation = tf.nn.relu,</span><br><span class="line">                             name = <span class="string">'conv1'</span>)</span><br><span class="line">    conv2 = tf.layers.conv2d(conv1,</span><br><span class="line">                             output_channel,</span><br><span class="line">                             (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                             strides = (<span class="number">1</span>, <span class="number">1</span>),</span><br><span class="line">                             padding = <span class="string">'same'</span>,</span><br><span class="line">                             activation = tf.nn.relu,</span><br><span class="line">                             name = <span class="string">'conv2'</span>)</span><br><span class="line">    <span class="comment"># 如果通道数翻倍了</span></span><br><span class="line">    <span class="keyword">if</span> increase_dim:</span><br><span class="line">        <span class="comment"># [None, image_width, image_height, channel] -&gt; [,,,channel*2]</span></span><br><span class="line">        pooled_x = tf.layers.average_pooling2d(x,</span><br><span class="line">                                               (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                               (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                               padding = <span class="string">'valid'</span>)</span><br><span class="line">        <span class="comment"># 使padded_x 与 conv2 大小相同</span></span><br><span class="line">        padded_x = tf.pad(pooled_x,</span><br><span class="line">                          [[<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [input_channel // <span class="number">2</span>, input_channel // <span class="number">2</span>]])</span><br><span class="line">    <span class="comment"># 如果通道数未翻倍</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        padded_x = x  <span class="comment"># 全等映射 </span></span><br><span class="line"></span><br><span class="line">    output_x = conv2 + padded_x </span><br><span class="line">    <span class="keyword">return</span> output_x</span><br></pre></td></tr></table></figure>
+
+<p>本笔记只是记录了残差学习块的作用及实现，完整的ResNet实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/resnet.ipynb" target="_blank" rel="noopener">这里</a>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" data-id="ck74tgku60000i2fz615j450i" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CXX可调用对象" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/" class="article-date">
+  <time datetime="2019-07-29T07:16:11.000Z" itemprop="datePublished">2019-07-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/">CXX可调用对象</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录function模板与含有相同调用形式的可调用对象。</p>
+<p>c++中有一些可调用对象</p>
+<ul>
+<li>函数</li>
+<li>函数指针</li>
+<li>lambda</li>
+<li>bind创建的对象</li>
+<li>重载了函数调用运算符的类</li>
+</ul>
+<p>比如下面三个函数add, mod, divide</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#inlcude <span class="meta-string">&lt;unordered_map&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//一般函数</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span>  b)</span></span>&#123; <span class="keyword">return</span> a+b; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//命名的lambda函数</span></span><br><span class="line"><span class="keyword">auto</span> mod = [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a%b; &#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//重载了调用运算符的类，又称作函数对象</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">divide</span>&#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">int</span> denomenator, <span class="keyword">int</span> divisor)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> denomenator/divisor; </span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>三个不同可调用对象：普通函数<code>add</code>，命名了的<code>lambda</code>对象<code>mod</code>，函数对象(<code>function object</code>)<code>divide</code> 拥有相同的<font color="red">调用形式(<code>call signature</code>)</font>.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> (<span class="keyword">int</span>, <span class="keyword">int</span>)   <span class="comment">//表示传入两个int型，返回一个int型</span></span><br></pre></td></tr></table></figure>
+
+<p>而模板类<code>function</code>使用时需要指定类型，如上述调用形式。如此可以定义多个<code>function</code>对象</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f1 = add;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f2 = divide();    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f3 = [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a%b; &#125;;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f4 = mod;    </span><br><span class="line">        </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f1(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f2(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f3(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f4(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来, 可以构建从算数符号到函数的映射，如</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//加入main中</span></span><br><span class="line">   <span class="built_in">unordered_map</span>&lt;<span class="built_in">string</span>, function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>,<span class="keyword">int</span>)&gt;&gt; calculator = &#123;</span><br><span class="line">       &#123;<span class="string">"+"</span>, add&#125;,                                <span class="comment">//函数指针</span></span><br><span class="line">       &#123;<span class="string">"-"</span>, <span class="built_in">std</span>::minus&lt;<span class="keyword">int</span>&gt;()&#125;,                  <span class="comment">//STL函数            </span></span><br><span class="line">       &#123;<span class="string">"*"</span>, [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a*b; &#125;&#125;,    <span class="comment">//匿名lambda函数</span></span><br><span class="line">       &#123;<span class="string">"/"</span>, divide()&#125;,                           <span class="comment">//函数对象</span></span><br><span class="line">       &#123;<span class="string">"%"</span>, mod&#125; &#125;;                              <span class="comment">//命名的lambda函数</span></span><br><span class="line"></span><br><span class="line">   calculator[<span class="string">"+"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"-"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"*"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"/"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"%"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br></pre></td></tr></table></figure>
+
+<p>如同<code>vector&lt;int&gt;</code>可以作为容器内容的类型，此处只不过用<code>function&lt;int(int,int)&gt;</code>作为了map的val类型。</p>
+<p>结束<br>c++可调用对象</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/" data-id="ck71en4jq0023hefz4xgwdqym" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+
+
+  <nav id="page-nav">
+    
+    <a class="extend prev" rel="prev" href="/page/8/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><span class="page-number current">9</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/10/">Next &amp;raquo;</a>
+  </nav>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">38</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+          </li>
+        
+          <li>
+            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
