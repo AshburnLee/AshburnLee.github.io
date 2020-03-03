@@ -436,6 +436,63 @@
 
 
   
+    <article id="post-模拟退火-增强学习任务间的迁移学习" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" class="article-date">
+  <time datetime="2019-08-06T14:20:35.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/">模拟退火-增强学习任务间的迁移学习</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记为概述，记录使用模拟退火算法(Simulated Anneling)解决，迁移学习(Transfer Learning)应用在增强学习(Reinforcemet Learning)任务间整体效率的问题。实现过程看<a href="https://github.com/AshburnLee/earlyTerminationOfTransferLearningInReinforcementLearning" target="_blank" rel="noopener">这里</a>。</p>
+<h2 id="增强学习"><a href="#增强学习" class="headerlink" title="增强学习"></a>增强学习</h2><p>增强学习是一个agent在与它所处的环境相互作用中学习的过程。比如把一只老鼠放在一个迷宫中，让它自己试错找到出口。agent与环境的相互作用由三个变量体现：状态，动作，奖励。状态指agent当前的位置，动作指agent在当前位置有哪些行动的选择。比如老鼠在迷宫中的当前位置可以向前，后，左，右移动。奖励指agent在每次行动后得到的奖励。比如迷宫中的老鼠每找到一粒花生得+10奖励，若它掉进陷阱里得到-10的奖励，且本次学习结束。为了让老鼠尽快学习，一般设置，如果每次执行一个动作，没有正负效果的话，获得-1奖励。这激励agent用较少的步数达到目标，对于老鼠说，吃到花生。</p>
+<p>增强学习的可视化环境使用开源<a href="http://burlap.cs.brown.edu/index.html" target="_blank" rel="noopener">BURLAP</a>可视化RL环境。其中agent是个像素小人儿，小人儿的目标是执行不同的动作来找到出口。使用Q-learning学习算法后，可以得到关于本阶段相关数据。一个阶段可能要执行多次学习，比如100次学习。这个项目使用3列数据：Episode Index，#Actions，Reward。这些数据在学习过程中生成，并且保存在外部文件中。</p>
+<p>经过一个阶段的学习后，可视化这个阶段学习：<font color="green" size="4">Reward-EpisodesIndex图像</font>。E-R图像表示每一个episode对应的reward。可以观察到小人儿确实学习了的。因为钱若干次的R值较小且波动，但是呈上升趋势，直到上升到一个稳定值。此时可以认为小人儿停止学习了，或者说，小人儿找到了最优路径。开始稳定横坐标暂且称为“完全学习Episode”。</p>
+<p>为了减少噪声对R-E图像的影响，可以尝试让小人儿学习多阶段，比如10阶段，每阶段学习相同次数，后对R&amp;A分别求均值。为了使图像便于观察，对平均操作后的图像加上平滑操作。<font color="green" size="4">平滑后的图像</font>。</p>
+<h2 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h2><p>迁移学习对于相似但又不同的任务(一个成为源任务，另一个成为目标任务)，可以把在源任务中学习到的内容应用于目标任务的学习中，进而可以加速目标学习的速度。这已被实验证实。</p>
+<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>进一步实验发现，其实即使只在源任务学习少于“完全学习Episode”的Episode，在目标任务中的学习也可以提前拟合，相较于从零开始学习目标任务。<font color="green" size="4">目标任务提前拟合</font>。那么小人儿在源中学习具体学习多少次，可以使迁移后的整体步数更少来达到拟合。</p>
+<p>此处对于图像有个改动，横轴不再是Episode Index，而换成每一个Episode对应的Accumulated Actions。即从此往下使用AA-R图像。为什么要如此做，这么做，横轴不单单是Episode，更增加了到达这一Episode为止一共执行了多少Actions。换句话说，之前这个“系统”中的信息只有Episode Index和对应的Reward，两个有用信息。现在这个“系统”中的有用信息包括，Episode Index，当前Episode的Actions数和从开始到现在一共的Actions数。根据信息论观点，<strong>增加有用信息，可以减少系统不确定性</strong>。</p>
+<p>回到问题，具体在源任务中学习多少次。先探索一下。我的做法是，1）分别在源任务中学习1E，2E，3E，… ，nE后迁移到目标任务中，如此得到n个迁移学习过程。对应n个AA-R条曲线，并合并到一幅图中。2）设定一个具体Reward值为R。观察哪条曲线先穿过R。<strong>现在我的目标转化为</strong>，在不需要执行完n个迁移学习过程的前提下，如何确定哪条曲线先穿过R。</p>
+<p>记录第二步中每条曲线穿过R时的对应Episode值，如此便可以得到在源任务中学习次数与其对应的穿过R时的AA值。绘出这条曲线。<font color="green" size="4">E-AA图像</font>。此时的<strong>目标转化为</strong>：在这条曲线中搜索最小值。多次实验发现这条曲线是非凸的，即有局部最小值，且很多。所以在线搜索只能找到第一个局部最优值，不可取。那遍历一遍就可以搜索到最小值。错，如果那样做，整个过程将毫无意义。为了搜索最值，而把所有值求出来。记住求出曲线中一个值，其代价是要完整地执行RL(Surce task)-&gt;TL-&gt;RL(Target task) 阶段数×每阶段的Episode数。比如10阶段，每阶段执行100Episode。得到一个值要执行1000次完整的上述过程。成本太高。</p>
+<p>这个问题类似TSP(Traveling Salesman Problem)问题。同样是求最值，TSP提前得到所有方案是不可能的，就现在的计算机。借鉴TSP的解法，<a href="https://github.com/AshburnLee/GeneticAlgorithmForTSP" target="_blank" rel="noopener">遗传算法</a>或<a href="https://github.com/AshburnLee/simulatedAnnealingForTSP" target="_blank" rel="noopener">模拟退火</a>，分别点击见实现。因为此问题的输入不是序列，所以遗传算法不适用，实验模拟退火，成功。</p>
+<p>模拟退火与遗传算法都属于带有随机性的算法。遗传算法中的交叉，变异操作，模拟退火中的以一定概率接受一个比之前差的结果，都是引入随机性。而随机性给了算法跳出当前局部最有值的能力。</p>
+<p><font color="gree" size="5">敲黑板</font></p>
+<pre><code>1）这个项目中达到目标进行了至少两次的问题转化。
+2）借鉴相同性质问题的成熟解法。
+3）积累不同问题的解法。</code></pre>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" data-id="ck7biydin0000yxfz7kj65aw6" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-文本分类-三-构建模型II-LSTM层结点实现细节" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" class="article-date">
@@ -462,15 +519,15 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>在 <a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">文本分类(三)-构建模型I-built-in-LSTM</a> 中<code>tensorflow</code>中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 <code>from scratch</code></p>
-<p>理解这一篇笔记的细节，要结合<a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">上一篇笔记</a>，尤其是其最后一段，结合这里的细节，体会。</p>
+        <p>在上一篇笔记<a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">文本分类(三)-构建模型I-built-in-LSTM</a> 中<code>tensorflow</code>中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 <code>from scratch</code></p>
+<p>理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。</p>
 <p>LSTM结点如下图：</p>
 <div align="center">
     <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/node_lstm.png" width="500">
 </div>
 <div align="center">图：单个LSTM结点内部结构</div>
+<br><br>
 
-<p><font color="red"></font></p>
 <p>一般RNN存在信息过载而<font color="red">不能长久传播</font>的问题，LSTM单元结构存在<font color="red">三重门机制</font>尝试解决这个问题。<br><br>假如一个词的编号为12，将它对应的<code>embedding向量</code>输入LSTM 结点中有一下过程发生：</p>
 <ul>
 <li>得到这个词的embedding，大小为<code>[batch_size, 1, embedd_size]</code>：</li>
@@ -484,21 +541,25 @@
 
 <h1 id="三重门过程，公式及实现："><a href="#三重门过程，公式及实现：" class="headerlink" title="三重门过程，公式及实现："></a>三重门过程，公式及实现：</h1><h2 id="遗忘门："><a href="#遗忘门：" class="headerlink" title="遗忘门："></a>遗忘门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-f.png" width="700"></div>
 <div align="center">图：遗忘门</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">forget_gate = tf.sigmoid( </span><br><span class="line">                        tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br></pre></td></tr></table></figure>
 
 <h2 id="输入门："><a href="#输入门：" class="headerlink" title="输入门："></a>输入门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-i.png" width="700"></div>
 <div align="center">图：输入门</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">mid_state = tf.tanh(</span><br><span class="line">                        tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br></pre></td></tr></table></figure>
 
 <h2 id="结点隐含状态输出："><a href="#结点隐含状态输出：" class="headerlink" title="结点隐含状态输出："></a><strong>结点隐含状态</strong>输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-C.png" width="700"></div>
 <div align="center">图：隐含状态</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">state_C = mid_state * input_gate + state_C * forget_gate</span><br></pre></td></tr></table></figure>
 
 <h2 id="输出门及结点LSTM的输出："><a href="#输出门及结点LSTM的输出：" class="headerlink" title="输出门及结点LSTM的输出："></a>输出门及结点LSTM的输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-o.png" width="700"></div>
 <div align="center">图：输出门</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">output_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">h = output_gate * tf.tanh(state)</span><br></pre></td></tr></table></figure>
 
@@ -517,6 +578,7 @@
 <div align="center">
     图：左侧是实际LSTM结点，右侧是这个结点从时间上展开后的
 </div>
+<br><br>
 
 <p><font color="green" size="5">敲黑板</font>将等号左边按时间次序展开就是右边。实现中一个LSTM结点可以代表一个神经元，只不过这一个神经元内部有5个非线性变换。对于复杂问题一个这样的神经元不足以表达输入数据，所以会有多个这样的神经元。<br>这里的实现源码<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_pure.py" target="_blank" rel="noopener">看这里</a>。源码中对网络的设置为：  </p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">num_lstm_nodes=[<span class="number">32</span>, <span class="number">32</span>],    </span><br><span class="line">num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">encoded_length=<span class="number">50</span>,</span><br></pre></td></tr></table></figure>
@@ -1113,59 +1175,6 @@
 
 
   
-    <article id="post-Mobile-Net-深度可分离卷积" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" class="article-date">
-  <time datetime="2019-08-01T11:37:36.000Z" itemprop="datePublished">2019-08-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/">MobileNet深度可分离卷积</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录MobileNet的深度可分离卷积操作的特点及实现。</p>
-<p>深度可分离卷积是将输入的<font color="red">每个通道展开</font>，在单个通道上做卷积，最后将结果合并。换句话说，通常的卷积层每个核要扫描输入的所有通道，而深度可分离卷积每个核只读输入的一个通道。与Inception 的<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积单元</a>相似，不同的是每个卷积核只对输入的一个通道操作。</p>
-<h2 id="深度可分离卷积结构"><a href="#深度可分离卷积结构" class="headerlink" title="深度可分离卷积结构"></a>深度可分离卷积结构</h2><p>假设深度可分离层的输入有3个通道，如图表示了该模块的过程：</p>
-<div align="center"><img src="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/seperable_conv_block.png" width="500"></div>
-<div align="center">对每个通道进行卷及操作</div>
-
-<p>下面是就上图结构实现的模块：</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">separable_conv_block</span><span class="params">(x, output_channel_number, name)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    x: input </span></span><br><span class="line"><span class="string">    output_channel_number: the output channel of the entire block, </span></span><br><span class="line"><span class="string">                            又是1x1卷据层的卷积核个数(卷积核个数==输出通道数)</span></span><br><span class="line"><span class="string">    name: namespace</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name):</span><br><span class="line">        <span class="comment"># get channel number:</span></span><br><span class="line">        input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># split channels to a channel list:</span></span><br><span class="line">        <span class="comment"># channel_wise_x: [channel1, channel2, ...]</span></span><br><span class="line">        channel_wise_x = tf.split(x, input_channel, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 对每一个通道分别执行3x3的卷积操作</span></span><br><span class="line">        output_channels = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len(channel_wise_x)):      </span><br><span class="line">            output_channel = tf.layers.conv2d(channel_wise_x[i],</span><br><span class="line">                                              <span class="number">1</span>,</span><br><span class="line">                                              (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                                              strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                              padding = <span class="string">'same'</span>,</span><br><span class="line">                                              activation = tf.nn.relu,</span><br><span class="line">                                              name = <span class="string">'conv_%d'</span> % i)</span><br><span class="line">            output_channels.append(output_channel)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># concat along channel(index=3)</span></span><br><span class="line">        concat_layer = tf.concat(output_channels, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 经过一个1x1的卷积操作</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(concat_layer,</span><br><span class="line">                                   output_channel_number,</span><br><span class="line">                                   (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">    <span class="keyword">return</span> conv1_1</span><br></pre></td></tr></table></figure>
-
-<p>将上述模块放入MobileNet的网络结构就可以搭建完整的MobileNet。实例实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/mobile_net.ipynb" target="_blank" rel="noopener">这里</a></p>
-<hr>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" data-id="ck74tgku90001i2fz1hfmgkvw" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1181,7 +1190,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1191,7 +1200,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">22</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">23</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1210,7 +1219,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 

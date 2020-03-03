@@ -7,12 +7,12 @@
   
   <title>文本分类(三)-构建模型II-LSTM层结点实现细节 | Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="在 文本分类(三)-构建模型I-built-in-LSTM 中tensorflow中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 from scratch 理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。 LSTM结点如下图：        图：单个LSTM结点内部结构   一般RNN存在信息过载而不能长久传播的问题，LSTM">
+  <meta name="description" content="在上一篇笔记文本分类(三)-构建模型I-built-in-LSTM 中tensorflow中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 from scratch 理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。 LSTM结点如下图：        图：单个LSTM结点内部结构   一般RNN存在信息过载而不能长久传播的问题，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="文本分类(三)-构建模型II-LSTM层结点实现细节">
 <meta property="og:url" content="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/index.html">
 <meta property="og:site_name" content="Junhui&#39;s Journal">
-<meta property="og:description" content="在 文本分类(三)-构建模型I-built-in-LSTM 中tensorflow中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 from scratch 理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。 LSTM结点如下图：        图：单个LSTM结点内部结构   一般RNN存在信息过载而不能长久传播的问题，LSTM">
+<meta property="og:description" content="在上一篇笔记文本分类(三)-构建模型I-built-in-LSTM 中tensorflow中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 from scratch 理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。 LSTM结点如下图：        图：单个LSTM结点内部结构   一般RNN存在信息过载而不能长久传播的问题，">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/node_lstm.png">
 <meta property="og:image" content="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-f.png">
@@ -21,7 +21,7 @@
 <meta property="og:image" content="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-o.png">
 <meta property="og:image" content="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/logicly_unroll.png">
 <meta property="article:published_time" content="2019-08-04T17:12:02.000Z">
-<meta property="article:modified_time" content="2020-03-02T06:15:12.640Z">
+<meta property="article:modified_time" content="2020-03-02T06:31:50.057Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="Algorithms">
 <meta property="article:tag" content="Test Analysis">
@@ -101,15 +101,15 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>在 <a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">文本分类(三)-构建模型I-built-in-LSTM</a> 中<code>tensorflow</code>中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 <code>from scratch</code></p>
-<p>理解这一篇笔记的细节，要结合<a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">上一篇笔记</a>，尤其是其最后一段，结合这里的细节，体会。</p>
+        <p>在上一篇笔记<a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">文本分类(三)-构建模型I-built-in-LSTM</a> 中<code>tensorflow</code>中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 <code>from scratch</code></p>
+<p>理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。</p>
 <p>LSTM结点如下图：</p>
 <div align="center">
     <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/node_lstm.png" width="500">
 </div>
 <div align="center">图：单个LSTM结点内部结构</div>
+<br><br>
 
-<p><font color="red"></font></p>
 <p>一般RNN存在信息过载而<font color="red">不能长久传播</font>的问题，LSTM单元结构存在<font color="red">三重门机制</font>尝试解决这个问题。<br><br>假如一个词的编号为12，将它对应的<code>embedding向量</code>输入LSTM 结点中有一下过程发生：</p>
 <ul>
 <li>得到这个词的embedding，大小为<code>[batch_size, 1, embedd_size]</code>：</li>
@@ -123,21 +123,25 @@
 
 <h1 id="三重门过程，公式及实现："><a href="#三重门过程，公式及实现：" class="headerlink" title="三重门过程，公式及实现："></a>三重门过程，公式及实现：</h1><h2 id="遗忘门："><a href="#遗忘门：" class="headerlink" title="遗忘门："></a>遗忘门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-f.png" width="700"></div>
 <div align="center">图：遗忘门</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">forget_gate = tf.sigmoid( </span><br><span class="line">                        tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br></pre></td></tr></table></figure>
 
 <h2 id="输入门："><a href="#输入门：" class="headerlink" title="输入门："></a>输入门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-i.png" width="700"></div>
 <div align="center">图：输入门</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">mid_state = tf.tanh(</span><br><span class="line">                        tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br></pre></td></tr></table></figure>
 
 <h2 id="结点隐含状态输出："><a href="#结点隐含状态输出：" class="headerlink" title="结点隐含状态输出："></a><strong>结点隐含状态</strong>输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-C.png" width="700"></div>
 <div align="center">图：隐含状态</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">state_C = mid_state * input_gate + state_C * forget_gate</span><br></pre></td></tr></table></figure>
 
 <h2 id="输出门及结点LSTM的输出："><a href="#输出门及结点LSTM的输出：" class="headerlink" title="输出门及结点LSTM的输出："></a>输出门及结点LSTM的输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-o.png" width="700"></div>
 <div align="center">图：输出门</div>
+<br><br>
 
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">output_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">h = output_gate * tf.tanh(state)</span><br></pre></td></tr></table></figure>
 
@@ -156,6 +160,7 @@
 <div align="center">
     图：左侧是实际LSTM结点，右侧是这个结点从时间上展开后的
 </div>
+<br><br>
 
 <p><font color="green" size="5">敲黑板</font>将等号左边按时间次序展开就是右边。实现中一个LSTM结点可以代表一个神经元，只不过这一个神经元内部有5个非线性变换。对于复杂问题一个这样的神经元不足以表达输入数据，所以会有多个这样的神经元。<br>这里的实现源码<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_pure.py" target="_blank" rel="noopener">看这里</a>。源码中对网络的设置为：  </p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">num_lstm_nodes=[<span class="number">32</span>, <span class="number">32</span>],    </span><br><span class="line">num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">encoded_length=<span class="number">50</span>,</span><br></pre></td></tr></table></figure>
@@ -180,11 +185,11 @@
     
 <nav id="article-nav">
   
-    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" id="article-nav-newer" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Newer</strong>
       <div class="article-nav-title">
         
-          LeetCode-方法论-DP-一
+          模拟退火-增强学习任务间的迁移学习
         
       </div>
     </a>
@@ -208,7 +213,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -218,7 +223,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">22</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">23</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -237,7 +242,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">23</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
