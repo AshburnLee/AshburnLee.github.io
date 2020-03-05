@@ -5,19 +5,14 @@
   
 
   
-  <title>Style-Transfer | Junhui&#39;s Journal</title>
+  <title>Archives: 2020/3 | Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="本笔记是风格转换应用的概述。 本应用需要使用使用已训练好的VGG16网络的结构及参数。VGG16.npy文件中保存了网络的结构和参数，这些参数可以通过解析网络得到，之后便可以重构整个网络，包括每一个conv layer，每一个pooling layer，每一个fully connected layer和flatten layer，以及每一层所需的w，b。如下图：   有了每一层的参数，可以构建若干">
-<meta property="og:type" content="article">
-<meta property="og:title" content="Style-Transfer">
-<meta property="og:url" content="http://yoursite.com/2019/08/13/Style-Transfer/index.html">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Junhui&#39;s Journal">
+<meta property="og:url" content="http://yoursite.com/archives/2020/03/index.html">
 <meta property="og:site_name" content="Junhui&#39;s Journal">
-<meta property="og:description" content="本笔记是风格转换应用的概述。 本应用需要使用使用已训练好的VGG16网络的结构及参数。VGG16.npy文件中保存了网络的结构和参数，这些参数可以通过解析网络得到，之后便可以重构整个网络，包括每一个conv layer，每一个pooling layer，每一个fully connected layer和flatten layer，以及每一层所需的w，b。如下图：   有了每一层的参数，可以构建若干">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2019-08-12T17:47:38.000Z">
-<meta property="article:modified_time" content="2020-03-02T06:11:11.928Z">
 <meta property="article:author" content="Junhui">
-<meta property="article:tag" content="Algorithms">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
@@ -67,77 +62,40 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main"><article id="post-Style-Transfer" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/13/Style-Transfer/" class="article-date">
-  <time datetime="2019-08-12T17:47:38.000Z" itemprop="datePublished">2019-08-13</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
+        <section id="main">
   
-    <h1 class="article-title" itemprop="name">
-      Style-Transfer
+  
+    
+    
+      
+      
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="/archives/2020" class="archive-year">2020</a>
+        </div>
+        <div class="archives">
+    
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      <a href="/2020/03/05/cpp-pro-tip-1/" class="archive-article-date">
+  <time datetime="2020-03-05T10:05:50.000Z" itemprop="datePublished">Mar 5</time>
+</a>
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
     </h1>
   
 
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>本笔记是风格转换应用的概述。</p>
-<p>本应用需要使用使用已训练好的VGG16网络的结构及参数。VGG16.npy文件中保存了网络的结构和参数，这些参数可以通过解析网络得到，之后便可以重构整个网络，包括每一个conv layer，每一个pooling layer，每一个fully connected layer和flatten layer，以及每一层所需的w，b。如下图：</p>
-<div align="center"><img src></div>
-
-<p>有了每一层的参数，可以构建若干conv layer 和 pooling layer。 由于本应用不使用flatten layer 和 fc layer 的输出结果，而且VGG16 大部分的参数集中在fc layer，所以不用构建此二层。</p>
-<p>当含有训练好参数的网络构建好后，或者说函数<code>y=f(x)</code>及所有参数都定义好了。此时当输入<code>f(x)</code>一个<code>x</code>，便可以得到一个对应的<code>y</code>。</p>
-<p>本应用需要使用三个一模一样网络y=f(x)，一个传入content_img，可以得到f(p)每一层的输出；第二个网络传入style_img，可以得到f(a)的每一层输出；第三个网络传入自变量x，f(x)。x是一个2D向量，其初始值为一个随机初始化的向量。本应用就是使随机化的x通过学习逐渐变成一个混合content_img和style_img的图像。</p>
-<p>这个应用实际上也是个学习的过程，此过程需要3个Loss值：<code>Lcontent</code>，<code>Lstyle</code>，<code>Ltotal</code>。其中Lcontent是p传入f在M层的输出与x传入f在同一层的输出做平方差；Lstyle是a传入f在N层的输出的Gram矩阵与x传入同一层的输出的Gram矩阵的平方差；最后得到整个学习过程的Loss函数Ltotal：<code>Ltotal=alpha*Lcontent+beta*Lstyle</code>。Ltotal是一个以x为参数的函数，通过不断更新x的值来最小化Ltotal。同样是学习过程，不同于CNN应用在分类问题，Loss是以x为学习参数，w和b是定值，每次学习都是更新x。</p>
-<p><font color="Blue">迭代数学公式</font></p>
-<p>实验通过改变alpha 和 beta的值来改变风格转化的程度。特别的，当alpha！=0，beta=0时，Ltotal只与Lcontent有关，这种情况下，学习过程变成了：x通过学习逐渐变成p(content img)；当alpha=0，beta！=0时，x通过学习逐渐变成a(style img)。</p>
-<p>有趣的是，要想使x学习成p，需要使用f(p)在浅层的输出值；而要想是x学习成a，需要使用f(a)早深层的输出值。所以最终为了使混合图像的效果好，f(p)使用浅层输出，f(a)使用深层输出。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/13/Style-Transfer/" data-id="ck74tgkug0004i2fz1eoh76db" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
+    </header>
   </div>
-  
-    
-<nav id="article-nav">
-  
-    <a href="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Newer</strong>
-      <div class="article-nav-title">
-        
-          信息论-信息量与二叉树
-        
-      </div>
-    </a>
-  
-  
-    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" id="article-nav-older" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">CUDA-更新线程ID</div>
-    </a>
-  
-</nav>
-
-  
 </article>
+  
+  
+    </div></section>
+  
+
 
 </section>
         

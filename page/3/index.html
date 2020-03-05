@@ -64,6 +64,101 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-APOD-Strong-Scaling-Weak-Scaling" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" class="article-date">
+  <time datetime="2020-01-14T11:52:36.000Z" itemprop="datePublished">2020-01-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>读书笔记来自<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/" target="_blank" rel="noopener">这里</a></p>
+<h1 id="APOD"><a href="#APOD" class="headerlink" title="APOD"></a>APOD</h1><ul>
+<li><p><code>APOD</code> 表示Assess，Parallelize, Optimize, Deploy。是Nvidia官方提出的CUDA应用程序的周期性设计模式，目的很明确，让开发者快速找到程序中可以并行的部分，尽可能地加速计算。</p>
+<ol>
+<li><p>Assess 作为循环设计的入口，评估程序中最耗时的代码部分。</p>
+</li>
+<li><p>Parallelize 根据原始代码，调用现有的GPU优化库（如<code>cuBLAS</code>，<code>cuFFT</code>或<code>Thrust</code>），也可以简单地添加一些预处理器指令作为并行化编译器的提示。</p>
+</li>
+<li><p>Optimize 有很多方法，可以从很多角度，比如 overlapping data transfers， fine-tuning floating-point operation sequences 等等。这一步一定要用可用的优化工具。</p>
+</li>
+<li><p>Deploy 经过初步优化后，保证正确性，在有限时间内得到一个较好的结果。而不是将所有可能优化都实现。</p>
+<p>根据具体任务和产品，迭代4步骤。尽可能的得到好的性能提升。</p>
+</li>
+</ol>
+</li>
+<li><p>建立优化优先级</p>
+<p>  在执行优化前要建立优化优先级。</p>
+<p>  高优化优先级是一些优化，这些优化对于大部分CUDA程序而言可以显著提升性能。低优化优先级是一些小的优化，这些优化可能只适用于某些特定的情况下。</p>
+<p>  先处理高优先级的优化，后解决低优先级的优化。这保证了在有限时间内提供足有的结果，并且避免了过早优化（premature optimization）。 </p>
+<p>  常见高优先级：</p>
+<ol>
+<li>用profiler工具找到最耗时的部分</li>
+<li>并行处理可以并行的串行部分</li>
+</ol>
+</li>
+</ul>
+<h1 id="Host-和-Device的不同"><a href="#Host-和-Device的不同" class="headerlink" title="Host 和 Device的不同"></a>Host 和 Device的不同</h1><p>同时含有CPU和GPU的计算系统称作是异构计算系统（Heterogeneous Computing）。为了有效是哟个CUDA，有必要知道Host和Device 的不同。</p>
+<ul>
+<li><p>线程资源<br>  Host上的流水线可以支持有限数量的并发线程。比如，具有2个32核芯处理器的服务器只能同时运行64个线程（如果CPU支持同时多线程，那么可同时运行的线程数为64的倍数，如128，192）。</p>
+<p>  相比之下，CUDA设备上最基本的并行执行单元包含32个线程（一个warp）。现代NVIDIA GPU可以在多处理器上同时支持最多2048个活动线程。如果一个GPU上有80个多处理器（SM），这表示可以有超过160000个并发活动线程。</p>
+</li>
+<li><p>线程本身<br>  CPU上的线程通常是重量级实体。操作系统必须用其他线程交换CPU执行通道上的线程，以提供多线程功能。因此，上下文切换（当两个线程被交换时）是缓慢而昂贵的。</p>
+<p>  相比之下，GPU上的线程是轻量级。在一个典型的系统中，数千个线程排队等待工作。如果GPU要等待一个warp，它只需在另一个warp上开始执行工作。因为单独的<font color="green">寄存器</font>被分配给所有活动线程，所以在GPU线程之间切换时<font color="green">不需要交换寄存器或其他状态</font>。资源一直分配给每个线程，直到它完成执行。</p>
+<p>  简而言之，CPU内核目的是最小化每次一小部分线程的等待时间，而GPU则被设计成处理大量并发、轻量级线程以最大化吞吐量。</p>
+</li>
+<li><p>RAM<br>  Host由CPU和系统内存构成，Device由GPU和显卡上的存储器构成。所以说，Host和Device有各自的RAM。</p>
+</li>
+</ul>
+<p>这些是硬件层面就并行角度看的不同。总之在这样的异构系统中Host做串行工作，Device做并行工作。</p>
+<h1 id="Profiling"><a href="#Profiling" class="headerlink" title="Profiling"></a>Profiling</h1><p>目的是找到程序中最耗时函数。有很多Profiler工具，比如<code>gprof</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -O2 -g -pg myprog.c</span><br><span class="line">$ gprof .&#x2F;a.out &gt; profile.txt</span><br><span class="line">Each sample counts as 0.01 seconds.</span><br><span class="line">  %   cumulative   self              self     total           </span><br><span class="line"> time   seconds   seconds    calls  ms&#x2F;call  ms&#x2F;call  name    </span><br><span class="line"> 33.34      0.02     0.02     7208     0.00     0.00  genTimeStep</span><br><span class="line"> 16.67      0.03     0.01      240     0.04     0.12  calcStats</span><br><span class="line"> 16.67      0.04     0.01        8     1.25     1.25  calcSummaryData</span><br><span class="line"> 16.67      0.05     0.01        7     1.43     1.43  write</span><br><span class="line"> 16.67      0.06     0.01                             mcount</span><br><span class="line">  0.00      0.06     0.00      236     0.00     0.00  tzset</span><br><span class="line">  0.00      0.06     0.00      192     0.00     0.00  tolower</span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+<p>其中<code>genTimeStep</code>函数是最耗时的。所以是我们优化对象</p>
+<h1 id="Strong-Scaling-amp-Weak-Scaling"><a href="#Strong-Scaling-amp-Weak-Scaling" class="headerlink" title="Strong Scaling &amp; Weak Scaling"></a>Strong Scaling &amp; Weak Scaling</h1><p>这是两类不同的问题，还有两者的混合问题。</p>
+<p>了解这里的目的是啥，是为我们的加速设置一个期望值，并且计划一个增强并行化的策略。</p>
+<ol>
+<li><p>Strong scaling 表示待解决的<font color="green">问题总体大小</font>是固定的，当使用更多的处理单元时，解决该问题的时间会相应地减少。</p>
+<p> 对应的测量加速公式是<code>Amdahl&#39;s Law</code>。</p>
+</li>
+<li><p>Weak scaling 表示<font color="green">每个处理单元（处理器）内所解决的问题大小</font>是固定的，随着处理器数量的增加，问题的总量也会变大。</p>
+<p> 对应测量加速的公式是<code>Gustafson&#39;s Law</code>。</p>
+</li>
+</ol>
+<p>公式理解看<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#understanding-scaling" target="_blank" rel="noopener">这里</a></p>
+<h1 id="得到正确结果是所有计算的目的"><a href="#得到正确结果是所有计算的目的" class="headerlink" title="得到正确结果是所有计算的目的"></a>得到正确结果是所有计算的目的</h1><p>一个并行系统可能遇到的关于结果正确性的问题，这些问题在一个串行系统中是不存在的：线程问题，浮点计算带来的问题，CPU和GPU的不同计算方式带来的问题。</p>
+<p><font color="green"></font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" data-id="ck71en4ip0001hefzh5fycgv0" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Computer-Composition" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/13/Computer-Composition/" class="article-date">
@@ -1045,281 +1140,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-LeetCode-方法论-数组相关-二" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/" class="article-date">
-  <time datetime="2019-12-19T05:25:32.000Z" itemprop="datePublished">2019-12-19</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/">LeetCode-方法论-数组相关-二</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>接着记录数组相关问题。<br>56, 74, 240, 136, 1122, 1009, 868, 985,  </p>
-<p>常用技术：</p>
-<ul>
-<li>粗调+精调</li>
-<li>XOR性质</li>
-<li>额外变量的使用</li>
-<li>数进制间的对应(相互为等价信息)</li>
-<li>移位操作</li>
-<li>首先想到的方法不是好的方法</li>
-</ul>
-<h1 id="56-Merge-intervals-合并区间"><a href="#56-Merge-intervals-合并区间" class="headerlink" title="#56 Merge intervals 合并区间"></a>#56 Merge intervals 合并区间</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: [[1,3],[2,6],[8,10],[15,18]]</span><br><span class="line">Output: [[1,6],[8,10],[15,18]]</span><br><span class="line">Explanation: Since intervals [1,3] and [2,6] overlaps, merge them into [1,6].</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<pre><code>第一步：按区间左边界排序
-第二步：把第一个interval[0]放入结果容器res中，从第二个interval[1]开始：
-    如果interval[1]的左边界 &gt;= res的最后一个interval的右边界，表示两者无交集，
-        把interval[1] append到res中；
-    如果interval[1]的左边界 &lt; res的最后一个interval的右边界，表示两者有交集，
-        把interval[1]的右边界写入res最后一个interval的右边界。</code></pre><p>  第二步过程间下示意图：</p>
-  <div align="center"><img src="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/interval.png" width="600"></div>
-</li>
-<li><p>看图说话实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">bool</span> <span class="title">compare</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; a , <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; b)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a[<span class="number">0</span>] &lt; b[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; merge(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; intervals) &#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; res;</span><br><span class="line">    <span class="keyword">if</span> (intervals.size()==<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    <span class="keyword">if</span> (intervals.size()==<span class="number">1</span>)&#123;</span><br><span class="line">        res.push_back(intervals[<span class="number">0</span>]);</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 区间左端点从小到大排序</span></span><br><span class="line">    sort(intervals.begin(), intervals.end(), compare); </span><br><span class="line"></span><br><span class="line">    res.push_back(intervals[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span>(i &lt; intervals.size())&#123;</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; last = res.back();  <span class="comment">// 注意</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (last[<span class="number">1</span>] &lt; intervals[i][<span class="number">0</span>])&#123;</span><br><span class="line">            res.push_back(intervals[i]);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            last[<span class="number">1</span>] = max(last[<span class="number">1</span>], intervals[i][<span class="number">1</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">        i++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键： <code>vector&lt;int&gt;&amp; last = res.back();</code> 定义last 的类型是reference。由逻辑，<font color="red" size="4">凡是last被修改，就是res.back()被修改</font>，所以last和res.back()为一个对象。</p>
-<h1 id="64-Search-2D-matrix"><a href="#64-Search-2D-matrix" class="headerlink" title="#64 Search 2D matrix"></a>#64 Search 2D matrix</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">matrix &#x3D; [</span><br><span class="line">[1,   3,  5,  7],</span><br><span class="line">[10, 11, 16, 20],</span><br><span class="line">[23, 30, 34, 50]</span><br><span class="line">]</span><br><span class="line">target &#x3D; 16</span><br><span class="line">Output: true</span><br><span class="line"></span><br><span class="line">1.Integers in each row are sorted from left to right.</span><br><span class="line">2.The first integer of each row is greater than the last integer of the previous row.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路 </p>
-<p>  根据问题的特点，设计<code>粗调+精调</code>方法：</p>
-<pre><code>粗调：把每一行的最后一个元素放入新的数组中（m长度）: [7, 20, 50].
-    用target与其中的每个元素比较，找到第一个比target大的元素并返回index。
-    如：20 是第一个大于target的元素，返回1，即target在index=1的行。
-精调：在index=1的行中搜索target。</code></pre></li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">searchMatrix</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; matrix, <span class="keyword">int</span> target)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> row = matrix.size();</span><br><span class="line">    <span class="keyword">int</span> col = matrix[<span class="number">0</span>].size();</span><br><span class="line"></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; station(row, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> r=<span class="number">0</span>; r&lt;row; r++)</span><br><span class="line">        station[r] = matrix[r][col<span class="number">-1</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// rough-tuning</span></span><br><span class="line">    <span class="keyword">int</span> pr = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;station.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (target == station[i])</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">if</span> (target &lt; station[i])&#123;</span><br><span class="line">            pr = i;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// fine-tuning</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> c=<span class="number">0</span>; c&lt;col; c++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (matrix[pr][c] == target)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>关键： <font color="red" size="4">粗调&amp;精调</font></p>
-</li>
-</ul>
-<h1 id="240-Search-2D-matrix-II"><a href="#240-Search-2D-matrix-II" class="headerlink" title="#240 Search 2D matrix II"></a>#240 Search 2D matrix II</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Consider the following matrix:</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">[1,   4,  7, 11, 15],</span><br><span class="line">[2,   5,  8, 12, 19],</span><br><span class="line">[3,   6,  9, 16, 22],</span><br><span class="line">[10, 13, 14, 17, 24],</span><br><span class="line">[18, 21, 23, 26, 30]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">Given target &#x3D; 5, return true.</span><br><span class="line"></span><br><span class="line">Given target &#x3D; 20, return false.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">1.Integers in each row are sorted in ascending from left to right.</span><br><span class="line">2.Integers in each column are sorted in ascending from top to bottom.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路 </p>
-<p>  与#74不同，对于方阵，可以使用粗调精调，但是对于非方阵，此法复杂。考虑新的方法，如下图：</p>
-  <div align="center"><img src="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/matrix.png" width="500"></div>
-
-<p>  从右上角或(左下角开始)，target与所到元素比较：</p>
-<pre><code>if (target &gt; matrix[i][j]) i++;    // 向下走
-else if (target &lt; matrix[i][j]) j--;    // 向右走
-else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">searchMatrix</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; matrix, <span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> row = matrix.size();</span><br><span class="line">    <span class="keyword">if</span> (row == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">int</span> col = matrix[<span class="number">0</span>].size();</span><br><span class="line">    <span class="keyword">if</span> (col == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">if</span> (target &lt; matrix[<span class="number">0</span>][<span class="number">0</span>] || target &gt; matrix[row<span class="number">-1</span>][col<span class="number">-1</span>])</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> r = row<span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">int</span> c = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(r &gt;= <span class="number">0</span> &amp;&amp; c &lt; col )&#123;</span><br><span class="line">        <span class="keyword">if</span> (target == matrix[r][c]) <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (target &gt; matrix[r][c]) c++;</span><br><span class="line">        <span class="keyword">else</span> r--;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="136-Single-Number"><a href="#136-Single-Number" class="headerlink" title="#136 Single Number"></a>#136 Single Number</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Given a non-empty <span class="built_in">array</span> of integers, every element appears twice </span><br><span class="line">except <span class="keyword">for</span> one. Find that single one.</span><br><span class="line"></span><br><span class="line">Input: [<span class="number">4</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">1</span>,<span class="number">2</span>]</span><br><span class="line">Output: <span class="number">4</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  方法一： map<br>  方法二： set<br>  方法三： XOR 使用XOR的数学性质，可以很快地解决问题</p>
-<pre><code>XOR 数学性质
-    I)   a^0=a (a!=0)
-    II)  a^a=0 (a!=0)
-    III) a^b^a = a^a^b = b^a^a = b </code></pre></li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">singleNumber</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> i: nums)</span><br><span class="line">        res ^= i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键: <font color="red" size="4">XOR行为</font></p>
-<h1 id="1122-Relative-Sort-Array"><a href="#1122-Relative-Sort-Array" class="headerlink" title="#1122  Relative Sort Array"></a>#1122  Relative Sort Array</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Given two arrays arr1 and arr2, the elements of arr2 are distinct, </span><br><span class="line">and all elements in arr2 are also in arr1.</span><br><span class="line"></span><br><span class="line">Sort the elements of arr1 such that the relative ordering of items in arr1 </span><br><span class="line">are the same as in arr2.  Elements that don&#39;t appear in arr2 </span><br><span class="line">should be placed at the end of arr1 in ascending order.</span><br><span class="line"></span><br><span class="line">Input: arr1 &#x3D; [2,3,1,3,2,4,6,7,9,2,19], arr2 &#x3D; [2,1,4,3,9,6]</span><br><span class="line">Output: [2,2,2,1,4,3,3,9,6,7,19]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  很直接，遍历arr2，对于arr2中所有元素，在arr1中找到这个元素，并且放到合适的位置，这个位置由变量index指示。看下图：</p>
-  <div align="center"><img src="/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/relative.png" width="450"></div>
-
-
-
-</li>
-</ul>
-<ul>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; relativeSortArray(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; arr1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; arr2)&#123;</span><br><span class="line">    <span class="keyword">int</span> index = <span class="number">0</span>;    <span class="comment">// extra variable</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;arr2.size(); i++)&#123;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=index; j&lt;arr1.size(); j++)&#123;</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">if</span> (arr1[j]==arr2[i])&#123;</span><br><span class="line">                swap(arr1[j], arr1[index]);</span><br><span class="line">                index++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    sort(arr1.begin()+index, arr1.end());</span><br><span class="line">    <span class="keyword">return</span> arr1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键： <font color="red" size="4">额外变量的使用</font></p>
-<h1 id="1009-Complement-of-Base-10-Integer"><a href="#1009-Complement-of-Base-10-Integer" class="headerlink" title="#1009 Complement of Base 10 Integer"></a>#1009 Complement of Base 10 Integer</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: 10</span><br><span class="line">Output: 5</span><br><span class="line">Explanation: 10 is &quot;1010&quot; in binary, with complement &quot;0101&quot; in binary, which is 5 in base-10.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路  </p>
-<p>  找到对应的111…1，减去已知，得结果。<br>  假设N=5，规律：</p>
-<table>
-<thead>
-<tr>
-<th>binary</th>
-<th>dec</th>
-<th>公式</th>
-<th>判断</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>1</td>
-<td>1</td>
-<td>0*2+1</td>
-<td>5&gt;1</td>
-</tr>
-<tr>
-<td>11</td>
-<td>3</td>
-<td>1*2+1</td>
-<td>5&gt;3</td>
-</tr>
-<tr>
-<td>111</td>
-<td>7</td>
-<td>3*2+1</td>
-<td>5&lt;7 =&gt;7-5=2</td>
-</tr>
-<tr>
-<td>1111</td>
-<td>15</td>
-<td>7*1+1</td>
-<td></td>
-</tr>
-<tr>
-<td>11111</td>
-<td>31</td>
-<td>15*2+1</td>
-<td></td>
-</tr>
-</tbody></table>
-</li>
-</ul>
-<ul>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bitwiseComplement</span><span class="params">(<span class="keyword">int</span> N)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (N&gt;x)</span><br><span class="line">        x = x*<span class="number">2</span>+<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> x-N;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">找到规律</font>，<font color="red" size="4">数进制间的对应</font>，</p>
-<h1 id="868-Binay-Gap"><a href="#868-Binay-Gap" class="headerlink" title="#868 Binay Gap"></a>#868 Binay Gap</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Input: 22</span><br><span class="line">Output: 2</span><br><span class="line">Explanation: </span><br><span class="line">22 in binary is 0b10110.</span><br><span class="line"></span><br><span class="line">1 &lt;&#x3D; N &lt;&#x3D; 10^9</span><br><span class="line">其中相邻1与1之间距离最大的是2，所以返回2.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  规律：一个整数的奇偶与其二进制的尾数相关，奇数对应位二进制的尾数是1；偶数对应二进制的尾数是0. 假如N=22：</p>
-<table>
-<thead>
-<tr>
-<th>N</th>
-<th>左移一位结果</th>
-<th>结果的二进制</th>
-<th>与N的关系</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>22</td>
-<td></td>
-<td>10110</td>
-<td>N左移0位</td>
-</tr>
-<tr>
-<td>22&gt;&gt;1</td>
-<td>11</td>
-<td>01011</td>
-<td>N左移1位</td>
-</tr>
-<tr>
-<td>11&gt;&gt;1</td>
-<td>5</td>
-<td>00101</td>
-<td>N左移2位</td>
-</tr>
-<tr>
-<td>5&gt;&gt;1</td>
-<td>2</td>
-<td>00010</td>
-<td>N左移3位</td>
-</tr>
-<tr>
-<td>2&gt;&gt;1</td>
-<td>1</td>
-<td>00001</td>
-<td>N左移4位</td>
-</tr>
-<tr>
-<td>1&gt;&gt;1</td>
-<td>0</td>
-<td>00000</td>
-<td>N左移5位</td>
-</tr>
-</tbody></table>
-</li>
-</ul>
-<ul>
-<li><p>两方法实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">///time: O(logN)</span></span><br><span class="line">   <span class="comment">/// space: O(logN)</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">binaryGap</span><span class="params">(<span class="keyword">int</span> N)</span></span>&#123;</span><br><span class="line">	<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; index;</span><br><span class="line">	<span class="keyword">int</span> k=<span class="number">0</span>;</span><br><span class="line">	<span class="keyword">int</span> yu;</span><br><span class="line">	<span class="keyword">while</span> (N!=<span class="number">0</span>)&#123;</span><br><span class="line">		k++;</span><br><span class="line">		yu = N%<span class="number">2</span>;</span><br><span class="line">		<span class="keyword">if</span> (yu == <span class="number">1</span>)</span><br><span class="line">			index.push_back(k);</span><br><span class="line">		N/=<span class="number">2</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> res=<span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;index.size()<span class="number">-1</span>; i++)&#123;</span><br><span class="line">		res = max(res, index[i+<span class="number">1</span>]-index[i]);	</span><br><span class="line">	&#125;</span><br><span class="line">		</span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">   <span class="comment">///time: O(logN)</span></span><br><span class="line">   <span class="comment">/// space: O(1)</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">binaryGap</span><span class="params">(<span class="keyword">int</span> N)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> last = <span class="number">-1</span>, res=<span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">32</span>; i++)&#123;</span><br><span class="line">		<span class="keyword">if</span> (((N&gt;&gt;i)&amp;<span class="number">1</span>) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span> (last &gt;= <span class="number">0</span>)</span><br><span class="line">				res = max(res, i-last);</span><br><span class="line">			last = i;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">移位操作</font>，<font color="red" size="4">找到问题的等价信息</font></p>
-<h1 id="985-Sum-of-Even-Numbers-After-Queries"><a href="#985-Sum-of-Even-Numbers-After-Queries" class="headerlink" title="#985 Sum of Even Numbers After Queries"></a>#985 Sum of Even Numbers After Queries</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Input: A &#x3D; [1,2,3,4], queries &#x3D; [[1,0],[-3,1],[-4,0],[2,3]]</span><br><span class="line">Output: [8,6,2,4]</span><br><span class="line">Explanation: </span><br><span class="line">At the beginning, the array is [1,2,3,4].</span><br><span class="line">After adding 1 to A[0], the array is [2,2,3,4], and the sum of even values is 2 + 2 + 4 &#x3D; 8.</span><br><span class="line">After adding -3 to A[1], the array is [2,-1,3,4], and the sum of even values is 2 + 4 &#x3D; 6.</span><br><span class="line">After adding -4 to A[0], the array is [-2,-1,3,4], and the sum of even values is -2 + 4 &#x3D; 2.</span><br><span class="line">After adding 2 to A[3], the array is [-2,-1,3,6], and the sum of even values is -2 + 6 &#x3D; 4.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  第一步：原始A数组偶数求和sum</p>
-<p>  第二步：对于queries中的每个元素执行如下操作：</p>
-<pre><code>1. 如果A中待改变索引的数为even，则从sum中把这个索引对应的数减去。(因为不知道更新后的实际是偶)
-2. 更新A数组。
-3. 更新后的A中被修改的数如果是even，则把他加到sum中。(更新后的奇偶知道了)
-4. 记录sum。</code></pre></li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; sumEvenAfterQueries(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; A, <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; queries) &#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; res;</span><br><span class="line">    <span class="keyword">int</span> sum = accumulate(A.begin(), A.end(), <span class="number">0</span>, [](<span class="keyword">int</span> s, <span class="keyword">int</span> a)&#123;</span><br><span class="line">            <span class="keyword">return</span> s+(a%<span class="number">2</span>==<span class="number">0</span>?a:<span class="number">0</span>);</span><br><span class="line">            &#125;);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> q:queries)&#123;</span><br><span class="line">        <span class="keyword">if</span>(A[q[<span class="number">1</span>]]%<span class="number">2</span>==<span class="number">0</span>) sum-=A[q[<span class="number">1</span>]];  <span class="comment">// 1.</span></span><br><span class="line">        A[q[<span class="number">1</span>]] += q[<span class="number">0</span>];               <span class="comment">//2.</span></span><br><span class="line">        <span class="keyword">if</span> (A[q[<span class="number">1</span>]]%<span class="number">2</span>==<span class="number">0</span>) sum+=A[q[<span class="number">1</span>]]; <span class="comment">//3.</span></span><br><span class="line">        res.push_back(sum);            <span class="comment">// 4.</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">直接想到的方法通常不是最好的</font>，<font color="red" size="4">lambda函数</font></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/19/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%BA%8C/" data-id="ck71en4le004yhefzbi1b7vt7" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1335,7 +1155,7 @@ else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1364,7 +1184,7 @@ else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1375,6 +1195,10 @@ else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
+          </li>
         
           <li>
             <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
@@ -1390,10 +1214,6 @@ else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
         
           <li>
             <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
           </li>
         
       </ul>

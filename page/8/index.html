@@ -64,6 +64,167 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Deep-Learning-知识点" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" class="article-date">
+  <time datetime="2019-08-08T14:48:42.000Z" itemprop="datePublished">2019-08-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/">Deep Learning 知识点</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>杂记：</p>
+<h1 id="Loss-Fucntion与训练"><a href="#Loss-Fucntion与训练" class="headerlink" title="Loss Fucntion与训练"></a>Loss Fucntion与训练</h1><ul>
+<li><p>为啥会有Loss Function目标函数：如果要调整一个东西，让它符合一个事件的话，首先需要定义需要符合的事件是啥，这就是目标函数。也就是说，要基于什么样的目标来调整这个东西（模型）。 </p>
+</li>
+<li><p>常使用的目标函数：</p>
+<ul>
+<li>平方差损失函数。样本标签值与预测值的距离之和</li>
+<li>交叉熵损失函数。衡量两个分布间的差距</li>
+</ul>
+</li>
+<li><p>训练目的：调整参数，使得模型在训练集上的损失函数值最小。</p>
+</li>
+<li><p>如何训练：直接解方程？不得行。所以有了以GD为代表的学习算法。</p>
+</li>
+<li><p>使用<code>Mini-batch梯度下降</code>。如果每一次都在整个数据集上计算梯度，计算量巨大，可能内存不够。如果使用随机梯度(<code>SGD</code>)下降，即每使用一个样本就计算一次梯度，在一个样本上得到的梯度不能反应整个数据集的梯度方向，所以收敛速度慢。所以一般使用<code>Mini-batch梯度下降</code>。</p>
+</li>
+<li><p>上述三种梯度下降法都存在一个缺点：会陷入局部最小值和鞍点。可以使用动量梯度下降(<code>SGD+Momentum</code>)。其特点是,如果当前步的方向与上一步的方向呈锐角，实际方向在二者之间，且步长较大，若是钝角，则步长小。也就是说:</p>
+<ul>
+<li>刚开始积累动量，加速学习。</li>
+<li>局部震荡时，梯度为0，由于动量的存在，跳出局部最优。</li>
+<li>梯度方向改变时，动量缓解震荡。</li>
+</ul>
+</li>
+</ul>
+<h1 id="CNN"><a href="#CNN" class="headerlink" title="CNN"></a>CNN</h1><ul>
+<li><p>为啥有CNN。在传统的NN处理图像时，由于全连接，导致</p>
+<ol>
+<li><p>计算量大</p>
+</li>
+<li><p>参数过多，使得过拟合</p>
+<p>CNN灵感来与生物的视觉感受野，其特点是局部连接，每个神经元在图片上移动时，其卷积核参数不变（参数共享），而不同的神经元间的卷积核参数不同。相比较于全连接，参数量减少了很多。参数共享：一个卷积核提取一个特征。所以CNN解决上述两个问题：</p>
+</li>
+<li><p>局部连接</p>
+</li>
+<li><p>参数共享</p>
+</li>
+</ol>
+</li>
+<li><p>一个卷积核3通道分别与输入的3通道计算，得到的3通道计算结果相加作为输出的一个通道。如下图：</p>
+<ul>
+<li><p>即一个卷积核得到一个输出通道，所以n个卷积核得到n个输出通道。</p>
+</li>
+<li><p>一个卷积核提取一个特征，所以6个卷积核提取6个特征。</p>
+</li>
+<li><p>其中<code>28 =（32-5)/1+1</code>，即<code>输出长=(输入长-卷积核长)/stride步长+1</code>(步长为1)。<br></p>
+<div align="center"><img src="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/conv.png" width="600"></div>
+
+<p>注意图中的参数个数和计算量的计算与输入尺寸无关。参数计算=（核长×核宽）×（输入通道数×输出通道数）。与图中一致。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="激活函数选择（添加图示）"><a href="#激活函数选择（添加图示）" class="headerlink" title="激活函数选择（添加图示）"></a>激活函数选择（添加图示）</h1><ul>
+<li>线性激活函数，对于网络无效，因为是全等变换，无论网络由多少层，都相当于只有一层。我们说激活函数的作用是非线性变换，而现行变换无效果。</li>
+<li>深层网络不适用<code>sigmoid</code>，因其计算复杂，输出均值非0，且会发生梯度消失，即更深的层参数得不到更新。</li>
+<li><code>tanh</code>虽然输出均值为0，但计算复杂，有和<code>sigmoid</code>相同的问题。</li>
+<li><code>ReLU</code>首次在AlexNet中使用，计算简单，但输出均值非0，会存在dead 神经元。</li>
+<li><code>Leaky ReLU</code>解决了<code>ReLU</code>的dead 神经源问题。</li>
+<li><code>ELU</code>输出均值接近于0，</li>
+<li><code>MaxOut</code>是<code>ReLU</code>的泛华版本，没有dead神经元，但参数会翻倍。</li>
+</ul>
+<p>总结：一般使用<code>Leaky ReLU</code>，<code>ELU</code>，<code>MaxOut</code>。</p>
+<h1 id="Pooling"><a href="#Pooling" class="headerlink" title="Pooling"></a>Pooling</h1><p>max-pooling,average-pooling, 特点：</p>
+<ul>
+<li>池化核移动不重叠，</li>
+<li>不补零，</li>
+<li>无可训练过参数，</li>
+<li>作用：降采样，为下一层减少尺寸，减少计算量，减少训练参数，</li>
+<li>平移鲁棒性</li>
+</ul>
+<h1 id="全连接层FC"><a href="#全连接层FC" class="headerlink" title="全连接层FC"></a>全连接层FC</h1><p>将上一层输出展开并连接到每一个神经元上。<code>2D</code>变<code>1D</code>，没有了<code>2D</code>信息，所以不能再加卷基层。实际上就是普通的<code>NN</code>。全连接层的参数很多，一般占整个模型参数量的60%~80%。</p>
+<h1 id="优化算法"><a href="#优化算法" class="headerlink" title="优化算法"></a>优化算法</h1><ul>
+<li><p>SGD：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    x += lr * dx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>动量SGD，解决鞍点和局部最优值，问题，每个维度的学习速率都一样：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Vx = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    Vx = rho * Vx + dx</span><br><span class="line">    x += lr * Vx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>AdaBrad：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured += dx * dx    <span class="comment"># 积累平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  缺点：当learning rate较大时，分母敏感，使梯度爆炸。后期分母变大，使更新变得很小，提前结束训练。</p>
+</li>
+<li><p>RMSProp：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured = delay_rate * grad_sqaured + (<span class="number">1</span>-delay_rate) * dx * dx    <span class="comment"># 平均平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  解决了后期训练提前结束的问题。</p>
+</li>
+<li><p>Adam：</p>
+<p>  结合了动量SGD和RMSProp优点</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">frst_moment = <span class="number">0</span></span><br><span class="line">scnd_moment = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    frst_moment = beta1 * frst_moment + (<span class="number">1</span>-beta1) * dx</span><br><span class="line">    scnd_moment = beta2 * scnd_moment + (<span class="number">1</span>-beta2) * dx * dx</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 校准</span></span><br><span class="line">    frst_unbias = frst_moment/(<span class="number">1</span>-beta1**t)</span><br><span class="line">    scnd_unbias = scnd_moment/(<span class="number">1</span>-beta2**t)</span><br><span class="line">    x -= lr * frst_unbias / (np.sqrt(scnd_unbias)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  使得开始训练时frst_moment和scnd_moment变大来加速训练。一般使用Adam算法，从经验来讲，beta1=0.9， beta2=0.999，lr=1e-3。</p>
+</li>
+<li><p>lr自适应方法：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Exponetial Decay:</span></span><br><span class="line">lr = lr * e**(-kt)</span><br><span class="line"><span class="comment"># 1/t Decay:</span></span><br><span class="line">lr = lr / (<span class="number">1</span>+kt)</span><br></pre></td></tr></table></figure>
+<p>  SGD训练时间长但效果好，不过需要好的初始化，和lr自适应，如果不能找到好的初始化和lr自适应，用Adam。如果要训练更深更复杂的网络，且要求收敛速度快，推荐使用Adam。</p>
+</li>
+</ul>
+<h1 id="网络需要初始化-添加图示"><a href="#网络需要初始化-添加图示" class="headerlink" title="网络需要初始化 (添加图示)"></a>网络需要初始化 (添加图示)</h1><p>好的初始化使训练速度快，且达到一个好的结果。多层网络不适用0来初始化。</p>
+<p>如何判断初始化的好坏？查看初始化后各层的激活函数的分布，如果分布在一个区间内，好；如果输出集中在某个值上，不好。<br>一般使用均值为0方差为0.02的正态分布来初始化。<br>对于<code>tanh</code>使用<code>Xavior</code>初始化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in)</span><br></pre></td></tr></table></figure>
+
+<p>对于ReLU使用<code>He-ReLU</code>初始化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in/<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>其网络每一层分布都相近。</p>
+<h1 id="批归一化"><a href="#批归一化" class="headerlink" title="批归一化"></a>批归一化</h1><p>通用的归一化方法：</p>
+<ul>
+<li><p>为了使得每层激活函数的分布一致，在得到激活函数值后，把输出做归一化处理：减去均值，除以方差，使得其值分布在均值为0，方差为1 的分分布上。</p>
+</li>
+<li><p>缺点：表示在每一批上做归一化，但是，一批的分布不能反应整个数据集的分布，结果是，得到一个特征，批归一化后，这个特征不能在批不批间区分样本了，即特征无效了。</p>
+</li>
+<li><p>解决：设置alpha&amp;beta两个参数做逆归一化：</p>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数学公式 填坑</span><br></pre></td></tr></table></figure>
+
+<h1 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h1><p>多尺度剪裁。</p>
+<h1 id="Fine-Tuning"><a href="#Fine-Tuning" class="headerlink" title="Fine-Tuning"></a>Fine-Tuning</h1><p>在已经训练好的网络上进行微调。使用已经微调好的模型来初始化。见Fine-tuning博客。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" data-id="ck79dofgw0000vhfz6a0c6h8i" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-文本分类-三-构建模型III-LSTM网络参数" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" class="article-date">
@@ -864,117 +1025,6 @@
 
 
   
-    <article id="post-文本分类-三-构建模型II-LSTM层结点实现细节" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" class="article-date">
-  <time datetime="2019-08-04T17:12:02.000Z" itemprop="datePublished">2019-08-05</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/">文本分类(三)-构建模型II-LSTM层结点实现细节</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在上一篇笔记<a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">文本分类(三)-构建模型I-built-in-LSTM</a> 中<code>tensorflow</code>中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 <code>from scratch</code></p>
-<p>理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。</p>
-<p>LSTM结点如下图：</p>
-<div align="center">
-    <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/node_lstm.png" width="500">
-</div>
-<div align="center">图：单个LSTM结点内部结构</div>
-<br><br>
-
-<p>一般RNN存在信息过载而<font color="red">不能长久传播</font>的问题，LSTM单元结构存在<font color="red">三重门机制</font>尝试解决这个问题。<br><br>假如一个词的编号为12，将它对应的<code>embedding向量</code>输入LSTM 结点中有一下过程发生：</p>
-<ul>
-<li>得到这个词的embedding，大小为<code>[batch_size, 1, embedd_size]</code>：</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedd_input = embedded_inputs[:, <span class="number">12</span>, :]</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>变形为：<code>[batch_size, embedd_size]</code></li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedd_input = tf.reshape(embedd_input, [batch_size, hps.num_embedding_size])</span><br></pre></td></tr></table></figure>
-
-<h1 id="三重门过程，公式及实现："><a href="#三重门过程，公式及实现：" class="headerlink" title="三重门过程，公式及实现："></a>三重门过程，公式及实现：</h1><h2 id="遗忘门："><a href="#遗忘门：" class="headerlink" title="遗忘门："></a>遗忘门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-f.png" width="700"></div>
-<div align="center">图：遗忘门</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">forget_gate = tf.sigmoid( </span><br><span class="line">                        tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br></pre></td></tr></table></figure>
-
-<h2 id="输入门："><a href="#输入门：" class="headerlink" title="输入门："></a>输入门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-i.png" width="700"></div>
-<div align="center">图：输入门</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">mid_state = tf.tanh(</span><br><span class="line">                        tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br></pre></td></tr></table></figure>
-
-<h2 id="结点隐含状态输出："><a href="#结点隐含状态输出：" class="headerlink" title="结点隐含状态输出："></a><strong>结点隐含状态</strong>输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-C.png" width="700"></div>
-<div align="center">图：隐含状态</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">state_C = mid_state * input_gate + state_C * forget_gate</span><br></pre></td></tr></table></figure>
-
-<h2 id="输出门及结点LSTM的输出："><a href="#输出门及结点LSTM的输出：" class="headerlink" title="输出门及结点LSTM的输出："></a>输出门及结点LSTM的输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-o.png" width="700"></div>
-<div align="center">图：输出门</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">output_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">h = output_gate * tf.tanh(state)</span><br></pre></td></tr></table></figure>
-
-<p>以上是对于样本中<font color="red">一个词</font>的操作，对于该样本中<font color="red">所有词</font>的操作如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(encoded_length):</span><br><span class="line">    embedd_input = embedded_inputs[:, i, :]   </span><br><span class="line">    embedd_input = tf.reshape(embedd_input, [batch_size, hps.num_embedding_size])</span><br><span class="line">    forget_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br><span class="line">    input_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">    mid_state = tf.tanh(</span><br><span class="line">                            tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br><span class="line"></span><br><span class="line">    state_C = mid_state * input_gate + state_C * forget_gate </span><br><span class="line"></span><br><span class="line">    output_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">    h = output_gate * tf.tanh(state)</span><br><span class="line">last = h</span><br></pre></td></tr></table></figure>
-
-<p>其中<code>encode_lenght</code>表示每一个样本(一条评论)的长度，即评论词的个数，此处是50个。<br>这个序列操作中有那两个值在不断更新</p>
-<ul>
-<li>state_C</li>
-<li>h</li>
-</ul>
-<p>这两个值的不断更新<strong>使得对每个词操作的每个LSTM结点在逻辑上是连在一起的</strong>，如下图：</p>
-<div align="center">
-    <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/logicly_unroll.png" width="700">
-</div>
-<div align="center">
-    图：左侧是实际LSTM结点，右侧是这个结点从时间上展开后的
-</div>
-<br><br>
-
-<p><font color="green" size="5">敲黑板</font>将等号左边按时间次序展开就是右边。实现中一个LSTM结点可以代表一个神经元，只不过这一个神经元内部有5个非线性变换。对于复杂问题一个这样的神经元不足以表达输入数据，所以会有多个这样的神经元。<br>这里的实现源码<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_pure.py" target="_blank" rel="noopener">看这里</a>。源码中对网络的设置为：  </p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">num_lstm_nodes=[<span class="number">32</span>, <span class="number">32</span>],    </span><br><span class="line">num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">encoded_length=<span class="number">50</span>,</span><br></pre></td></tr></table></figure>
-
-<p><font color="orange">表示这个模型有2层LSTM，每一层的神经原结点有32个，而每一层中的每一个神经元所处理的输入序列长50！</font></p>
-<p>务必理解</p>
-<hr>
-<p>完成<br><br>LSTM结点实现。</p>
-<p>本笔记所有图片来源与<a href="http://colah.github.io/posts/2015-08-Understanding-LSTMs/" target="_blank" rel="noopener">colah’s blog</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" data-id="ck74urao500014nfzbgl211ja" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -990,7 +1040,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1019,7 +1069,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1030,6 +1080,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
+          </li>
         
           <li>
             <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
@@ -1045,10 +1099,6 @@
         
           <li>
             <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
           </li>
         
       </ul>
