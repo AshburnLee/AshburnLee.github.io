@@ -64,6 +64,65 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-模型评价-混淆矩阵-Confusion-Matrix" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" class="article-date">
+  <time datetime="2019-08-06T03:17:11.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/">模型评价-混淆矩阵(Confusion Matrix)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Confusion Matrix。</p>
+<p>当训练好了模型，需要评价它的性能。错误率和准确率是常用的，一般为了测试一个模型的正确性，用这个指标，尤其对于<strong>极度均衡</strong>的数据。但是对于<strong>极度偏斜</strong>的数据，用准确率评价模型很可能得到的结果表示，这个模型还不如随机猜测的准确率高。此时准确率不足以衡量模型性能。所以必要使用其他性能指标。</p>
+<p>由混淆矩阵得到的Precision， Recall 和 F1度量，F-beta度量。</p>
+<p>其定义不赘述，使用真实数据集算一下。</p>
+<p>引入数据，把它变为极度偏斜的二分类问题：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">digits = datasets.load_digits()</span><br><span class="line">x = digits.data</span><br><span class="line">y = digits.target.copy()</span><br><span class="line"></span><br><span class="line">y[digits.target == <span class="number">9</span>] = <span class="number">1</span></span><br><span class="line">y[digits.target != <span class="number">9</span>] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 分训练样本和测试样本</span></span><br><span class="line">x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=<span class="number">666</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这里使用Logistic Regression对其学习：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line">log_reg = LogisticRegression()</span><br><span class="line">log_reg.fit(x_train, y_train)</span><br><span class="line">acc = log_reg.score(x_test, y_test)</span><br><span class="line">y_log_predict = log_reg.predict(x_test)</span><br><span class="line">print(acc)</span><br></pre></td></tr></table></figure>
+<p>得结果：0.975555555556。注意数据集是很不平衡的，所以这个值不可靠。</p>
+<p>根据混淆矩阵的定义，可得：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">confusion_matrix</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> np.array([[TN(y_true, y_predict), FP(y_true, y_predict)],</span><br><span class="line">                     [FN(y_true, y_predict), TP(y_true, y_predict)]])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印出混淆矩阵：</span></span><br><span class="line">print(confusion_matrix(y_test, y_log_predict))</span><br></pre></td></tr></table></figure>
+<p>结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[[<span class="number">403</span>   <span class="number">2</span>]</span><br><span class="line"> [  <span class="number">9</span>  <span class="number">36</span>]]</span><br></pre></td></tr></table></figure>
+<p>一般来说，最优情况是，其对角线的值最大，斜对角线值为0。详见多分类问题的混淆矩阵。</p>
+<p>Precision=0.947368421053， Recall=0.8。标准是，此而值同时越大模型性能约优。可以说这个模型的性能还不错。</p>
+<p><font color="green" size="5">敲黑板</font>啥是R，“<strong>所有实际为正的样本，我的模型有多少也认为为正</strong>”。啥是P，“<strong>所有我的模型认为为正的样本，有多少确实为正</strong>”。可以体会到，P&amp;R 是不同角度的两个指标。根据信息论观点，<strong>引入相似但不相同的信息有助于减少系统的不确定性</strong>。两个指标同时考虑比单单考虑一个指标更能确定模型的性能。实际上，可能的情况下，对于一个训练好的模型，所有可能的指标都应该看看。<br>另一方面，P&amp;R两者的关注点不同，所以对于不同的实际任务，P&amp;R值的相对大小可以有所不同。举例，对于病例数据，尽可能希望所有实际有病的样本，模型也认为有病。即实际有病的样本模型都可以判断出来，即使没病的模型认为有病，没关系，复查就好了。这就是R值越大模型性能越好。反而P值相对不重要。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" data-id="ck7bjjf5z000qi5fzcbn3gb7k" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-文本分类-三-构建模型II-LSTM层结点实现细节" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" class="article-date">
@@ -913,60 +972,6 @@
 
 
   
-    <article id="post-ResNet-残差学习单元-Residual-Unit" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" class="article-date">
-  <time datetime="2019-08-01T06:12:00.000Z" itemprop="datePublished">2019-08-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/">ResNet 残差学习单元(Residual Unit)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录残差学习块(Residual Unit)的作用及实现。</p>
-<p>ResNet(Residual Neural Network)是在2015年提出，其对于之前的深层网络对大特点是其结构中的残差学习块。<br><br>在网络不断加深的过程中会出现Degradation的现象，也就是说再持续增加网络的<font color="red">深度导致准确率下降</font>。ResNet的灵感源于：一个比较浅的网络达到饱和准确率后，在其后加上几个<code>y=x</code>全等映射层，<font color="red">至少不会使误差增加</font>。</p>
-<h2 id="Residual-Unit"><a href="#Residual-Unit" class="headerlink" title="Residual Unit"></a>Residual Unit</h2><p>假设有一段网络的输入是<code>x</code>，它回经过若干层非线性变换得到结果<code>y</code>，假设其期望输出为<code>y_</code>，同时<code>x</code>也作为输出的一部分加在<code>y</code>中。那么网络的学习目标是<code>y_-x</code>。ResNet相当于改变了学习的目标，它不再是完整的输出<code>y_</code>， 而是输出与输入的差<code>y_-x</code>，也就是Residual(残差)。如下图：</p>
-<div align="center"> 
-<img src="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/resnet.png" width="500"> 
-</div>
-<div align="center">图中x为此残差块的输入，y_为期望输出，y为经过两个卷积层的输出。</div>
-
-<p>为什么ResNet回会有效，可以这样理解：传统的卷积层或全连接层在信息传递时，或多或少存在<font color="red">信息丢失</font>的问题，ResNet从一些程度上解决了这个问题，它通过<font color="red">直接</font>将输入加到输出上，保护了信息的完整性。</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">residual_block</span><span class="params">(x, output_channel)</span>:</span></span><br><span class="line">    <span class="string">"""residual connection implementation"""</span></span><br><span class="line">    input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">    <span class="keyword">if</span> input_channel * <span class="number">2</span> == output_channel: <span class="comment">#如果本层的输出通道数是输入通道数的2倍</span></span><br><span class="line">        increase_dim = <span class="literal">True</span></span><br><span class="line">        strides = (<span class="number">2</span>, <span class="number">2</span>)</span><br><span class="line">    <span class="keyword">elif</span> input_channel == output_channel:  <span class="comment">#如果本层的输出通道数与输入通道数相同</span></span><br><span class="line">        increase_dim = <span class="literal">False</span></span><br><span class="line">        strides = (<span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"input channel can't match output channel"</span>)</span><br><span class="line">    conv1 = tf.layers.conv2d(x,</span><br><span class="line">                             output_channel,</span><br><span class="line">                             (<span class="number">3</span>,<span class="number">3</span>),</span><br><span class="line">                             strides = strides,</span><br><span class="line">                             padding = <span class="string">'same'</span>,</span><br><span class="line">                             activation = tf.nn.relu,</span><br><span class="line">                             name = <span class="string">'conv1'</span>)</span><br><span class="line">    conv2 = tf.layers.conv2d(conv1,</span><br><span class="line">                             output_channel,</span><br><span class="line">                             (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                             strides = (<span class="number">1</span>, <span class="number">1</span>),</span><br><span class="line">                             padding = <span class="string">'same'</span>,</span><br><span class="line">                             activation = tf.nn.relu,</span><br><span class="line">                             name = <span class="string">'conv2'</span>)</span><br><span class="line">    <span class="comment"># 如果通道数翻倍了</span></span><br><span class="line">    <span class="keyword">if</span> increase_dim:</span><br><span class="line">        <span class="comment"># [None, image_width, image_height, channel] -&gt; [,,,channel*2]</span></span><br><span class="line">        pooled_x = tf.layers.average_pooling2d(x,</span><br><span class="line">                                               (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                               (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                               padding = <span class="string">'valid'</span>)</span><br><span class="line">        <span class="comment"># 使padded_x 与 conv2 大小相同</span></span><br><span class="line">        padded_x = tf.pad(pooled_x,</span><br><span class="line">                          [[<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [input_channel // <span class="number">2</span>, input_channel // <span class="number">2</span>]])</span><br><span class="line">    <span class="comment"># 如果通道数未翻倍</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        padded_x = x  <span class="comment"># 全等映射 </span></span><br><span class="line"></span><br><span class="line">    output_x = conv2 + padded_x </span><br><span class="line">    <span class="keyword">return</span> output_x</span><br></pre></td></tr></table></figure>
-
-<p>本笔记只是记录了残差学习块的作用及实现，完整的ResNet实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/resnet.ipynb" target="_blank" rel="noopener">这里</a>。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" data-id="ck74tgku60000i2fz615j450i" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -982,7 +987,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/caffe/">caffe</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/caffe/Utility/">Utility</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1011,7 +1016,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1022,6 +1027,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/">caffe 安装及trouble shooting</a>
+          </li>
         
           <li>
             <a href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
@@ -1037,10 +1046,6 @@
         
           <li>
             <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
           </li>
         
       </ul>

@@ -64,6 +64,77 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-Vectorized-Memory-Access" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/26/CUDA-Vectorized-Memory-Access/" class="article-date">
+  <time datetime="2019-11-26T15:36:13.000Z" itemprop="datePublished">2019-11-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/26/CUDA-Vectorized-Memory-Access/">CUDA:-Vectorized Memory Access</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Increase-Performance-with-Vectorized-Memory-Access"><a href="#Increase-Performance-with-Vectorized-Memory-Access" class="headerlink" title="Increase Performance with Vectorized Memory Access"></a>Increase Performance with Vectorized Memory Access</h2><p>Many CUDA kernels are bandwidth bound, and the increasing ratio of flops to bandwidth in new hardware results in more bandwidth bound kernels. This makes it very important to take steps to mitigate bandwidth bottlenecks in your code. In this post, I will show you how to use vector loads and stores in CUDA C/C++ to help increase bandwidth utilization while decreasing the number of executed instructions.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_scalar_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123; </span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N; i += blockDim.x * gridDim.x) &#123; </span><br><span class="line">    d_out[i] = d_in[i]; </span><br><span class="line">  &#125; </span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_scalar</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>; </span><br><span class="line">  <span class="keyword">int</span> blocks = min((N + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);  </span><br><span class="line">  device_copy_scalar_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>We can inspect the assembly for this kernel using the cuobjdump tool included with the CUDA Toolkit.<code>%&gt; cuobjdump -sass executable</code>.<br>The SASS for the body of the scalar copy kernel is the following:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0058*/</span> IMAD R6.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x140</span>]                </span><br><span class="line"><span class="comment">/*0060*/</span> IMAD.HI.X R7, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x144</span>]              </span><br><span class="line"><span class="comment">/*0068*/</span> IMAD R4.CC, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*0070*/</span> LD.E R2, [R6]                                   </span><br><span class="line"><span class="comment">/*0078*/</span> IMAD.HI.X R5, R0, R9, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span> ST.E [R4], R2</span><br></pre></td></tr></table></figure>
+
+<p>Here we can see a total of six instructions associated with the copy operation. The four <code>IMAD</code> instructions compute the load and store addresses and the <code>LD.E</code> and <code>ST.E</code> load and store 32 bits from those addresses.</p>
+<p>We can improve performance of this operation by using the vectorized load and store instructions <code>LD.E.{64,128}</code> and <code>ST.E.{64,128}</code>. </p>
+<p>These operations also load and store data but do so in 64- or 128-bit widths. Using vectorized loads reduces the total number of instructions, reduces latency, and improves bandwidth utilization.</p>
+<p>The easiest way to use vectorized loads is to use the vector data types defined in the CUDA C/C++ standard headers, such as <code>int2</code>, <code>int4</code>, or <code>float2</code>. You can easily use these types via type casting in C/C++. For example in C++ you can recast the <code>int</code> pointer <code>d_in</code> to an <code>int2</code> pointer using <code>reinterpret_cast&lt;int2*&gt;(d_in)</code>. In C99 you can do the same thing using the casting operator: <code>(int2*(d_in))</code>.</p>
+<p>Dereferencing those pointers will cause the compiler to generate the vectorized instructions. However, there is one important caveat: these instructions require aligned data. Device-allocated memory is automatically aligned to a multiple of the size of the data type, but if you offset the pointer the offset must also be aligned. For example <code>reinterpret_cast&lt;int2*&gt;(d_in+1)</code> is invalid because <code>d_in+1</code> is not aligned to a multiple of <code>sizeof(int2)</code>.</p>
+<p>You can safely offset arrays if you use an “aligned” offset, as in <code>reinterpret_cast&lt;int2*&gt;(d_in+2)</code>. You can also generate vectorized loads using structures as long as the structure is a power of two bytes in size.</p>
+<p>Now that we have seen how to generate vectorized instructions let’s modify the memory copy kernel to use vector loads.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector2_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">2</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int2*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final element (if there is one)</span></span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">2</span> &amp;&amp; N%<span class="number">2</span>==<span class="number">1</span>)</span><br><span class="line">    d_out[N<span class="number">-1</span>] = d_in[N<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector2</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">  threads = <span class="number">128</span>; </span><br><span class="line">  blocks = min((N/<span class="number">2</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS); </span><br><span class="line"></span><br><span class="line">  device_copy_vector2_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>This kernel has only a few changes. First, the loop now executes <span style="color:red">only N/2 times because each iteration processes two elements</span>. Second, we use the casting technique described above in the copy. Third, we handle any <span style="color:red">remaining elements</span> which may arise if N is not divisible by 2. Finally, we launch half as many threads as we did in the scalar kernel.</p>
+<p>Inspecting the SASS we see the following.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0088*/</span>                IMAD R10.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0090*/</span>                IMAD.HI.X R11, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD R8.CC, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x148</span>]             </span><br><span class="line"><span class="comment">/*00a0*/</span>                LD.E<span class="number">.64</span> R6, [R10]                                      </span><br><span class="line"><span class="comment">/*00a8*/</span>                IMAD.HI.X R9, R3, R5, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]           </span><br><span class="line"><span class="comment">/*00c8*/</span>                ST.E<span class="number">.64</span> [R8], R6</span><br></pre></td></tr></table></figure>
+<p>Notice that now the compiler generates LD.E.64 and ST.E.64. All the other instructions are the same. However, it is important to note that there will be half as many instructions executed because the loop only executes N/2 times. This 2x improvement in instruction count is very important in instruction-bound or latency-bound kernels.</p>
+<p>We can also write a vector4 version of the copy kernel.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">device_copy_vector4_kernel</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> idx = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">for</span>(<span class="keyword">int</span> i = idx; i &lt; N/<span class="number">4</span>; i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">    <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_out)[i] = <span class="keyword">reinterpret_cast</span>&lt;int4*&gt;(d_in)[i];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// in only one thread, process final elements (if there are any)</span></span><br><span class="line">  <span class="keyword">int</span> remainder = N%<span class="number">4</span>;</span><br><span class="line">  <span class="keyword">if</span> (idx==N/<span class="number">4</span> &amp;&amp; remainder!=<span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">while</span>(remainder) &#123;</span><br><span class="line">      <span class="keyword">int</span> idx = N - remainder--;</span><br><span class="line">      d_out[idx] = d_in[idx];</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">device_copy_vector4</span><span class="params">(<span class="keyword">int</span>* d_in, <span class="keyword">int</span>* d_out, <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> threads = <span class="number">128</span>;</span><br><span class="line">  <span class="keyword">int</span> blocks = min((N/<span class="number">4</span> + threads<span class="number">-1</span>) / threads, MAX_BLOCKS);</span><br><span class="line"></span><br><span class="line">  device_copy_vector4_kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(d_in, d_out, N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>The corresponding SASS is the following:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*0090*/</span>                IMAD R10.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x140</span>]              </span><br><span class="line"><span class="comment">/*0098*/</span>                IMAD.HI.X R11, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x144</span>]            </span><br><span class="line"><span class="comment">/*00a0*/</span>                IMAD R8.CC, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x148</span>]               </span><br><span class="line"><span class="comment">/*00a8*/</span>                LD.E<span class="number">.128</span> R4, [R10]                               </span><br><span class="line"><span class="comment">/*00b0*/</span>                IMAD.HI.X R9, R3, R13, c[<span class="number">0x0</span>][<span class="number">0x14c</span>]             </span><br><span class="line"><span class="comment">/*00d0*/</span>                ST.E<span class="number">.128</span> [R8], R4</span><br></pre></td></tr></table></figure>
+<p>Here we can see the generated LD.E.128 and ST.E.128. This version of the code has reduced the instruction count by a factor of 4.</p>
+<p>In almost all cases vectorized loads are preferable to scalar loads. Note however that using vectorized loads increases register pressure and reduces overall parallelism. So if you have a kernel that is already register limited or has very low parallelism, you may want to stick to scalar loads. Also, as discussed earlier, if your pointer is not aligned or your data type size in bytes is not a power of two you cannot use vectorized loads.</p>
+<p>Vectorized loads are a fundamental CUDA optimization that you should use when possible, because they increase bandwidth, reduce instruction count, and reduce latency. In this post, I’ve shown how you can easily incorporate vectorized loads into existing kernels with relatively few changes.</p>
+<hr>
+<p>原文作者Justin Luitjens 原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-increase-performance-with-vectorized-memory-access/" target="_blank" rel="noopener">链接</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/26/CUDA-Vectorized-Memory-Access/" data-id="ck71en4j5000ihefzdxnqfu42" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-Grid-stride-Loop" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/11/26/CUDA-Grid-stride-Loop/" class="article-date">
@@ -606,172 +677,6 @@
 
 
   
-    <article id="post-数值优化算法-梯度下降" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/" class="article-date">
-  <time datetime="2019-09-06T07:46:05.000Z" itemprop="datePublished">2019-09-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/">数值优化算法-BGD-SGD</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li>作用是优化一个目标函数，它是一个基于搜索的数值优化算法。具体说来，当需要最小化一个损失函数，使用梯度下降；当最大化一个效用函数时，使用梯度上升发。</li>
-<li>在线性回归中使用的是最小二乘法得到最终结果，而对于许多机器学习算法，其最小化损失函数的方法是不能使用类似最小二乘法直接求解的。此时可以考虑借鉴数值计算方法中的凸优化问题的解法。</li>
-<li>目标函数是参数的函数，输入数据是常量。所以目的是找到目标函数取最小值时的参数。</li>
-<li>搜索可能陷入局部最优解，解决方法有比如<strong>动量梯度下降</strong>，跳出局部最优值。还可以多次运行GD，每次的起始点随机化。</li>
-<li>线性回归问题的目标有唯一的最优解，（凸优化问题）</li>
-<li>当目标函数是凹函数时，才求最小值。目标函数对参数求导数，得到梯度。梯度表示这一点的切线斜率的值。根据参数迭代公式：当在某一点的梯度小于0时，迭代后参数值增大，即对应的目标函数值减小；当在某一点的梯度大于0时，迭代后参数值变小，即目标函数值减小。可见，不管点的位置在哪，迭代参数后，目标函数值都减小。（详见数学笔记）</li>
-</ul>
-<h1 id="模拟梯度下降"><a href="#模拟梯度下降" class="headerlink" title="模拟梯度下降"></a>模拟梯度下降</h1><p>先创建一个数据集，使其图像为凹函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = np.linspace(<span class="number">-1</span>, <span class="number">6</span>, <span class="number">200</span>)</span><br><span class="line">y = (x<span class="number">-2.5</span>)**<span class="number">2</span><span class="number">-1</span></span><br></pre></td></tr></table></figure>
-
-<p>x为参数，y为目标函数。y对x求导数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient</span><span class="params">(theta)</span>:</span></span><br><span class="line">    <span class="string">"""计算梯度"""</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">2</span>*(theta<span class="number">-2.5</span>)</span><br></pre></td></tr></table></figure>
-<p>对x求对应y：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">loss</span><span class="params">(theta)</span>:</span></span><br><span class="line">    <span class="string">"""对应目标函数值"""</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> (theta<span class="number">-2.5</span>)**<span class="number">2</span><span class="number">-1</span></span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> float(<span class="string">'inf'</span>)   <span class="comment"># 当J太大时，返回浮点最大值</span></span><br></pre></td></tr></table></figure>
-
-<p>根据迭代公式，编码：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">learning_rate = <span class="number">0.1</span></span><br><span class="line">epsilon = <span class="number">1e-8</span></span><br><span class="line">theta = <span class="number">0</span></span><br><span class="line">theta_history = [theta]</span><br><span class="line"><span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">    grad = gradient(theta)</span><br><span class="line">    last_theta = theta</span><br><span class="line">    theta = theta - learning_rate * grad</span><br><span class="line">    theta_history.append(theta)</span><br><span class="line">    <span class="keyword">if</span> (abs(loss(theta)- loss(last_theta)) &lt; epsilon):</span><br><span class="line">        <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
-<p>其中，epsilon是一个很小的值，当<code>abs(loss(theta)- loss(last_theta)) &lt; epsilon</code>时，表示迭代参数使得目标函数值达到最小值。为什么不是当梯度为零停止迭代呢，因为浮点数0，在计算机中不是零，这样，就本实验而言循环不会停止。</p>
-<p><code>theta_history</code>记录了每次迭代的参数值。<br>当<code>learning_rate = 0.1，theta = 0</code>时绘出函数图像，及参数迭代路径：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(x, y)</span><br><span class="line">plt.plot(np.asarray(theta_history), loss(np.asarray(theta_history)), marker=<span class="string">'+'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-
-<p>如图：</p>
-<div align="center"><img src="/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/theta1.png" width="500"></div>
-
-<p>一共迭代了46次，最终停在点<code>(2.499891109642585, -0.99999998814289)</code>，与最小值点<code>(2.5, -1)</code>非常接近。这表明了算法的正确性。</p>
-<p>当当<code>learning_rate = 0.1，theta = 5.5</code>时绘出函数图像，及参数迭代路径：</p>
-<div align="center"><img src="/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/theta2.png" width="500"></div>
-
-<p>可以看出，不论参数初始值在哪，最终会停在最小值处。</p>
-<p>当学习率较小时：<code>learning_rate = 0.01，theta = 5.5</code>绘出函数图像，及参数迭代路径：</p>
-<div align="center"><img src="/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/theta3.png" width="500"></div>
-
-<p>依旧停在最小值处，但是迭代次数增加到433次。</p>
-<p>当学习率较大时：<code>learning_rate = 0.9，theta = 5.5</code>绘出函数图像，及参数迭代路径：</p>
-<div align="center"><img src="/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/theta4.png" width="500"></div>
-
-<p>可以看出，学习率较大时，迭代路径在最优值左右震动。</p>
-<p>为了避免迭代无止境的循环下去，设置参数<code>n_itr</code>，表示最大迭代次数。</p>
-<p>当设置学习率过大时，<code>learning_rate = 1.1``theta = 0，n_itr=5</code>，出现梯度上升情况，如图：</p>
-<div align="center"><img src="/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/theta5.png" width="500"></div>
-
-<p>限定只迭代5次。</p>
-<p>所以要设置最合适的学习率。</p>
-<h1 id="程序"><a href="#程序" class="headerlink" title="程序"></a>程序</h1><p>以上实现过程：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span><span class="params">(init_theta, learning_rate, n_itr, epsilon=<span class="number">1e-8</span>)</span>:</span></span><br><span class="line">    theta = init_theta</span><br><span class="line">    theta_history.append(theta)</span><br><span class="line">    i_itr = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> i_itr &lt; n_itr:</span><br><span class="line">        gradient = dJ(theta)</span><br><span class="line">        last_theta = theta</span><br><span class="line">        theta = theta - learning_rate*gradient</span><br><span class="line">        theta_history.append(theta)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (abs(J(theta) - J(last_theta)) &lt; epsilon):</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        i_itr += <span class="number">1</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">plot_theta_history</span><span class="params">()</span>:</span></span><br><span class="line">    plt.plot(x, y)</span><br><span class="line">    plt.plot(np.asarray(theta_history), J(np.asarray(theta_history)), marker=<span class="string">'+'</span>)</span><br><span class="line">    plt.show()</span><br></pre></td></tr></table></figure>
-<p>调用：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">learning_rate = <span class="number">0.1</span></span><br><span class="line">theta_history = []</span><br><span class="line"></span><br><span class="line">gradient_descent(<span class="number">0</span>, learning_rate, <span class="number">5</span>)</span><br><span class="line">plot_theta_history()</span><br></pre></td></tr></table></figure>
-
-<h1 id="多元线性回归的GD"><a href="#多元线性回归的GD" class="headerlink" title="多元线性回归的GD"></a>多元线性回归的GD</h1><h2 id="python数据行为"><a href="#python数据行为" class="headerlink" title="python数据行为"></a>python数据行为</h2><p>创建一个一维向量：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">np.random.seed(<span class="number">123</span>)</span><br><span class="line">x1 = <span class="number">2</span> * np.random.random(size=<span class="number">100</span>)</span><br></pre></td></tr></table></figure>
-
-<p>x1的内容如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[ 1.39293837  0.57227867  0.45370291 ... 1.10262954  1.43893794 ]</span><br></pre></td></tr></table></figure>
-
-<p>x1是一个长度为100的一维向量。向量每个元素为一个标量。用 同样的方式在创建一个等长度的一维向量x2：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x2 = <span class="number">3</span> * np.random.random(size=<span class="number">100</span>)</span><br></pre></td></tr></table></figure>
-
-<p>假如变量y由x1和x2共同决定：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">y = x1 * <span class="number">3</span> + x2 * <span class="number">4</span> + (<span class="number">5</span> + np.random.normal(size=<span class="number">100</span>))</span><br></pre></td></tr></table></figure>
-
-<p>此时x1和x2作为输入样本的两个特称，现在把两者合并在一起：<br>第一步变形为1列：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x1.reshape(<span class="number">-1</span>, <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
-<p>返回一个二维向量，每一个元素为一个长度为1的一维向量，每一个元素表示一个样本：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[[ 1.39293837]</span><br><span class="line"> [ 0.57227867]</span><br><span class="line"> [ 0.45370291]</span><br><span class="line"> ...</span><br><span class="line"> [ 1.10262954]</span><br><span class="line"> [ 1.43893794]</span><br><span class="line"> [ 0.84621292]]    100X1</span><br></pre></td></tr></table></figure>
-<p>第二步，将两个特征合并在一起：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X = np.hstack([x1.reshape(<span class="number">-1</span>, <span class="number">1</span>), x2.reshape(<span class="number">-1</span>, <span class="number">1</span>)])</span><br></pre></td></tr></table></figure>
-<p>返回X为一个二维向量，这个向量的每个元素为一个样本，每个样本由两个值表达：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[[ 1.39293837  1.53938446]</span><br><span class="line"> [ 0.57227867  1.99987365]</span><br><span class="line"> [ 0.45370291  0.31772546]</span><br><span class="line"> ...</span><br><span class="line"> [ 1.10262954  0.39268485]</span><br><span class="line"> [ 1.43893794  0.96594182]</span><br><span class="line"> [ 0.84621292  1.98469301]]     100X2</span><br></pre></td></tr></table></figure>
-
-<p>因为y的组成还有一个常量，可以用x0表示，x0恒为1，并且把x0也X中：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_b = np.hstack([np.ones((len(X), <span class="number">1</span>)), X])</span><br></pre></td></tr></table></figure>
-
-<p>返回<code>X_b</code> 中每个元素由3个值决定：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[[ 1.          1.39293837  1.53938446]</span><br><span class="line"> [ 1.          0.57227867  1.99987365]</span><br><span class="line"> [ 1.          0.45370291  0.31772546]</span><br><span class="line"> ...</span><br><span class="line"> [ 1.          1.10262954  0.39268485]</span><br><span class="line"> [ 1.          1.43893794  0.96594182]</span><br><span class="line"> [ 1.          0.84621292  1.98469301]]   100X3</span><br></pre></td></tr></table></figure>
-<p>现在可以看看X_b 的属性：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">print(type(X_b))</span><br><span class="line">print(X_b.shape)</span><br><span class="line">print(X_b.shape[<span class="number">0</span>])   </span><br><span class="line">print(X_b.shape[<span class="number">1</span>])</span><br></pre></td></tr></table></figure>
-<p>返回：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &#39;numpy.ndarray&#39;&gt;    # 是一个 numpy.ndarray 对象</span><br><span class="line">(100, 3)    # 矩阵 100行 3列</span><br><span class="line">100         # 外维度 100</span><br><span class="line">3           # 内维度  3</span><br></pre></td></tr></table></figure>
-<p>100行表示，一共有100个样本，3列表示每个样本有3个特征。</p>
-<p>因为此时<code>X_b</code>是一个矩阵，所以还可以对<code>X_b</code>进行切片操作，就是取它是一部分：<br>取索引为0的元素，即第一行，所有列：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">print(X_b[<span class="number">0</span>, :])</span><br><span class="line"></span><br><span class="line">[ <span class="number">1.</span>          <span class="number">1.39293837</span>  <span class="number">1.53938446</span>]</span><br></pre></td></tr></table></figure>
-<p>取所有行，索引是0和1的列：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">print(X_b[:, <span class="number">0</span>:<span class="number">2</span>])</span><br><span class="line"></span><br><span class="line">[[ <span class="number">1.</span>          <span class="number">1.39293837</span>]</span><br><span class="line"> [ <span class="number">1.</span>          <span class="number">0.57227867</span>]</span><br><span class="line"> [ <span class="number">1.</span>          <span class="number">0.45370291</span>]</span><br><span class="line"> ...</span><br><span class="line"> [ <span class="number">1.</span>          <span class="number">1.10262954</span>]</span><br><span class="line"> [ <span class="number">1.</span>          <span class="number">1.43893794</span>]</span><br><span class="line"> [ <span class="number">1.</span>          <span class="number">0.84621292</span>]]   <span class="number">100</span>X2</span><br></pre></td></tr></table></figure>
-
-<p>其他函数的用法：<br><code>np.ones((4, 2))</code>：创建矩阵4行2列。</p>
-<h2 id="dot"><a href="#dot" class="headerlink" title="dot()"></a>dot()</h2><p><code>.dot()</code> 是<code>numpy.ndarray</code>对象的方法，实例：<br><code>X_b</code>是100X3的矩阵，<code>theta</code>为长为3的向量，y为长度为100 的向量，则：</p>
-<p><code>X_b.dot(theta)</code> 结果为长度为100 的向量。<br><code>y - X_b.dot(theta)</code>结果为长度为100的向量。<br><code>(y - X_b.dot(theta))**2</code>  结果为长100 的向量。平方差。</p>
-<p><code>np.sum((y - X_b.dot(theta))**2)</code> 结果为100个数就和。 平方差之和。<br><code>np.sum((y - X_b.dot(theta))**2) / len(X_b)</code> 就是MSE。</p>
-<p><code>对象.dot(参数)</code>中<code>对象</code>是一个矩阵，它的每一行代表一个样本，所有行表示所有样本。<code>参数</code>是一个向量，这个向量中每一个值分别与<code>对象</code>的每一行的每个值相乘后相加，最后得到一个与<code>参数</code>大小一样的向量。</p>
-<h2 id="BGD算法过程"><a href="#BGD算法过程" class="headerlink" title="BGD算法过程"></a>BGD算法过程</h2><p>目标：最小化loss：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">loss</span><span class="params">(theta, X_b, y)</span>:</span></span><br><span class="line">    <span class="string">"""目标函数"""</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> np.sum((y - X_b.dot(theta))**<span class="number">2</span>) / len(X_b)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> float(<span class="string">'inf'</span>)</span><br></pre></td></tr></table></figure>
-
-<p>迭代过程中需要求梯度：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient</span><span class="params">(theta, X_b, y)</span>:</span></span><br><span class="line">    <span class="string">"""loss对参theta的梯度"""</span></span><br><span class="line">    res = np.empty(len(theta))</span><br><span class="line">    <span class="comment"># 根据数学推到得 梯度的三个分量：</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">0</span>, len(theta)):</span><br><span class="line">        res[i] = (X_b.dot(theta) - y).dot(X_b[:, i])   <span class="comment"># dot操作中左后一步是Sum</span></span><br><span class="line">    <span class="keyword">return</span> res * <span class="number">2</span> / len(X_b)</span><br></pre></td></tr></table></figure>
-<p>其中res[i]的值所用公式见数学笔记。</p>
-<p>GD的过程如下，输入样本<code>X_b</code>已知, <code>y</code>表示真是拟合值，只需要初始化参数<code>theta</code>就可执行GD。<br><code>init_theta =  np.zeros(X_b.shape[1])</code> 初始值为0。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span><span class="params">(X_b, y, init_theta, learning_rate=<span class="number">0.01</span>, n_itr=<span class="number">1000</span>, epsilon=<span class="number">1e-8</span>)</span>:</span></span><br><span class="line">    theta = init_theta</span><br><span class="line">    i_itr = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> i_itr &lt; n_itr:</span><br><span class="line">        grad = gradient(theta, X_b, y)</span><br><span class="line">        last_theta = theta</span><br><span class="line">        theta = theta - learning_rate*grad</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (abs(loss(theta, X_b, y) - loss(last_theta, X_b, y)) &lt; epsilon):</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        i_itr += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> theta</span><br></pre></td></tr></table></figure>
-
-<p>调用GD：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">theta = gradient_descent(X_b, y, init_theta, learning_rate=<span class="number">0.01</span>, <span class="number">2000</span>)</span><br><span class="line"></span><br><span class="line">得到迭代最终的参数theta：</span><br><span class="line">[ <span class="number">5.09735976</span>  <span class="number">2.81188565</span>  <span class="number">4.01306057</span>]</span><br></pre></td></tr></table></figure>
-
-<p>结果分别对应（5 + np.random.normal(size=100)，3，4。</p>
-<p>其中，对于求梯度，观察式子，发现可以使用<strong>向量化</strong>实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient_vectorize</span><span class="params">(theta, X_b, y)</span>:</span></span><br><span class="line">    <span class="string">"""向量化"""</span></span><br><span class="line">    <span class="keyword">return</span> X_b.T.dot(X_b.dot(theta)-y) * <span class="number">2</span>/len(X_b)</span><br></pre></td></tr></table></figure>
-
-<h1 id="归一化"><a href="#归一化" class="headerlink" title="归一化"></a>归一化</h1><p>当样本的每种特征数值量级差别很大时：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[  6.32000000e-03   1.80000000e+01   2.31000000e+00   0.00000000e+00</span><br><span class="line">    5.38000000e-01   6.57500000e+00   6.52000000e+01   4.09000000e+00</span><br><span class="line">    1.00000000e+00   2.96000000e+02   1.53000000e+01   3.96900000e+02</span><br><span class="line">    4.98000000e+00]</span><br></pre></td></tr></table></figure>
-<p>使用一般的步长，得到的结果在python中为<code>nan</code>。因为特征数值相差太大时，一般的步长也变得很大很大（步长对数据特征值之差敏感）。此时减小步长，增加迭代次数也就可以达到结果，但效率很低。</p>
-<p>所以使用梯度算法前，要对数据进行归一化。</p>
-<h1 id="SGD"><a href="#SGD" class="headerlink" title="SGD"></a>SGD</h1><p>随机梯度下降法，每次处理一个样本，马上计算一次梯度（见数学笔记）。与BGD相比，SGD的loss函数改变了：<br>BGD的loss是将<font color="red" size="4">所有样本带入目标函数后的结果</font>（看公式）。而SGD的loss是把<font color="red" size="4">当前这一个样本带入目标函数的结果</font>。</p>
-<p>所以，BGD的参数迭代路径的方向是由所有样本决定，是实际方向。而SGD的参数路径是曲折的，因为每一步只是由一个样本得到，这个方向不能代表所有样本的实际方向。</p>
-<p>SGD一般设置学习率为变化值。<code>learning_rate = a / (itr+b)</code>。</p>
-<p>SGD实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient_vectorize</span><span class="params">(theta, X_b_i, y_i)</span>:</span></span><br><span class="line">    <span class="string">"""每一个样本的梯度"""</span></span><br><span class="line">    <span class="keyword">return</span> X_b_i.T.dot(X_b_i.dot(theta)-y_i) * <span class="number">2</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">SGD</span><span class="params">(X_b, y, init_theta, n_itr)</span>:</span></span><br><span class="line"></span><br><span class="line">    t0 =<span class="number">5</span></span><br><span class="line">    t1 = <span class="number">50</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 变化的学习率</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">learning_rate</span><span class="params">(t)</span>:</span>  </span><br><span class="line">        <span class="keyword">return</span> t0/(t+t1)</span><br><span class="line"></span><br><span class="line">    theta = init_theta</span><br><span class="line">    <span class="keyword">for</span> itr_i <span class="keyword">in</span> range(n_itr):</span><br><span class="line">        <span class="comment"># 随机选一个索引：</span></span><br><span class="line">        curr_sample_id = np.random.randint(len(X_b))   </span><br><span class="line">        <span class="comment"># 取出该索引对应的样本，计算对应样本的梯度：</span></span><br><span class="line">        grad = gradient_vectorize(theta, X_b[curr_sample_id], y[curr_sample_id]) </span><br><span class="line">        <span class="comment"># 根据一个样本更新梯度：</span></span><br><span class="line">        theta = theta - learning_rate(itr_i) * grad</span><br><span class="line">    <span class="keyword">return</span> theta</span><br></pre></td></tr></table></figure>
-
-<p><font color="gree" size="5">敲黑板</font></p>
-<ul>
-<li>本篇笔记的GD算法是一次性把所有样本带入，也就是遍历一遍所有样本才更新一次参数。称为BGD</li>
-<li>向量化速度快</li>
-<li>与步长有关的迭代算法，首先要对数据进行归一化。</li>
-<li>常用python函数</li>
-<li>BGD和SGD的loss函数是不同的，BGD在迭代过程中目标函数不变，而SGD的loss随每个样本而改变。</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/09/06/%E6%95%B0%E5%80%BC%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95-%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/" data-id="ck7bjjf680015i5fz6alsa7p0" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -787,7 +692,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/caffe/">caffe</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/caffe/Utility/">Utility</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -816,7 +721,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -827,6 +732,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/">caffe 安装及trouble shooting</a>
+          </li>
         
           <li>
             <a href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
@@ -842,10 +751,6 @@
         
           <li>
             <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
           </li>
         
       </ul>
