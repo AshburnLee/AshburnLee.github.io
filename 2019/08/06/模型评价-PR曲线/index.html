@@ -7,19 +7,19 @@
   
   <title>模型评价-PR曲线 | Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。 绘制P-R曲线根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。 如何得到不同模型： 图示 假设已经使用训练样本训练出一个Logistic Regression模型log_reg，测试集x_test，y_test。调用训">
+  <meta name="description" content="Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。 绘制P-R曲线根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。 1. 如何得到不同模型图示 假设已经使用训练样本训练出一个Logistic Regression模型log_reg，测试集x_test，y_test。调用">
 <meta property="og:type" content="article">
 <meta property="og:title" content="模型评价-PR曲线">
 <meta property="og:url" content="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/index.html">
 <meta property="og:site_name" content="Junhui&#39;s Journal">
-<meta property="og:description" content="Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。 绘制P-R曲线根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。 如何得到不同模型： 图示 假设已经使用训练样本训练出一个Logistic Regression模型log_reg，测试集x_test，y_test。调用训">
+<meta property="og:description" content="Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。 绘制P-R曲线根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。 1. 如何得到不同模型图示 假设已经使用训练样本训练出一个Logistic Regression模型log_reg，测试集x_test，y_test。调用">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r.png">
 <meta property="og:image" content="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r.png">
 <meta property="og:image" content="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r-2.png">
 <meta property="og:image" content="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r-2.png">
 <meta property="article:published_time" content="2019-08-06T06:17:48.000Z">
-<meta property="article:modified_time" content="2020-03-03T06:55:28.794Z">
+<meta property="article:modified_time" content="2020-03-08T14:55:34.654Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="Algorithms">
 <meta name="twitter:card" content="summary">
@@ -100,45 +100,66 @@
       
         <p>Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。</p>
 <h1 id="绘制P-R曲线"><a href="#绘制P-R曲线" class="headerlink" title="绘制P-R曲线"></a>绘制P-R曲线</h1><p>根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。</p>
-<p>如何得到不同模型：</p>
-<p><font color="red">图示</font></p>
-<p>假设已经使用训练样本训练出一个Logistic Regression模型<code>log_reg</code>，测试集<code>x_test</code>，<code>y_test</code>。调用训练好模型的<code>decision_function()</code>，返回所有分类平面。其实Logistic Regression的默认分类平面是y=0，即threshold=0。</p>
+<h2 id="1-如何得到不同模型"><a href="#1-如何得到不同模型" class="headerlink" title="1. 如何得到不同模型"></a>1. 如何得到不同模型</h2><p><font color="red">图示</font></p>
+<p>假设已经使用训练样本训练出一个Logistic Regression模型<code>log_reg</code>，测试集<code>x_test</code>，<code>y_test</code>。调用训练好模型的<code>decision_function()</code>，返回<font color="red">所有分类平面</font>。其实Logistic Regression的<font color="red">默认分类平面是y=0，即threshold=0</font>。</p>
+<p>decision_scores记录所有分类平面：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">decision_scores = log_reg.decision_function(x_test)  </span><br><span class="line">print(len(decision_scores))         <span class="comment">#  450</span></span><br><span class="line">print(np.min(decision_scores))      <span class="comment">#  -85.6861241675</span></span><br><span class="line">print(np.max(decision_scores))      <span class="comment">#  19.8896068857</span></span><br></pre></td></tr></table></figure>
-<p>decision_scores记录所有分类平面，先看默认分类平面对应的模型各指标：</p>
+
+<p>当threshold = 0时，即默认分类平面对应的模型各指标：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">y_predict = log_reg.predict(x_test)            </span><br><span class="line">print(confusion_matrix(y_test, y_predict))    <span class="comment">#  [[403   2]</span></span><br><span class="line">                                              <span class="comment">#   [  9  36]]</span></span><br><span class="line">print(precision_score(y_test, y_predict))     <span class="comment">#  0.947368421053</span></span><br><span class="line">print(recall_score(y_test, y_predict))        <span class="comment">#  0.8</span></span><br></pre></td></tr></table></figure>
 
 <p>当使用threshold = -5为分类平面时，三指标：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到-5得到不同的模型：</span></span><br><span class="line">y_predict_m5 = np.asarray(decision_scores &gt;= <span class="number">-5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_m5))   <span class="comment">#  [[390  15]</span></span><br><span class="line">                                                <span class="comment">#   [  5  40]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_m5))    <span class="comment">#  0.727272727273</span></span><br><span class="line">print(recall_score(y_test, y_predict_m5))       <span class="comment">#  0.888888888889</span></span><br></pre></td></tr></table></figure>
-<p>相较threshold=0的模型，P下降，R上升。</p>
+
+<p>相较threshold = 0的模型，P下降，R上升。</p>
 <p>当使用threshold = 5为分类平面时，三指标：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到5得到不同的模型：</span></span><br><span class="line">y_predict_5 = np.asarray(decision_scores &gt;= <span class="number">5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_5))    <span class="comment">#  [[404   1]</span></span><br><span class="line">                                                <span class="comment">#   [ 21  24]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_5))     <span class="comment">#  0.96</span></span><br><span class="line">print(recall_score(y_test, y_predict_5))        <span class="comment">#  0.533333333333</span></span><br></pre></td></tr></table></figure>
-<p>相较threshold=0的模型，P上升，R下降。</p>
+
+<p>相较threshold = 0的模型，P上升，R下降。</p>
+<h2 id="2-绘制曲线"><a href="#2-绘制曲线" class="headerlink" title="2. 绘制曲线"></a>2. 绘制曲线</h2><p>得到每一个threshold对应的P，R值，绘制P-R曲线。</p>
 <p>有了对某一个threshold的理解，现在相隔0.1取一个threshold，获得所有P，所有R：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">precisions = []                           <span class="comment"># 记录所有P</span></span><br><span class="line">recalls = []                              <span class="comment"># 记录所有R</span></span><br><span class="line"><span class="comment"># 相隔0.1取一个threshold值保存：</span></span><br><span class="line">thresholds = np.arange(np.min(decision_scores), np.max(decision_scores), <span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 记录每一个threshold对应模型的P&amp;R:</span></span><br><span class="line"><span class="keyword">for</span> threshold <span class="keyword">in</span> thresholds:</span><br><span class="line">    y_predict = np.array(decision_scores &gt;= threshold, dtype=<span class="string">'int'</span>)</span><br><span class="line">    precisions.append(precision_score(y_test, y_predict))</span><br><span class="line">    recalls.append(recall_score(y_test, y_predict))</span><br></pre></td></tr></table></figure>
 <p>绘图<code>thresholds vs precisions</code>和<code>thresholds vs recalls</code>：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(thresholds, precisions, label=<span class="string">'P'</span>)</span><br><span class="line">plt.plot(thresholds, recalls, label=<span class="string">'R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
 <p>结果：</p>
 <div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 </div>
 
 <p>绘制<code>precision vs recall</code>：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(precisions, recalls, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
 <p>结果：</p>
 <div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r.png" width="600"></div>
+<div align="center">图 P/R曲线 </div>
 
-<p><font color="green" size="5">敲黑板</font>经过实验得出：最优threshold基本都在0附近，因此可以说，若没有对某一指标有具体的定量要求，只用判别threshold=0时的指标就可以对整个模型的性能进行评估了。第二点，一个二分类模型尝试移动分类平面，可以<strong>得到对于P&amp;R不同重视程度的模型</strong>。<br>对于P-R曲线的几点补充：</p>
+<p><font color="green" size="5">敲黑板</font>经过实验得出：</p>
+<ol>
+<li>最优threshold基本都在0附近，因此可以说，<font color="red">若没有对某一指标有具体的定量要求，只用判别<code>threshold=0</code>时的指标就可以对整个模型的性能进行评估了</font>。</li>
+<li>第二点，一个二分类模型尝试移动分类平面，可以<strong>得到对于P&amp;R不同重视程度的模型</strong>。</li>
+</ol>
+<p>对于P-R曲线的几点补充：</p>
 <ul>
-<li></li>
-<li></li>
+<li>实际中，对P-R曲线进行平滑操作</li>
+<li>如果由若干个模型的P-R曲线在同一个图中，如何判断哪个最优。<ol>
+<li>看哪一个曲线把其他的“包住”</li>
+<li>比较每条曲线与坐标轴围成的面积</li>
+</ol>
+</li>
 </ul>
 <h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>sklearn package中的绘制P-R曲线的方法：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> precision_recall_curve</span><br><span class="line"></span><br><span class="line">pres, recs, thrs = precision_recall_curve(y_test, decision_scores)</span><br><span class="line"></span><br><span class="line">plt.plot(thrs, pres[:<span class="number">-1</span>], label=<span class="string">'thr-P'</span>)</span><br><span class="line">plt.plot(thrs, recs[:<span class="number">-1</span>], label=<span class="string">'thr-R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
 
+<p>不同threshold的P/R值:</p>
 <div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r-2.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 built-in方法</div>
 
 <p>与上述实现不同在于，上述实现的threashold值从<code>decision_scores</code>的最小值到最大值，而package中函数把threshold值小于-18的值忽略未记，因为图一中这部分对于用户是没有决策贡献的。抓住要矛盾。</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(pres, recs, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
 
+<p>P/R曲线</p>
 <div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r-2.png" width="600"></div>
+<div align="center">图 P/R曲线 built-in方法</div>
 
 
 
@@ -184,7 +205,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hardware/">Hardware</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/caffe/">caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">1</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -194,7 +215,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">38</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hardware/" rel="tag">hardware</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">38</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -204,7 +225,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 13.33px;">Test Analysis</a> <a href="/tags/hardware/" style="font-size: 10px;">hardware</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 15px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
     </div>
   </div>
 
