@@ -18,7 +18,7 @@
 <meta property="og:image" content="http://yoursite.com/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-2.png">
 <meta property="og:image" content="http://yoursite.com/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-3.png">
 <meta property="article:published_time" content="2019-08-18T13:18:45.000Z">
-<meta property="article:modified_time" content="2020-03-03T06:57:19.626Z">
+<meta property="article:modified_time" content="2020-03-08T15:52:41.373Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="Algorithms">
 <meta name="twitter:card" content="summary">
@@ -97,32 +97,39 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>对于线性不可分而非线性可分的数据，也可以使用线性SVM。只需要将数据转换为高维的含有多项式项的数据。</p>
+        <p>对于线性不可分而非线性可分的数据，也可以使用线性SVM。只需要<font color="red">将数据转换为高维的含有多项式项的数据</font>。</p>
 <h1 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h1><p>先找一个，分线性可分数据集：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">x, y = datasets.make_moons(noise=<span class="number">0.15</span>, random_state=<span class="number">11</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绘制出结果：</span></span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
 
 <p>结果：</p>
 <div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon.png" width="500"></div>
+<div align="center">图 待处理数据</div>
 
 
-<h1 id="含多项式特征的LinearSVM"><a href="#含多项式特征的LinearSVM" class="headerlink" title="含多项式特征的LinearSVM"></a>含多项式特征的LinearSVM</h1><p>指定多形式的阶数，将数据转化成高维的含有多项式项上午数据，后传入LinearSVM：</p>
+<h1 id="含多项式特征的LinearSVM"><a href="#含多项式特征的LinearSVM" class="headerlink" title="含多项式特征的LinearSVM"></a>含多项式特征的LinearSVM</h1><p><font color="red">指定多形式的阶数</font>，将数据转化成高维的含有多项式项数据，后传入<code>LinearSVM</code>：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">PolynomialSVC</span><span class="params">(degree, C=<span class="number">0.1</span>)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([</span><br><span class="line">        (<span class="string">"Poly"</span>, PolynomialFeatures(degree=degree)),</span><br><span class="line">        (<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">        (<span class="string">"LinearSVC"</span>, LinearSVC(C=C))</span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
-<p>使用Pipline可以顺序执行各部分。实例化模型，并查看模型信息：</p>
+
+<p>使用<code>Pipline</code>可以顺序执行各部分。实例化模型，并查看模型信息：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">poly_svc = PolynomialSVC(<span class="number">3</span>)</span><br><span class="line">poly_svc.fit(x, y)</span><br><span class="line">print(poly_svc)</span><br></pre></td></tr></table></figure>
+
 <p>模型信息：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Pipeline(memory=<span class="literal">None</span>,</span><br><span class="line">     steps=[(<span class="string">'Poly'</span>, PolynomialFeatures(degree=<span class="number">3</span>, include_bias=<span class="literal">True</span>, interaction_only=<span class="literal">False</span>)), (<span class="string">'standard'</span>, StandardScaler(copy=<span class="literal">True</span>, with_mean=<span class="literal">True</span>, with_std=<span class="literal">True</span>)), (<span class="string">'LinearSVC'</span>, LinearSVC(C=<span class="number">0.1</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, fit_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>))])</span><br></pre></td></tr></table></figure>
+
 <p>绘出分类边界：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_decision_boundary(poly_svc, axis=[<span class="number">-1.5</span>, <span class="number">2.5</span>, <span class="number">-1.0</span>, <span class="number">1.5</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
 <p>结果为分线性边界：</p>
 <div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-2.png" width="500"></div>
+<div align="center">图 分类边界</div>
 
-<h1 id="多项式核函数"><a href="#多项式核函数" class="headerlink" title="多项式核函数"></a>多项式核函数</h1><p>SVM可以直接使用数据的多项式特征，即多项式核函数，所以使用SVC而非LinearSVC。此时Pipline中不需先得到多项式特征：</p>
+<h1 id="多项式核函数"><a href="#多项式核函数" class="headerlink" title="多项式核函数"></a>多项式核函数</h1><p>SVM可以<font color="red">直接使用数据的多项式特征，即多项式核函数</font>，所以使用SVC而非LinearSVC。此时Pipline中不需先得到多项式特征：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVC</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">Polynomial_KernelSVC</span><span class="params">(degree, C=<span class="number">0.1</span>)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([</span><br><span class="line">        (<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">        (<span class="string">"kernelSVC"</span>, SVC(kernel=<span class="string">"poly"</span>, degree=degree, C=C))  </span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
+
 <p>传入kernel参数，指定使用什么样的核函数。实例化模型，绘制分类边界：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">poly_kernel_svc = Polynomial_KernelSVC(degree=<span class="number">5</span>)</span><br><span class="line">poly_kernel_svc.fit(x, y)</span><br><span class="line"></span><br><span class="line">plot_decision_boundary(poly_kernel_svc, axis=[<span class="number">-1.5</span>, <span class="number">2.5</span>, <span class="number">-1.0</span>, <span class="number">1.5</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
 <p>边界：</p>
 <div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-3.png" width="500"></div>
-
+<div align="center">图 使用多项式核函数的分类边界</div>
       
     </div>
     <footer class="article-footer">

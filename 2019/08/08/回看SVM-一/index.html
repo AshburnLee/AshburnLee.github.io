@@ -17,7 +17,7 @@
 <meta property="og:image" content="http://yoursite.com/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/hard.png">
 <meta property="og:image" content="http://yoursite.com/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/soft.png">
 <meta property="article:published_time" content="2019-08-07T20:23:21.000Z">
-<meta property="article:modified_time" content="2020-03-03T06:58:20.002Z">
+<meta property="article:modified_time" content="2020-03-08T15:46:44.484Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="Algorithms">
 <meta name="twitter:card" content="summary">
@@ -96,45 +96,44 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><ul>
+        <h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><ul>
 <li>支持向量：两类别距离决策边界最近且相等的点。</li>
 <li>SVM目的：使得两个类别的SV间的距离最小。即最大化Margin间的距离。</li>
 <li>SVM考虑当前样本同时，又考虑到未来可能出现的样本，即使找到的决策边界尽量有强的泛化能力。</li>
 <li>经过数学推到，可以将问题转化为最优化问题。如同其他参数学习算法。</li>
-<li>其他机器学习算法一般是全局最优化问题，而SVM是有条件的最优化问题。</li>
+<li>其他机器学习算法一般是全局最优化问题，而SVM是<font color="red">有条件的最优化问题</font>。</li>
 <li>有条件的最优化问题使用拉格朗日算子求解。</li>
 <li>KKT条件</li>
 <li>Hard Margin要严格满足两个Margin见没有没有任何样本点。这由该最优化问题的条件决定。</li>
-<li>Soft Margin允许两个Margin之间存在样本点，即有容错的能力。相应的模型条件与目标都会体现该容错能力。</li>
+<li>Soft Margin允许两个Margin之间存在样本点，即有<font color="red">容错的能力</font>。相应的模型条件与目标都会体现该容错能力。</li>
 <li>L1正则；L2正则</li>
 <li>Hinge损失函数，Exponential Loss，Logistic Loss，是常用的损失函数，由好的数学性质。</li>
-<li>惩罚项表达了容错空间，不能太大。</li>
-<li>目标表达式中的C，目的是平衡前后两部分的比例。</li>
-<li>此处C与其他ML算法C含义不同，但是可以相同地解读。且C越大，越接近Hard Margin。</li>
+<li>惩罚项表达了<font color="red">容错空间</font>，不能太大。</li>
+<li>目标表达式中的<code>C</code>，目的是平衡前后两部分的比例。</li>
+<li>此处C（正则化惩罚系数）与其他ML算法C含义不同，但是可以相同地解读。且C越大，越接近Hard Margin。</li>
 <li>SVM中涉及距离，所以要对数据进行标准化处理。否则当不同维数的特征尺度不同时，影响模型性能。</li>
 </ul>
-<hr>
-<h2 id="数据"><a href="#数据" class="headerlink" title="数据"></a>数据</h2><p>有二分类样本：</p>
+<h1 id="1-数据"><a href="#1-数据" class="headerlink" title="1. 数据"></a>1. 数据</h1><p>有二分类样本：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">iris = datasets.load_iris()</span><br><span class="line"></span><br><span class="line">x = iris.data    <span class="comment"># 150 x 4</span></span><br><span class="line">y = iris.target  <span class="comment"># 150</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 二分类模型</span></span><br><span class="line">x = x[y &lt; <span class="number">2</span>, :<span class="number">2</span>]  <span class="comment"># 100 x 2</span></span><br><span class="line">y = y[y &lt; <span class="number">2</span>]     <span class="comment"># 100</span></span><br></pre></td></tr></table></figure>
 
-<h2 id="首先标准化处理："><a href="#首先标准化处理：" class="headerlink" title="首先标准化处理："></a>首先标准化处理：</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler</span><br><span class="line"></span><br><span class="line">stand = StandardScaler()</span><br><span class="line">stand.fit(x)</span><br><span class="line">x_standard = stand.transform(x)</span><br></pre></td></tr></table></figure>
-<p>得到标准化后的x_standard。</p>
+<h1 id="2-首先标准化处理："><a href="#2-首先标准化处理：" class="headerlink" title="2. 首先标准化处理："></a>2. 首先标准化处理：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler</span><br><span class="line"></span><br><span class="line">stand = StandardScaler()</span><br><span class="line">stand.fit(x)</span><br><span class="line">x_standard = stand.transform(x)</span><br></pre></td></tr></table></figure>
+<p>得到标准化后的<code>x_standard</code>。</p>
 <p>为了说明问题，使用所有数据fit，使用原来数据predict。</p>
-<hr>
-<h2 id="当C取很大值时，如C-1e9："><a href="#当C取很大值时，如C-1e9：" class="headerlink" title="当C取很大值时，如C=1e9："></a>当C取很大值时，如C=1e9：</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc = LinearSVC(C=<span class="number">1e9</span>)</span><br><span class="line">svc.fit(x_standard, y)</span><br><span class="line">y_predict = svc.predict(x_standard)</span><br></pre></td></tr></table></figure>
+<h1 id="3-当C取很大值时，如C-1e9："><a href="#3-当C取很大值时，如C-1e9：" class="headerlink" title="3. 当C取很大值时，如C=1e9："></a>3. 当C取很大值时，如C=1e9：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc = LinearSVC(C=<span class="number">1e9</span>)</span><br><span class="line">svc.fit(x_standard, y)</span><br><span class="line">y_predict = svc.predict(x_standard)</span><br></pre></td></tr></table></figure>
 
-<p>查看模型所学，w&amp;b：</p>
+<p>查看模型所学，<code>w和b</code>：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc.coef_)       <span class="comment"># w [[ 4.03242779 -2.49296705]] </span></span><br><span class="line">print(svc.intercept_)  <span class="comment"># b [ 0.95365901]</span></span><br></pre></td></tr></table></figure>
 
 <p>绘出决策边界， 及两个Margin：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
 <p>如图：</p>
 <div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/hard.png" width="600"></div>
+<div align="center">图 C=1e9的分类边界</div>
 
 
 
-<hr>
-<h2 id="当C取很小值时，如C-0-05："><a href="#当C取很小值时，如C-0-05：" class="headerlink" title="当C取很小值时，如C=0.05："></a>当C取很小值时，如C=0.05：</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc2 = LinearSVC(C=<span class="number">0.005</span>)</span><br><span class="line">svc2.fit(x_standard, y)</span><br><span class="line">y_y_predict = svc2.predict(x_standard)</span><br></pre></td></tr></table></figure>
+<h1 id="4-当C取很小值时，如C-0-05："><a href="#4-当C取很小值时，如C-0-05：" class="headerlink" title="4. 当C取很小值时，如C=0.05："></a>4. 当C取很小值时，如C=0.05：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc2 = LinearSVC(C=<span class="number">0.005</span>)</span><br><span class="line">svc2.fit(x_standard, y)</span><br><span class="line">y_y_predict = svc2.predict(x_standard)</span><br></pre></td></tr></table></figure>
 
 <p>查看模型所学，w&amp;b：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc2.coef_)       <span class="comment"># w [[ 0.33360588 -0.30904355]]</span></span><br><span class="line">print(svc2.intercept_)  <span class="comment"># b [  3.81794231e-08]</span></span><br></pre></td></tr></table></figure>
@@ -143,15 +142,15 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc2, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
 <p>如图：</p>
 <div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/soft.png" width="600"></div>
-
+<div align="center">图 C=0.005的分类边界</div>
 
 <p>当C太小时，容错空间太大，以至于大量明显分错的点也被模型认为是允许的。</p>
 <p>这是当只指明C后，模型的参数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">LinearSVC(C=<span class="number">1000000000.0</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, fit_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">LinearSVC(C=<span class="number">1000000000.0</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, f   it_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
 
 <p>可以看出，使用的是hinge损失函数，L2正则化，ovr…等其他设置。</p>
 <hr>
-<h2 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h2><p>绘出决策边界，及两个Margin的函数：</p>
+<h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>绘出决策边界，及两个Margin的函数：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># show margins and boundary:</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">plot_svc_decision_boundary</span><span class="params">(model, axis)</span>:</span></span><br><span class="line">    x0, x1 = np.meshgrid(</span><br><span class="line">        np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], int((axis[<span class="number">1</span>] - axis[<span class="number">0</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">        np.linspace(axis[<span class="number">2</span>], axis[<span class="number">3</span>], int((axis[<span class="number">3</span>] - axis[<span class="number">2</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">    )</span><br><span class="line">    X_new = np.c_[x0.ravel(), x1.ravel()]</span><br><span class="line"></span><br><span class="line">    y_predict = model.predict(X_new)</span><br><span class="line">    zz = y_predict.reshape(x0.shape)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">from</span> matplotlib.colors <span class="keyword">import</span> ListedColormap</span><br><span class="line">    custom_cmap = ListedColormap([<span class="string">'#EF9A9A'</span>, <span class="string">'#FFF59D'</span>, <span class="string">'#90CAF9'</span>])</span><br><span class="line"></span><br><span class="line">    plt.contourf(x0, x1, zz, linewidth=<span class="number">5</span>, cmap=custom_cmap)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># margin lines:</span></span><br><span class="line">    w = model.coef_[<span class="number">0</span>]</span><br><span class="line">    b = model.intercept_[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># w0*x0 + w1*x1 + b = 0</span></span><br><span class="line">    <span class="comment"># =&gt; x1 = -w0/w1 * x0 - b/w1</span></span><br><span class="line">    plot_x = np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], <span class="number">200</span>)</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = 1</span></span><br><span class="line">    above_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] + (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = -1</span></span><br><span class="line">    below_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] - (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># two boolean vectors: set the length of lines</span></span><br><span class="line">    above_index = (above_y &gt;= axis[<span class="number">2</span>]) &amp; (above_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    below_index = (below_y &gt;= axis[<span class="number">2</span>]) &amp; (below_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    plt.plot(plot_x[above_index], above_y[above_index], color=<span class="string">'black'</span>)</span><br><span class="line">    plt.plot(plot_x[below_index], below_y[below_index], color=<span class="string">'black'</span>)</span><br></pre></td></tr></table></figure>
 
       
