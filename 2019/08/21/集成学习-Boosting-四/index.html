@@ -16,7 +16,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://yoursite.com/2019/08/21/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-Boosting-%E5%9B%9B/ada.png">
 <meta property="article:published_time" content="2019-08-21T07:03:16.000Z">
-<meta property="article:modified_time" content="2020-01-11T10:29:59.065Z">
+<meta property="article:modified_time" content="2020-03-09T05:55:09.118Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="Algorithms">
 <meta name="twitter:card" content="summary">
@@ -96,22 +96,28 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>之前说过，集成学习分为两类：学习器间无关系，和基学习器间有关系。前者常使用Bagging 和随机森林。而后者常使用Boosting。Boosting的工作机制如下：<strong>先从训练集中训练出一个基学习器，然后根据这个学习器的表现调整样本分布，使得先前的学习器分类错误的样本在后续收到更多关注，最后基于调整后的样本训练下一个学习器。如此反复</strong>。也就是说，每个基学习器都在尝试提升整体效果。可以看出，Boosting不能并行执行。</p>
-<h2 id="Ada-Boosting"><a href="#Ada-Boosting" class="headerlink" title="Ada Boosting"></a>Ada Boosting</h2><p>Boosting算法最著名的代表是AdaBoost：其过程如下：</p>
+<p>常见两个Boosting</p>
+<ol>
+<li>Ada Boosting</li>
+<li>Gradient Boosting</li>
+</ol>
+<h1 id="Ada-Boosting"><a href="#Ada-Boosting" class="headerlink" title="Ada Boosting"></a>Ada Boosting</h1><p>Boosting算法最著名的代表是AdaBoost：其过程如下：</p>
 <div align="center"><img src="/2019/08/21/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-Boosting-%E5%9B%9B/ada.png" width="600"></div>
+<div align="center">图 多个学习器串行，调整样本权值</div>
 
 <p>初始样本集每个样本有一个权值，当第一个学习器学习完后，对于不能正确捕捉的样本，调整这些样本的权值。然后第二个学习器接着学习，对于不能正确捕捉的样本调整权值。然后让第三个学习器接着学习。如此反复。可以看出，在整个样本的学习过程中，样本的权值在不断变化。<br>那么怎样给样本点附上权值，这其实是个<strong>问题转化</strong>，转化为求极值的问题。</p>
-<p>sklearn中实现：</p>
+<p>sklearn中使用<code>AdaBoostClassifier()</code>实现：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 数据集</span></span><br><span class="line">x, y = datasets.make_moons(n_samples=<span class="number">200</span>, noise=<span class="number">0.4</span>, random_state=<span class="number">111</span>)</span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line">x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=<span class="number">111</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建adaboost 模型</span></span><br><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> AdaBoostClassifier</span><br><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier</span><br><span class="line"></span><br><span class="line">ada = AdaBoostClassifier(DecisionTreeClassifier(max_depth=<span class="number">2</span>),</span><br><span class="line">                         n_estimators=<span class="number">100</span>)</span><br><span class="line">model = ada.fit(x_train, y_train)</span><br><span class="line">print(model)</span><br><span class="line">print(model.score(x_test, y_test))</span><br></pre></td></tr></table></figure>
 
 <p>在测试集上结果：92.0%</p>
-<h2 id="Gradient-Boosting"><a href="#Gradient-Boosting" class="headerlink" title="Gradient Boosting"></a>Gradient Boosting</h2><p>Gradient Boosting 是另外一种思路，它<strong>仅以决策树</strong>为基学习器。过程如下图：</p>
+<h1 id="Gradient-Boosting"><a href="#Gradient-Boosting" class="headerlink" title="Gradient Boosting"></a>Gradient Boosting</h1><p>Gradient Boosting 是另外一种思路，它<strong>仅以决策树</strong>为基学习器。过程如下图：</p>
 <div align="center"><img src></div>
 
-<p>对于所有样本，训练第一个模型m1，得到所有分类错误样本。对于上一步中的所有错误分类样本，训练第二个模型m2， 得到这次分类错误样本。如此反复。最终的模型m等于这个过程中所有模型之和：m = m1 + m2 + m3 + m4 + …</p>
-<p>sklearn实现：</p>
+<p>对于所有样本，训练第一个模型<code>m1</code>，得到所有分类错误样本。对于上一步中的所有错误分类样本，训练第二个模型<code>m2</code>， 得到这次分类错误样本。如此反复。最终的模型<code>m</code>等于这个过程中所有模型之和：<code>m = m1 + m2 + m3 + m4 + ...</code>。</p>
+<p>sklearn使用<code>GradientBoostingClassifier()</code>实现：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 同样的数据集</span></span><br><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> GradientBoostingClassifier</span><br><span class="line"></span><br><span class="line"><span class="comment"># Gradient Boosting使用决策树为基学习器：</span></span><br><span class="line">gb = GradientBoostingClassifier(max_depth=<span class="number">2</span>, n_estimators=<span class="number">100</span>)</span><br><span class="line">gb.fit(x_train, y_train)</span><br><span class="line"></span><br><span class="line">print(gb.score(x_test, y_test))</span><br></pre></td></tr></table></figure>
 <p>模型在测试集上的性能： 88.0%</p>
-<p>Gradient Boosting 其实是一种残差学习，每一个学习器并不是学习整个样本集，只学习错误分类集。</p>
+<p>Gradient Boosting 其实是一种<font color="red">残差学习</font>，每一个学习器并不是学习整个样本集，只学习错误分类集。</p>
 <p>同样的，Ada Boosting 和 Gradient Boosting 也可以用来处理回归任务。</p>
 
       
@@ -156,7 +162,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -185,7 +191,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -198,6 +204,10 @@
       <ul>
         
           <li>
+            <a href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-如何使用</a>
           </li>
         
@@ -206,15 +216,11 @@
           </li>
         
           <li>
-            <a href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
+            <a href="/2020/03/05/Cpp-pro-tip-1/">Cpp pro tip 1</a>
           </li>
         
           <li>
             <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
           </li>
         
       </ul>

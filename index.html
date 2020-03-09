@@ -64,6 +64,71 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Cpp-pro-tip-2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/09/Cpp-pro-tip-2/" class="article-date">
+  <time datetime="2020-03-09T06:29:07.000Z" itemprop="datePublished">2020-03-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="尽可能使用const"><a href="#尽可能使用const" class="headerlink" title="尽可能使用const"></a>尽可能使用const</h1><p>如果某个值需要保持不变，那么你就应该说出来，这样编译器能确保这写约束不被违反。const可以放于很多位置。</p>
+<h2 id="1-作用于指针"><a href="#1-作用于指针" class="headerlink" title="1. 作用于指针"></a>1. 作用于指针</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> greeting[] = <span class="string">"hello"</span>;</span><br><span class="line"><span class="keyword">char</span>* p = greeting;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* p = greeting;   <span class="comment">// 1</span></span><br><span class="line"><span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;   <span class="comment">// 2</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;  <span class="comment">// 3</span></span><br></pre></td></tr></table></figure>
+
+<p>const的出现位置：</p>
+<ol>
+<li><code>const *</code>，<font color="red">数据是常量</font>，表示被指向的对象是常量，而指针是可以变的。</li>
+<li><code>* const</code>，表示<font color="red">指针是常量</font>。<font color="red">这个指针不能指向不同的东西，但它指向东西的数据可以改变</font>。</li>
+<li><code>const * const</code>，表示指针和被指向的对象都是常量</li>
+</ol>
+<p>对于在*左侧，下面两种表达意义相同，都在左侧：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* greeting;</span><br><span class="line"><span class="keyword">char</span> <span class="keyword">const</span>* greeting;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-作用于特殊指针，iterator"><a href="#2-作用于特殊指针，iterator" class="headerlink" title="2. 作用于特殊指针，iterator"></a>2. 作用于特殊指针，iterator</h2><p>对于STL中的迭代器，加入我希望迭代器所指向的东西不可被修改（即对数据只读），那么就需要一个<code>const_iterator</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; vec;</span><br><span class="line"><span class="comment">// 数据const</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::const_iterator cItr = vec.begain();</span><br><span class="line">*cItr = <span class="number">10</span>;   <span class="comment">// 错，所指向的东西不能改</span></span><br><span class="line">cItr++；      <span class="comment">// 对，指针可改</span></span><br></pre></td></tr></table></figure>
+<p>而另一种情况，指针不能改变其指向，但是可改变其所指向数据：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 指针const</span></span><br><span class="line"><span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::iterator itr = vec.begain();</span><br><span class="line">*itr = <span class="number">10</span>;   <span class="comment">// 对，所指向的东西可改</span></span><br><span class="line">itr++；      <span class="comment">// 错，指针指向不可改</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="3-作用与函数"><a href="#3-作用与函数" class="headerlink" title="3. 作用与函数"></a>3. 作用与函数</h2><ol>
+<li><p>函数返回值为const</p>
+<p> 将函数返回值声明为const，降低了因为用户的错误而造成的意外。</p>
+</li>
+<li><p>函数参数为const</p>
+<p> 除非你要改动局部变量（函数参数），否则将参数声明为const。</p>
+</li>
+</ol>
+<h2 id="4-作用与类成员"><a href="#4-作用与类成员" class="headerlink" title="4. 作用与类成员"></a>4. 作用与类成员</h2>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/09/Cpp-pro-tip-2/" data-id="ck7kgqjep0001kzfz2l80hn4c" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-caffe-如何使用" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/" class="article-date">
@@ -258,9 +323,9 @@
 
 
   
-    <article id="post-cpp-pro-tip-1" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-Cpp-pro-tip-1" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2020/03/05/cpp-pro-tip-1/" class="article-date">
+    <a href="/2020/03/05/Cpp-pro-tip-1/" class="article-date">
   <time datetime="2020-03-05T10:05:50.000Z" itemprop="datePublished">2020-03-05</time>
 </a>
     
@@ -276,7 +341,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
+      <a class="article-title" href="/2020/03/05/Cpp-pro-tip-1/">Cpp pro tip 1</a>
     </h1>
   
 
@@ -292,7 +357,7 @@
 </ul>
 <p>绘制这里的图(<a href="https://blog.csdn.net/Meteor_s/article/details/85208589" target="_blank" rel="noopener">https://blog.csdn.net/Meteor_s/article/details/85208589</a>)</p>
 <p><a href="https://www.cnblogs.com/ericling/articles/11736681.html" target="_blank" rel="noopener">这里</a>更详细</p>
-<div align="center"><img src="/2020/03/05/cpp-pro-tip-1/.png"></div>
+<div align="center"><img src="/2020/03/05/Cpp-pro-tip-1/.png"></div>
 
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -E hello.c -o hello.i</span><br><span class="line">gcc –S hello.i –o hello.s</span><br><span class="line">gcc –c hello.s –o hello.o</span><br><span class="line">gcc hello.o –o hello</span><br></pre></td></tr></table></figure>
 
@@ -367,7 +432,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/05/cpp-pro-tip-1/" data-id="ck7elstna0000l0fz872158na" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2020/03/05/Cpp-pro-tip-1/" data-id="ck7kgqjef0000kzfzhqqa86r2" class="article-share-link">Share</a>
       
       
     </footer>
@@ -954,165 +1019,6 @@
 
 
   
-    <article id="post-CUDA-ComputeCapacity-SM-version6-1的参数值" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" class="article-date">
-  <time datetime="2020-02-20T02:15:23.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ol>
-<li><p>Compute Capability</p>
-<p> 对于CPU，不同架构的CPU有者不同的功能和指令集（MMX，SSE，SSE2）。而对于GPU，不同的功能由不同的<code>Compute Capability</code>表示。</p>
-<p> NVIDIA GPU支持的Compute Capability有<code>1.0，1.0，... 2.0，... 6.0，6.1，7.5</code>。高版本的<code>Compute Capability</code>是低版本<code>Compute Capability</code>的超集，就是俄罗斯套娃式的嵌套结构。比如6.1版本支持1.0版本的所有功能。</p>
-<p> 比如，原子操作时硬件在内存上执行的。而只有<code>1.1和1.1之后</code>的版本才支持global memory上的原子操作，而只有<code>1.2和1.2之后</code>的版本才支持shared memory上的原子操作</p>
-<p> 在应用中，通常会指定最低<code>Compute Capability</code>版本，如2.3，告诉编译器，如果硬件支持的<code>Compute Capability</code>版本低于2.3，那么将无法执行这个和函数。做法是使用nvcc时增加一个选项<code>nvcc -arch=sm_23</code>，所以<code>Compute Capability</code>有称作<code>SM版本</code>。</p>
-<p> <code>SM版本</code>的形式是<code>X.Y</code>，X表示核心的架构，7表示Volta，6表示Pascal。Y表示硬件的特性版本。</p>
-<p> 不同的SM版本所支持的特性，和技术参数，间这个页面的table14和table15：<br>  <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities" target="_blank" rel="noopener">https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities</a></p>
-</li>
-<li><p>SM version=6.1 的关键参数</p>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Maximum dimensionality of grid of thread blocks</td>
-<td align="left">3</td>
-</tr>
-<tr>
-<td align="left">Maximum x- or y-dimension of a block</td>
-<td align="left">1024</td>
-</tr>
-<tr>
-<td align="left">Maximum z-dimension of a block</td>
-<td align="left">64</td>
-</tr>
-</tbody></table>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Maximum number of threads per block</td>
-<td align="left">1024</td>
-</tr>
-<tr>
-<td align="left">Warp size</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>grids</strong> per device</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>blocks</strong> per multiprocessor</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>warps</strong> per multiprocessor</td>
-<td align="left">64</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>threads</strong> per multiprocessor</td>
-<td align="left">2048</td>
-</tr>
-</tbody></table>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Number of 32-bit registers <strong>per multiprocessor</strong></td>
-<td align="left">64 K</td>
-</tr>
-<tr>
-<td align="left">Maximum number of 32-bit registers <strong>per thread block</strong></td>
-<td align="left">64 KB</td>
-</tr>
-<tr>
-<td align="left">Maximum number of 32-bit registers <strong>per thread</strong></td>
-<td align="left">255</td>
-</tr>
-</tbody></table>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Maximum amount of shared memory per multiprocessor</td>
-<td align="left">96 KB</td>
-</tr>
-<tr>
-<td align="left">Maximum amount of shared memory per thread block</td>
-<td align="left">48 KB</td>
-</tr>
-<tr>
-<td align="left">Number of shared memory banks</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Amount of local memory per thread</td>
-<td align="left">512 KB</td>
-</tr>
-<tr>
-<td align="left">Constant memory size</td>
-<td align="left">64 KB</td>
-</tr>
-<tr>
-<td align="left">Maximum number of instructions per kernel</td>
-<td align="left">512 million</td>
-</tr>
-</tbody></table>
-</li>
-</ol>
-<p>这些指标要心里有数</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" data-id="ck71en4ii0000hefzbfvja7pw" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1128,7 +1034,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1157,7 +1063,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1170,6 +1076,10 @@
       <ul>
         
           <li>
+            <a href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-如何使用</a>
           </li>
         
@@ -1178,15 +1088,11 @@
           </li>
         
           <li>
-            <a href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
+            <a href="/2020/03/05/Cpp-pro-tip-1/">Cpp pro tip 1</a>
           </li>
         
           <li>
             <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
           </li>
         
       </ul>

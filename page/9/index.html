@@ -64,6 +64,112 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-模型评价-PR曲线" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/" class="article-date">
+  <time datetime="2019-08-06T06:17:48.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/">模型评价-PR曲线</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。</p>
+<h1 id="绘制P-R曲线"><a href="#绘制P-R曲线" class="headerlink" title="绘制P-R曲线"></a>绘制P-R曲线</h1><p>根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。</p>
+<h2 id="1-如何得到不同模型"><a href="#1-如何得到不同模型" class="headerlink" title="1. 如何得到不同模型"></a>1. 如何得到不同模型</h2><p><font color="red">图示</font></p>
+<p>假设已经使用训练样本训练出一个Logistic Regression模型<code>log_reg</code>，测试集<code>x_test</code>，<code>y_test</code>。调用训练好模型的<code>decision_function()</code>，返回<font color="red">所有分类平面</font>。其实Logistic Regression的<font color="red">默认分类平面是y=0，即threshold=0</font>。</p>
+<p>decision_scores记录所有分类平面：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">decision_scores = log_reg.decision_function(x_test)  </span><br><span class="line">print(len(decision_scores))         <span class="comment">#  450</span></span><br><span class="line">print(np.min(decision_scores))      <span class="comment">#  -85.6861241675</span></span><br><span class="line">print(np.max(decision_scores))      <span class="comment">#  19.8896068857</span></span><br></pre></td></tr></table></figure>
+
+<p>当threshold = 0时，即默认分类平面对应的模型各指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">y_predict = log_reg.predict(x_test)            </span><br><span class="line">print(confusion_matrix(y_test, y_predict))    <span class="comment">#  [[403   2]</span></span><br><span class="line">                                              <span class="comment">#   [  9  36]]</span></span><br><span class="line">print(precision_score(y_test, y_predict))     <span class="comment">#  0.947368421053</span></span><br><span class="line">print(recall_score(y_test, y_predict))        <span class="comment">#  0.8</span></span><br></pre></td></tr></table></figure>
+
+<p>当使用threshold = -5为分类平面时，三指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到-5得到不同的模型：</span></span><br><span class="line">y_predict_m5 = np.asarray(decision_scores &gt;= <span class="number">-5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_m5))   <span class="comment">#  [[390  15]</span></span><br><span class="line">                                                <span class="comment">#   [  5  40]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_m5))    <span class="comment">#  0.727272727273</span></span><br><span class="line">print(recall_score(y_test, y_predict_m5))       <span class="comment">#  0.888888888889</span></span><br></pre></td></tr></table></figure>
+
+<p>相较threshold = 0的模型，P下降，R上升。</p>
+<p>当使用threshold = 5为分类平面时，三指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到5得到不同的模型：</span></span><br><span class="line">y_predict_5 = np.asarray(decision_scores &gt;= <span class="number">5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_5))    <span class="comment">#  [[404   1]</span></span><br><span class="line">                                                <span class="comment">#   [ 21  24]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_5))     <span class="comment">#  0.96</span></span><br><span class="line">print(recall_score(y_test, y_predict_5))        <span class="comment">#  0.533333333333</span></span><br></pre></td></tr></table></figure>
+
+<p>相较threshold = 0的模型，P上升，R下降。</p>
+<h2 id="2-绘制曲线"><a href="#2-绘制曲线" class="headerlink" title="2. 绘制曲线"></a>2. 绘制曲线</h2><p>得到每一个threshold对应的P，R值，绘制P-R曲线。</p>
+<p>有了对某一个threshold的理解，现在相隔0.1取一个threshold，获得所有P，所有R：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">precisions = []                           <span class="comment"># 记录所有P</span></span><br><span class="line">recalls = []                              <span class="comment"># 记录所有R</span></span><br><span class="line"><span class="comment"># 相隔0.1取一个threshold值保存：</span></span><br><span class="line">thresholds = np.arange(np.min(decision_scores), np.max(decision_scores), <span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 记录每一个threshold对应模型的P&amp;R:</span></span><br><span class="line"><span class="keyword">for</span> threshold <span class="keyword">in</span> thresholds:</span><br><span class="line">    y_predict = np.array(decision_scores &gt;= threshold, dtype=<span class="string">'int'</span>)</span><br><span class="line">    precisions.append(precision_score(y_test, y_predict))</span><br><span class="line">    recalls.append(recall_score(y_test, y_predict))</span><br></pre></td></tr></table></figure>
+<p>绘图<code>thresholds vs precisions</code>和<code>thresholds vs recalls</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(thresholds, precisions, label=<span class="string">'P'</span>)</span><br><span class="line">plt.plot(thresholds, recalls, label=<span class="string">'R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 </div>
+
+<p>绘制<code>precision vs recall</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(precisions, recalls, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r.png" width="600"></div>
+<div align="center">图 P/R曲线 </div>
+
+<p><font color="green" size="5">敲黑板</font>经过实验得出：</p>
+<ol>
+<li>最优threshold基本都在0附近，因此可以说，<font color="red">若没有对某一指标有具体的定量要求，只用判别<code>threshold=0</code>时的指标就可以对整个模型的性能进行评估了</font>。</li>
+<li>第二点，一个二分类模型尝试移动分类平面，可以<strong>得到对于P&amp;R不同重视程度的模型</strong>。</li>
+</ol>
+<p>对于P-R曲线的几点补充：</p>
+<ul>
+<li>实际中，对P-R曲线进行平滑操作</li>
+<li>如果由若干个模型的P-R曲线在同一个图中，如何判断哪个最优。<ol>
+<li>看哪一个曲线把其他的“包住”</li>
+<li>比较每条曲线与坐标轴围成的面积</li>
+</ol>
+</li>
+</ul>
+<h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>sklearn package中的绘制P-R曲线的方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> precision_recall_curve</span><br><span class="line"></span><br><span class="line">pres, recs, thrs = precision_recall_curve(y_test, decision_scores)</span><br><span class="line"></span><br><span class="line">plt.plot(thrs, pres[:<span class="number">-1</span>], label=<span class="string">'thr-P'</span>)</span><br><span class="line">plt.plot(thrs, recs[:<span class="number">-1</span>], label=<span class="string">'thr-R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>不同threshold的P/R值:</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r-2.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 built-in方法</div>
+
+<p>与上述实现不同在于，上述实现的threashold值从<code>decision_scores</code>的最小值到最大值，而package中函数把threshold值小于-18的值忽略未记，因为图一中这部分对于用户是没有决策贡献的。抓住要矛盾。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(pres, recs, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>P/R曲线</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r-2.png" width="600"></div>
+<div align="center">图 P/R曲线 built-in方法</div>
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/" data-id="ck7bjjf5v000ei5fzbu7cabqt" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-模型评价-F1度量-F-beta度量" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" class="article-date">
@@ -921,59 +1027,6 @@
 
 
   
-    <article id="post-Mobile-Net-深度可分离卷积" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" class="article-date">
-  <time datetime="2019-08-01T11:37:36.000Z" itemprop="datePublished">2019-08-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/">MobileNet深度可分离卷积</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录MobileNet的深度可分离卷积操作的特点及实现。</p>
-<p>深度可分离卷积是将输入的<font color="red">每个通道展开</font>，在单个通道上做卷积，最后将结果合并。换句话说，通常的卷积层每个核要扫描输入的所有通道，而深度可分离卷积每个核只读输入的一个通道。与Inception 的<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积单元</a>相似，不同的是每个卷积核只对输入的一个通道操作。</p>
-<h2 id="深度可分离卷积结构"><a href="#深度可分离卷积结构" class="headerlink" title="深度可分离卷积结构"></a>深度可分离卷积结构</h2><p>假设深度可分离层的输入有3个通道，如图表示了该模块的过程：</p>
-<div align="center"><img src="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/seperable_conv_block.png" width="500"></div>
-<div align="center">对每个通道进行卷及操作</div>
-
-<p>下面是就上图结构实现的模块：</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">separable_conv_block</span><span class="params">(x, output_channel_number, name)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    x: input </span></span><br><span class="line"><span class="string">    output_channel_number: the output channel of the entire block, </span></span><br><span class="line"><span class="string">                            又是1x1卷据层的卷积核个数(卷积核个数==输出通道数)</span></span><br><span class="line"><span class="string">    name: namespace</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name):</span><br><span class="line">        <span class="comment"># get channel number:</span></span><br><span class="line">        input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># split channels to a channel list:</span></span><br><span class="line">        <span class="comment"># channel_wise_x: [channel1, channel2, ...]</span></span><br><span class="line">        channel_wise_x = tf.split(x, input_channel, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 对每一个通道分别执行3x3的卷积操作</span></span><br><span class="line">        output_channels = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len(channel_wise_x)):      </span><br><span class="line">            output_channel = tf.layers.conv2d(channel_wise_x[i],</span><br><span class="line">                                              <span class="number">1</span>,</span><br><span class="line">                                              (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                                              strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                              padding = <span class="string">'same'</span>,</span><br><span class="line">                                              activation = tf.nn.relu,</span><br><span class="line">                                              name = <span class="string">'conv_%d'</span> % i)</span><br><span class="line">            output_channels.append(output_channel)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># concat along channel(index=3)</span></span><br><span class="line">        concat_layer = tf.concat(output_channels, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 经过一个1x1的卷积操作</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(concat_layer,</span><br><span class="line">                                   output_channel_number,</span><br><span class="line">                                   (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">    <span class="keyword">return</span> conv1_1</span><br></pre></td></tr></table></figure>
-
-<p>将上述模块放入MobileNet的网络结构就可以搭建完整的MobileNet。实例实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/mobile_net.ipynb" target="_blank" rel="noopener">这里</a></p>
-<hr>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" data-id="ck74tgku90001i2fz1hfmgkvw" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -989,7 +1042,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1018,7 +1071,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1031,6 +1084,10 @@
       <ul>
         
           <li>
+            <a href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-如何使用</a>
           </li>
         
@@ -1039,15 +1096,11 @@
           </li>
         
           <li>
-            <a href="/2020/03/05/cpp-pro-tip-1/">cpp pro tip 1</a>
+            <a href="/2020/03/05/Cpp-pro-tip-1/">Cpp pro tip 1</a>
           </li>
         
           <li>
             <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
           </li>
         
       </ul>
