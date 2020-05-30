@@ -64,6 +64,280 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-文本分类-二-文本预处理II-词编码" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" class="article-date">
+  <time datetime="2019-08-03T15:12:59.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/">文本分类(二)-文本预处理II-词编码</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接文本预处理(一)，这篇笔记记录把分词后的记录编码为计算机可识别的数值型序列，如将<code>[你好 呀 ， 参加 比赛 了 吗]</code>编码为<code>[91, 57, 1, 31, 14, 6, 5]</code>。同时编码类别。</p>
+<h1 id="词编码"><a href="#词编码" class="headerlink" title="词编码"></a>词编码</h1><p>在上<a href="https://ashburnlee.github.io/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86/" target="_blank" rel="noopener">一篇笔记</a>中得到的<code>vocab_file</code>，再看一下其内容：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>每个词与其编号一一对应，可以<font color="red">用词的标号来对词进行编码</font>。这就是下面主要做的事。</p>
+<h2 id="1-一一对应"><a href="#1-一一对应" class="headerlink" title="1. 一一对应"></a>1. 一一对应</h2><p>首先读取<code>vocab_file</code>，得到每个词，其编号，其频数，以<code>{词：编号}</code>为元素存入一个字典。同时指定一个整数<code>threshold</code>，当一个词的词频小于<code>threshold</code>，不再考虑该词，原因是频数太低的词没有统计意义。对每一条数据执行此操作，实现过程如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_read_dict</span><span class="params">(self, filename)</span>:</span></span><br><span class="line">    <span class="string">""" read filename and generate &#123;word: id&#125; dict """</span></span><br><span class="line">    <span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># 读词与词频</span></span><br><span class="line">        word, frequency = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        frequency = int(frequency)</span><br><span class="line">        <span class="keyword">if</span> frequency &lt; self._num_word_threshold:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        idx = len(self._word_to_id)  <span class="comment"># idx随_word_to_id大小递增</span></span><br><span class="line">        <span class="keyword">if</span> word == <span class="string">'&lt;UNK&gt;'</span>:   <span class="comment"># 特殊处理UNK</span></span><br><span class="line">            self._unk = idx</span><br><span class="line">        self._word_to_id[word] = idx  <span class="comment"># 构建处字典：&#123;词： idx&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>最终得到目标dict：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'&lt;UNK&gt;'</span>: 0, <span class="string">'，'</span>: 1, <span class="string">'的'</span>: 2, <span class="string">'。'</span>: 3, <span class="string">'在'</span>: 4, <span class="string">'、'</span>: 5, <span class="string">'了'</span>: 6, <span class="string">'是'</span>: 7,...,<span class="string">'铭记'</span>: 20350, <span class="string">'多时'</span>: 20351, <span class="string">'轩然大波'</span>: 20352,...,<span class="string">'孵化器'</span>: 39545, <span class="string">'党史'</span>: 39546, <span class="string">'纸飞机'</span>: 39547,...&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-编码"><a href="#2-编码" class="headerlink" title="2. 编码"></a>2. 编码</h2><p>第二步，对于一个清洗后样本<code>[你好 呀 ， 参加 比赛 了 吗]</code>，从上一步得到的<code>dict</code>中找每一个<code>key</code>对应的<code>value</code>，从而生成<code>[91, 57, 1, 31, 14, 6, 5]</code>。实现过程：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sentence_to_id</span><span class="params">(self, sentence)</span>:</span></span><br><span class="line">    <span class="string">""" 用词的idx编码每个句子 """</span></span><br><span class="line">    <span class="comment"># 切分句子后的每个词，找它的idx，</span></span><br><span class="line">    word_ids = [self.word_to_id(cur_word) <span class="keyword">for</span> cur_word <span class="keyword">in</span> sentence.split()]</span><br><span class="line">    <span class="keyword">return</span> word_ids</span><br></pre></td></tr></table></figure>
+
+<p>现在用一个样本做测试：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test_word = <span class="string">'你好 呀 ， 参加 比赛 了 吗'</span></span><br></pre></td></tr></table></figure>
+
+<p>返回实际结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[9901, 5667, 1, 381, 124, 6, 445]</span><br></pre></td></tr></table></figure>
+
+<p>同样的方法，处理<code>label</code>，如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">科技的id： 8</span><br></pre></td></tr></table></figure>
+
+<p>上述完整过程在<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/encodeWords.py" target="_blank" rel="noopener">这里</a></p>
+<hr>
+<p>到此到此为止，所有的样本都已用数字编码。下一步为模型提供数据，batch by batch</p>
+<h1 id="3-生成batch"><a href="#3-生成batch" class="headerlink" title="3. 生成batch"></a>3. 生成batch</h1><p>首先读取清洗后的样本文件，对于每一条记录中的类别和内容按照上述方式编码，并分别存储与两个<code>list</code>。编码完一条记录，加入到<code>list</code>中。最终的到的内容list和类别list。</p>
+<p>实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># for each line,</span></span><br><span class="line">    label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">    <span class="comment"># convert label and content to sequence of ids</span></span><br><span class="line">    id_label = self._catego_dict.category_to_id(label)</span><br><span class="line">    id_words = self._vocab_dict.sentence_to_id(content)</span><br><span class="line">    id_words = id_words[<span class="number">0</span>: self._encoded_length]           <span class="comment"># cut</span></span><br><span class="line">    padding_length = self._encoded_length - len(id_words)  <span class="comment"># pad</span></span><br><span class="line">    id_words = id_words + [self._vocab_dict.unk <span class="keyword">for</span> _ <span class="keyword">in</span> range(padding_length)]</span><br><span class="line"></span><br><span class="line">    self._input.append(id_words)</span><br><span class="line">    self._output.append(id_label)</span><br><span class="line"><span class="comment"># convert to numpy array</span></span><br><span class="line">self._input = np.asarray(self._input, dtype=np.int32)</span><br><span class="line">self._output = np.asarray(self._output, dtype=np.int32)</span><br></pre></td></tr></table></figure>
+
+<p><code>self._input</code>中存储编码后的每一条内容，<code>self._output</code>中存储编码后的每一条对应的类别。特别说明，因为实际每条编码后的记录长度都不同，有的长，有的短。所以在代码中<code>self._encoded_length</code>表示每条记录保留多少个词。长的切去，短的用<code>-1</code>补全。</p>
+<p>额外地对<code>self._input</code>和<code>self._output</code>做一个随机洗牌操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">p = np.random.permutation(len(self._input))</span><br><span class="line">self._input = self._input[p]</span><br><span class="line">self._output = self._output[p]</span><br></pre></td></tr></table></figure>
+
+<p>这个操作使每个<code>batch</code>中数据<strong>分布尽可能一致</strong>，尽可能可以<strong>代表整个数据集的分布</strong>。</p>
+<p>第二步，生成<code>batch</code>。其过程如下图：</p>
+<div align="center"><img src="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/batch.png" width="600"></div>
+<div align="center">洗牌后继续取下一个batch</div>
+
+<p>当图中最后的数据<code>#*</code>不足一个<code>batch</code>时，所有数据随机洗牌，这样就可以再得到一个<code>batch</code>。当然最后一个batch中有部分重复使用，这没关系。 代码实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">next_batch</span><span class="params">(self, batch_size)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    get next batch data</span></span><br><span class="line"><span class="string">    :param batch_size:</span></span><br><span class="line"><span class="string">    :return: the next batch of input and output</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    end_indicator = self._indicator + batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        self._random_shuffle()</span><br><span class="line">        self._indicator = <span class="number">0</span></span><br><span class="line">        end_indicator = batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"batch size : %d is too large"</span> % batch_size)</span><br><span class="line"></span><br><span class="line">    batch_input = self._input[self._indicator: end_indicator]</span><br><span class="line">    batch_ouput = self._output[self._indicator: end_indicator]</span><br><span class="line">    self._indicator = end_indicator</span><br><span class="line">    <span class="comment"># return what we require</span></span><br><span class="line">    <span class="keyword">return</span> batch_input, batch_ouput</span><br></pre></td></tr></table></figure>
+
+<p>测试：当<code>_encoded_length</code>为50，<code>batch_size</code>为2时，可能输出如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(array([[ 5639,  5529, 28692, 14277,   108,     0,   825,    87,  7763,</span><br><span class="line">        22153, 17930,    17,   250,    16,   156,   481,   456,    45,</span><br><span class="line">            6,   102,    45,     1,  5639, 20799,    30, 39057,   949,</span><br><span class="line">         3640, 22153,    92,    15,  5639,    30, 20562, 21187,    14,</span><br><span class="line">         3193, 18589,    30,  5529,    17, 24157,     0,    16,   831,</span><br><span class="line">         3810,     4,  4406,  2849,  3092],</span><br><span class="line">       [24102, 11066,  1375,    52,  7379,   224,  1027,   956,  2962,</span><br><span class="line">        17510,    17,   250,    16,     4,   138, 13230,     2, 10477,</span><br><span class="line">         1375,    21,     1,    13,   119,   406,  3380,    41,     1,</span><br><span class="line">        13230,    17,  1647,    16, 32614,     2,     0,   147,   216,</span><br><span class="line">            6,  5447,     5,     0,   136,     5,  8616,     5, 41351,</span><br><span class="line">        25425,   136,     5, 12401,    45]], dtype=int32), array([1, 4], dtype=int32))</span><br></pre></td></tr></table></figure>
+<p>两条记录，第一条记录的类别为1，另一条的类别为4。</p>
+<p>整个过程完整代码看<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/createEncodedDataset.py" target="_blank" rel="noopener">这里</a>。数据准备完成，便可以用于训练模型了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" data-id="ckatsrgt8005kxqfzda0fguyk" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-文本分类-二-文本预处理I-词频统计" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" class="article-date">
+  <time datetime="2019-08-03T07:22:37.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/">文本分类(二)-文本预处理I-词频统计</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>文本数据与图像数据本质一样，图像本身的每个通道，像素点值就是数据本身。而文本数据要被计算机理解，首先要被处理成数值型，也就是说需要给文本编码，如embedding。这篇笔记记录将<strong>文本数值化</strong>。</p>
+<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><p>一个样本文件有5000条记录，存在于txt中。如下为样本文本中的索引为204的记录：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(train_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line">print(len(lines))</span><br><span class="line">print(lines[<span class="number">204</span>])</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">5000</span><br><span class="line">体育	绿衫军vs热火首发：新老三巨头对抗 小奥单挑大Z新浪体育讯北京时间5月4日，热火和凯尔特人迎来第二回合巅峰对决，本场比赛双方主帅均未对首发名单做出任何更改。而凯尔特人主帅道格-里弗斯赛前也向媒体表示，本场比赛“大鲨鱼”沙奎尔-奥尼尔将继续作壁上观，以下为双方首发名单——凯尔特人：隆多、雷-阿伦、皮尔斯、加内特、杰梅因-奥尼尔热火：毕比、韦德、詹姆斯、波什、伊尔戈斯卡斯(小林)</span><br></pre></td></tr></table></figure>
+
+<p>格式是：类别+样本描述。</p>
+<p>分成label和content：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="分词"><a href="#分词" class="headerlink" title="分词"></a>分词</h2><p>使用<a href="https://github.com/fxsjy/jieba" target="_blank" rel="noopener">jieba</a>对content进行分词：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">word_iter = jieba.cut(content)</span><br><span class="line"></span><br><span class="line">word_content = <span class="string">''</span>         <span class="comment"># 保存每一个词</span></span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> word_iter:     <span class="comment"># 对切分结果中每个词作如下操作</span></span><br><span class="line">    word = word.strip(<span class="string">' '</span>)</span><br><span class="line">    <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">        word_content += word + <span class="string">' '</span></span><br><span class="line">out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))</span><br><span class="line">print(out_line)</span><br></pre></td></tr></table></figure>
+
+<p>写入文件的每一条数据格式：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">体育	vs 热火 首发 ： 新 老三 巨头 对抗 小奥 单挑 大 Z 新浪 体育讯 北京 时间 5 月 4 日 ， 热火 和 凯尔特人 迎来 第二 回合 巅峰 对决 ， 本场 比赛 双方 主帅 均 未 对 首发 名单 做出 任何 更改 。 而 凯尔特人 主帅 道 格 - 里 弗斯 赛前 也 向 媒体 表示 ， 本场 比赛 “ 大 鲨鱼 ” 沙奎尔 - 奥尼尔 将 继续 作壁上观 ， 以下 为 双方 首发 名单 — — 凯尔特人 ： 隆多 、 雷 - 阿伦 、 皮尔斯 、 加内特 、 杰 梅因 - 奥尼尔 热火 ： 毕比 、 韦德 、 詹姆斯 、 波什 、 伊尔 戈斯卡 斯 ( 小林 )</span><br></pre></td></tr></table></figure>
+
+<p>如上述过程将源文件中每一条记录执行此操作后写入目标文件。整理成函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_seg_file</span><span class="params">(input_file, output_seg_file)</span>:</span></span><br><span class="line">    <span class="string">"""对input_file内容分词"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:    <span class="comment"># 读文件</span></span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">with</span> open(output_seg_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:                   <span class="comment"># 写的方式打开写文件</span></span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> lines:                                   <span class="comment"># 对于每一行</span></span><br><span class="line">            label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)  <span class="comment"># 分出lenbel和content</span></span><br><span class="line">            word_iter = jieba.cut(content)                   <span class="comment"># 对content切分成词</span></span><br><span class="line">            word_content = <span class="string">''</span>                                    <span class="comment"># 保存每个次</span></span><br><span class="line">            <span class="keyword">for</span> word <span class="keyword">in</span> word_iter:                               <span class="comment"># 对切分结果中每个词作如下操作：</span></span><br><span class="line">                word = word.strip(<span class="string">' '</span>)</span><br><span class="line">                <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">                    word_content += word + <span class="string">' '</span></span><br><span class="line">            out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))  <span class="comment"># 输入文件每一行的格式</span></span><br><span class="line">            </span><br><span class="line">            f.write(out_line)     <span class="comment"># 写入文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 对三个数据集作同样操作</span></span><br><span class="line">generate_seg_file(train_file, seg_train_file)</span><br><span class="line">generate_seg_file(val_file, seg_val_file)</span><br><span class="line">generate_seg_file(test_file, seg_test_file)</span><br></pre></td></tr></table></figure>
+
+<p>此时三个样本集各自的分词结果。</p>
+<h2 id="统计词频"><a href="#统计词频" class="headerlink" title="统计词频"></a>统计词频</h2><p>对上一步得到的分词后的文件进行词频统计。如对索引为204的记录统计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(output_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">        </span><br><span class="line">word_dict = &#123;&#125;</span><br><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">        word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">        word_dict[word] += <span class="number">1</span></span><br><span class="line">print(word_dict)</span><br></pre></td></tr></table></figure>
+
+<p>结果为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'绿衫'</span>: 1, <span class="string">'军'</span>: 1, <span class="string">'vs'</span>: 1, <span class="string">'热火'</span>: 3, <span class="string">'首发'</span>: 3, <span class="string">'：'</span>: 3, <span class="string">'新'</span>: 1, <span class="string">'老三'</span>: 1, <span class="string">'巨头'</span>: 1, <span class="string">'对抗'</span>: 1, <span class="string">'小奥'</span>: 1, <span class="string">'单挑'</span>: 1, <span class="string">'大'</span>: 2, <span class="string">'Z'</span>: 1, <span class="string">'新浪'</span>: 1, <span class="string">'体育讯'</span>: 1, <span class="string">'北京'</span>: 1, <span class="string">'时间'</span>: 1, <span class="string">'5'</span>: 1, <span class="string">'月'</span>: 1, <span class="string">'4'</span>: 1, <span class="string">'日'</span>: 1, <span class="string">'，'</span>: 4, <span class="string">'和'</span>: 1, <span class="string">'凯尔特人'</span>: 3, <span class="string">'迎来'</span>: 1, <span class="string">'第二'</span>: 1, <span class="string">'回合'</span>: 1, <span class="string">'巅峰'</span>: 1, <span class="string">'对决'</span>: 1, <span class="string">'本场'</span>: 2, <span class="string">'比赛'</span>: 2, <span class="string">'双方'</span>: 2, <span class="string">'主帅'</span>: 2, <span class="string">'均'</span>: 1, <span class="string">'未'</span>: 1, <span class="string">'对'</span>: 1, <span class="string">'名单'</span>: 2, <span class="string">'做出'</span>: 1, <span class="string">'任何'</span>: 1, <span class="string">'更改'</span>: 1, <span class="string">'。'</span>: 1, <span class="string">'而'</span>: 1, <span class="string">'道'</span>: 1, <span class="string">'格'</span>: 1, <span class="string">'-'</span>: 4, <span class="string">'里'</span>: 1, <span class="string">'弗斯'</span>: 1, <span class="string">'赛前'</span>: 1, <span class="string">'也'</span>: 1, <span class="string">'向'</span>: 1, <span class="string">'媒体'</span>: 1, <span class="string">'表示'</span>: 1, <span class="string">'“'</span>: 1, <span class="string">'鲨鱼'</span>: 1, <span class="string">'”'</span>: 1, <span class="string">'沙奎尔'</span>: 1, <span class="string">'奥尼尔'</span>: 2, <span class="string">'将'</span>: 1, <span class="string">'继续'</span>: 1, <span class="string">'作壁上观'</span>: 1, <span class="string">'以下'</span>: 1, <span class="string">'为'</span>: 1, <span class="string">'—'</span>: 2, <span class="string">'隆多'</span>: 1, <span class="string">'、'</span>: 8, <span class="string">'雷'</span>: 1, <span class="string">'阿伦'</span>: 1, <span class="string">'皮尔斯'</span>: 1, <span class="string">'加内特'</span>: 1, <span class="string">'杰'</span>: 1, <span class="string">'梅因'</span>: 1, <span class="string">'毕比'</span>: 1, <span class="string">'韦德'</span>: 1, <span class="string">'詹姆斯'</span>: 1, <span class="string">'波什'</span>: 1, <span class="string">'伊尔'</span>: 1, <span class="string">'戈斯卡'</span>: 1, <span class="string">'斯'</span>: 1, <span class="string">'('</span>: 1, <span class="string">'小林'</span>: 1, <span class="string">')'</span>: 1&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此字典中键为词语，值为键出现的频数。当然这只是对一条记录的统计，对所有记录统计才有意义。</p>
+<p>按词语频数排序，方便之后输入模型的<strong>截取操作</strong>。****</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sorted_word_dict = sorted(</span><br><span class="line">    word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">print(sorted_word_dict)</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[(<span class="string">'、'</span>, 8), (<span class="string">'，'</span>, 4), (<span class="string">'-'</span>, 4), (<span class="string">'热火'</span>, 3), (<span class="string">'首发'</span>, 3), (<span class="string">'：'</span>, 3), (<span class="string">'凯尔特人'</span>, 3), (<span class="string">'大'</span>, 2), (<span class="string">'本场'</span>, 2), (<span class="string">'比赛'</span>, 2), (<span class="string">'双方'</span>, 2), (<span class="string">'主帅'</span>, 2), (<span class="string">'名单'</span>, 2), (<span class="string">'奥尼尔'</span>, 2), (<span class="string">'—'</span>, 2), (<span class="string">'绿衫'</span>, 1), (<span class="string">'军'</span>, 1), (<span class="string">'vs'</span>, 1), (<span class="string">'新'</span>, 1), (<span class="string">'老三'</span>, 1), (<span class="string">'巨头'</span>, 1), (<span class="string">'对抗'</span>, 1), (<span class="string">'小奥'</span>, 1), (<span class="string">'单挑'</span>, 1), (<span class="string">'Z'</span>, 1), (<span class="string">'新浪'</span>, 1), (<span class="string">'体育讯'</span>, 1), (<span class="string">'北京'</span>, 1), (<span class="string">'时间'</span>, 1), (<span class="string">'5'</span>, 1), (<span class="string">'月'</span>, 1), (<span class="string">'4'</span>, 1), (<span class="string">'日'</span>, 1), (<span class="string">'和'</span>, 1), (<span class="string">'迎来'</span>, 1), (<span class="string">'第二'</span>, 1), (<span class="string">'回合'</span>, 1), (<span class="string">'巅峰'</span>, 1), (<span class="string">'对决'</span>, 1), (<span class="string">'均'</span>, 1), (<span class="string">'未'</span>, 1), (<span class="string">'对'</span>, 1), (<span class="string">'做出'</span>, 1), (<span class="string">'任何'</span>, 1), (<span class="string">'更改'</span>, 1), (<span class="string">'。'</span>, 1), (<span class="string">'而'</span>, 1), (<span class="string">'道'</span>, 1), (<span class="string">'格'</span>, 1), (<span class="string">'里'</span>, 1), (<span class="string">'弗斯'</span>, 1), (<span class="string">'赛前'</span>, 1), (<span class="string">'也'</span>, 1), (<span class="string">'向'</span>, 1), (<span class="string">'媒体'</span>, 1), (<span class="string">'表示'</span>, 1), (<span class="string">'“'</span>, 1), (<span class="string">'鲨鱼'</span>, 1), (<span class="string">'”'</span>, 1), (<span class="string">'沙奎尔'</span>, 1), (<span class="string">'将'</span>, 1), (<span class="string">'继续'</span>, 1), (<span class="string">'作壁上观'</span>, 1), (<span class="string">'以下'</span>, 1), (<span class="string">'为'</span>, 1), (<span class="string">'隆多'</span>, 1), (<span class="string">'雷'</span>, 1), (<span class="string">'阿伦'</span>, 1), (<span class="string">'皮尔斯'</span>, 1), (<span class="string">'加内特'</span>, 1), (<span class="string">'杰'</span>, 1), (<span class="string">'梅因'</span>, 1), (<span class="string">'毕比'</span>, 1), (<span class="string">'韦德'</span>, 1), (<span class="string">'詹姆斯'</span>, 1), (<span class="string">'波什'</span>, 1), (<span class="string">'伊尔'</span>, 1), (<span class="string">'戈斯卡'</span>, 1), (<span class="string">'斯'</span>, 1), (<span class="string">'('</span>, 1), (<span class="string">'小林'</span>, 1), (<span class="string">')'</span>, 1)]</span><br></pre></td></tr></table></figure>
+
+<p>整理成函数，对所有记录统计。注意该操作<strong>只针对训练集</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_vocab_file</span><span class="params">(input_seg_file, output_vocab_file)</span>:</span></span><br><span class="line">    <span class="string">"""将input_seg_file中做词频统计，输出到out_put_file中"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    word_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        <span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">            word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">            word_dict[word] += <span class="number">1</span></span><br><span class="line">    <span class="comment"># [(word, frequency), ..., ()]</span></span><br><span class="line">    sorted_word_dict = sorted(</span><br><span class="line">        word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">with</span> open(output_vocab_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">'&lt;UNK&gt;\t10000000\n'</span>)      <span class="comment"># 当在测试集中找不到一个词时，用&lt;UNK&gt; 代替</span></span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> sorted_word_dict:</span><br><span class="line">            f.write(<span class="string">'%s\t%d\n'</span> % (item[<span class="number">0</span>], item[<span class="number">1</span>]))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 只对已知的训练集执行此操作</span></span><br><span class="line">generate_vocab_file(seg_train_file, vocab_file)</span><br></pre></td></tr></table></figure>
+<p>打开结果文件<code>vocab_file</code>查看：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>第一列为序号，表示第几个词，第二列为词（出现的数组和百分比都是文本中的实际数字），第三列为该词出现的频数。两点说明：</p>
+<ul>
+<li>频数太小的词无意义，因为神经网络为<font color="red">概率模型，只出现一次没有统计意义</font>。</li>
+<li>而<font color="red">频数很高但通用的词（停用词）同样无意义</font>，因为通用的词在分类问题中不能提供有用信息，从信息论角度看，使用通用词训练模型不能减少模型的不确定性。这两点之后会处理。</li>
+</ul>
+<p>对label统计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_category_dict</span><span class="params">(input_file, category_file)</span>:</span></span><br><span class="line">    <span class="string">"""统计类别"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    category_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        category_dict.setdefault(label, <span class="number">0</span>)</span><br><span class="line">        category_dict[label] += <span class="number">1</span></span><br><span class="line">    category_number = len(category_dict)</span><br><span class="line">    <span class="keyword">with</span> open(category_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">for</span> category <span class="keyword">in</span> category_dict:</span><br><span class="line">            line = <span class="string">'%s\n'</span> % category</span><br><span class="line">            print(<span class="string">'%s\t%d'</span> % (category, category_dict[category]))</span><br><span class="line">            f.write(line)</span><br><span class="line">            </span><br><span class="line">generate_category_dict(train_file, category_file)</span><br></pre></td></tr></table></figure>
+<p>结果写入<code>catecory_file</code>, 并且控制台输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">体育	5000</span><br><span class="line">娱乐	5000</span><br><span class="line">家居	5000</span><br><span class="line">房产	5000</span><br><span class="line">教育	5000</span><br><span class="line">时尚	5000</span><br><span class="line">时政	5000</span><br><span class="line">游戏	5000</span><br><span class="line">科技	5000</span><br><span class="line">财经	5000</span><br></pre></td></tr></table></figure>
+
+<p>类别频数相同，表示这是一个<font color="orange">极度均匀数据集</font>。这是理想的！</p>
+<p>统计词的频率，是为了截取，每个词的数值化，可用其序号代替。</p>
+<p>整个过程生产5个文件：</p>
+<ul>
+<li>seg_train_file： 分词后的训练集</li>
+<li>seg_val_file： 分词后的验证集</li>
+<li>seg_test_file： 分词后的测试集</li>
+<li>vocab_file： 训练集的词频统计</li>
+<li>category_file： 训练集的类别统计</li>
+</ul>
+<p>完整程序与数据文件<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/preProcess.py" target="_blank" rel="noopener">这里</a>。</p>
+<p><font color="green" size="5">敲黑板</font>对于如本笔记所处理的极度均匀的数据集，评价模型时可以使用准确率。但是对于<font color="red">极度偏斜(Skewed Data)的数据</font>，如在数据集中某类病症的发病样本数与未发病样本书之比远小于1，只使用准确率评价模型是远远不够的。这时就需要使用其他模型评估方法如混淆矩阵(Confusion Matrix)等。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" data-id="ckatsrgvc008bxqfz5hsu77mp" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-Floyd-s-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" class="article-date">
+  <time datetime="2019-08-02T16:08:05.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/">LeetCode-方法论-Floyd&#39;s Algorithm</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题<strong>转化</strong>的。当原问题棘手时，找到合适的方向可以转化为简单问题。</p>
+<p>287, 224, </p>
+<h1 id="141-Linked-List-Cycle"><a href="#141-Linked-List-Cycle" class="headerlink" title="#141 Linked List Cycle"></a>#141 Linked List Cycle</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1</span><br><span class="line">Output: true</span><br><span class="line">Explanation: There is a cycle in the linked list, where tail connects to the second node.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p> 如果存在环，兔子与乌龟会第二次相遇；否则除了起点，龟兔不会再相遇。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasCycle</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    ListNode* rabbit=head;</span><br><span class="line">    ListNode* turtle=head;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(rabbit &amp;&amp; turtle)&#123;</span><br><span class="line">        rabbit = rabbit-&gt;next;</span><br><span class="line">        turtle = turtle-&gt;next;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (rabbit) rabbit=rabbit-&gt;next; <span class="comment">// one step faster than the turtle</span></span><br><span class="line">        <span class="keyword">if</span> (rabbit &amp;&amp; (rabbit==turtle))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="287-Find-the-Duplicate-Number"><a href="#287-Find-the-Duplicate-Number" class="headerlink" title="#287 Find the Duplicate Number"></a>#287 Find the Duplicate Number</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,1,3,4,2]</span><br><span class="line">Output: 3</span><br><span class="line">Note:</span><br><span class="line"></span><br><span class="line">    You must not modify the array (assume the array is read only).</span><br><span class="line">    You must use only constant, O(1) extra space.</span><br><span class="line">    Your runtime complexity should be less than O(n2).</span><br><span class="line">    There is only one duplicate number in the array, but it could be repeated more than once.</span><br><span class="line"></span><br><span class="line">依照本题意，数组中一定有重复元素，找到数组中重复出现的元素。</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  就题意而言，数组元素唯一和数组元素有重复的区别可用下图表示：</p>
+<p>  1) 当给定数组中无重复元素时，如<code>nums={3,4,5,2,1}</code>。以第一行为当前位置，第二行为下一位置。小人从位置0开始走最终走到5停止。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png" width="700"> </div>
+  <div align="center">路经无环</div>
+
+<p>  2) 当给定数组中有重复元素时，如<code>nums={1，4，6，5，6，2，3}</code>。小人从位置0开始走，路经有环始终不会停止。而且被两个箭头指向的节点6为重复元素。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png" width="700"> </div>
+  <div align="center">路经有环</div>
+
+
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findDuplicate</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> turtle = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> rabbit = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        turtle = nums[turtle];      <span class="comment">// one step</span></span><br><span class="line">        rabbit = nums[nums[rabbit]]; <span class="comment">// two steps</span></span><br><span class="line">    &#125;<span class="keyword">while</span>(turtle != rabbit);  </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ptr1 = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> ptr2 = turtle;</span><br><span class="line">    <span class="keyword">while</span>(ptr1 != ptr2)&#123;</span><br><span class="line">        ptr1 = nums[ptr1];</span><br><span class="line">        ptr2 = nums[ptr2];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ptr1;              </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  当龟兔位于同起点，向相同的方向跑，<strong>如果赛道无环，乌龟永远追不上兔子。若赛道有环，兔子会再次追上乌龟</strong>。这就是Floy’s 算法的来源。</p>
+<p>  表面上与龟兔赛跑无关，在<font color="red" size="4">逻辑上构建出类似链表</font>后，就水到渠成了。</p>
+<p>  本题并不复杂，但当经过<font color="red" size="4">转化</font>后时间空间复杂度达到若干方法中较优。时刻有转化问题的意识。</p>
+</li>
+</ul>
+<p>关键：<font color="red" size="4">问题转化</font>，<font color="red" size="4">龟兔赛跑</font></p>
+<h1 id="142-Linked-List-Cycle-II"><a href="#142-Linked-List-Cycle-II" class="headerlink" title="#142 Linked List Cycle II"></a>#142 Linked List Cycle II</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" data-id="ckatsrgs40032xqfz8nl381b5" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-文本分类-一-几类模型" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" class="article-date">
@@ -502,289 +776,6 @@
 
 
   
-    <article id="post-Linux打开文本文件乱码处理" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/28/Linux%E6%89%93%E5%BC%80%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E4%B9%B1%E7%A0%81%E5%A4%84%E7%90%86/" class="article-date">
-  <time datetime="2019-07-28T09:26:59.000Z" itemprop="datePublished">2019-07-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/28/Linux%E6%89%93%E5%BC%80%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E4%B9%B1%E7%A0%81%E5%A4%84%E7%90%86/">Linux打开文本文件乱码处理</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>本笔记记录了从windows拷贝含中文的文本文件到linux中，中文乱码的处理。</p>
-<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>windows中的中文默认用<code>GBK</code>，<code>GB2312</code>，<code>GB18030</code>或其他本地编码，而这些编码集默认不能在linux中被识别。</p>
-<p>为什么会有中文编码集。字符编码集的发展可以分为三个阶段</p>
-<ul>
-<li>ASCII</li>
-<li>Extended ASCII</li>
-<li>字符编码集的国际化</li>
-</ul>
-<p><code>ASCII</code>码使用7bits编码，<code>2^7=128</code>，包括95个可打印字符和33个不可打印字符。很早期计算机使用并不广泛，所以编码128个字符足够。但随着计算机发展，很多功能性符号(加减乘除)和欧洲非英语国家语言中带声调的字符就无法表示了。所以将使用7 bits编码扩展为使用8 bits编码，这就是第一次对<code>ASCII</code>码的扩充，即<code>Extended ASCII</code>。</p>
-<p><code>Extended ASCII</code>编码个数从128 增加到255，包括数学运算符，带音标的欧洲字符，表格符和其他。但像中日韩字符还是无法编码。中文编码集有<code>GB2312</code>，<code>GBK</code>等，但这些都是本地化的编码，如果国外用户想访问中文网站，而客户端未安装相应的编码集，那么国外用户只会看到乱码。</p>
-<p>国际化的字符编码集即<code>Unicode</code>，兼容全球的字符集。它定义了世界通用符号集，用<code>UTF-8</code>，<code>UTF-16</code>等实现。一般使用<code>UTF-8</code>编码。</p>
-<h2 id="处理方法"><a href="#处理方法" class="headerlink" title="处理方法"></a>处理方法</h2><p>第一种方法从源头修改。在windows中编辑中文文本时更改编码格式为<code>UTF-8</code>。</p>
-<p>第二种方法当不能从源头更改时，比如拷贝的他人的文件。该情况下从接收端即linux系统中更改文件编码格式。<br>假如有一个从windows拷贝来的中文文本文件<code>original.txt</code>，linux中打开乱码，如</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*Ä£·ÂmnistÊýŸÝŒ¯ÖÆ×÷×ÔŒºµÄÊýŸÝŒ¯ŽúÂë*/</span></span><br><span class="line">ŽúÂëÒ»¹²°üº¬ÈýžöÎÄŒþ</span><br><span class="line">	image2BinaryData.h</span><br><span class="line">	image2BinaryData.cpp</span><br><span class="line">	main.cpp</span><br><span class="line"></span><br><span class="line">ÆäÖÐ£ºimage2BinaryData.h ºÍ image2BinaryData.cpp ÀïÃæ¶šÒåÁËÏà¹ØµÄÀàºÍº¯Êý£¬¿ÉžùŸÝ×ÔŒºµÄÊýŸÝŒ¯×ÔÐÐÐÞžÄ</span><br><span class="line"></span><br><span class="line">Ê¹ÓÃ·œ·š£º</span><br><span class="line">	ÔÚMain.hÎÄŒþÖÐÉèÖÃºÃ×ÔŒºµÄÍŒÆ¬ŽóÐ¡ÒÔŒ°ÏÈ¹ØµÄÎÄŒþÂ·Ÿ¶£¬±àÒëÔËÐÐŒŽ¿É¡£</span><br><span class="line"></span><br><span class="line">ËµÃ÷£º</span><br><span class="line">	ŽËŽúÂëÖ»ÊÊºÏËùÓÐÍŒÆ¬ŽóÐ¡Ò»ÖÂµÄ»Ò¶ÈÍŒÏñ£¬²»ÊÊºÏ²ÊÉ«ÍŒÏñ£¬¿É¶ÔÏàÓŠÎ»ÖÃ×ÔÐÐœøÐÐÐÞžÄ¡£</span><br><span class="line">	ÍŒÆ¬ÃüÃû¹æÔò£º<span class="number">0</span>_00001.jpg£º<span class="number">0</span>±íÊŸ¶ÔÓŠÍŒÆ¬µÄÄÚÈÝ£¬ŒŽ±êÇ©£»<span class="number">00001</span>±íÊŸ±êÇ©Îª<span class="number">0</span>µÄÍŒÆ¬ÖÐµÚ<span class="number">1</span>ÕÅÍŒÆ¬£¬<span class="number">00002</span>ÎªµÚ<span class="number">2</span>ÕÅÍŒÆ¬£¬ÒÔŽËÀàÍÆ........</span><br><span class="line">	ŽËŽúÂëÊÊºÏÀà±ðÊýÉÙÓÚµÈÓÚ<span class="number">10</span>µÄÊýŸÝŒ¯£¬Èç¹ûÀà±ðÊý¶àÓÚ<span class="number">10</span>ÖÖ£¬¿É×ÔÐÐÐÞžÄŽúÂëÖÐÏàÓŠ²¿·Ö</span><br><span class="line"></span><br><span class="line">ÔËÐÐ»·Ÿ³£ºwin10 + VS2015 + Opencv3<span class="number">.1</span><span class="number">.0</span></span><br></pre></td></tr></table></figure>
-
-<p>首先判断文件具体是用的那种编码</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ chardet3 original.txt</span><br></pre></td></tr></table></figure>
-<p>返回如下，表示有99%的信心认为<code>original.txt</code>是用<code>GB2312</code>编码的。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">original.txt: GB2312 with confidence 0.99</span><br></pre></td></tr></table></figure>
-
-<p>然后用如下命令将编码格式从<code>GB2312</code>变到<code>UTF-8</code></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ iconv -f GB2312 -t utf-8 original.txt -o file_utf-8.txt</span><br></pre></td></tr></table></figure>
-<p>新的文件<code>file_utf-8.txt</code>会被创建。Linux中打开它</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*模仿mnist数据集制作自己的数据集代码*/</span></span><br><span class="line">代码一共包含三个文件</span><br><span class="line">	image2BinaryData.h</span><br><span class="line">	image2BinaryData.cpp</span><br><span class="line">	main.cpp</span><br><span class="line"></span><br><span class="line">其中：image2BinaryData.h 和 image2BinaryData.cpp 里面定义了相关的类和函数，可根据自己的数据集自行修改</span><br><span class="line"></span><br><span class="line">使用方法：</span><br><span class="line">	在Main.h文件中设置好自己的图片大小以及先关的文件路径，编译运行即可。</span><br><span class="line"></span><br><span class="line">说明：</span><br><span class="line">	此代码只适合所有图片大小一致的灰度图像，不适合彩色图像，可对相应位置自行进行修改。</span><br><span class="line">	图片命名规则：<span class="number">0</span>_00001.jpg：<span class="number">0</span>表示对应图片的内容，即标签；<span class="number">00001</span>表示标签为<span class="number">0</span>的图片中第<span class="number">1</span>张图片，<span class="number">00002</span>为第<span class="number">2</span>张图片，以此类推........</span><br><span class="line">	此代码适合类别数少于等于<span class="number">10</span>的数据集，如果类别数多于<span class="number">10</span>种，可自行修改代码中相应部分</span><br><span class="line"></span><br><span class="line">运行环境：win10 + VS2015 + Opencv3<span class="number">.1</span><span class="number">.0</span></span><br></pre></td></tr></table></figure>
-
-<p>明白背后<strong>原理</strong>就有的放矢了，至少知道如何提问从而找到答案。</p>
-<p>完成<br>Linux打开文本文件乱码处理</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/28/Linux%E6%89%93%E5%BC%80%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E4%B9%B1%E7%A0%81%E5%A4%84%E7%90%86/" data-id="ckatsrgse003qxqfz3fwt5aje" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Linux下使用hexo创建静态博客并部署到github" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" class="article-date">
-  <time datetime="2019-07-28T04:36:32.000Z" itemprop="datePublished">2019-07-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/">Linux下使用hexo创建静态博客并部署到github</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇博客记录了在linux系统下，安装<code>hexo</code>及所需必要工具，并创建local博客，最终部署到远端如github的整个过程。</p>
-<h1 id="1-安装必要工具"><a href="#1-安装必要工具" class="headerlink" title="1. 安装必要工具"></a>1. 安装必要工具</h1><p>使用root权限</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ root -s</span><br></pre></td></tr></table></figure>
-
-<h2 id="1-1-下载node-js-root"><a href="#1-1-下载node-js-root" class="headerlink" title="1.1 下载node.js (root)"></a>1.1 下载node.js (root)</h2><p>下载<a href="https://nodejs.org/en/" target="_blank" rel="noopener">node.js</a>安装包到我的Applications目录，<br>解压并设置软连接</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ tar -xvf node-v10.16.0-linux-x64.tar.xz </span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/npm /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/node /usr/<span class="built_in">local</span>/bin/</span><br></pre></td></tr></table></figure>
-
-<p>检查是否安装好</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ node -v</span><br><span class="line">$ npm -v</span><br></pre></td></tr></table></figure>
-
-<p>若无误，进行下一步。</p>
-<h2 id="1-2-安装hexo-root"><a href="#1-2-安装hexo-root" class="headerlink" title="1.2 安装hexo (root)"></a>1.2 安装hexo (root)</h2><p>使用npm安装<a href="https://hexo.io" target="_blank" rel="noopener">hexo</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
-
-<p>如果终端提示平台不兼容，忽略它。可以转到<code>nodejs</code>的<code>bin</code>目录下，<code>hexo</code>存在表示<code>hexo</code>已经下载好了。<br>建立软连接，后检查。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/hexo /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ hexo -v</span><br></pre></td></tr></table></figure>
-<p>当不能正常下载时，用<code>cnpm</code>下载，先下载<code>cnpm</code>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g cnpm --registry=https://registry.npm.taobao.org</span><br></pre></td></tr></table></figure>
-<p>只需将<code>npm</code>换为<code>cnpm</code><br><br>若无误， 进行下一步。</p>
-<h1 id="2-生成本地静态博客"><a href="#2-生成本地静态博客" class="headerlink" title="2. 生成本地静态博客"></a>2. 生成本地静态博客</h1><h2 id="初始化博客-root"><a href="#初始化博客-root" class="headerlink" title="初始化博客 (root)"></a>初始化博客 (root)</h2><p>在目录中新建一个存放所有blogs的目录, 并进入该目录，之后的所有操作都在其中。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir blogs</span><br><span class="line">$ <span class="built_in">cd</span> blogs</span><br></pre></td></tr></table></figure>
-
-<p>第一次安装使用hexo需要初始化。初始化后该目录中回生成_config.yml, source 等文件。<br>开启本地服务。本地服务是用来显示blog的最终效果，并且可以及时修正。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo init</span><br><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>使用终端给出的端口登录，可以看到hexo为我们创建的默认博客: <code>Hello World</code>。</p>
-<p>当关闭本地端口后，用下面命令清理。尤其在页面显示不正常时</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br></pre></td></tr></table></figure>
-
-<h2 id="建立第一篇本地静态博客-所有用户"><a href="#建立第一篇本地静态博客-所有用户" class="headerlink" title="建立第一篇本地静态博客 (所有用户)"></a>建立第一篇本地静态博客 (所有用户)</h2><p>确保现在仍在blogs/目录中， 使用如下命令新建博客</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My_first_blog"</span></span><br></pre></td></tr></table></figure>
-<p>此时就可以在nvim(或vim)使用markdown写博客了</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nvim <span class="built_in">source</span>/_post/My_first_blog.md</span><br></pre></td></tr></table></figure>
-
-<p>当然可以转到<code>My_first_blog.md</code> 所在目录用其他编辑器写内容，但记得编辑结束后一定退回到blogs/目录。</p>
-<p>确保仍在blogs/目录中，使用如下命令生成静态博客。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>后开启本地服务。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>打开给出端口，可以显示所创建的静态博客。目前会有两篇博客: <code>Hello World</code> 和 <code>My_first_blog</code>。到此为止，本地静态博客已经成功初始化，并创建了自己的第一篇博客。<br><br>静态博客只是便于检查，修改博客。我们的目的是要把博客部署到服务上。</p>
-<h1 id="3-部署到github-root"><a href="#3-部署到github-root" class="headerlink" title="3. 部署到github (root)"></a>3. 部署到github (root)</h1><p>这部分假设你已经有github账户，本地已经安装github，并可以熟练使用github。<br>如果未安装，安装</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get install git-core</span><br></pre></td></tr></table></figure>
-
-<h2 id="3-1-为静态博客新建repository"><a href="#3-1-为静态博客新建repository" class="headerlink" title="3.1. 为静态博客新建repository"></a>3.1. 为静态博客新建repository</h2><p>新建repository并命名。个人博客的repo名是有规定的：<code>OWNER.github.io</code>，<code>OWNER</code> 一定是你的github账户名。点击<code>create repository</code>。此时一个空的repo建好了。不要关闭此页面。</p>
-<h2 id="3-2-本地安装git插件并配置-root"><a href="#3-2-本地安装git插件并配置-root" class="headerlink" title="3.2. 本地安装git插件并配置 (root)"></a>3.2. 本地安装git插件并配置 (root)</h2><p>确保现在仍在blogs/目录中, 如下命令安装插件，并忽略<code>warning</code></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install --save hexo-deployer-git</span><br></pre></td></tr></table></figure>
-<p>在<code>_config.yml</code>配置文件中添加第3.1步所建立空repo的信息。具体是在<code>_config.yml</code><br>的文件尾的<code># Deplotment</code>下添加<code>repo</code>和<code>branch</code>两行。注意冒号后有一空格。<br>更多细节参考<a href="https://hexo.io/docs/deployment" target="_blank" rel="noopener">官方主页</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/OWNER/OWNER.github.io.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
-<p>其中<code>https://github.com/OWNER/OWNER.github.io.git</code> 是第3.1步空repo的地址。<code>OWNER</code>是你的github账户名。</p>
-<h2 id="3-3-部署本地静态博客-root"><a href="#3-3-部署本地静态博客-root" class="headerlink" title="3.3. 部署本地静态博客  (root)"></a>3.3. 部署本地静态博客  (root)</h2><p>用下面命令执行部署(blogs/目录中)</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>在终端提示处输入<code>github</code>的<code>username</code>和<code>password</code><br>此时刷新第3.1步的页面，repo不再是空的了。</p>
-<h2 id="3-4-访问"><a href="#3-4-访问" class="headerlink" title="3.4. 访问"></a>3.4. 访问</h2><p>在浏览器输入<code>OWNER.github.io</code>即可从远端访问。<br>可能无法马上访问，稍等，刷新页面即可。</p>
-<h1 id="4-部署后对博客的修改或新建-root"><a href="#4-部署后对博客的修改或新建-root" class="headerlink" title="4. 部署后对博客的修改或新建 (root)"></a>4. 部署后对博客的修改或新建 (root)</h1><p>确保仍在blogs/目录中，创建新的博客后生成对应的<code>.md</code>文件。<br>对相应的<code>.md</code>文件添加或修改内容。<br>后在本地检查。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>本地检查无误后生成并部署到github</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>或一条命令完成</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate --deploy</span><br></pre></td></tr></table></figure>
-
-<h1 id="5-插入图片"><a href="#5-插入图片" class="headerlink" title="5. 插入图片"></a>5. 插入图片</h1><ol>
-<li>修改配置文件<code>_config.yml</code>中<code>post_asset_folder:</code>的值设置为<code>true</code>。</li>
-<li>回到blog/目录中，安装插件<code>cnpm install https://github.com/7ym0n/hexo-asset-image --save</code>。这个asset管理插件是没有bug的。</li>
-<li>新建博客<code>hexo new &quot;xxx&quot;</code>。在<code>/source/_posts</code>文件夹内会生成<code>xxx.md</code>和同名的<code>xxx文件夹</code>。</li>
-<li>把在<code>xxx.md</code>中要引用的图片放到<code>xxx文件夹</code>中。</li>
-<li>在写博客过程中引入图片：<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;xxx/resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：在你的md编辑器中图片可以正常显示，但4000端口和github上不能显示。<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：相反的，md编辑器中不能显示，远端可以。<br><br>后者才是正确的引用。</li>
-<li>回到blog/目录中，生成及部署<code>hexo g --d</code>。</li>
-</ol>
-<h1 id="6-更改当前主题属性-root"><a href="#6-更改当前主题属性-root" class="headerlink" title="6. 更改当前主题属性 (root)"></a>6. 更改当前主题属性 (root)</h1><p>以更改背景图片为例，保证当前目录为<code>blog</code>目录，图片存在于blog下的<code>blog/themes/landscape/source/css/images/</code>中，名为<code>banner.jpg</code>，选择自己喜欢的图片命名为<code>banner.jpg</code>并替换原来图片。在blog目录中开启服务<code>hexo server</code>。在localhost就可以看到变化。</p>
-<p>若果要更改主题其他参数，回到上一级目录即<code>blog/themes/landscape/source/css/</code>编辑器打开目录中的<code>_variables.styl</code>文件。内容类似：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">35 // Header</span><br><span class="line">36 logo-size = 50px</span><br><span class="line">37 subtitle-size = 16px</span><br><span class="line">38 banner-height = 400px</span><br><span class="line">39 banner-url = <span class="string">"images/banner.jpg"</span></span><br></pre></td></tr></table></figure>
-<p>修改对应参数值，后刷新localhost，就可以看到及时变化。</p>
-<p>最后，回到blog/目录，执行一下命令保证github远端也得到更新：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br><span class="line">$ hexo g --d</span><br></pre></td></tr></table></figure>
-<p>完成！</p>
-<h1 id="7-添加“分类”和“tags”-root"><a href="#7-添加“分类”和“tags”-root" class="headerlink" title="7. 添加“分类”和“tags” (root)"></a>7. 添加“分类”和“tags” (root)</h1><p>进入blog目录</p>
-<ol>
-<li><p>在<code>source</code>中生成<code>categories</code>文件夹：<code>tags</code>是默认就含有的，不用添加。</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new page categories</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑 <code>blog/source/categories</code>中<code>index.md</code>。添加<code>type: categories</code>于末行。保存并退出</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: categories</span><br><span class="line">date: 2020-01-11 17:48:47</span><br><span class="line">type: categories</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ol>
-<ol start="3">
-<li><p>给每一篇blog添加<code>categories</code>，如下。注意：hexo一篇文章只能属于一个分类，即如果在“- web前端”下方添加“-xxx”，hexo不会产生两个分类，而是把分类嵌套（即该文章属于 “- web前端”下的 “-xxx ”分类）。</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: Linux(ubuntu)下使用hexo创建静态博客并部署到github</span><br><span class="line">date: 2019-07-28 12:36:32</span><br><span class="line">tags:</span><br><span class="line">    - hahaha</span><br><span class="line">categories: </span><br><span class="line">    - utility</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-<p>最终blog每一页都会出现<code>categories</code>，<code>tags</code>和<code>tag cloud</code>三个标签。</p>
-</li>
-</ol>
-<h1 id="8-修改页面显示博客数-root"><a href="#8-修改页面显示博客数-root" class="headerlink" title="8. 修改页面显示博客数 (root)"></a>8. 修改页面显示博客数 (root)</h1><ol>
-<li><p>获取<code>sudo</code>权限并安装<code>hexo</code>的三个插件，archive的，tag的category的：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo -s</span><br><span class="line">$ cnpm install hexo-generator-archive --save</span><br><span class="line">$ cnpm install hexo-generator-tag --save</span><br><span class="line">$ cnpm install hexo-generator-category --save</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>在目录<code>/media/junhui/DATA/blog/</code>下，编辑<code>_config.yml</code>，添加如下内容：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">archive_generator:</span><br><span class="line">  enabled: true</span><br><span class="line">  per_page: 0</span><br><span class="line">  yearly: true</span><br><span class="line">  monthly: true</span><br><span class="line">  daily: false</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">tag_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">category_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>自定义对应的<code>per_page</code>数值。其中<code>0</code>表示显示所有blog，就是说，不分页。</p>
-</li>
-</ol>
-<h1 id="9-Trouble-Shooting"><a href="#9-Trouble-Shooting" class="headerlink" title="9. Trouble Shooting"></a>9. Trouble Shooting</h1><ol>
-<li>如果需要更改blog文件明，直接在源文件中修改即可。</li>
-<li>对于已有的blog文件，只需要将源文件和其图片文件夹复制到<code>blogs</code>目录下。</li>
-<li>当生成及部署完毕后，<strong>远端不会马上生效</strong>，不慌张，稍等。</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" data-id="ckatsrgum007xxqfz9p7mfvg6" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Markdown-常用语法" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/" class="article-date">
-  <time datetime="2019-07-01T13:32:34.000Z" itemprop="datePublished">2019-07-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/">Markdown-常用语法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>常用的记录下来，方便查找</p>
-<ul>
-<li><p>插入图片</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div align&#x3D;center&gt;&lt;img src&#x3D;&quot;IMAGE_PATH.png&quot; width&#x3D;500&gt;&lt;&#x2F;div&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加图片描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div align&#x3D;center&gt;Description of images&lt;&#x2F;div&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>表格</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">指标 | 值   </span><br><span class="line">:-|:-</span><br><span class="line">Maximum dimensionality of grid of thread blocks | 3 |</span><br><span class="line">Maximum x- or y-dimension of a block | 1024 |</span><br><span class="line">Maximum z-dimension of a block | 64 |</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改文本中字体颜色大小</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;font color&#x3D;red size&#x3D;4&gt;字体颜色大小&lt;&#x2F;font&gt;</span><br></pre></td></tr></table></figure>
-<p>  更多颜色看<a href="https://www.w3school.com.cn/tags/html_ref_colornames.asp" target="_blank" rel="noopener">这里</a>.</p>
-</li>
-<li><p>链接</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[我的主页](https:&#x2F;&#x2F;ashburnlee.github.io&#x2F;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>另起一行 </p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">表示另起一行&lt;&#x2F;br&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>用线划掉</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~~用横线划掉~~</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/" data-id="ckatsrgsc003nxqfz0bb37f7b" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -800,7 +791,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -829,7 +820,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -842,23 +833,23 @@
       <ul>
         
           <li>
+            <a href="/2020/05/31/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/31/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/">anaconda 虚拟环境</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
           </li>
         
           <li>
             <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-如何使用-lenet模型</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/">caffe 安装及trouble shooting</a>
           </li>
         
       </ul>

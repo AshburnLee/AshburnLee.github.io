@@ -64,6 +64,307 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-stack" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" class="article-date">
+  <time datetime="2020-02-25T04:21:48.000Z" itemprop="datePublished">2020-02-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>20, 1021, 1019, 155，921，</p>
+<h2 id="20-valid-parenthese"><a href="#20-valid-parenthese" class="headerlink" title="#20 valid parenthese"></a>#20 valid parenthese</h2><ul>
+<li><p>问题描述</p>
+<p>  对于string S，判断是否是合法的括号对儿。</p>
+<p>  如：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;[()]()&#125;()  合法</span><br><span class="line">&#123;()]       不合法</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  遍历s：</p>
+<ol>
+<li><p>如果<code>s[i]</code>是左括号“(”，“[”, “{”，则入栈<code>stack.push(s[i])</code>。</p>
+</li>
+<li><p>如果是右括号，如果栈为空，表示第一个就不合法，结束。否则，记录栈顶元素<code>curr=stack.top()</code>，后出栈顶元素<code>stack.pop()</code>。</p>
+</li>
+<li><p>根据匹配规则，得到<code>curr</code><font color="red">应该</font>是什么，用<code>match</code>表示。然后匹配：看<code>实际curr</code>是否与<code>应该match</code>相同。若相同，继续遍历，否则不合法，结束。</p>
+<p>关键：判断当前元素<font color="red">应该</font>是什么，与<font color="red">实际</font>是什么，是否一致。</p>
+</li>
+</ol>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">matchParenthese</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">       <span class="built_in">stack</span>&lt;<span class="keyword">char</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">       <span class="comment">// 遍历每一个字符</span></span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="comment">// 如果是'(', 入栈</span></span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span> || S[i] == <span class="string">'['</span> || S[i] == <span class="string">'&#123;'</span> )</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line">           <span class="comment">// 如果是')'：</span></span><br><span class="line">           <span class="keyword">else</span> &#123;</span><br><span class="line">               <span class="comment">// 如果栈开始就为空，则不合法</span></span><br><span class="line">               <span class="keyword">if</span>(<span class="built_in">stack</span>.size() == <span class="number">0</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">               <span class="comment">// 得到栈顶元素 “实际”是啥</span></span><br><span class="line">               <span class="keyword">char</span> curr = <span class="built_in">stack</span>.top();</span><br><span class="line">               <span class="built_in">stack</span>.pop();</span><br><span class="line">               <span class="comment">// 匹配原则 得到“应该”是啥</span></span><br><span class="line">               <span class="keyword">char</span> match;</span><br><span class="line">               <span class="keyword">if</span> (S[i] == <span class="string">')'</span>) match = <span class="string">'('</span>;</span><br><span class="line">               <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">']'</span>) match = <span class="string">'['</span>;</span><br><span class="line">               <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">'&#125;'</span>) match = <span class="string">'&#123;'</span>;</span><br><span class="line">                   </span><br><span class="line">               <span class="comment">// 这时才开始匹配 “实际”与“应该”一致否</span></span><br><span class="line">               <span class="keyword">if</span>(curr != match) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span>(<span class="built_in">stack</span>.size() != <span class="number">0</span>) </span><br><span class="line">           <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">       <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>这个问题是stack 的经典应用。</p>
+<h2 id="1021-remove-outermost-parentheses"><a href="#1021-remove-outermost-parentheses" class="headerlink" title="#1021 remove outermost parentheses"></a>#1021 remove outermost parentheses</h2><ul>
+<li><p>问题描述</p>
+<p>  括号对儿是和法的。对于输入，返回输出：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Input: <span class="string">"(()())(())"</span></span><br><span class="line">Ouput: <span class="string">"()()()"</span></span><br><span class="line">Explanation: </span><br><span class="line">The input string is <span class="string">"(()())(())"</span>, with primitive decomposition <span class="string">"(()())"</span> + <span class="string">"(())"</span>.</span><br><span class="line">After removing outer parentheses of each part, this is <span class="string">"()()"</span> + <span class="string">"()"</span> = <span class="string">"()()()"</span>.</span><br><span class="line"></span><br><span class="line">Input: <span class="string">"()()"</span></span><br><span class="line">Output: <span class="string">""</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<ol>
+<li><p>第一步，遍历<code>S</code>，将每一对儿最外层的括号的右括号的<code>Index</code>记录在<code>arr</code>中，（初始化的<code>arr</code>中有个-1）。例：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">S:     ( ( (  ) ) )  ( ( ) ( )  )</span><br><span class="line">index: 0 1 2  3 4 5  6 7 8 9 10 11</span><br></pre></td></tr></table></figure>
+<p> 根据描述，返回<code>arr: [-1, 5, 11]</code>。因为<code>0~5</code>是第一对儿最外层括号，<code>6~11</code>是第二对儿最外层括号。</p>
+</li>
+<li><p>第二步，对arr中的前<code>n-1</code>个元素，取<code>arr[i]+2</code>和<code>arr[i+1]-1</code>之间的 所有对应的<code>S</code>中的元素。结束。</p>
+</li>
+</ol>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">removeOutermostParentheses</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">       <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; arr;</span><br><span class="line">       arr.push_back(<span class="number">-1</span>);</span><br><span class="line">       <span class="comment">// the 1st step</span></span><br><span class="line">       <span class="built_in">stack</span>&lt;<span class="keyword">char</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line">           <span class="keyword">else</span>&#123;</span><br><span class="line">               <span class="built_in">stack</span>.pop();</span><br><span class="line">               <span class="comment">// 当stack为空，表示一组匹配结束，记录结束的index</span></span><br><span class="line">               <span class="keyword">if</span>(<span class="built_in">stack</span>.size()==<span class="number">0</span>)</span><br><span class="line">                   arr.push_back(i);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="comment">// the 2nd step</span></span><br><span class="line">       <span class="built_in">string</span> resS;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;arr.size()<span class="number">-1</span>; i++)&#123;</span><br><span class="line">           <span class="keyword">int</span> start = arr[i]+<span class="number">2</span>;</span><br><span class="line">           <span class="keyword">int</span> end = arr[i+<span class="number">1</span>]<span class="number">-1</span>;</span><br><span class="line">           <span class="keyword">if</span>(start&gt;=end) <span class="keyword">continue</span>;</span><br><span class="line">           <span class="comment">// 将outermost括号内的所有内用append到resS中</span></span><br><span class="line">           <span class="keyword">for</span>(<span class="keyword">int</span> j=start; j&lt;=end; j++)&#123;</span><br><span class="line">               resS+=S[j];</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> resS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h2 id="1019-next-greater-nodes-in-linked-list"><a href="#1019-next-greater-nodes-in-linked-list" class="headerlink" title="#1019 next greater nodes in linked list"></a>#1019 next greater nodes in linked list</h2><ul>
+<li><p>问题描述</p>
+<p>  看下面这个例子：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [2,7,4,3,5]</span><br><span class="line">Output: [7,0,5,5,0]</span><br><span class="line"></span><br><span class="line">解释：</span><br><span class="line">对于2，其后第一个比他大的是7</span><br><span class="line">对于7，气候第一个比他大的没有，0</span><br><span class="line">对于4，其后第一个比他大的是5</span><br><span class="line">对于3，其后第一个比他大的是5</span><br><span class="line">对于5，为最后一个元素，其后没有比他大的，0</span><br><span class="line">所以返回[7,0,5,5,0]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+</li>
+<li><p>实现</p>
+</li>
+</ul>
+<h2 id="155-Min-Stack"><a href="#155-Min-Stack" class="headerlink" title="#155 Min Stack"></a>#155 Min Stack</h2><ul>
+<li><p>描述 </p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Design a stack that supports push(), pop(), top(), and retrieving the minimum element in constant time: getMin().</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑<br>  在这个类中，使用两个stack。一个<code>mystack</code>正常工作，另一个<code>min</code>记录栈<code>mystack</code>目前的最小值，保证<code>min</code>中的栈顶元素是最小的，而且<code>min</code>从栈顶到栈底元素大小递增。比如<code>min： 底|3|2|1 ...  |顶</code>。并且始终<font color="red">保持min的性质始终不变</font>。</p>
+<p>  特点：<font color="orange">使用两个stack，一个正常工作，引入另一个使得整个stack类有了其他功能</font>。</p>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MinStack</span>&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; mystack;  <span class="comment">// 提供stack正常的功能。</span></span><br><span class="line">    <span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; min;   <span class="comment">// 记录最小值。</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    MinStack()&#123;&#125;;</span><br><span class="line">    ~MinStack()&#123;&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">push</span><span class="params">(<span class="keyword">int</span> x)</span></span>&#123;</span><br><span class="line">        mystack.push(x);</span><br><span class="line">        <span class="comment">// 只要待处理元素小于min的top元素，</span></span><br><span class="line">        <span class="comment">// min也要push进这个元素，</span></span><br><span class="line">        <span class="comment">// 保证min的top为当前mystack的最小值</span></span><br><span class="line">        <span class="keyword">if</span>(min.empty() || x&lt;=min.top())</span><br><span class="line">            min.push(x);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">top</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> mystack.top();   </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getMin</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> min.top();   </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">empty</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> mystack.empty();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 当mystack.top() == min.top()时，两个stack都要pop()</span></span><br><span class="line">    <span class="comment">// 保证min的top为当前mystack的最小值。</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">pop</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(mystack.top() == min.top())</span><br><span class="line">            min.pop();</span><br><span class="line">        mystack.pop();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+<h2 id="921-Minimum-Add-to-Make-Parentheses-Valid"><a href="#921-Minimum-Add-to-Make-Parentheses-Valid" class="headerlink" title="#921 Minimum Add to Make Parentheses Valid"></a>#921 Minimum Add to Make Parentheses Valid</h2><ul>
+<li><p>描述</p>
+<p>  添加最少的括号，使得括号字符串有效，例子：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: &quot;())&quot;</span><br><span class="line">Output: 1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Input: &quot;(((&quot;</span><br><span class="line">Output: 3</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Input: &quot;()&quot;</span><br><span class="line">Output: 0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  使用栈：</p>
+<p>  遍历S，遇到<code>&#39;(&#39;</code>入站，遇到<code>&#39;)&#39;</code>出站，表示有一对是匹配的，并将记录匹配对数的count+1。遍历完后，只需要：<code>S.length()-2*count</code>。的结果。</p>
+<p>  还可以不使用栈。其实栈的作用只是记录<code>&#39;(&#39;</code>，所以可以只是用一个int变量来记录。如此空间复杂度从<code>O(N)</code>变为<code>O(1)</code>。</p>
+<p>  <font color="orange">所有思路中一定有一个是适用于所有情况的，所以如果一个思路中有很多情况不能满足，思路不对</font>。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">// use stack</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">minAddToMakeValid</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">	<span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">	<span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line"></span><br><span class="line">           <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">')'</span>)&#123;</span><br><span class="line">               <span class="keyword">if</span>(!<span class="built_in">stack</span>.empty())&#123;</span><br><span class="line">                   <span class="built_in">stack</span>.pop();</span><br><span class="line">				count++;</span><br><span class="line">               &#125;   </span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> S.length()<span class="number">-2</span>*count;</span><br><span class="line">&#125;</span><br><span class="line">   <span class="comment">// No stack</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">minAddToMakeValid</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> left_p=<span class="number">0</span>;</span><br><span class="line">	<span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               left_p++;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">')'</span>)&#123;</span><br><span class="line">               <span class="keyword">if</span>(left_p!=<span class="number">0</span>)&#123;</span><br><span class="line">                   left_p--;;</span><br><span class="line">				count++;</span><br><span class="line">               &#125;   </span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> S.length()<span class="number">-2</span>*count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" data-id="ckatsrgs50036xqfz9kmkg6m4" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-杂记待归类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/" class="article-date">
+  <time datetime="2020-02-20T02:40:58.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/">CUDA-杂记待归类</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol start="4">
+<li><p>向量数据类型</p>
+<p> 同时适用于Host和Device，通过<code>make_&lt;type name&gt;</code>来构造，如</p>
+<p> <code>int2 i2 = make_int2(3,4)</code>：i2向量含有3和4两个元素。<br> <code>float4 f4 = make_float4(1.0f, 2.0f, 3.0f, 4.0f)</code>：f4是含有4个元素的数组。</p>
+<p> 访问方式如下：</p>
+<p> <code>int x = i2.x; int y = i2.y;</code></p>
+</li>
+<li><p>CUDA程序调试和开发</p>
+<ul>
+<li>可以使用<code>ssh</code>登路远程含有CUDA enabled GPU的服务器。</li>
+<li>通常使用双GPU的系统开发CUDA程序，一个GPU负责显示，另一个负责计算，可以使用<code>Nsight</code>等工具。</li>
+<li>只有一个GPU时，在Linux系统中可以关闭桌面环境（释放桌面环境对GPU的占用），只在命令行中使用<code>CUDA-gdb</code>调试。（实际上，实验阶段不关闭桌面环境，也是可以正确执行的）</li>
+</ul>
+</li>
+<li><p>CUDA开发的任务</p>
+<p><font color="red" size="4">有效的数据并行算法</font> + <font color="gree" size="4">针对GPU架构特性的优化</font> = 获得并行<font color="orange" size="4">最优性能</font></p>
+</li>
+<li><p>OpenCL</p>
+<p>OpenCL使用起来繁琐，而且运行速度远远低于CUDA运行速度。OpenCL与CUDA的主要功能有着十分相似之处，一个CUDA程序员很容易掌握OpenCL编程。</p>
+</li>
+<li><p>half-warp </p>
+<p>截图</p>
+</li>
+<li><p>Streams-流</p>
+<p>任务并行（Task Parallelism），不同于在大量的数据上执行相同的任务（SIMD），而是同时执行多个不同的任务。</p>
+</li>
+<li><p>CUDA数据并行原语</p>
+<p>啥是原语，就是这个领域的基本操作。CUDA并行原语库（CUDA Data Parallel Primitive Library, CUDPP）. 含有并行前缀和，并i选哪个排序，并行规约等。<font color="orange">这些原语为许多数据并行算法提供了重要基础</font>。如果你正在编写某个复杂算法，那么CUDPP很可能已经提供了这个算法。</p>
+<p>CUDPP 下载地址：<a href="http://code.google.com/p/cudpp" target="_blank" rel="noopener">http://code.google.com/p/cudpp</a></p>
+<p>for more information：CUDA By Example 178页 </p>
+</li>
+</ol>
+<ol start="26">
+<li><p>想清楚一个问题</p>
+<p>如果使用shared memory，每个block对应自己的shared memory，<font color="red">当这个block中threads的ID更新后，这个block并没有再被分配新的shared memory</font>. 也就是说如果使用两个blocks, 两个blocks有两段shared memory, block中threads 的ID更新后, 所计算结果会写入这个thread所在block的shared memory中. <font color="red">thread ID变了, 但所属的block不变</font>.  </p>
+</li>
+</ol>
+<ol start="27">
+<li><p>理解SIMD，SIMT</p>
+<p>Single Instruction Multiple Data（Thread）. </p>
+<ul>
+<li>Single：相同的操作，kernel函数只有一个</li>
+<li>Instruction：kernel函数所做的事情</li>
+<li>Multiple：所处理的数据量大，要拆分为一批一批</li>
+<li>Data：大的数据量</li>
+<li>Threads：<font color="orange">一个SP上的大量thread超快速切换，获得延时隐藏</font></li>
+</ul>
+</li>
+<li><p>warp中的divergence</p>
+<p>已经知道，在一个warp中，所有的threads执行相同的指令，但是如果指令中含有条件分支语句，很大程度上会发生divergence。比如<code>优化并行归约</code> 中的描述：一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</p>
+<p>总之，分支发散使得性能明显下降。但是，注意<font color="orange">divergence只发生在一个warp中</font>。</p>
+<p>可以综合算法的上下文，将divergence的粒度变为32（warp的大小）的倍数，从而避免warp内的分支发散。比如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (tid%<span class="number">2</span> == <span class="number">0</span>)&#123;  </span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>偶数id的thread把100写入偶数编号的地址，奇数id的thread将200写入奇数编号的地址。会发生分支发散。如果将分支的粒度定为32，则没有了divergence <font color="red">[代码中tid%32 == 0有问题]</font>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( tid%<span class="number">32</span> == <span class="number">0</span> )&#123;</span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是两者的结果的是不同的，实际中，需要根据算法上下文考虑结合此方法。</p>
+<p>使用<code>brand_efficiency</code>指标来查看divergence的情况：</p>
+<p><code>$ nvprof --mereics brand_efficiency ./out</code>, 但是CUDA编译器会进行优化，将短的，有条件的代码段的断定指令取代了分支指令。所以，会看到虽然代码中有分支，却显示分支效率100%。</p>
+</li>
+</ol>
+<ol start="41">
+<li><p>数据预读取</p>
+<p><font color="orange">在一次读取global memory的操作和使用这个数据之间，插入独立于以上数据的操作，可以隐藏访问延迟</font>。如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> m = dev_a[i];  <span class="comment">// 1. 从global memory中读取</span></span><br><span class="line"><span class="keyword">float</span> f = a * b;     <span class="comment">// 2. 与m无关的操作 </span></span><br><span class="line"><span class="keyword">float</span> f2 = m*f;      <span class="comment">// 3. 使用m</span></span><br></pre></td></tr></table></figure>
+<p>分析：在warp切换中，</p>
+</li>
+<li><p>指令优化</p>
+<p>GPU中执行指令时很快速的，所以通常不用太在意指令的优化。优化顺序一般是存储优化，后执行配置优化，最后可以考虑指令优化。</p>
+<p>比如：除以<code>2^n</code>，使用移位操作<code>&gt;&gt;n</code>，以<code>2^n</code>求模，使用<code>&amp;(2^n - 1)</code>；避免从double到float的自动转换，<code>float a = 0.0</code>，使用<code>float a = 0.0f</code>。</p>
+<p>还比如，两种运行时数学库函数的取舍，精度高的速度低，精度低的速度高。使用<code>-use-fast-math</code>编译选项后，强制将速度慢的<code>func()</code>转化为速度快的<code>__func()</code>。</p>
+<p>还比如循环展开。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/" data-id="ckatsrgrn001wxqfz05d6g87l" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-扫描算法" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/" class="article-date">
+  <time datetime="2020-02-20T02:39:23.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/">CUDA-扫描算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="扫描算法"><a href="#扫描算法" class="headerlink" title="扫描算法"></a>扫描算法</h1><p>Scan，是并行编程的一个重要原语，作为基本模块使用与很多不同的算法。Scan做的是什么事呢？看下图：</p>
+<p>&lt;&gt;pic17&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>其特点是，输出的每一个值有前缀依赖性，就是说每个输出依赖前面的所有输入。两种基本的扫描的过程如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">T</span> <span class="title">scan1</span>(<span class="title">T</span>* <span class="title">out</span>, <span class="title">T</span>* <span class="title">in</span>, <span class="title">size_t</span> <span class="title">N</span>)&#123;</span></span><br><span class="line">    T sum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> <span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">        out[i] = sum;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">T</span> <span class="title">scan2</span>(<span class="title">T</span>* <span class="title">out</span>, <span class="title">T</span>* <span class="title">in</span>, <span class="title">size_t</span> <span class="title">N</span>)&#123;</span></span><br><span class="line">    T sum=<span class="number">0</span>; </span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)&#123;</span><br><span class="line">        out[i] = sum;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>无需解释。</p>
+<p>因为其每个元素的前缀依赖性，</p>
+<h1 id="Blelloch并行扫描算法"><a href="#Blelloch并行扫描算法" class="headerlink" title="Blelloch并行扫描算法"></a>Blelloch并行扫描算法</h1><p>这个方法在前元素后依赖的情况下，并行实现。Blelloch算法分了两段执行。过程如下图：</p>
+<p>&lt;&gt;pic18&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>每个阶段的操作虽然容易想到，但是，<font color="orange" size="5">这个框架是很值得借鉴的</font>。图中实例，每两行之间的操作是并行的，而且这两行之间的并行操作必须全部执行完毕，才能向下执行，所以需要同步操作，尤其是当存在线程ID更新时。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E6%89%AB%E6%8F%8F%E7%AE%97%E6%B3%95/" data-id="ckatsrgrm001txqfz7nj61st5" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-再看规约-一段规约" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" class="article-date">
@@ -716,331 +1017,6 @@
 
 
   
-    <article id="post-CUDA-例-规约" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" class="article-date">
-  <time datetime="2020-02-20T01:51:24.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/">CUDA-例-规约</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="优化实列：并行规约（parallel-reduction）"><a href="#优化实列：并行规约（parallel-reduction）" class="headerlink" title="优化实列：并行规约（parallel reduction）"></a>优化实列：并行规约（parallel reduction）</h1><p>规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
-<h1 id="未优化的规约（为便于图中展示，假设warp大小为2）"><a href="#未优化的规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="未优化的规约（为便于图中展示，假设warp大小为2）"></a>未优化的规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>过程看图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
-
-<p>其中</p>
-<ul>
-<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
-<li>n个元素需要<code>lg(n)</code>次平行。</li>
-</ul>
-<p><font color="gree">warp大小为2，从一开始的第一次并行，就存在divergence</font>。</p>
-<p>过程实现（假如在shared memory中实现）：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只使用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作（因为是在同一个warp中），但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
-<h1 id="优化后规约（为便于图中展示，假设warp大小为2）"><a href="#优化后规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="优化后规约（为便于图中展示，假设warp大小为2）"></a>优化后规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
-<p>这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程处理相邻位置的数据</font>. </p>
-<p>所以改进如图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
-
-<p>其中：</p>
-<ul>
-<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
-<li>n个元素需要<code>lg(n)</code>次平行。</li>
-<li>当数据元素更多时，橙色虚线框对应的threads与其他threads（很多时候）不属于同个warp，所以threads所用资源较前一个实现提前释放。</li>
-</ul>
-<p><font color="gree">warp大小为2，图中所有次并行计算都不存在divergence</font>。</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 4，2，1</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=blockDim.x/<span class="number">2</span>; stride &gt; <span class="number">0</span>; stride /= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对特定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; stride)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>为什么此法好？</p>
-<ol>
-<li>每一轮都有一半的 thread不需要工作，资源释放掉。让warp提前完工，释放资源。</li>
-<li>block中的warp，没有了<font color="red" size="4">分支发散</font>，或者说是最小化了分支发散。回忆<font clolor="red">warp</font>：<ul>
-<li><font color="gree" size="4">在一个block中，连续的32个threads一组构成一个warp; </font></li>
-<li>warp 是最基本的调度单元</li>
-<li>warp中的threads在同步执行相同的指令（SIMT）</li>
-<li>warp中threads需要执行不同 的路径时（分支发散），warp中每个threads都要执行所有的分支，因为是同步的。比如一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</li>
-<li>warp之间时没有关系的。</li>
-<li>warp间的切换时没有代价的。多warp工作可以隐藏延时</li>
-<li>warp的分割，连续32个threadIdx.x 为一组（一个warp）0到31，32到63，…</li>
-<li>warp中的分支发散不总是问题，但是如有很多分支语句的话，每个thread就需要执行所有的分支。</li>
-<li>在设计程序时，不应个这样：<code>if (threadIdx.x &gt; 15){...}</code> 而应该这样<code>if (threadIdx.x &gt; 32-1) {...}</code>。后者，表示说，第一个warp干他的事，第二个warp执行这个分支。</li>
-</ul>
-</li>
-</ol>
-<p>就这个优化，当元素的个数小于32（warp的大小）时，<font color="red">不可避免</font>的会产生分支发散。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" data-id="ckatsrgrc0012xqfz3i0l2wo3" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-例-向量相乘" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" class="article-date">
-  <time datetime="2020-02-20T01:46:34.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/">CUDA-例-向量相乘</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="矩阵相乘CPU版本"><a href="#矩阵相乘CPU版本" class="headerlink" title="矩阵相乘CPU版本"></a>矩阵相乘CPU版本</h1><p>思路：三重循环，</p>
-<ul>
-<li>外层：遍历<font color="red">结果矩阵</font>所有行，</li>
-<li>中层：对结果矩阵每一行，遍历所有列，</li>
-<li>内层：结果矩阵某一行某一列元素的得到，需要A矩阵对应行，B矩阵对应列，的元素相乘后累加，这需要一个循环。内层循环结束后，就得到结果矩阵中的一个元素。</li>
-</ul>
-<p>看图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic11.png" width="700"></div>
-
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">matrixMultiplicationCPU</span><span class="params">(<span class="keyword">float</span>* M, <span class="keyword">float</span>* N, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> A_height, <span class="keyword">int</span> Awidth_Bheight, <span class="keyword">int</span> B_width)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i &lt; A_height; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j &lt; B_width; j++)&#123;</span><br><span class="line">            <span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k=<span class="number">0</span>; k &lt; Awidth_Bheight; k++)&#123;</span><br><span class="line">                <span class="keyword">float</span> a = M[i * Awidth_Bheight + k];</span><br><span class="line">                <span class="keyword">float</span> b = N[k * B_width + j];</span><br><span class="line">                sum += a * b;</span><br><span class="line">            &#125;</span><br><span class="line">            P[i * B_width + j] = sum;  </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其中，M的大小为<code>（A_height x Awidth_Bheight）</code>，N的大小为<code>（Awidth_Bheight x B_width）</code>. 注意中括号内，索引的计算。</p>
-<h1 id="未优化的矩阵相乘kernel"><a href="#未优化的矩阵相乘kernel" class="headerlink" title="未优化的矩阵相乘kernel"></a>未优化的矩阵相乘kernel</h1><p>参数：</p>
-<ul>
-<li>AColBRow：AxB中A的列数，也是B的行数</li>
-<li>BCol：B的列数</li>
-<li>a，b矩阵的元素索引按行标注索引</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">simpleMultiply2</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">float</span>* b, <span class="keyword">float</span> *c)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> row = threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = threadIdx.x;</span><br><span class="line">    <span class="keyword">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; AColBRow; i++) &#123;</span><br><span class="line">        sum += a[row * AColBRow + i] * b[i * BCol + col];</span><br><span class="line">    &#125;</span><br><span class="line">    c[row * BCol + col] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这种方法中<code>每一个线程</code>负责乘累加<code>结果的一个元素</code>，这个元素的得到是通过循环读取a矩阵的一行，b矩阵的一列，后乘累加得到。<font color="orange" size="4">这个过程其实就是把CPU版本中的外循环和中层循环去掉，替代这两个循环的是<code>threadIdx.x</code>和<code>threadIdx.y</code>，这两个值自加。对于a和b的访存索引的计算是不变的</font>。因为不涉及到结果间的依赖，所以不需要同步机制。</p>
-<p>缺点：</p>
-<ul>
-<li>观察<code>row</code>和<code>col</code>的定义，发现这个实现只使用了<font color="red">一个block</font>。对于大的矩阵相乘，一个block不足以覆盖所有元素。</li>
-<li>矩阵相乘的过程中，同一个Global memory地址的访存是很频繁的，所以速度慢。</li>
-</ul>
-<h1 id="多blocks分块处理矩阵相乘"><a href="#多blocks分块处理矩阵相乘" class="headerlink" title="多blocks分块处理矩阵相乘"></a>多blocks分块处理矩阵相乘</h1><p>参数：</p>
-<ul>
-<li>AColBRow：AxB中A的列数，也是B的行数</li>
-<li>BCol：B的列数</li>
-<li>a，b矩阵的元素索引按行标注索引</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">simpleMultiply2</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">float</span>* b, <span class="keyword">float</span> *c)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> row = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; AColBRow; i++) &#123;</span><br><span class="line">        sum += a[row * AColBRow + i] * b[i * BCol + col];</span><br><span class="line">    &#125;</span><br><span class="line">    c[row * BCol + col] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>此情况的线程结构是<code>2D block，2D thread</code>，注意线程组织的index，事实上是这样的：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/org.png" width="700"></div>
-
-<p>注意：<font color="orange">横向，index的第一个分量递增；纵向，index的第二个分量递增</font>。</p>
-<p>与上一种方法相比，优势是，使用多个blocks，每个block负责结果矩阵中的一个矩形块中的元素。<br>每个thread的操作细节看下图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic1.png" width="700"></div>
-
-<p>注意，C/C++中矩阵元素是按行排列的。假设线程组织是<code>2D thread 2D block</code>，假设<code>tile</code>大小是<code>2x2</code>的，假设使用4个blocks。那么跟踪上述code可得到结果矩阵中的第14个元素：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">row = 3;</span><br><span class="line">col = 2;</span><br><span class="line">i=0: a[row * 3 + i] * b[i * 4 + col] = a[9] *b[2];</span><br><span class="line">i=1: a[row * 3 + i] * b[i * 4 + col] = a[10]*b[6];</span><br><span class="line">i=2: a[row * 3 + i] * b[i * 4 + col] = a[11]*b[10];</span><br><span class="line">GET sum;</span><br><span class="line">WRITE sum INTO c[row * 4 + col] = c[14];</span><br></pre></td></tr></table></figure>
-
-<p>看出逻辑及结果是正确的。</p>
-<p>有了kernel，如何调用kernel：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// block的个数</span></span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">((A的行数+<span class="number">1</span>)/tile的行数，(B的列数+<span class="number">1</span>)/tile的列数)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 每个block中的线程数</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(tile的行数，tile的列数)</span></span></span><br><span class="line">simpleMultiply2&lt;&lt;&lt;grid, block&gt;&gt;&gt;(a, b, c)</span><br></pre></td></tr></table></figure>
-
-<p>比如图中</p>
-<ul>
-<li>定义tileRow=2，tileCol=2.</li>
-<li>A的行数为ARow=4，列数ACol=3；</li>
-<li>B的行数为BRow=3，列数BCol=4；</li>
-</ul>
-<p>那么，有如下对kernel的配置，自然地每个<code>tile</code>的大小为<code>2x2</code>，每个block大的大小也是<code>2x2</code>. <font color="red">block与block之间相互不影响，所以所有blocks并行执行</font>。</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// block的个数，共有4个</span></span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">(<span class="number">2</span>，<span class="number">2</span>)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 每个block中的线程数，有4个</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">2</span>，<span class="number">2</span>)</span></span></span><br><span class="line">simpleMultiply2&lt;&lt;&lt;grid, block&gt;&gt;&gt;(a, b, c)</span><br></pre></td></tr></table></figure>
-
-<p>其中<code>tile</code>是一个block处理区域的大小，也就是一个block的大小，比如2x2，3x4. 是开发者根据问题情况自己定义的（通常是32 的倍数）。通过结果矩阵的行列数和<code>tile</code>的行列数，可以计算出，所需block数量个blocks阵大小。</p>
-<p>总结：这个优化算然可以处理任何大小的矩阵相乘，但是对global memory的读写并没有做优化。</p>
-<h1 id="global-memory慢"><a href="#global-memory慢" class="headerlink" title="global memory慢"></a>global memory慢</h1><p>假如一个GPU的性能峰值时346.5 Gflops。所以需要<code>346.5x4bit=1386 GB/s</code>的带宽才能达到峰值。但是这个GPU的存储实际带宽可能只有86.4GB/s，也就是<code>86.4GB/s / 4bit=21.6 Gflops</code>的性能。而实际上代码运行的速度可能只有15 Gflops。只有峰值的1/20. 所以要尽量减少对global memory的访存。</p>
-<p>对于矩阵相乘，可以使用shared memory来减少对global memory的访存。<font color="orange" size="4">始终要有这个意识</font>。</p>
-<h1 id="优化实列：使用shared-memory优化矩阵相乘"><a href="#优化实列：使用shared-memory优化矩阵相乘" class="headerlink" title="优化实列：使用shared memory优化矩阵相乘"></a>优化实列：使用shared memory优化矩阵相乘</h1><p><font color="orange" size="4">Shared memory这么使用：</font></p>
-<p>思路：</p>
-<p>因为使用了若干个block来分块结果矩阵，每一个block有自己单独的shared memory，这个存储空间由这个block内的所有threads共享，而且就矩阵相乘这个问题，A矩阵的每一行，和B矩阵的每一列在计算这个块时会不止一次被使用。所以：</p>
-<ul>
-<li>将结果阵中这一块对应的A中行和B中列存入这个block对应的shared memory中，如此避免了对global memory的频繁访问。如下图：</li>
-<li>进一步，由于A和B会很大，存入shared memory中的A行，和B列也是分段的，避免了shared memory不够用。如下图：</li>
-</ul>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic2.png" width="900"></div>
-
-<p>其中橘色是这个block的Shared memory空间，循环所有的<code>Asub</code>和<code>Bsub</code>，将每次的元素放入Shared memory，求得结果累加到<code>Cvalue</code>。循环结束后将最终的Cvalue写入最终位置，见图中箭头，</p>
-<p>kernel函数包含二重循环：</p>
-<ul>
-<li>外层，循环所有的Asub和Bsub，并将其放入Shared memory中。</li>
-<li>内层，循环求<font color="orange">Asub每部分行</font>和<font color="orange">Bsub每部分列</font>的<font color="orange">部分乘累加和Cvalue</font>。</li>
-</ul>
-<p>Bare in mind，每一个thread处理一个结果阵中的一个元素，也就是说，kernel函数是一个thread得到一个结果矩阵中的一个元素。</p>
-<p><a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#shared-memory" target="_blank" rel="noopener">官方文档</a>中有官方的解释，可以参考。</p>
-<p>注意，整个过程中有<font color="orange">两处同步</font>操作，因为涉及到线程间的同步。</p>
-<p>程序如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">MatMulKernel</span><span class="params">(Matrix A, Matrix B, Matrix C)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// block的行ID和列ID</span></span><br><span class="line">    <span class="keyword">int</span> blockRow = blockIdx.y;</span><br><span class="line">    <span class="keyword">int</span> blockCol = blockIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个block计算结果矩阵中的一块</span></span><br><span class="line">    Matrix Csub = GetSubMatrix(C, blockRow, blockCol);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个thread计算结果矩阵中的一个元素，</span></span><br><span class="line">    <span class="comment">// 这个结果通过累加存入Cvalue</span></span><br><span class="line">    <span class="keyword">float</span> Cvalue = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// thread的行ID和列ID</span></span><br><span class="line">    <span class="keyword">int</span> row = threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Loop over all the sub-matrices of A and B that are</span></span><br><span class="line">    <span class="comment">// required to compute Csub</span></span><br><span class="line">    <span class="comment">// Multiply each pair of sub-matrices together</span></span><br><span class="line">    <span class="comment">// and accumulate the results to Cvalue</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> m = <span class="number">0</span>; m &lt; (A.width / BLOCK_SIZE); ++m) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 得到这个block在这次循环中的A的子矩阵</span></span><br><span class="line">        Matrix Asub = GetSubMatrix(A, blockRow, m);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 得到这个block在这次循环中的B的子矩阵</span></span><br><span class="line">        Matrix Bsub = GetSubMatrix(B, m, blockCol);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 保存A的子矩阵和B的子矩阵</span></span><br><span class="line">        __shared__ <span class="keyword">float</span> As[BLOCK_SIZE][BLOCK_SIZE];</span><br><span class="line">        __shared__ <span class="keyword">float</span> Bs[BLOCK_SIZE][BLOCK_SIZE];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Load Asub and Bsub from device memory to shared memory</span></span><br><span class="line">        <span class="comment">// 每个thread加载A的子矩阵中一个元素，和B的子矩阵中的一个元素</span></span><br><span class="line">        As[row][col] = GetElement(Asub, row, col);</span><br><span class="line">        Bs[row][col] = GetElement(Bsub, row, col);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将A中这部分所有的元素，和B中元素都写入到shared memory中后，</span></span><br><span class="line">        <span class="comment">// 才能开始下面的操作。</span></span><br><span class="line">        __syncthreads();  </span><br><span class="line"></span><br><span class="line">        <span class="comment">// 计算当前A的子矩阵与B的子矩阵，相乘后累加结果。</span></span><br><span class="line">        <span class="comment">// 当外层循环结束，表示累加每一块累加的结果完成，</span></span><br><span class="line">        <span class="comment">// 得到最后的C中这个位置的结果。</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> e = <span class="number">0</span>; e &lt; BLOCK_SIZE; ++e)</span><br><span class="line">            Cvalue += As[row][e] * Bs[e][col];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Synchronize to make sure that the preceding</span></span><br><span class="line">        <span class="comment">// computation is done before loading two new</span></span><br><span class="line">        <span class="comment">// sub-matrices of A and B in the next iteration</span></span><br><span class="line">        <span class="comment">// 等待这一阶段的 加类乘完成后，才能够进行下一次循环，更新shared memory中的内容。</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Write Csub to device memory</span></span><br><span class="line">    <span class="comment">// Each thread writes one element</span></span><br><span class="line">    SetElement(Csub, row, col, Cvalue);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>那么对global memory 的访问减少了多少倍呢?</p>
-<ul>
-<li>假如一个block计算<code>2x2</code>的结果C的子矩阵，那么未优化的实现要访问Global memory <code>(2*2*2)8次行/列</code>（定义1次行/列：访问A的完整一行或B的完整一列）。优化后只访问<code>4次行/列</code>。<code>8/4=2</code>，就是tile的宽。</li>
-<li>假如一个block计算<code>3x3</code>的结果C的子矩阵，那么未优化的实现要访问Global memory <code>(2*3*3)18次行/列</code>。优化后只访问<code>6次行/列</code>。<code>18/6=3</code>，就是tile的宽。</li>
-<li>假如一个block计算<code>100x100</code>的结果C的子矩阵，那么未优化的实现要访问Global memory <code>(2*100*100)20,000次行/列</code>。优化后只访问<code>200次行/列</code>。<code>20,000/200=100</code>，就是tile的宽。</li>
-</ul>
-<p>所以对于很大的矩阵，优化前后的性能差别是巨大的。相差tile宽，这么多倍。</p>
-<p>相差tile宽，这么多倍。极限情况下，如果shared memory有足够的空间，可以把A，B都放入每个block的shared memory中。此情况下对global memory的访问最少。</p>
-<p>上述优化方法中确定块<code>tile</code>的宽度要考虑shared memory的大小：</p>
-<p><font color="red" size="4">尽量最大化tile，block的大小</font></p>
-<p>假如一个GPU每个SM有<code>16kB</code>的shared memory，并且每个SM有<code>8</code>个blocks。可以算出每个block可以使用<code>2kB</code>的shared memory。</p>
-<p>其中<code>1kB</code>存矩阵A的相关元素，<code>1kB</code>存B的相关元素。假设数据类型是float，占<code>4B</code>。所以可以计算出<code>1kB=16x16x4</code>。block的大小为<code>16x16</code>. 也就是一个block有<code>16x16</code>个threads。</p>
-<p>这种情况充分使用了SM的threads和shared memory资源，最大化<font color="orange">资源占用率</font>。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" data-id="ckatsrgty0074xqfzam0pgs4k" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-线程同步-线程调度" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" class="article-date">
-  <time datetime="2020-02-20T01:44:16.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/">CUDA-线程同步-线程调度</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ol>
-<li><p>线程同步（一个block内的同步）</p>
-<p> 一个block内的所有threads有时候是需要同步的（如使用shared memory优化的矩阵相乘中），方法是在kernel函数中的适当位置加上<code>__syncthreads()</code>。</p>
-<p> 当一个thread执行到<code>__syncthreadas()</code>时，这个thread会看它所在的block内的其他<font color="orange">所有</font>threads情况，如果发现还有其他threads没有执行到这个位置，则这个thread等待其他threads。直到block中<font color="orange">所有</font>active的threads都执行到此，接着向下执行。</p>
-<p> 注意这个同步只是这个block内的threads同步。而非是全局同步，CUDA中没有全局通过不的原因是，全局同步的系统开销会很大。     </p>
-<p> 并行系统中<font color="red" size="4">负载均衡</font>：要求线程的执行时间尽量接近。如果不均衡，在需要线程同步时，所有线程会等待最慢的那个thread，此时整体的速度就时最慢的那个thread的速度，其他速度快的threads 的优势完全没有了。</p>
-<p> <font color="orange">block与block之间是异步的，不存在相互等待。而同一个warp内的threads天然同步</font>。</p>
-<p> 注意线程同步，可能导致<font color="red">死锁</font>，比如下情况：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (func())&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span>&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p> 产生死锁，执行不同分支的threads相互等待，谁也等不到谁。</p>
-</li>
-<li><p>线程调度</p>
-<ol>
-<li><p>SP和threads</p>
-<p> 为什么GPU的threads数量远远多于物理执行单元（SP）。因为每个SM中与CPU一样也含有<font color="red" size="4">上下文空间</font>，用于执行上下文切换，从而实现多线程。</p>
-<p> 这里有个<code>SP</code>和<code>threads</code>的关系。以GPU G80为例：</p>
-<p> G80 的硬件信息：<code>16</code>个SM，每个SM含有<code>8</code>个SP，（共有<code>16x8=128</code>个SP），每个SM最多驻扎<code>768</code>个threads，总共同时执行<code>12288</code>个threads。（所以可以通过每个SM中最多可以驻扎的threads数，除以每个SM中的SP数，就得到了）</p>
-<p> 解释：</p>
-<ul>
-<li><p>16，表是芯片实际含有16个SM</p>
-</li>
-<li><p>8， 表示每个SM含有8个SP（Streaming Processors），真正执行指令的工人。</p>
-</li>
-<li><p>12288，表示这个芯片上可以同时有12288个threads进行调度。调度不意味着一定要实际执行。</p>
-</li>
-<li><p>128个SP，表示每个时钟周期内实际并行执行的指令流为128个。但总共有12288个指令流间不停的切换。切换的目的是达到<font color="orange" size="4">延时隐藏</font>效果。</p>
-<p>warp的调度是<font color="red">零开销</font>的。因为<font color="orange">warp的上下文是存在与物理空间中的，需要了这个warp干活时，程序切换到这个warp上去即可</font>。 </p>
-<p>warp中的所有threads执行相同的指令。当有分支时，由于warp内threads天然的同步，所以含有分支时的执行会有性能下降。</p>
-</li>
-</ul>
-</li>
-<li><p>warp和SP</p>
-<p> 每个warp含有<code>32</code>个threads，假如每个SM只有<code>8</code>个SP，此时一个SM如何调度一个warp?</p>
-<ul>
-<li><p>第一个周期内，有8个threads进入SP</p>
-</li>
-<li><p>第二，三，四个周期SP各进入8个threads</p>
-</li>
-<li><p>如此循环，直到所有指令执行完毕</p>
-</li>
-<li><p>所以此情况一个SM调度一个warp，需要4个周期（4个周期只是调度完成，指令执行完成需要4的倍数个周期）</p>
-<p>现代GPU的SP数已经远远大于32了。所以不存在上述问题了。</p>
-</li>
-</ul>
-</li>
-<li><p>调度warp实现延时隐藏</p>
-<p> 一个实例：有一个kernel含有</p>
-<ul>
-<li><p>一个对global memory的读操作，这个操作耗时200个时钟周期。</p>
-</li>
-<li><p>4个独立的乘或加操作，一个乘或加操作耗时4个时钟周期。</p>
-<p>那么需要多少个warp才可以将对global memory访问的延迟隐藏掉?</p>
-<p>首先每个warp需要执行4个独立的乘或加操作，共耗时4x4=16个始终周期。要覆盖200个时钟周期，就需要200/16=12.5，即13个warp<font color="red">串行</font>，才能有效隐藏对global memory的访问延时。</p>
-<p>回忆：<font color="orange" size="4">每个SM一次只能执行一个warp</font>。待确认。。。。</p>
-</li>
-</ul>
-</li>
-</ol>
-</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" data-id="ckatsrgrt0028xqfzegecfmln" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1056,7 +1032,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1085,7 +1061,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1098,23 +1074,23 @@
       <ul>
         
           <li>
+            <a href="/2020/05/31/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/31/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/">anaconda 虚拟环境</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
           </li>
         
           <li>
             <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-如何使用-lenet模型</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/">caffe 安装及trouble shooting</a>
           </li>
         
       </ul>

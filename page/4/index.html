@@ -64,6 +64,266 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Trouble-Shooting" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/13/Trouble-Shooting/" class="article-date">
+  <time datetime="2020-01-12T17:49:49.000Z" itemprop="datePublished">2020-01-13</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/13/Trouble-Shooting/">Trouble-Shooting</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="查看所连接WiFi及psswrd"><a href="#查看所连接WiFi及psswrd" class="headerlink" title="查看所连接WiFi及psswrd"></a>查看所连接WiFi及psswrd</h2><ol>
+<li><p>查看所有链接过的WiFi： </p>
+<p> <code>$ cd /etc/NetworkManager/system-connections</code><br> <code>$ ls</code></p>
+</li>
+<li><p>选择所查看WiFi,显示配置文件：</p>
+<p> <code>$ sudo vim TP-LINK_DBBB</code></p>
+</li>
+<li><p>对应密码在<code>wifi-security</code>字段的<code>psk</code>处</p>
+</li>
+</ol>
+<h2 id="为应用创建快捷方式-如firefox"><a href="#为应用创建快捷方式-如firefox" class="headerlink" title="为应用创建快捷方式 如firefox"></a>为应用创建快捷方式 如firefox</h2><ol>
+<li><p>下载firefox</p>
+</li>
+<li><p><code>$ tar -xvf firefox-70.0.1.tar.bz2</code> 解压</p>
+</li>
+<li><p><code>$ mv firefox /opt</code> 将解压后文件放入opt</p>
+</li>
+<li><p><code>$ cd /usr/share/applications</code></p>
+</li>
+<li><p><code>$ sudo touch firefox.desktop</code> 创建桌面图标文件</p>
+</li>
+<li><p><code>$ sudo vim firefox.desktop</code> 编辑文件</p>
+<pre><code>[Desktop Entry]
+Name=Firefox
+Comment=this is firefox
+Exec=/opt/firefox/firefox
+Icon=/opt/firefox/chrome/default/icons/default128.png
+Terminal=false
+Type=Application
+Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可执行文件的路径；<code>Icon</code>是Firefox应用图标路径</p>
+</li>
+<li><p><code>icon</code>加入了application 列表，便可以快速访问了</p>
+</li>
+</ol>
+<h2 id="apt-install-fail"><a href="#apt-install-fail" class="headerlink" title="apt install fail"></a>apt install fail</h2><p>Linux 中<code>sudo apt install ...</code>时关于<code>could not get lock /var/lib/dpkg/lock -open(11:Resource temorarily unavailable)</code>的解决方案：</p>
+<ul>
+<li><p>第一步：找到所有含有“apt”的进程：</p>
+<p>  <code>$ ps -A | grep apt</code></p>
+</li>
+<li><p>第二步：删除所有你含”apt”的进程：</p>
+<p>  <code>$ sudo kill -9 进程ID</code></p>
+</li>
+</ul>
+<h2 id="更新activation-key-windows"><a href="#更新activation-key-windows" class="headerlink" title="更新activation key(windows)"></a>更新activation key(windows)</h2><ul>
+<li><p>卸载之前的key</p>
+<p>  <code>&gt; slmgr.vbs /upk</code></p>
+</li>
+<li><p>安装新的key</p>
+<p>  <code>&gt; slmgr /ipk XXXXX-XXXXX-XXXXX-XXXXX-XXXXX</code></p>
+</li>
+<li><p>设置计算机秘钥管理地址</p>
+<p>  <code>&gt; slmgr /XXX.XXX.XXX</code></p>
+</li>
+<li><p>激活</p>
+<p>  <code>&gt; slmgr /ato</code></p>
+</li>
+</ul>
+<h2 id="修复U盘（Windows）"><a href="#修复U盘（Windows）" class="headerlink" title="修复U盘（Windows）"></a>修复U盘（Windows）</h2><p>当优盘出现问题时，比如作为系统盘使用后的异常。可以使用一下方法修复。windows中。</p>
+<p>在terminal中依次输入下面命令：</p>
+<ol>
+<li><p><code>diskpart</code>: 进入磁盘交互界面</p>
+</li>
+<li><p><code>list disk</code>: 返回机器中的所有磁盘的列表。比如“磁盘0”，“磁盘1”.</p>
+</li>
+<li><p><code>select disk 1</code>: 选择待处理的盘，比如“磁盘1”，从容量上也可以区分。</p>
+</li>
+<li><p><code>clean</code>: 删除U盘下的所有分区。</p>
+</li>
+<li><p><code>create partition primiry</code>: 在U盘中建立一个主分区。</p>
+</li>
+<li><p><code>active</code>: 激活</p>
+</li>
+<li><p><code>format fs=fat32 quick</code>: 快速格式化磁盘为fat32格式。加<code>quick</code>与没有加<code>quick</code>的区别：</p>
+<ul>
+<li>加<code>quick</code>只是删除磁盘中的文件。</li>
+<li>不加<code>quick</code>是真正地格式化，将磁盘重新分道分簇。</li>
+</ul>
+</li>
+<li><p><code>exit</code>: 推出磁盘交互界面</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/13/Trouble-Shooting/" data-id="ckatsrgsj0042xqfzhxrhd5m3" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Linear-Algebra-看待矩阵的视角" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/" class="article-date">
+  <time datetime="2020-01-03T06:58:28.000Z" itemprop="datePublished">2020-01-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linear-Algebra/">Linear Algebra</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/">Linear Algebra-看待矩阵的视角</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>记录两种看待矩阵的重要视角，对于推理, 证明和理解线性代数其他概念都十分重要。</p>
+<ul>
+<li>列向量 坐标系或空间</li>
+<li>行向量 函数或线性方程组</li>
+</ul>
+<h2 id="列视角"><a href="#列视角" class="headerlink" title="列视角"></a>列视角</h2><p>两矩阵相乘，将左边的方阵<code>A</code>看做是<font color="red">坐标系或空间</font>，右边的矩阵<code>B</code>是一个列向量的集合，每一个列向量表示在空间A的表式，而相乘的结果是在这个维度的空间中的标准正交基下的同一个列向量的表示。如</p>
+<p>看个例子：</p>
+<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/col.jpg" width="700"></div>
+
+
+<p>把矩阵<code>A</code>看做是由列向量构成的，<code>a</code>，<code>b</code> 是两个列向量经过A变换得到的结果。<code>c</code> 是将两个列向量放在一起，构成了矩阵<code>B</code>，矩阵<code>B</code>中每个列向量经过<code>A</code>变换的结果。</p>
+<p>结果是相同的。向量trans([2,3]) 是向量trans([7,7])在空间A中的表达，</p>
+<h2 id="行视角"><a href="#行视角" class="headerlink" title="行视角"></a>行视角</h2><p>还可以将A看作是一个<font color="red">函数或线性方程组</font>. 右边的向量或矩阵是操作对象。 </p>
+<p>看个例子：</p>
+<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/row.jpg" width="700"></div>
+
+<p>把矩阵<code>A</code>看做是由行向量构成，<code>e</code>，<code>f</code> 是分别操作两个列向量。<code>g</code> 是将两个列向量放到一起，一起处理。</p>
+<p>结果相同，可以看出<code>B</code>中的列向量彼此间是无关的，都经过<code>A</code>相同的变换。</p>
+<h2 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h2><p>证明矩阵对角化中一个结论：</p>
+<p>如果可以将<code>A</code>分解成<code>P*D*(P逆)</code>. 那么有<code>D</code>和<code>P</code>可以分别为：</p>
+<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/PD.jpg" width="700"></div>
+
+<p>其中<code>lambda</code>为<code>A</code>所对应的所有特征值，<code>u</code>是对应<code>lambda</code>的特征向量。(<code>P</code> 中的<code>u</code>向量竖着写)。</p>
+<p>现在问题是，如何证明：如果<code>D</code>，<code>P</code>为上述矩阵，<code>A</code>有<code>n</code>个线性无关的特征向量，那么有：</p>
+<center>A=P*D*(P逆)</center>
+
+<p>证明<code>A=P*D*(P逆)</code>， 就是证明<code>AP=PD</code>，观察等号左右：</p>
+<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/APPD.jpg" width="700"></div>
+
+<p>左右相等，证毕。</p>
+<p>表达式<code>i</code>中<code>A</code>为一个函数，操作与右边每一个列向量。但并没有展开，因为根据特征值特征向量的定义，可以将<code>A</code>用<code>lambda</code>替换。</p>
+<p>而表达式<code>ii</code>的过程，就是将左边矩阵每一列当成一个列向量考虑，实际上，这个矩阵就是由列向量构成，所以自然而然的将这个矩阵用类向量的视角看待。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/" data-id="ckatsrgs9003hxqfz509h3hyo" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-汇总ShortCuts" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/" class="article-date">
+  <time datetime="2019-12-31T18:14:44.000Z" itemprop="datePublished">2020-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/">汇总ShortCuts</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>记录Linux平台及其上常用软件的快捷键。提升效率</p>
+<h2 id="通用"><a href="#通用" class="headerlink" title="通用"></a>通用</h2><p><code>Fn+left/right</code>: 在文本编辑时，移动cursor与行首/行尾<br><code>ctrl+left/right</code>: 文本编辑时，以单词为单位移动cursor<br>上边移动cursor时按住<code>shift</code>: 选中cursor走过的内容</p>
+<h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><p><code>Alt + F4</code>: close current window<br><code>Alt + PrtSc</code>: take <font color="gree" size="3">screen shot</font> on current window<br><code>Alt + F7</code>: move current window<br><code>Alt + F8</code>: use arrow to adjust the size of current window<br><code>Alt + arrows</code>: move out or move in a directory\<br><code>Win + D</code> : show desk</p>
+<p><code>$ make clean</code>: 清理编译内容<br><code>$ make all -j4</code>: 使用4个线程编译<br><code>$ cp -r foldername ./</code>: 将foldername中所有内容复制到 当期那目录<br><code>$ rm -t foldername</code>: 删除foldername<font color="gree" size="3">及其中所有内容</font>.<br><code>$ systemctl suspend</code>: suspend mode，保存当前工作内容与内存，按任意键唤醒<br><code>$ systemctl hybernate</code>:  也是睡眠，保存当前工作内容，但要按电源键唤醒</p>
+<p><code>$ sudo apt-get install -f</code>: ?<br><code>$ sudo apt-get update</code>: ?<br><code>$ sudo apt-get upgrade</code>: ?</p>
+<p><code>$ Libreoffice FILENAME.odt</code>: open .odt file</p>
+<p><code>$ ls | wc -l</code>: the number of files in current path<br><code>$ ls -l | grep ^- | wc -l</code>: the number of files in current directory<br><code>$ ls -l | grep ^d | wc -l</code>: the number of directories in current directory</p>
+<p><code>$ mv &#39;ls | head -1000&#39; ../</code>: move first 1000 files from current to upper level<br><code>$ find /opt/opencv/ -name &quot;imgproc.hpp&quot;</code>: find file in a directory<br><code>$ sudo dpkg -i FILENAME.deb</code> : install .deb file<br><code>$ dpkg --list</code>: show installed software in system<br><code>$ sudo apt-get --purge remove (name)</code> :packages uninstall</p>
+<p><code>$ df -lhT</code> :info about <font color="gree" size="3">disk</font><br><code>$ tar -zcvf 压缩包名.tar.gz 源文件</code>: 压缩.tar.gz</p>
+<p><code>$ git clone URL</code> : GitHub url to current directory<br><code>$ git add FILENAME</code>: 向remote添加新文件FILENAME <br><code>$ git commit -m &quot;massage&quot;</code>: make a commitment about that change<br><code>$ git push</code>: 将本地的改变推入remote<br><code>$ git pull</code>: 更新本地repository</p>
+<p><code>$ ipython trust filename.ipynb</code>: trust this notebook</p>
+<p><code>$ source activate tensorflow</code>: activate tensor <font color="gree" size="3">environment</font><br><code>$ source deactivate</code>: deactive that environment</p>
+<p><code>$ which/whereis/type package</code>: show <font color="gree" size="3">where</font> is that package</p>
+<p><code>$ export PS1=’:&gt; ’</code>    change the prompt(shorten prompt when it is too long)<br><code>:&gt; bash</code>    change back</p>
+<p><code>$ xdg-open .</code>   : open the current directory in terminal<br><code>$ sudo apt-get install alacarte</code>: 删除Linux中invalid app icon</p>
+<h2 id="Chrome-amp-Firefox"><a href="#Chrome-amp-Firefox" class="headerlink" title="Chrome &amp; Firefox"></a>Chrome &amp; Firefox</h2><p><code>Ctrl + Tab</code> or <code>Ctrl + PgDn</code>: Jump to next open tab<br><code>Ctrl + Shift + Tab</code> or <code>Ctrl + PgUp</code>: Jump to the previous open tab<br><code>Ctrl + t</code>: New tab<br><code>Ctrl + w</code>: close current tab<br><code>Ctrl + n</code>: new windows</p>
+<h2 id="Terminal"><a href="#Terminal" class="headerlink" title="Terminal"></a>Terminal</h2><p><code>ctrl + a</code>:移动光标到头<br><code>ctrl + e</code>:移动光标到尾<br><code>ctrl + u</code>:删除光标所在行<br><code>ctrl + k</code>:<br><code>ctrl + r</code>:历史中搜索<br><code>!xxx</code>: 调用最后一个以xxx开头的命令（当命令较长时）<br><code>export PS1=&quot;--&gt;&quot;</code>: 缩短命令行</p>
+<h2 id="Quake-Terminal"><a href="#Quake-Terminal" class="headerlink" title="Quake Terminal"></a>Quake Terminal</h2><p><code>ctrl+shift+t</code>: new tab <br><code>ctrl+shift+w</code>: close tab<br><code>ctrl+page up</code>: go to previous tab<br><code>ctrl+page down</code>: go to next tab</p>
+<h2 id="Ipython-notebook-非Edit模式下"><a href="#Ipython-notebook-非Edit模式下" class="headerlink" title="Ipython notebook (非Edit模式下)"></a>Ipython notebook (非Edit模式下)</h2><p><code>b</code>: add cell below<br><code>a</code>: add cell above<br><code>1</code>: change cell to head 1<br><code>2</code>: change cell to head 2<br><code>Esc</code>: change to command mode<br><code>Enter</code>: change to edit mode<br><code>d+d</code>: delete cell<br><code>Shift+l</code>: show/close line numbers</p>
+<h2 id="Tmux"><a href="#Tmux" class="headerlink" title="Tmux"></a>Tmux</h2><p><code>ctrl+b</code>: pre-fix P<br><code>ctrl+b arrows</code>: move around windows<br><code>ctrl+b %</code>: split window l&amp;r<br><code>ctrl+b ”</code>: split window u&amp;d<br><code>ctrl+b x</code>: kill this split-screen<br><code>ctrl+b &amp;</code>: kill this window<br><code>kill-server</code> : kill all sessions</p>
+<p>For more info check <a href="http://cenalulu.github.io/linux/tmux/" target="_blank" rel="noopener">here</a></p>
+<h2 id="Intellij"><a href="#Intellij" class="headerlink" title="Intellij"></a>Intellij</h2><p><code>ctrl+shift+F7</code>:for a specific variable, highlight them<br><code>F3</code>: navigate among these variables.<br><code>ctrl+w</code>: select word<br><code>Esc</code>: quit highlights.</p>
+<h2 id="pycharm"><a href="#pycharm" class="headerlink" title="pycharm"></a>pycharm</h2><p><code>ctrl+shift+-</code>：折叠<br><code>ctrl+shift++</code>：展开</p>
+<h2 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a>Docker</h2><p><code>$ Docker(rosslee:zhen0miaod)</code>:<br><code>$ sudo docker login</code>: login my docker hub account</p>
+<p><code>$ sudo docker images -a</code>: show all downloaded images<br><code>$ sudo docker rmi &lt;name|id&gt;</code>: delete downloaded image<br><code>$ sudo docker rmi $(docker images -a -q)</code> : remove all images</p>
+<p><code>$ sudo docker ps -a</code>: list all containers<br><code>$ sudo docker rm &lt;name|id&gt;</code>: remove containe</p>
+<h2 id="VS-2013-代码调试"><a href="#VS-2013-代码调试" class="headerlink" title="VS 2013 代码调试"></a>VS 2013 代码调试</h2><p>设置断点 -&gt; 按<code>F5</code>开始调试 -&gt; 在菜单栏中点击<code>degug</code> -&gt; <code>Windows</code> -&gt; <code>autos</code>。如此便可以看到每个变量的值随着调试的过程动态改变。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/" data-id="ckatsrgtg0067xqfz8r5egm0n" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Linux安装cuDNN" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/" class="article-date">
@@ -1174,362 +1434,6 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
 
 
   
-    <article id="post-LeetCode-方法论-map-set-一" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/" class="article-date">
-  <time datetime="2019-12-18T05:53:03.000Z" itemprop="datePublished">2019-12-18</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/">LeetCode-方法论-map&amp;set-一</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>594, 349, 350, 1, 290, 205, 451, 202, </p>
-<p>map包括有序map和无序map，set也分为有序set和无序set。<br>map由键值构成，set中元素无重复。</p>
-<p>常用操作: <code>find()</code>, <code>insert()</code>, <code>erase()</code>, <code>change()</code>, <code>search()</code>,</p>
-<h1 id="594-最长Harmonius-子序列"><a href="#594-最长Harmonius-子序列" class="headerlink" title="#594 最长Harmonius 子序列"></a>#594 最长Harmonius 子序列</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: [1,3,2,2,5,2,3,7]</span><br><span class="line">Output: 5</span><br><span class="line">Explanation: The longest harmonious subsequence is [3,2,2,2,3].</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路：<br>  1) 第一步 将数组元素作为key，对应出现的次数作为val，放入map中。如下：</p>
-<pre><code>map | 1st | 2nd | 3rd | 4th| 5th 
--|-|-|-|-|-
-key | 1 | 2 | 3 | 5 | 7 |
-val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
-<pre><code>对于key=1，如果key=2存在，则子序列长度为： key=1的val + key=2的val： 1+3=4
-对于key=2，如果key=3存在，则子序列长度为： key=2的val + key=3的val： 3+2=5
-对于key=3，如果key=4不存在，continue
-对于key=5，如果key=6不存在，continue
-对于key=7，如果key=8不存在，continue
-最终返回最大值 5</code></pre></li>
-<li><p>实现如下：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findLHS</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// create map</span></span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; item: nums)</span><br><span class="line">        mp[item]++;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// main process</span></span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> itr = mp.begin(); itr!=mp.end(); itr++)&#123;</span><br><span class="line">        <span class="keyword">if</span> ( mp.find(itr-&gt;first + <span class="number">1</span>) != mp.end())&#123;</span><br><span class="line">            res = max(res, mp[itr-&gt;first] + mp[itr-&gt;first+<span class="number">1</span>]);  <span class="comment">// update max</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="349-Intersection-Of-Two-Arrays"><a href="#349-Intersection-Of-Two-Arrays" class="headerlink" title="#349 Intersection Of Two Arrays"></a>#349 Intersection Of Two Arrays</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: nums1 &#x3D; [4,9,5], nums2 &#x3D; [9,4,9,8,4]</span><br><span class="line">Output: [9,4]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<pre><code>第一步：将nums1中元素放入set中
-第二步：从set中查找nums2中每个元素，
-    如果找到，就放入结果set中，如此一来，结果中也没有重复元素。
-    如果没找到，continue。</code></pre></li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; intersection(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2) &#123;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">set</span>&lt;<span class="keyword">int</span>&gt; record(nums1.begin(), nums1.end());</span><br><span class="line"></span><br><span class="line">    <span class="built_in">set</span>&lt;<span class="keyword">int</span>&gt; resSet;</span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums2.size(); i++)</span><br><span class="line">        <span class="keyword">if</span> (record.find(nums2[i]) != record.end()) <span class="comment">//in record</span></span><br><span class="line">            resSet.insert(nums2[i]);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;( resSet.begin(), resSet.end() );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="350-INtersection-Of-Two-Arrays-II"><a href="#350-INtersection-Of-Two-Arrays-II" class="headerlink" title="#350 INtersection Of Two Arrays II"></a>#350 INtersection Of Two Arrays II</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: nums1 &#x3D; [1,2,2,1], nums2 &#x3D; [2,2]</span><br><span class="line">Output: [2,2]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<pre><code>第一步：将nums1中元素放入map中
-第二步：遍历num2中每个元素：
-    如果当前元素在map中的频数&gt;0, 那么在结果vector中加入这个元素，同时map中这个元素的频数-1.
-    如果当前元素在map中的频数==0，说明这个元素不是共有的，continue。</code></pre></li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; intersect(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2) &#123;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; record;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums1.size(); i++)</span><br><span class="line">        record[nums1[i]] ++;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; resV;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;nums2.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (record[nums2[i]] &gt; <span class="number">0</span>)&#123;</span><br><span class="line">            resV.push_back(nums2[i]);</span><br><span class="line">            record[nums2[i]] -- ;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> resV;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="1-Two-Sum"><a href="#1-Two-Sum" class="headerlink" title="#1 Two Sum"></a>#1 Two Sum</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Given nums &#x3D; [2, 7, 11, 15], target &#x3D; 9,</span><br><span class="line"></span><br><span class="line">Because nums[0] + nums[1] &#x3D; 2 + 7 &#x3D; 9,</span><br><span class="line">return [0, 1].</span><br><span class="line"></span><br><span class="line">NOTE:You may assume that each input would have exactly one solution, </span><br><span class="line">and you may not use the same element twice.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<pre><code>遍历nums中所有元素nums[i]：
-    如果:map中没有找到target-nums[i]这个值，就把{nums[i], i}放入map中；
-    如果:map中找到了target-nums[i]，那么当前值index和target-nums[i]的index放入结果中。done</code></pre></li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; twoSum(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> target)&#123;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; record;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;nums.size();i++)&#123;</span><br><span class="line">        <span class="comment">// nums[i] is not in the record</span></span><br><span class="line">        <span class="keyword">if</span> (record.find(target - nums[i]) == record.end())&#123;</span><br><span class="line">            record[nums[i]] = i;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;<span class="comment">// nums[i] is in the record</span></span><br><span class="line">            <span class="keyword">int</span> res[<span class="number">2</span>] = &#123;record[target-nums[i]], i&#125;;</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(res, res+<span class="number">2</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> invalid_argument(<span class="string">"NO SOLUTION!"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><font color="green" size="5">敲黑板</font>这个问题虽然简单，但有两点值得注意：<br><font color="red" size="4">元素逐个放入map</font>，<font color="red" size="4">map的value为index</font>。相同的技巧，看#290.</p>
-</li>
-</ul>
-<h1 id="290-Word-Pattern"><a href="#290-Word-Pattern" class="headerlink" title="#290 Word Pattern"></a>#290 Word Pattern</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: pattern &#x3D; &quot;abba&quot;, str &#x3D; &quot;dog cat cat dog&quot;</span><br><span class="line">Output: true</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑 (不容易想到)</p>
-<p>  要使用c++ 中 map容器的一个性质：”空的map中任何key对应的value都是0”。</p>
-<pre><code>第一步：为两个input分别声明map。
-第二步：同步遍历pattern和str每一个元素：
-    如果 两个map的key对应的value（index）相同，赋值给两个value为index+1;
-    否则 返回false
-最终判断：最终的循环变量i是否等于input 的长度。</code></pre></li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">wordPattern</span><span class="params">(<span class="built_in">string</span> pattern, <span class="built_in">string</span> str)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mp1;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt; mp2;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从一个string中逐个读取单词</span></span><br><span class="line">    <span class="function"><span class="built_in">istringstream</span> <span class="title">in</span><span class="params">(str)</span></span>;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>, n = pattern.size();</span><br><span class="line">    <span class="keyword">for</span> (<span class="built_in">string</span> word; in &gt;&gt; word; ++i) &#123;</span><br><span class="line">        <span class="keyword">if</span> (i == n || mp1[pattern[i]] != mp2[word])</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        mp2[word] = i + <span class="number">1</span>;</span><br><span class="line">        mp1[pattern[i]] = i + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> i == n;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>细节：从一个string中逐个读取单词。使用了c++中map的特性，考虑其他更通用的方法。</p>
-<h1 id="205-Isomorphic-Strings"><a href="#205-Isomorphic-Strings" class="headerlink" title="#205 Isomorphic Strings"></a>#205 Isomorphic Strings</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input: s &#x3D; &quot;egg&quot;, t &#x3D; &quot;add&quot;</span><br><span class="line">Output: true</span><br><span class="line"></span><br><span class="line">Input: s &#x3D; &quot;foo&quot;, t &#x3D; &quot;bar&quot;</span><br><span class="line">Output: false</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  思路与#290相同。用图示表示出来：</p>
-<p>  以 s = “egg”, t = “add” 为例：</p>
-  <div align="center"><img src="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/205-1.png" width="500"></div>
-
-<p>  以 s = “egg”, t = “ade” 为例：</p>
-  <div align="center"><img src="/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/205-2.png" width="500"></div>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isIsomorphic</span><span class="params">(<span class="built_in">string</span> s, <span class="built_in">string</span> t)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mpS;</span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mpT;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;s.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (mpS[s[i]] != mpT[t[i]])</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        mpS[s[i]]=i+<span class="number">1</span>;</span><br><span class="line">        mpT[t[i]]=i+<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p><font color="green" size="5">敲黑板</font>逐个放入map</p>
-<h1 id="451-Sort-Charactors-By-Frequency"><a href="#451-Sort-Charactors-By-Frequency" class="headerlink" title="#451 Sort Charactors By Frequency"></a>#451 Sort Charactors By Frequency</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">&quot;aBbbccc&quot;</span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line">&quot;cccbbaB&quot;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  很直接</p>
-<pre><code>第一步：将string s中元素放入map中，并且把键值对作为元素翻入vector中。
-第二步：按value的大小从大到小排序。
-第三步：将vector中的元素放入结果string中。</code></pre></li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cmpByValue</span> &#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">const</span> pair&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt;&amp; l, <span class="keyword">const</span> pair&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt;&amp; r)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> l.second &gt; r.second;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">frequencySort</span><span class="params">(<span class="built_in">string</span> s)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">string</span> res;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt; mp;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;s.length(); i++)</span><br><span class="line">        mp[s[i]] ++;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;pair&lt;<span class="keyword">char</span>, <span class="keyword">int</span>&gt;&gt; mapValue(mp.begin(), mp.end());</span><br><span class="line">    sort(mapValue.begin(), mapValue.end(), cmpByValue());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第三步</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;mapValue.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;mapValue[i].second; j++)&#123;</span><br><span class="line">            res+=mapValue[i].first;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="202-Happy-Number"><a href="#202-Happy-Number" class="headerlink" title="#202 Happy Number"></a>#202 Happy Number</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Input: 19</span><br><span class="line">Output: true</span><br><span class="line">Explanation: </span><br><span class="line">1**2 + 9**2 &#x3D; 82</span><br><span class="line">8**2 + 2**2 &#x3D; 68</span><br><span class="line">6**2 + 8**2 &#x3D; 100</span><br><span class="line">1**2 + 0**2 + 0**2 &#x3D; 1</span><br><span class="line"></span><br><span class="line">Those numbers for which this process ends 1 are happy numbers.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  过程如描述中的Explanation。要注意的是，对于不是happy number的数，防止无限循环，将每一步的结果放入set中（不重复）。</p>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(n!=<span class="number">0</span>)&#123;</span><br><span class="line">        res+=<span class="built_in">pow</span>(n % <span class="number">10</span>,<span class="number">2</span>);</span><br><span class="line">        n/=<span class="number">10</span>;   <span class="comment">// 每次循环，从高高位到低位得到每一位的数值。</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isHappy</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">unordered_set</span>&lt;<span class="keyword">int</span>&gt; record;</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (n ==<span class="number">1</span>) <span class="keyword">return</span> <span class="literal">true</span>; </span><br><span class="line">        </span><br><span class="line">        record.insert(n);</span><br><span class="line">        n = func(n);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (record.find(n) != record.end())</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/18/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%B8%80/" data-id="ckatsrgu3007fxqfzdk8nhnys" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-Nsight-Eclipse-Edition" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/" class="article-date">
-  <time datetime="2019-12-10T04:13:56.000Z" itemprop="datePublished">2019-12-10</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/10/CUDA-Nsight-Eclipse-Edition/">CUDA-Nsight Eclipse Edition</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Nsight 是一个开发CUDA程序的IDE和debug工具。</p>
-<ol>
-<li><p>使用Nsight打开samples程序。<br>选择“new”，“CUDA C/C++ Project”,给<code>project</code>命名，<code>Project type</code> 选择”Import CUDA Sample“。接下来从你的机器的<code>samples install location</code>中选择想要打开的project。如果机器上有CUDA-enabled GPU，接下来的设置默认就好。此时可以看到，<code>.cu</code>文件存在于project下的<code>src</code>文件中。这表示，如果自己新建的project也应个先create一个<code>src</code>文件夹，来存放所有源文件。</p>
-</li>
-<li><p>使用Nsight创建自己的project。<br>如上述，只需在<code>project type</code>选择“Empty Project”。然后在这个project中 新建一个“Source Folder”，取名为<code>src</code>。最后就可以把所有的 <code>.cu</code>, <code>.cuh</code>, <code>.cpp</code>, <code>.h</code> 等源码文件在src中创建。</p>
-</li>
-</ol>
-<p>Nsight 的强大之处在于debug。它可以告诉你你的程序使用了多少<code>SM</code>，多少<code>warp</code>，多少<code>registers</code>，以及每个<code>register</code>中所存放的内容，<code>SM</code>的利用率，硬件基本信息等等。除了debug，Nsight还集成了<code>visual profiler</code>的功能，即可视化程序每个部分的执行时间，以便找到程序可优化之处：<br>以如下简单code为例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">int</span> N)</span></span>&#123;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> idd=tid; idd&lt;N; idd+=stride)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"hello from thread: %d\n"</span>, idd);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	kernel&lt;&lt;&lt;<span class="number">2</span>, <span class="number">12</span>&gt;&gt;&gt;(<span class="number">36</span>);</span><br><span class="line">	cudaDeviceSynchronize(); <span class="comment">//同步Device和Host，即，device 执行完后再执行Host</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"hello from Host\n"</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>即我有36个元素要处理，使用32个线程，并且32个线程分配到1个block中。当启用debug时，可以得到Device端的信息。<br>从硬件角度看：</p>
-<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/01.png" width="700"> </div>
-可以看到我的GPU编号为0，共有5个SM，使用了2个SM，每个SM都有64分warp，只使用了1个warp。
-
-<p>具体看一个SM中的一个warp。一个warp有32个线程，此处只使用了12个。</p>
-<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/02.png" width="700"> </div>
-
-<p>从逻辑角度看：启用了两个block，分别在两个SM中。</p>
-<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/03.png" width="700"> </div>
-
-<p>每个block使用12个线程。</p>
-<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/04.png" width="700"> </div>
-
-<p>另外Nsight还会给出Host的信息，如下：</p>
-<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/05.png" width="700"> </div>
-
-<p>以下是GPU中registers中的信息：</p>
-<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/06.png" width="700"> </div>
-
-<p>以及dissambly信息：</p>
-<div align="center"> <img src="/2019/12/10/CUDA-Nsight-Eclipse-Edition/07.png" width="700"> </div>
-
-<p>当生成可执行文件后，便可以使用profiler测程序的性能。</p>
-<hr>
-<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/10/CUDA-Nsight-Eclipse-Edition/" data-id="ckatsrgqz0009xqfz0g0v6qvc" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-project-review" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/09/CUDA-project-review/" class="article-date">
-  <time datetime="2019-12-09T02:49:07.000Z" itemprop="datePublished">2019-12-09</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/09/CUDA-project-review/">CUDA-project review</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇blog记录了项目中使用或未使用到的CUDA知识点。</p>
-<ul>
-<li><p><code>__constant__ float d_arr[10]</code> 在constant memory中开辟10个空间。 </p>
-</li>
-<li><p><code>cudaMemcpyToSymbol(d_arr, h_arr, sizeof(h_arr))</code> 将Host中的数据复制进Device中所开辟的空间。</p>
-</li>
-<li><p><code>__device__ float d_arr[10][5]</code> 在Global memory中开辟空间。</p>
-</li>
-<li><p><code>cudaMemcpyFromSymbol(h_arr,d_arr, sizeof(d_arr))</code> 将Device中的数据复制到Host中所开辟的空间。</p>
-</li>
-<li><p>在<code>local memory</code>中开辟空间，lifetime为threads的周期：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">float</span> tmp[<span class="number">7</span>];</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>使用<code>registers</code>而非<code>local memory</code>，当所需数据大小较小，且数量固定时将<code>float a[3]</code> 改写成<code>float a0,a1,a2</code>.</p>
-</li>
-<li><p>使用<code>grid-stride-loop</code>。其中idd需要根据实际问题计算得到:</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = ...;</span><br><span class="line">    <span class="keyword">int</span> stride = ...;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> idd = tid; idd&lt;N; idd+=stride)&#123;</span><br><span class="line">        <span class="comment">// idd is the thread id in this loop;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  使用grid-stride-loop 后，将kernel函数改为<code>&lt;&lt;&lt;1,1&gt;&gt;&gt;</code>，并且在适当的位置加上打印语句。便于调试。</p>
-</li>
-<li><p>实现时，在cuda相关的 语句前加上<code>checkCudaError()</code>.这个函数要自己实现。</p>
-</li>
-<li><p>在调用跟kernel函数后，加上<code>checkCudaError(cudaGetLatError())</code>;</p>
-</li>
-<li><p>根据当前问题找example中可用内容。</p>
-</li>
-<li><p>实验函数，先用笔在纸上实现，定义内个变量的含义，左后写code。</p>
-</li>
-<li><p>在一个较大的实现中，保证一段code一个功能，这一段的实现尽量不要使用其他段code的变量，尽量使每段code独立化。</p>
-</li>
-<li><p><code>pinned memory</code> VS <code>pageable memory</code>.</p>
-</li>
-<li><p>deviceQuery 轻量级的方法。</p>
-</li>
-<li><p>协作组</p>
-</li>
-<li><p>对于 代操作数据为二维或三维点，一个技巧是，为了尽可能减少PCIe的使用，线程id天然可以表示成数据点的坐标：<code>(idx,idy)&lt;=&gt;(x,y)</code>.</p>
-</li>
-<li><p>因为Device段不能动态分配空间，所以当实现摸个算法的CPU版本时，要使用stack内存，开辟足够多的空间。</p>
-</li>
-<li><p><code>cudaMallocPitch()</code>;</p>
-</li>
-<li><p><code>cudaMemSet2D()</code>;</p>
-</li>
-<li><p><code>std::bitset&lt;16&gt; foo</code>;</p>
-</li>
-<li><p>角度与弧度的转化：<code>1°=π/180,1rad=(180/π)°</code></p>
-</li>
-<li><p>choose device</p>
-</li>
-<li><p>multiple GPUs</p>
-</li>
-<li><p>使用event给code计时。或自己写计时类。</p>
-</li>
-<li><p>Unified Memory.</p>
-</li>
-<li><p>循环展开，减少操作。</p>
-</li>
-<li><p>注意CPU code中不可并行的部分，如下：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (tid &lt; N)&#123;</span><br><span class="line">    bb[tid+<span class="number">1</span>] = count + bb[tid];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  上面的指令只能串行执行。</p>
-</li>
-</ul>
-<hr>
-<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/09/CUDA-project-review/" data-id="ckatsrgr9000txqfzen5r0xyo" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1545,7 +1449,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">9</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1574,7 +1478,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1587,23 +1491,23 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
       <ul>
         
           <li>
+            <a href="/2020/05/31/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/31/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/">anaconda 虚拟环境</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
           </li>
         
           <li>
             <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-如何使用-lenet模型</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/">caffe 安装及trouble shooting</a>
           </li>
         
       </ul>
