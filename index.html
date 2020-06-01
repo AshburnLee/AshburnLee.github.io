@@ -64,6 +64,179 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-caffe-sigmoid-cross-entropy-loss-layer类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/" class="article-date">
+  <time datetime="2020-06-01T22:46:30.000Z" itemprop="datePublished">2020-06-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="sigmoid-cross-entropy-loss-layer类"><a href="#sigmoid-cross-entropy-loss-layer类" class="headerlink" title="sigmoid_cross_entropy_loss_layer类"></a>sigmoid_cross_entropy_loss_layer类</h1><p>头文件： <code>./include/caffe/layers/sigmoid_cross_entropy_loss_layer.hpp</code><br>CPU实现： <code>./src/caffe/layers/sigmoid_cross_entropy_loss_layer.cpp</code><br>GPU实现： <code>./src/caffe/layers/sigmoid_cross_entropy_loss_layer.cu</code></p>
+<h2 id="所需要基本操作的CPU和GPU实现："><a href="#所需要基本操作的CPU和GPU实现：" class="headerlink" title="所需要基本操作的CPU和GPU实现："></a>所需要基本操作的CPU和GPU实现：</h2><p><code>bottom_diff = sigmoid_output_data - target</code> 的实现如下</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CPU</span></span><br><span class="line">caffe_sub(count, sigmoid_output_data, target, bottom_diff):</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对应的GPU</span></span><br><span class="line">caffe_copy(count, sigmoid_output_data, bottom_diff);</span><br><span class="line">caffe_gpu_axpy(count, Dtype(<span class="number">-1</span>), target, bottom_diff);</span><br></pre></td></tr></table></figure>
+
+<p><code>bottom_diff</code> 中每个元素乘以<code>loss_weight</code>， 共操作<code>count</code>个元素。其实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CPU</span></span><br><span class="line">caffe_scal(count, loss_weight, bottom_diff);</span><br><span class="line"><span class="comment">// GPU</span></span><br><span class="line">caffe_gpu_scal(count, loss_weight, bottom_diff);</span><br></pre></td></tr></table></figure>
+
+<p>上述函数分别使用了<code>cBLAS</code> 和<code>cuBlas</code>两个库函数。<code>sigmoid_output_data</code>是前向传播的结果。上述两步其实是反向传播的过程，最终将结果写入<code>bottom_diff</code>中，它是<code>Blob</code>的一部分，会随着数据的走向继续传播下去。</p>
+<h2 id="后向传播"><a href="#后向传播" class="headerlink" title="后向传播"></a>后向传播</h2><ol>
+<li><p>CPU</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Backward_cpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line"><span class="keyword">if</span> (propagate_down[<span class="number">1</span>]) &#123;</span><br><span class="line">	LOG(FATAL) &lt;&lt; <span class="keyword">this</span>-&gt;type()</span><br><span class="line">			&lt;&lt; <span class="string">" Layer cannot backpropagate to label inputs."</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">	<span class="comment">// First, compute the diff</span></span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">	<span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;cpu_data();</span><br><span class="line">	<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line">	Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line">	caffe_sub(count, sigmoid_output_data, target, bottom_diff);</span><br><span class="line">	<span class="comment">// Zero out gradient of ignored targets.</span></span><br><span class="line">	<span class="keyword">if</span> (has_ignore_label_) &#123;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</span><br><span class="line">			<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">			<span class="keyword">if</span> (target_value == ignore_label_) &#123;</span><br><span class="line">				bottom_diff[i] = <span class="number">0</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Scale down gradient</span></span><br><span class="line">	Dtype loss_weight = top[<span class="number">0</span>]-&gt;cpu_diff()[<span class="number">0</span>] / normalizer_;</span><br><span class="line">	caffe_scal(count, loss_weight, bottom_diff);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 因为是在CPU端，与GPU无关，所以上述code中没有<code>gpu_data</code>或<code>gpu_diff</code>。<br> 主要操作，取数据，执行操作：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 取Blob数据</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"><span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;cpu_data();</span><br><span class="line"><span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line">Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line"><span class="comment">// 如上述操作</span></span><br><span class="line">caffe_sub(count, sigmoid_output_data, target, bottom_diff);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>GPU</p>
+<p> 与cpu相似：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Backward_gpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">1</span>]) &#123;</span><br><span class="line">	LOG(FATAL) &lt;&lt; <span class="keyword">this</span>-&gt;type()</span><br><span class="line">				&lt;&lt; <span class="string">" Layer cannot backpropagate to label inputs."</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">		<span class="comment">// First, compute the diff</span></span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">		<span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;gpu_data();</span><br><span class="line">		<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;gpu_data();</span><br><span class="line">		Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">		caffe_copy(count, sigmoid_output_data, bottom_diff);</span><br><span class="line">		caffe_gpu_axpy(count, Dtype(<span class="number">-1</span>), target, bottom_diff);</span><br><span class="line">		<span class="comment">// Zero out gradient of ignored targets.</span></span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_) &#123;</span><br><span class="line">			<span class="comment">// NOLINT_NEXT_LINE(whitespace/operators)</span></span><br><span class="line">			SigmoidCrossEntropyLossIgnoreDiffGPU&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count),</span><br><span class="line">			CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(count, ignore_label_, target, bottom_diff);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// Scale down gradient</span></span><br><span class="line">		Dtype loss_weight = top[<span class="number">0</span>]-&gt;cpu_diff()[<span class="number">0</span>] / normalizer_;</span><br><span class="line">		caffe_gpu_scal(count, loss_weight, bottom_diff);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 加上kernel函数，其作用是将不需要计算梯度的位置设为零，与CPU含义相同：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidCrossEntropyLossIgnoreDiffGPU</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> count,</span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> ignore_label, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> Dtype* target, </span></span></span><br><span class="line"><span class="function"><span class="params">						Dtype* diff)</span> </span>&#123;</span><br><span class="line">		CUDA_KERNEL_LOOP(i, count) &#123;</span><br><span class="line">			<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">			<span class="keyword">if</span> (target_value == ignore_label) &#123;</span><br><span class="line">				diff[i] = <span class="number">0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="前向传播"><a href="#前向传播" class="headerlink" title="前向传播"></a>前向传播</h2><p>头文件中的成员属性：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 一个SigmoidLayer类对象指针，预测值到概率值的映射</span></span><br><span class="line"><span class="built_in">shared_ptr</span>&lt;SigmoidLayer&lt;Dtype&gt; &gt; sigmoid_layer_;</span><br><span class="line"><span class="comment">/// 接收SigmoidLayer的输出.</span></span><br><span class="line"><span class="built_in">shared_ptr</span>&lt;Blob&lt;Dtype&gt; &gt; sigmoid_output_;</span><br><span class="line"><span class="comment">/// bottom vector holder to call the underlying SigmoidLayer::Forward</span></span><br><span class="line"><span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt; sigmoid_bottom_vec_;</span><br><span class="line"><span class="comment">/// top vector holder to call the underlying SigmoidLayer::Forward</span></span><br><span class="line"><span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt; sigmoid_top_vec_;</span><br><span class="line"><span class="comment">/// Whether to ignore instances with a certain label.</span></span><br><span class="line"><span class="keyword">bool</span> has_ignore_label_;</span><br><span class="line"><span class="comment">/// The label indicating that an instance should be ignored.</span></span><br><span class="line"><span class="keyword">int</span> ignore_label_;</span><br><span class="line"><span class="comment">/// How to normalize the loss.</span></span><br><span class="line">LossParameter_NormalizationMode normalization_;</span><br><span class="line">Dtype normalizer_;</span><br><span class="line"><span class="keyword">int</span> outer_num_, inner_num_;</span><br></pre></td></tr></table></figure>
+
+<p>先执行forward操作：<code>sigmoid_layer_-&gt;Forward(_, _)</code> 。其参数<code>sigmoid_bottom_vec_</code>和<code>sigmoid_top_vec_</code>是两个该类的成员变量，其值随操作的执行而改变，这里要改变的是前者，这个实现在源码中的成员函数<code>LayerSetUp()</code>。</p>
+<p><code>sigmoid_layer_</code>也是成员变量，其定义：<code>shared_ptr&lt;SigmoidLayer&lt;Dtype&gt; &gt; sigmoid_layer_;</code>。CPU和GPU实现见下：</p>
+<ol>
+<li><p>CPU</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Forward_cpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	<span class="comment">// The forward pass computes the sigmoid outputs.</span></span><br><span class="line">	<span class="comment">// 1. Forward计算sigmoid 的输出，并且取数据</span></span><br><span class="line">	sigmoid_bottom_vec_[<span class="number">0</span>] = bottom[<span class="number">0</span>];</span><br><span class="line">	sigmoid_layer_-&gt;Forward(sigmoid_bottom_vec_, sigmoid_top_vec_);</span><br><span class="line">	<span class="comment">// Compute the loss (negative log likelihood)</span></span><br><span class="line">	<span class="comment">// Stable version of loss computation from input data</span></span><br><span class="line">	<span class="keyword">const</span> Dtype* input_data = bottom[<span class="number">0</span>]-&gt;cpu_data();</span><br><span class="line">	<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. 计算 对数似然</span></span><br><span class="line">	<span class="keyword">int</span> valid_count = <span class="number">0</span>;</span><br><span class="line">	Dtype loss = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bottom[<span class="number">0</span>]-&gt;count(); ++i) &#123;</span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_ &amp;&amp; target_value == ignore_label_) &#123;</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		loss -= input_data[i] * (target[i] - (input_data[i] &gt;= <span class="number">0</span>)) -</span><br><span class="line">			<span class="built_in">log</span>(<span class="number">1</span> + <span class="built_in">exp</span>(input_data[i] - <span class="number">2</span> * input_data[i] * (input_data[i] &gt;= <span class="number">0</span>)));</span><br><span class="line">		++valid_count;</span><br><span class="line">	&#125;</span><br><span class="line">	normalizer_ = get_normalizer(normalization_, valid_count);</span><br><span class="line">	top[<span class="number">0</span>]-&gt;mutable_cpu_data()[<span class="number">0</span>] = loss / normalizer_;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>再看<code>sigmoid_layer_-&gt;Forward(_, _);</code>，<code>SigmoidLayer</code>类并没有<code>Formard()</code>方法，所以此方法一定是从其父类继承而来。看源码找到继承顺序：<code>SigmoidLayer::NeuronLayer::Layer</code>，所以这里的<code>Forward()</code>是<code>Layer</code>类的方法，祥看<code>Layer.hpp</code>。</p>
+<ol start="2">
+<li><p>GPU</p>
+<p> 与CPU类似，将CPU中的for循环由kernel函数代替：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidCrossEntropyLossForwardGPU</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> nthreads,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">const</span> Dtype* input_data, <span class="keyword">const</span> Dtype* target, Dtype* loss,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">const</span> <span class="keyword">bool</span> has_ignore_label_, <span class="keyword">const</span> <span class="keyword">int</span> ignore_label_,</span></span></span><br><span class="line"><span class="function"><span class="params">		Dtype* counts)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(i, nthreads) &#123;</span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_ &amp;&amp; target_value == ignore_label_) &#123;</span><br><span class="line">			loss[i] = <span class="number">0</span>;</span><br><span class="line">			counts[i] = <span class="number">0</span>;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			loss[i] = input_data[i] * (target[i] - (input_data[i] &gt;= <span class="number">0</span>)) -</span><br><span class="line">				<span class="built_in">log</span>(<span class="number">1</span> + <span class="built_in">exp</span>(input_data[i] - <span class="number">2</span> * input_data[i] *</span><br><span class="line">				(input_data[i] &gt;= <span class="number">0</span>)));</span><br><span class="line">			counts[i] = <span class="number">1</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> GPU中的前传播：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Forward_gpu()&#123;...&#125;</span><br></pre></td></tr></table></figure>
+<p> 函数体省略，不过在源码中有一点提出：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Since this memory is not used for anything, we use it here to avoid having</span></span><br><span class="line"><span class="comment">// to allocate new GPU memory to accumulate intermediate results.</span></span><br><span class="line">Dtype* loss_data = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">Dtype* count_data = bottom[<span class="number">1</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line"><span class="comment">// Clear scratch memory to prevent interfering with backward (see #6202).</span></span><br><span class="line">caffe_gpu_set(bottom[<span class="number">0</span>]-&gt;count(), Dtype(<span class="number">0</span>), bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff());</span><br><span class="line">caffe_gpu_set(bottom[<span class="number">1</span>]-&gt;count(), Dtype(<span class="number">0</span>), bottom[<span class="number">1</span>]-&gt;mutable_gpu_diff());</span><br></pre></td></tr></table></figure>
+
+<p> 这是CPU版本中没有的，因为kernel函数中需要传入对象数组，但是这部分的地址没有被开辟，所以为了避免在GPU上为中间结果开辟空间，所以使用Blob的暂时没有使用到的部分，作为临时存储空间，只不过，函数结束后要清理这部分空间。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p> 这个类除了上述的方法，还有其他方法详见源文件。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/" data-id="ckax32ye80002lcfz8wrwhkd6" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-caffe-sigmoidLayer类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/" class="article-date">
+  <time datetime="2020-06-01T22:44:29.000Z" itemprop="datePublished">2020-06-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="sigmoid-layers类"><a href="#sigmoid-layers类" class="headerlink" title="sigmoid_layers类"></a>sigmoid_layers类</h1><p>这个类的所有内容</p>
+<p>头文件： <code>./include/caffe/layers/sigmoid_layer.hpp</code><br>CPU实现： <code>./src/caffe/layers/sigmoid_layer.cpp</code><br>GPU实现：<code>./src/caffe/layers/sigmoid_layer.cu</code></p>
+<p>对于这个类的官方文档<a href="http://caffe.berkeleyvision.org/tutorial/net_layer_blob.html" target="_blank" rel="noopener">见此</a></p>
+<h2 id="头文件sigmoid-layer-hpp中包含"><a href="#头文件sigmoid-layer-hpp中包含" class="headerlink" title="头文件sigmoid_layer.hpp中包含"></a>头文件sigmoid_layer.hpp中包含</h2><ol>
+<li>继承自NeuronLayer::Layer类的构造函数：SigmoidLayer()</li>
+<li>返回这个列的名字：type()</li>
+<li>前先计算的CPU声明：Forward_cpu()和GPU声明：Forward_gpu()</li>
+<li>后传计算的CPU声明：Backward_cpu()和GPU声明：Backward_gpu()</li>
+</ol>
+<h2 id="前向传播"><a href="#前向传播" class="headerlink" title="前向传播"></a>前向传播</h2><ol>
+<li><p>CPU</p>
+<p> 前向计算是将bottom数据经过sigmoid函数得到top数据。所以其基本操作是sigmoid()。CPU实现：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Dtype <span class="title">sigmoid</span><span class="params">(Dtype x)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0.5</span> * <span class="built_in">tanh</span>(<span class="number">0.5</span> * x) + <span class="number">0.5</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 有了sigmoid()，前向传播计算如下：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Forward_cpu(<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	Dtype* bottom_data = bottom[<span class="number">0</span>]-&gt;cpu_data();</span><br><span class="line">	Dtype* top_data = top[<span class="number">0</span>]-&gt;mutable_cpu_data();</span><br><span class="line">	<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</span><br><span class="line">		top_data[i] = sigmoid(bottom_data[i]);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> Blob是caffe中最小的数据载体，Blob的定义见Blob的笔记博客。</p>
+</li>
+<li><p>GPU<br> sigmoid()对应的GPU实现：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidForward</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> n, <span class="keyword">const</span> Dtype* in, Dtype* out)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(index, n) &#123;</span><br><span class="line">		out[index] = <span class="number">0.5</span> * <span class="built_in">tanh</span>(<span class="number">0.5</span> * in[index]) + <span class="number">0.5</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 其中<code>CUDA_KERNEL_LOOP(index, n)</code>给定线程id，并且将线程映射到数据上，实现数据并行。具体细节见关于CUDA的笔记博客。<br> 暂时没有找到CUDA_KERNEL_LOOP()源码，不过可以肯定的是，这个操作中一定要先得到所使用机器GPU的相关硬件信息，使得程序可以在不同的GPU上运行。</p>
+<p> 同样的，GPU的前行传播：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Forward_gpu(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, <span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	Dtype* bottom_data = bottom[<span class="number">0</span>]-&gt;gpu_data();</span><br><span class="line">	Dtype* top_data = top[<span class="number">0</span>]-&gt;mutable_gpu_data();</span><br><span class="line">	<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"></span><br><span class="line">	SigmoidForward&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(</span><br><span class="line">	count, bottom_data, top_data);</span><br><span class="line">	CUDA_POST_KERNEL_CHECK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 同样的，为了兼容所有GPU，<code>&lt;&lt;&lt;CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;</code>中指明了当下机器的可用block数目和每block可用threads数目。</p>
+<p> 对于像sigmoid简单的算子，只管上看，GPU实现其实就是将CPU实现的最内层的循环去掉，用并行执行的kernel函数替代。</p>
+</li>
+</ol>
+<h2 id="后向传播"><a href="#后向传播" class="headerlink" title="后向传播"></a>后向传播</h2><ol>
+<li><p>CPU</p>
+<p> 根据sigmoid 反向传播公式可以很容易写出如下：{<font color="red" size="4">将code中去掉的const都加上</font>}</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Backward_cpu(</span><br><span class="line">							<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top,</span><br><span class="line">							<span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">							<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">		Dtype* top_data = top[<span class="number">0</span>]-&gt;cpu_data();</span><br><span class="line">		Dtype* top_diff = top[<span class="number">0</span>]-&gt;cpu_diff();</span><br><span class="line">		Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line">		<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</span><br><span class="line">			<span class="keyword">const</span> Dtype sigmoid_x = top_data[i];</span><br><span class="line">			bottom_diff[i] = top_diff[i] * sigmoid_x * (<span class="number">1.</span> - sigmoid_x);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 其中<code>top_diff[i]</code>是与前行传播的输出有关的数值。</p>
+</li>
+<li><p>GPU</p>
+<p> 对于GPU实现，只需将上述code 中最内层循环用kernel函数代替，所以要实现kernel函数：{<font color="red" size="4">将code中去掉的const都加上</font>}</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidBackward</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> n, </span></span></span><br><span class="line"><span class="function"><span class="params">							Dtype* in_diff,</span></span></span><br><span class="line"><span class="function"><span class="params">							Dtype* out_data, </span></span></span><br><span class="line"><span class="function"><span class="params">							Dtype* out_diff)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(index, n) &#123;</span><br><span class="line">	Dtype sigmoid_x = out_data[index];</span><br><span class="line">		out_diff[index] = in_diff[index] * sigmoid_x * (<span class="number">1</span> - sigmoid_x);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 替换循环：{<font color="red" size="4">将code中去掉的const都加上</font>}</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Backward_gpu(<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top,</span><br><span class="line">							<span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">							<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">		Dtype* top_data = top[<span class="number">0</span>]-&gt;gpu_data();</span><br><span class="line">		Dtype* top_diff = top[<span class="number">0</span>]-&gt;gpu_diff();</span><br><span class="line">		Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">		<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"></span><br><span class="line">		SigmoidBackward&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(</span><br><span class="line">			count, top_diff, top_data, bottom_diff);</span><br><span class="line">		CUDA_POST_KERNEL_CHECK;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 上述很直接。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/" data-id="ckax32ycl0000lcfzhejk7s23" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-加速pip-install" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/" class="article-date">
@@ -90,60 +263,19 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="加速pip-install"><a href="#加速pip-install" class="headerlink" title="加速pip install"></a>加速pip install</h2><p><code>pip</code>中更改镜像：修改<code>~/.pip/pip.conf</code>文件</p>
+        <h2 id="加速pip-install"><a href="#加速pip-install" class="headerlink" title="加速pip install"></a>加速pip install</h2><p><code>pip</code>中更改镜像：修改<code>~/.pip/pip.conf</code>文件，如果没有这个文件就创建一个。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[global]</span><br><span class="line">index-url = https://pypi.tuna.tsinghua.edu.cn/simple</span><br></pre></td></tr></table></figure>
 
-<p>在一个<code>conda env</code>中，可以使用<code>conda install</code> 也可以使用<code>pip install</code>。</p>
+<p>也可以在每次使用pip下载时添加镜像参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -i https:&#x2F;&#x2F;pypi.tuna.tsinghua.edu.cn&#x2F;simple hdf5</span><br></pre></td></tr></table></figure>
+
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>在一个<code>conda env</code>中，可以使用<code>conda install</code> 也可以使用<code>pip install</code>。</p>
 <p>查看pip所安装的包：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip list</span><br></pre></td></tr></table></figure>
       
     </div>
     <footer class="article-footer">
       <a data-url="http://yoursite.com/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/" data-id="ckatxvx5a0001lzfzgenfcdz1" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Caffe-如何使用-2" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/" class="article-date">
-  <time datetime="2020-03-31T14:30:38.000Z" itemprop="datePublished">2020-03-31</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>caffe定义的也是计算图，模型的结构和对应的计算图有自己的风格，如下面一个计算图：</p>
-<div align="center"><img src="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/logreg.jpg" width="400"></div>
-
-<p>对应的<code>.prototxt</code>如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">name: &quot;LogReg&quot;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: &quot;mnist&quot;</span><br><span class="line">  type: &quot;Data&quot;</span><br><span class="line">  top: &quot;data&quot;   #输出</span><br><span class="line">  top: &quot;label&quot;  #输出</span><br><span class="line">  data_param &#123;</span><br><span class="line">    source: &quot;input_leveldb&quot;</span><br><span class="line">    batch_size: 64</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: &quot;ip&quot;</span><br><span class="line">  type: &quot;InnerProduct&quot;</span><br><span class="line">  bottom: &quot;data&quot;  #输入</span><br><span class="line">  top: &quot;ip&quot;       #输出</span><br><span class="line">  inner_product_param &#123;</span><br><span class="line">    num_output: 2</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: &quot;loss&quot;</span><br><span class="line">  type: &quot;SoftmaxWithLoss&quot;</span><br><span class="line">  bottom: &quot;ip&quot;     #输入</span><br><span class="line">  bottom: &quot;label&quot;   #输入</span><br><span class="line">  top: &quot;loss&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/" data-id="ckatxvx570000lzfzc08zem2b" class="article-share-link">Share</a>
       
       
     </footer>
@@ -428,7 +560,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-如何使用-lenet模型</a>
+      <a class="article-title" href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-使用已有的lenet模型</a>
     </h1>
   
 
@@ -463,10 +595,10 @@
 <p>  比如第一个卷基层：</p>
   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">layer &#123;</span><br><span class="line">    name: &quot;conv1&quot;</span><br><span class="line">    type: &quot;Convolution&quot;</span><br><span class="line">    param &#123; lr_mult: 1 &#125;</span><br><span class="line">    param &#123; lr_mult: 2 &#125;</span><br><span class="line">    convolution_param &#123;</span><br><span class="line">        num_output: 20</span><br><span class="line">        kernel_size: 5</span><br><span class="line">        stride: 1</span><br><span class="line">        weight_filler &#123;</span><br><span class="line">            type: &quot;xavier&quot;</span><br><span class="line">        &#125;</span><br><span class="line">        bias_filler &#123;</span><br><span class="line">            type: &quot;constant&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    bottom: &quot;data&quot;</span><br><span class="line">    top: &quot;conv1&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>  这个文件被称作<code>network definition protobuf file</code>。</p>
-<p>  其中<code>top</code>表示这层输出，<code>bottom</code>表示这层出入。对于caffe中模型的图逻辑和其prototxt文件的对应，看这个<a href>blog</a>。</p>
 </li>
 </ul>
+<p>这个文件被称作<code>network definition protobuf file</code>。</p>
+<p>其中<code>top</code>表示这层输出，<code>bottom</code>表示这层出入。对于caffe中模型的图逻辑和其prototxt文件的对应，看这个<a href>blog</a>。</p>
 <h1 id="3-指明模型参数：solver-prototxt"><a href="#3-指明模型参数：solver-prototxt" class="headerlink" title="3.指明模型参数：solver.prototxt"></a>3.指明模型参数：solver.prototxt</h1><p>从这里查看网络参数<code>examples/mnist/lenet_solver.prototxt</code>。在caffe中，设定模型参数（非训练参数，即超参数）被称作<code>solver</code>，这个文件被称作<code>solver protobuf file</code>。如下：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># The train/test net protocol buffer definition</span></span><br><span class="line">net: <span class="string">"examples/mnist/lenet_train_test.prototxt"</span></span><br><span class="line"><span class="comment"># test_iter specifies how many forward passes the test should carry out.</span></span><br><span class="line"><span class="comment"># In the case of MNIST, we have test batch size 100 and 100 test iterations,</span></span><br><span class="line"><span class="comment"># covering the full 10,000 testing images.</span></span><br><span class="line">test_iter: 100</span><br><span class="line"><span class="comment"># Carry out testing every 500 training iterations.</span></span><br><span class="line">test_interval: 500</span><br><span class="line"><span class="comment"># The base learning rate, momentum and the weight decay of the network.</span></span><br><span class="line">base_lr: 0.01</span><br><span class="line">momentum: 0.9</span><br><span class="line">weight_decay: 0.0005</span><br><span class="line"><span class="comment"># The learning rate policy</span></span><br><span class="line">lr_policy: <span class="string">"inv"</span></span><br><span class="line">gamma: 0.0001</span><br><span class="line">power: 0.75</span><br><span class="line"><span class="comment"># Display every 100 iterations</span></span><br><span class="line">display: 100</span><br><span class="line"><span class="comment"># The maximum number of iterations</span></span><br><span class="line">max_iter: 10000</span><br><span class="line"><span class="comment"># snapshot intermediate results</span></span><br><span class="line">snapshot: 5000</span><br><span class="line">snapshot_prefix: <span class="string">"examples/mnist/lenet"</span></span><br><span class="line"><span class="comment"># solver mode: CPU or GPU</span></span><br><span class="line">solver_mode: GPU</span><br></pre></td></tr></table></figure>
 <p>默认使用GPU。可以使用同目录的其他的参数配置文件：</p>
@@ -476,7 +608,7 @@
 
 <p><code>train_lenet.sh</code>文件包含一行代码：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/usr/bin/env sh</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"> </span><br><span class="line">./build/tools/caffe train --solver=examples/mnist/lenet_solver.prototxt <span class="variable">$@</span></span><br></pre></td></tr></table></figure>
-<p>使用<code>caffe</code>命令， 指明是<code>trian</code>，指明参数配置，即使用哪个<code>.prototxt</code>文件。</p>
+<p>使用<code>caffe</code>命令（这个<code>caffe</code>是tools中的命令，这是caffe提供的命令行接口：<code>cmdcaffe</code>）， 指明是<code>trian</code>，指明参数配置，即使用哪个<code>.prototxt</code>文件。</p>
 <p>执行包括两部分：</p>
 <ul>
 <li><p>输出模型结构</p>
@@ -486,6 +618,10 @@
 </li>
 </ul>
 <p>训练结束后，在<code>examples/mnist/</code>路径下得到两个文件<code>lenet_iter_10000.caffemodel</code>和<code>lenet_iter_10000.solverstate</code>。</p>
+<ol>
+<li><code>.caffemodel</code>文件是最终模型，二进制文件。</li>
+<li><code>.solverstate</code>是保存的训练状态（snapshot），可以从此继续开始训练。</li>
+</ol>
 <h1 id="训练结束"><a href="#训练结束" class="headerlink" title="训练结束"></a>训练结束</h1><p><code>lenet_iter_10000</code>是binary protobuf 文件，就是训练10000次的最终模型，用于对真实样本的推理。</p>
 <p>MNIST数据集是小数据集，所以使用GPU的效果并不好，原因是GPU的计算核心与存储的通讯开销。所以对于复杂模型和数据集GPU的速度提升是显著的。</p>
 <h1 id="使用预训练的model"><a href="#使用预训练的model" class="headerlink" title="使用预训练的model"></a>使用预训练的model</h1><p>训练结束后生成的<code>.caffemodel</code>是可以直接拿来使用的模型（其实就是所有训练好的参数），用作推理。如何使用？</p>
@@ -495,6 +631,72 @@
     </div>
     <footer class="article-footer">
       <a data-url="http://yoursite.com/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/" data-id="ckatsrgsk0046xqfzdag77562" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Caffe-如何使用-2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/" class="article-date">
+  <time datetime="2020-03-07T14:30:38.000Z" itemprop="datePublished">2020-03-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-Blob Layer Net</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Blob-Layer和Net"><a href="#Blob-Layer和Net" class="headerlink" title="Blob, Layer和Net"></a>Blob, Layer和Net</h1><h2 id="Layer和Net"><a href="#Layer和Net" class="headerlink" title="Layer和Net"></a>Layer和Net</h2><p>caffe中的每个层对象，都是一个模型的基本计算单元。一个层对象包括 “…filters, pool, take inner products, apply nonlinearities like rectified-linear and sigmoid and other elementwise transformations, normalize, load data, and compute losses like softmax and hinge”。见<a href="http://caffe.berkeleyvision.org/tutorial/net_layer_blob.html" target="_blank" rel="noopener">官方文档</a></p>
+<p>几乎所有的层类都会继承自<code>Layer</code>类：<code>class caffe::Layer&lt; Dtype &gt;</code>这些层类必须实现一个<code>Forward()</code>, 它接受一个<code>input Blob（bottom）</code>计算输出的<code>Blob（top）</code>。还要实现一个<code>Backward()</code>，它使用给定其输出<code>Blob</code>的误差梯度，计算相对于其输入<code>Blob</code>的误差梯度。（实现反向传播）</p>
+<p>每个层对象一定包含三个基本方法：setup()，forward()，backward()。</p>
+<ol>
+<li>setup()：一些计算前的操作，用来初始化层。</li>
+<li>forward()：前向计算。多个Layer构成一个Net，一个Net中连续的前向传播由<code>Net::Forward()</code>实现。</li>
+<li>backward()：官方文档解释的很好：“given the gradient w.r.t. the top output, compute the gradient w.r.t. to the input and send to the bottom. A layer with parameters computes the gradient w.r.t. to its parameters and stores it internally.”。其中<code>w.r.t.</code>表示“with respect to”，中文表示“对…（求梯度等操作）”。这就是反向对参数求梯度的过程。当多个层链接到一起，就会形成反向传播的链条（对应了链式法则）。这个链式法则在<code>Net::Backward()</code>中实现</li>
+</ol>
+<p>前向计算和后向计算都有CPU和GPU版本的实现。实现自己的层也是不难的，只需要定义好上述三个关键方法。</p>
+<p><a href="http://caffe.berkeleyvision.org/tutorial/layers.html" target="_blank" rel="noopener">这里</a>是管方文档中所有的层。<br><br><a href="http://caffe.berkeleyvision.org/tutorial/forward_backward.html" target="_blank" rel="noopener">这里</a>是caffe中的前向传播和后向传播的官方描述。</p>
+<p>一个Net由多个Layer构成，如下面一个计算图（有向无环图）：</p>
+<div align="center"><img src="/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/logreg.jpg" width="350"></div>
+
+<p>其中蓝色矩形表示layer，里边的小写表示层的name，大写表示层的type；黄色多边形表示在图中游走的数据<code>Blob</code>，数据移动方向从下向上，下为<code>bottom</code>，上为<code>top</code>。这个图对应的<code>.prototxt</code>如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">name: &quot;LogReg&quot;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: &quot;mnist&quot;</span><br><span class="line">  type: &quot;Data&quot;</span><br><span class="line">  top: &quot;data&quot;   #输出</span><br><span class="line">  top: &quot;label&quot;  #输出</span><br><span class="line">  data_param &#123;</span><br><span class="line">    source: &quot;input_leveldb&quot;</span><br><span class="line">    batch_size: 64</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: &quot;ip&quot;</span><br><span class="line">  type: &quot;InnerProduct&quot;</span><br><span class="line">  bottom: &quot;data&quot;  #输入</span><br><span class="line">  top: &quot;ip&quot;       #输出</span><br><span class="line">  inner_product_param &#123;</span><br><span class="line">    num_output: 2</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: &quot;loss&quot;</span><br><span class="line">  type: &quot;SoftmaxWithLoss&quot;</span><br><span class="line">  bottom: &quot;ip&quot;     #输入</span><br><span class="line">  bottom: &quot;label&quot;   #输入</span><br><span class="line">  top: &quot;loss&quot;</span><br><span class="line">&#125;</span><br><span class="line">&#96;&#96;&#96; </span><br><span class="line"></span><br><span class="line">这个Net的初始化通过执行&#96;Net::Init()&#96;，其作用是生成Blob和Layers，并调用Layer的setup函数。终端的输出信息表示caffe还有记录的工作被执行。&lt;&#x2F;br&gt;</span><br><span class="line">用&#96;Caffe::mode()&#96;和&#96;Caffe::set_mode()&#96;指定使用CPU或GPU执行.CPU和GPU的切换是无缝的，与模型的定义是无关的。&lt;&#x2F;br&gt;</span><br><span class="line">模型的定义在机器中是以&#96;protocol buffer schema (prototxt)&#96;形式存在的。对应训练好的模型是以&#96;binary protocol buffer (binaryproto) &#96;存在与磁盘的，就是相应路径中的&#96;.caffemodel&#96;文件。&lt;&#x2F;br&gt;</span><br><span class="line">模型在caffe中的格式由&#96;caffe.proto&#96;定义。细节见[这里](https:&#x2F;&#x2F;github.com&#x2F;BVLC&#x2F;caffe&#x2F;blob&#x2F;master&#x2F;src&#x2F;caffe&#x2F;proto&#x2F;caffe.proto)本地路径：&#96;caffe-ROOT&#x2F;src&#x2F;caffe&#x2F;proto&#x2F;caffe.proto&#96;。所使用的技术是[Google Protocol Buffer](https:&#x2F;&#x2F;code.google.com&#x2F;p&#x2F;protobuf&#x2F;)通过科学上网查看。</span><br><span class="line"></span><br><span class="line">为什么要使用&#96;protocal buffer&#96;来格式化模型？</span><br><span class="line"></span><br><span class="line"># Blob</span><br><span class="line"></span><br><span class="line">Blob为模型提供数据和数据载体，在模型的正向反向传播中移动。它还提供了CPU和GPU间的同步机制。Blob中的数据可以是一批图像，模型参数，中间计算结果。在Blob中不同类型的数据，其大小是不同的。</span><br><span class="line"></span><br><span class="line">1. 图像数据Blob，其中的数据是4维的：&#96;（N, K, H, W）&#96;分别表示batch size，channel数量，长和宽。当一个Blob对象中的数据变化时，变化优先级从右向左。所以索引为&#96;（n, k, h, w）&#96;的数值在物理存储中的索引是&#96;((n×K + k)×H + h)×W + w&#96;。</span><br><span class="line"></span><br><span class="line">2. 对于非图像的数据，使用2D Blob，（N, D），此时通常与&#96;InnerProductLayer&#96;一同使用。</span><br><span class="line"></span><br><span class="line">3. 对于参数Blob，其维度要具体问题具体分析了。比如对于conv层，由64个conv kernel，一个kernel的大小是11×11，输入通道数为3，那么此情况的参数Blob大小为（96,3,11,11）。而对于全连接层或上述的&#96;InnerProductLayer&#96;，如果输出1000维，输入1024维，那么此情况的参数Blob大小为（1000,1024）。</span><br><span class="line"></span><br><span class="line">Blob数据一旦定以好后，caffe的模块化就可以做剩下的工作了。</span><br><span class="line"></span><br><span class="line">## Blob细节</span><br><span class="line"></span><br><span class="line">通常我们关心Blob中的数值（一般的数据，比如一批输入图像）和梯度值。所以一个Blob由两块儿存储：&#96;data&#96;和&#96;diff&#96;。</span><br><span class="line"></span><br><span class="line">更进一步，Blob中的数值有两种访问的方式，cont和mutable，前者数值不变，后者数值可改变。比如</span><br><span class="line"></span><br><span class="line">&#96;&#96;&#96;cpp</span><br><span class="line">const Dtype* cpu_data() const;</span><br><span class="line">Dtype* mutable_cpu_data();</span><br></pre></td></tr></table></figure>
+<p>同样的，对于cpu_diff和gpu_data, gpu_diff 也有两种访问方式。</p>
+<h2 id="Blob为什么要如此设计？官方文档给出如下解释："><a href="#Blob为什么要如此设计？官方文档给出如下解释：" class="headerlink" title="Blob为什么要如此设计？官方文档给出如下解释："></a>Blob为什么要如此设计？官方文档给出如下解释：</h2><ol>
+<li><p>Blob使用<code>SyncedMem</code>类实现CPU与GPU间的数据拷贝，目的是隐藏延时。</p>
+</li>
+<li><p>如果不想更改数值，那么始终使用const方式调用，而且永远不要将指针存储在自己的对象中。每次处理Blob时，都要调用函数来获取指针，因为<code>SyncedMem</code>类需要这个函数来确定何时复制数据。</p>
+</li>
+<li><p>在实际中，调用设备内核来执行GPU计算的同时，CPU将数据从磁盘加载到Blob，并将Blob转移到下一层，这是GPU和CPU延时隐藏的基本技巧。因为大部分层都有GPU实现，所以所有的中间数据和梯度都将保留在GPU的内存中。</p>
+</li>
+</ol>
+<h2 id="Blob中数据在CPU和GPU之间拷贝行为"><a href="#Blob中数据在CPU和GPU之间拷贝行为" class="headerlink" title="Blob中数据在CPU和GPU之间拷贝行为"></a>Blob中数据在CPU和GPU之间拷贝行为</h2><p>假设数据在CPU（Host）上被初始化，存在于一个Blob中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义一个const访问指针，一个mutable访问指针</span></span><br><span class="line"><span class="keyword">const</span> Dtype* foo;   </span><br><span class="line">Dtype* bar;</span><br><span class="line"><span class="comment">// GPU上没有数据数据</span></span><br><span class="line">foo = blob.gpu_data(); <span class="comment">// data copied cpu-&gt;gpu.</span></span><br><span class="line"><span class="comment">// 上下两句间没有任何操作，所以下一句并不会发生数据拷贝</span></span><br><span class="line">foo = blob.cpu_data(); <span class="comment">// no data copied since both have up-to-date contents.</span></span><br><span class="line">bar = blob.mutable_gpu_data(); <span class="comment">// 一样，没有数据拷贝.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// 对数据进行操作...</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line">bar = blob.mutable_gpu_data(); <span class="comment">// 当前位于GPU上，没有数据拷贝到gpu.   ？？？？？？</span></span><br><span class="line">foo = blob.cpu_data(); <span class="comment">// 因为数据被操作，所以数据拷贝从GPU到CPU发生。</span></span><br><span class="line">foo = blob.gpu_data(); <span class="comment">// 因为GPU和CPU都是最新数据，所以没有数据拷贝发生。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ？？？？？？</span></span><br><span class="line">bar = blob.mutable_cpu_data(); <span class="comment">// still no data copied.</span></span><br><span class="line">bar = blob.mutable_gpu_data(); <span class="comment">// data copied cpu-&gt;gpu.</span></span><br><span class="line">bar = blob.mutable_cpu_data(); <span class="comment">// data copied gpu-&gt;cpu.</span></span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/" data-id="ckatxvx570000lzfzc08zem2b" class="article-share-link">Share</a>
       
       
     </footer>
@@ -607,6 +809,13 @@
 <div align="center"><img src="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/result.png"></div>
 
 <p>表示caffe 安装配置成功完成（如果要使用python接口，还要其他操作，我使用CXX）。</p>
+<h1 id="5-编译python接口"><a href="#5-编译python接口" class="headerlink" title="5. 编译python接口"></a>5. 编译python接口</h1><p>第一步，执行命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ make pycaffe</span><br></pre></td></tr></table></figure>
+
+<p>第二步，在<code>~/.bashrc</code>中添加caffe中的python 路径：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> PYTHONPATH=/home/junhui/caffe-master/python:$PYTHONPATH</span><br></pre></td></tr></table></figure>
+
+<p>现在在python脚本中就可以<code>import caffe</code>了。</p>
 
       
     </div>
@@ -614,243 +823,6 @@
       <a data-url="http://yoursite.com/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/" data-id="ckatsrgsl0048xqfzc9asf5y7" class="article-share-link">Share</a>
       
       
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Cpp-pro-tip-1" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/05/Cpp-pro-tip-1/" class="article-date">
-  <time datetime="2020-03-05T10:05:50.000Z" itemprop="datePublished">2020-03-05</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/05/Cpp-pro-tip-1/">Cpp pro tip 1</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="从源文件到可执行文件"><a href="#从源文件到可执行文件" class="headerlink" title="从源文件到可执行文件"></a>从源文件到可执行文件</h1><ul>
-<li>预处理（pre-processing）E<br>从<code>.c</code>到<code>.i</code>。编译器将C源代码中的包含的头文件如stdio.h编译进来，替换宏。</li>
-<li>编译（Compiling）S<br>从<code>.i</code>到<code>.s</code>。gcc首先要检查代码的规范性、是否有语法错误等，以确定代码的实际要做的工作，在检查无误后，gcc把代码翻译成汇编语言。</li>
-<li>汇编（Assembling） c<br>把编译阶段生成的<code>.s</code>文件转成二进制目标代码<code>.o</code>文件。</li>
-<li>链接 （Linking）<br>链接到库中，生成可执行文件。</li>
-</ul>
-<p>绘制这里的图(<a href="https://blog.csdn.net/Meteor_s/article/details/85208589" target="_blank" rel="noopener">https://blog.csdn.net/Meteor_s/article/details/85208589</a>)</p>
-<p><a href="https://www.cnblogs.com/ericling/articles/11736681.html" target="_blank" rel="noopener">这里</a>更详细</p>
-<div align="center"><img src="/2020/03/05/Cpp-pro-tip-1/.png"></div>
-
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -E hello.c -o hello.i</span><br><span class="line">gcc –S hello.i –o hello.s</span><br><span class="line">gcc –c hello.s –o hello.o</span><br><span class="line">gcc hello.o –o hello</span><br></pre></td></tr></table></figure>
-
-<p>生成<code>.o</code>文件，可以重定向，方便其他应用使用。</p>
-<p>一条命令从源文件到可执行文件：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc hello.c –o hello</span><br></pre></td></tr></table></figure>
-
-<h1 id="1-虚析构函数"><a href="#1-虚析构函数" class="headerlink" title="1 虚析构函数"></a>1 虚析构函数</h1><p>补充内容（tip 7）：</p>
-<p>任何时候都应该为待多态性质的基类（父类）声明<code>virtual</code>析构函数。如果一个class含有任何<code>virual</code>函数，就一定要有一个<code>virtual</code>析构函数。</p>
-<p>而如果这个class的设计不是作为基类使用，或者不准备让这个class具备多态性，就不该声明<code>virtual</code>析构函数。</p>
-<p>含有多态性质的<code>base class</code>的设计目的是为了通过<code>base class</code>的接口来使用<code>derived class</code>。所以通常使用<code>base class</code>类的指针指向<code>derived class</code>的对象。</p>
-<p>并不是所有的<code>base class</code>都是为了多态用途，比如STL容器的设计不是用作<code>base class</code>的。</p>
-<p><code>virtual</code>同名函数的目的是允许<code>derived class</code>的实现可以<font color="red">客制化</font>。</p>
-<h1 id="2-C-帮你实现了的函数"><a href="#2-C-帮你实现了的函数" class="headerlink" title="2 C++帮你实现了的函数"></a>2 C++帮你实现了的函数</h1><p>（tip 5）</p>
-<p>当定义了一个class，又没有实现任何成员函数时，编译器会为这个class声明4个函数：</p>
-<ul>
-<li>一个default构造函数</li>
-<li>一个copy构造函数</li>
-<li>一个析构函数</li>
-<li>一个copy操作符</li>
-</ul>
-<p>这些函数都是<code>public</code>和<code>inline</code>的。如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass()&#123;...&#125;</span><br><span class="line">    Myclass(cosnt Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">    ~Myclass()&#123;...&#125;</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(cosnt Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实例化这个class，并使用</span></span><br><span class="line">Myclass e1;       <span class="comment">//default 构造函数</span></span><br><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span>;   <span class="comment">//copy构造函数</span></span><br><span class="line">e2=e1;            <span class="comment">//copy符号操作符</span></span><br><span class="line">                  <span class="comment">//析构函数</span></span><br></pre></td></tr></table></figure>
-
-<p>其中</p>
-<ol>
-<li>编译器给出的析构函数是个<code>non-virtual</code>函数，除非这个class的<code>base class</code>含有<code>virtual</code>析构函数。此时这个class的虚拟性来自其<code>base class</code>。</li>
-<li>对于构造函数，如果我声明了一个构造函数，那么编译器不再创建<code>default</code>构造函数</li>
-<li>copy构造函数，和copy操作符只是单纯的将来源对象的每一个<code>non-static</code>成员变量拷贝到目标对象。所以: <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span></span><br></pre></td></tr></table></figure>
- 是使用<code>e1</code>的成员变量来初始化<code>e2</code>的成员变量。</li>
-</ol>
-<h1 id="3-为classes实现赋值操作符"><a href="#3-为classes实现赋值操作符" class="headerlink" title="3 为classes实现赋值操作符"></a>3 为classes实现赋值操作符</h1><p>使用赋值操作时，通常可以写成如下形式：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> x, y, z;</span><br><span class="line">x=y=z=<span class="number">2</span>;</span><br></pre></td></tr></table></figure>
-
-<p>上述实际上的赋值行为是</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x=(y=(z=<span class="number">2</span>));</span><br></pre></td></tr></table></figure>
-
-<p>其行为是将2赋值给<code>z</code>，再将<code>z</code>赋值给<code>y</code>，最后将<code>y</code>赋值给<code>x</code>。</p>
-<p>为了实现上述的连锁赋值，赋值操作符必须返回一个引用指向操作符的左侧：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> Myclass&amp; rhs)&#123;</span><br><span class="line">        ...</span><br><span class="line">        <span class="keyword">return</span>* <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>同样的上述的形式也适用于所有相关的操作符，如<code>+=</code>，<code>-=</code>，<code>×=</code>。</p>
-<p>这是一条<font color="red">协议</font>，被所有内置类型和标准库函数共同遵守，所以，遵守它吧。</p>
-<h1 id="4-将成员变量声明为private"><a href="#4-将成员变量声明为private" class="headerlink" title="4 将成员变量声明为private"></a>4 将成员变量声明为private</h1><p>为什么要把classes的成员变量声明为<code>private</code>：因为这体现了<font color="red">封装</font>。</p>
-<p>类成员变量应该只被这个类的成员方法可见，<code>protected</code>成员变量同<code>public</code>成员变量一样<font color="red">缺乏封装性</font>。</p>
-<p>从封装的角度讲，访问权限只有提供封装（private）和不提供封装两种。</p>
-<h1 id="5-使用non-member-non-friend函数而非再定义一个member函数"><a href="#5-使用non-member-non-friend函数而非再定义一个member函数" class="headerlink" title="5 使用non-member non-friend函数而非再定义一个member函数"></a>5 使用non-member non-friend函数而非再定义一个member函数</h1><p>假设由一个类含有若干个清理函数，只是清理的对象不同：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearHistory</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearCache</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearCookies</span><span class="params">()</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>其实很多时候，用户想要一次性执行这些动作，如何一次性完成，两种方案：</p>
-<ol>
-<li><p>给这个class中添加一个member函数<code>clearAll()</code>，它调用上述三个清理函数：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearAll</span><span class="params">()</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;；</span><br></pre></td></tr></table></figure></li>
-<li><p>使用一个non-member，non-friend函数：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clearBrowser</span><span class="params">(WebBrowser&amp; wb)</span></span>&#123;</span><br><span class="line">    wb.clearHistory();</span><br><span class="line">    wb.clearCache();</span><br><span class="line">    wb.clearCookies();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>pro tip告诉你使用后者。后者更体系那封装性。后者保护了类的包裹性，进而有较低的编译依赖，增强了类的<font color="orange">可延展性</font>。</p>
-</li>
-</ol>
-<p>对于封装性，可以访问private成员变量的只有<font color="orange">member函数</font>和<font color="orange">friend函数</font>。上述两种方式提供了相同的功能，而后者提供了较强的封装性，因为<font color="red">它不能增加访问private变量的能力</font>。</p>
-<p>P.S. friend函数和member函数对于类private成员的访问能力相同。</p>
-<p>在C++ 中自然的做法是将类<code>WebBrowser</code>和函数<code>clearBrowser()</code>房子啊同一个<code>namespace</code>中：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> Web&#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span>...&#125;;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearBrowser</span><span class="params">(WebBrowser&amp; wb)</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>namespace 可以跨越多个源码文件，而class不能。就是说相同的namespace中可以有多个头文件，这正是C++标准库的组织方式：<code>std::vector</code>, <code>std::sort</code>, <code>std::map</code>, … C++ 将不同的部分，不同<code>container</code>放在不同的头文件中，每个声明了<code>std</code>的某部分功能，这样当使用<code>vector</code>，时只用<code>include &lt;vector&gt;</code>，而不必将所有的<code>std</code>内容<code>include</code>进来。就是说，用户只用对所用的部分进行编译。而class必须整体定义，不能分割。</p>
-<p>想要扩充这个namespace的能力，只需要在这个namespace中添加更多的non-member，non-friend函数。即增强了功能，又没有破坏封装性，由没有增加编译依赖。</p>
-<p><font color="orange" size="4">敲黑板</font>两个角度：</p>
-<ul>
-<li>增强封装性</li>
-<li>减小编译依赖</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/05/Cpp-pro-tip-1/" data-id="ckatsrgrz002oxqfz5ixp6ux4" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-并行一维卷积" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" class="article-date">
-  <time datetime="2020-02-28T13:17:08.000Z" itemprop="datePublished">2020-02-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>卷积操作应用于许多领域，而其特点：计算量大，每个输出元素的计算都是相互独立的。这两个特点是并行计算期望处理的。卷积中对于边界的处理影响着分块算法的效率。</p>
-<h1 id="一维卷积基本形式"><a href="#一维卷积基本形式" class="headerlink" title="一维卷积基本形式"></a>一维卷积基本形式</h1><p>假设一维数组N是被操作对象，一维数组M是卷积核，一维数组P为卷积结果。假如对于边界元素（幽灵元素）的处理是赋值为0，也就是说幽灵元素与对应的M元素的乘积为0.</p>
-<p>每个thread负责P数组中的一个元素，那么一维卷积的基本形式如下图：</p>
-<p>&lt;&gt;pic1&lt;&gt;</p>
-<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
-
-<div align="center">图：一维卷积基本形式 回顾时添加</div>
-
-<p>一个thread得到结果数组P中一个元素。实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">conv1D</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* M, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">int</span> kernelSize, <span class="keyword">int</span> NLength)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">	<span class="keyword">float</span> Pvalue = <span class="number">0.0f</span>;</span><br><span class="line">	<span class="keyword">int</span> start = tid-kernelSize/<span class="number">2</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;kernelSize; j++)&#123;</span><br><span class="line">		<span class="keyword">if</span>(start + j &gt;= <span class="number">0</span> &amp;&amp; start + j &lt;= NLength)&#123;</span><br><span class="line">			Pvalue += N[start + j] * M[j]; 	</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>一般卷积核的长度是奇数，这样计算过程是对称的。</p>
-<p>上述实现的缺点：</p>
-<ul>
-<li>代码中这句 <code>Pvalue += N[start + j] * M[j]</code>包含两次对Global 的访存，和两次算术运算（一个乘法，一个加法）。<font color="red">运算访存比</font>仅为1.0。性能有限。 </li>
-<li>对边界的处理出现Divergence。</li>
-</ul>
-<h1 id="Constant-Memory优化的一维卷积"><a href="#Constant-Memory优化的一维卷积" class="headerlink" title="Constant Memory优化的一维卷积"></a>Constant Memory优化的一维卷积</h1><p>卷积操作有三个特点：</p>
-<ol>
-<li>考虑到卷积计算的过程，以及实际中的卷积操作，比如在Google Inception Net<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积</a>，MobileNet<a href="https://ashburnlee.github.io/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" target="_blank" rel="noopener">深度可分离卷积</a>，ResNet中的<a href="https://ashburnlee.github.io/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" target="_blank" rel="noopener">残差学习单元</a>，中的描述，卷积核大小都是3x3, 1x1, 1x7, 7x1，5x5很小的卷积核。</li>
-<li>卷积核的内容是不变的。</li>
-<li>所有的threads都访问卷积核（假设就一个卷积核），并且访问卷积核中元素的顺序是一样的。</li>
-</ol>
-<p>根据这些特点结合Ray-Tracing这篇笔记中<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" target="_blank" rel="noopener">Constant Memory</a><br>描述的Constant Memory的特性。考虑将卷积核放入Constant Memory。</p>
-<p>这里补充一点，Constant Memory中的内容对于所有Blocks可见。使用<code>.totalConstMem</code>可以查询其大小。</p>
-<p>与Ray-Tracing中的使用一样：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_KERNEL_LENGTH 10;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[MAX_KERNEL_LENGTH];</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在main函数中使用cudaMemcpy的特殊版本函数</span></span><br><span class="line">cudaMemcpyToSymbol(M, h_M, kernel_length*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>kernel函数与基本形式一样，除了参数列表中不需要再传入卷积核数组M。</p>
-<p>虽然Constant Memory在Global中，但是cuda知道Constant Memory中的内容是不变的。所以直接将其放入高速缓存中（L1缓存）。</p>
-<p><font color="gree" size="4">补充</font><br>高速缓存的层次结构。从DRAM中访问一个变量需要数百上千个时钟周期，而且处理器处理数据要比访存快得多。DRAM的长延迟和有限带宽成了现代处理器的性能瓶颈，称为<font color="red" size="4">存储器墙</font>。现在的处理器都会有片内的高速缓存，来减少DRAM的访存次数。</p>
-<p><font color="red" size="4">缓存一致性</font><br>使用高速缓存的一个重要设计问题是缓存一致性，当一个或多个处理器核心试图修改缓存中的数据时，问题出现了。每一个处理器核心有自己的L1缓存，如果这个被修改了，而其他核心的L1缓存不变，缓存中的内容就不一致了。在并行处理器中处理缓存一致性开销很大（就相当于实现全局线程同步开销很大一样）。所以GPU中没有缓存一致性的机制。</p>
-<p>将Constant memory放到L1高速缓存中。WHY</p>
-<ul>
-<li>Constant memory中的内容在kernel执行期间<font color="red">不会被改变</font>，因此没有缓存一致性的问题干扰。所以硬件可以直接将Constant memory放到L1高速缓存中。</li>
-<li>在处理器的缓存设计中通常优化了线程的广播。所以当一个warp中的线程访问同一个Constant memory中的（相同的）变量时，<font color="red">高速缓存能为threads所需要的数据提供巨大的带宽</font>。</li>
-</ul>
-<h1 id="shared-memory优化的分块并行卷积"><a href="#shared-memory优化的分块并行卷积" class="headerlink" title="shared memory优化的分块并行卷积"></a>shared memory优化的分块并行卷积</h1><p>分析卷积过程，以一维卷积为例，假设卷积核的长度是5，N（Global）中有100个元素，其中每一个元素要平均被访问5次，那么就需要500次的Global memory的访存。显然，N中每个元素被<font color="red">重复访问了</font>。所以考虑是用分块Shared memory来降低Global的访存。</p>
-<p>假设N长度为15，M长度为5，block大小为4，Shared memory大小为4，输出到P。过程如下图：</p>
-<p>&lt;&gt;pic2&lt;&gt;</p>
-<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
-
-<div align="center">图：一维分块卷积 回顾时添加</div>
-
-<p>每一个thread处理一个P中元素，对于每一个block，分两步操作：</p>
-<ol>
-<li>将数据从P中写入blocks对应的Shared 中。</li>
-<li>执行卷积计算。</li>
-</ol>
-<p>而读入Shared的操作分为左中右，三部分</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERNEL_LENGTH 5;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[KERNEL_LENGTH]; <span class="comment">// 卷积核</span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">Convolution</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* P, <span class="keyword">int</span> N_size)</span></span>&#123;</span><br><span class="line">    __shared__ <span class="keyword">float</span> N_ds[TILE_SIZE + KERNEL_LENGTH<span class="number">-1</span>];</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> n = KERNEL_LENGTH/<span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 读左</span></span><br><span class="line">    <span class="keyword">int</span> left = (blockIdx.x <span class="number">-1</span>)*blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span>(threadIdx.x &gt;= blockDim.x - n)&#123;</span><br><span class="line">        N_ds[threadIdx - (blockDim.x - n)] = (left&lt;<span class="number">0</span>) ? <span class="number">0</span> : N[left];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 读中</span></span><br><span class="line">    N_ds[n+threadIdx.x] = N[tid];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 读右</span></span><br><span class="line">    <span class="keyword">int</span> right = (blockIdx.x + <span class="number">1</span>)*blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span>(threadIdx.x &lt; n)&#123;</span><br><span class="line">        N_ds[n+blockDim.x+threadIdx.x] = (left&gt;=N_size) ? <span class="number">0</span> : N[right];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="comment">// 卷积操作</span></span><br><span class="line">    <span class="keyword">float</span> Pvalue = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;KERNEL_LENGTH; i++)&#123;</span><br><span class="line">        Pvalue += N_ds[threadIdx.x + i] * M[i];</span><br><span class="line">    &#125;</span><br><span class="line">    P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="L2缓存了的分块并行卷积"><a href="#L2缓存了的分块并行卷积" class="headerlink" title="L2缓存了的分块并行卷积"></a>L2缓存了的分块并行卷积</h1><p><font color="red" size="4">新知</font><br>上个实现的代码复杂度集中在了将左右元素加载到Shared 中，注意，一个block的左右元素，同时又是<font color="red">相邻</font>block的内部元素，因此<font color="orange" size="4">很有可能在<code>block #1</code>需要这些左右元素时，它们已经由于<code>block #2</code>的访问而存储到了L2缓存上</font>。这样对于左右元素的访问从代码上是访问了global，实际上却是转化为对L2缓存的访问。依然达到减少Global访存的目的。看下图：</p>
-<p>&lt;&gt;pic3&lt;&gt; 图8-10</p>
-<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
-
-<div align="center">图 回顾时添加</div>
-
-<p>如此一来，shared memory 的大小变成如下，与block的大小一致了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">__shared__ <span class="keyword">float</span> N_ds[TILE_SIZE];</span><br></pre></td></tr></table></figure>
-
-<p>从而Shared memory的加载就更简单了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">N_ds[threadIdx.x] = N[tid];</span><br></pre></td></tr></table></figure>
-
-<p>之后就是对于每一个thread遍历卷积核中元素，乘累加。只是对于中间元素，已经存在于自己的Shared中了，访问自己的Shared；对于左右元素，访问<code>N</code>，实际上是访问L2 缓存。</p>
-<p>实现与基本形式相似：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERNEL_LENGTH 5;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[KERNEL_LENGTH]; <span class="comment">// 卷积核</span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">Convolution</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* P, <span class="keyword">int</span> N_size)</span></span>&#123;</span><br><span class="line">    __shared__ <span class="keyword">float</span> N_ds[TILE_SIZE];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    N_ds[threadIdx.x] = N[tid];</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="keyword">int</span> this_block_start = blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> next_block_start = (blockIdx.x+<span class="number">1</span>) * blockDim.x;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> n_start = tid-(KERNEL_LENGTH/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> Pvalue=<span class="number">0.0f</span>;</span><br><span class="line">    <span class="comment">// 遍历卷积核：</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;KERNEL_LENGTH; j++)&#123;</span><br><span class="line">        <span class="keyword">int</span> index = n_start + j;</span><br><span class="line">        <span class="comment">// 对于有效Index：</span></span><br><span class="line">        <span class="keyword">if</span>(index&gt;=<span class="number">0</span> &amp;&amp; index&lt;=N_size)&#123;</span><br><span class="line">            <span class="comment">// 对于中间元素：</span></span><br><span class="line">            <span class="keyword">if</span>((index &gt;= this_block_start) &amp;&amp; (index &lt; next_block_start))&#123;</span><br><span class="line">                Pvalue += N_ds[threadIdx.x + j-KERNEL_LENGTH/<span class="number">2</span>]*M[j];</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;  <span class="comment">// 对于左右元素：</span></span><br><span class="line">                Pvalue += N[index]*M[j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><font color="green" size="5">敲黑板</font></p>
-<ul>
-<li>所有这些技术都可以用在二维，三维卷积，只不过是对存储访问的<font color="orange">索引计算</font>更加复杂。</li>
-<li>存在对Global的重复访问，考虑使用Shared。</li>
-<li>shared memory在<code>L1</code>缓存中。</li>
-<li>考虑元素是否被缓存到<code>L2</code>.</li>
-<li>缓存：作为<font color="red">名词</font>是指在芯片内部的高速存储区域；作为<font color="red">动词</font>指将其他存储空间中的内容放入高速缓存空间。[待求证]</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" data-id="ckatsrgu10079xqfzdo8743jg" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
     </footer>
   </div>
   
@@ -873,7 +845,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -902,7 +874,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -915,11 +887,15 @@
       <ul>
         
           <li>
-            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
           <li>
-            <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
+            <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
           </li>
         
           <li>
@@ -928,10 +904,6 @@
         
           <li>
             <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
           </li>
         
       </ul>

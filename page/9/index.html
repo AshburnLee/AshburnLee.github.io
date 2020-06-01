@@ -64,6 +64,219 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Deep-Learning-知识点" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" class="article-date">
+  <time datetime="2019-08-08T14:48:42.000Z" itemprop="datePublished">2019-08-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/">Deep Learning 知识点</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>杂记：</p>
+<h1 id="Loss-Fucntion与训练"><a href="#Loss-Fucntion与训练" class="headerlink" title="Loss Fucntion与训练"></a>Loss Fucntion与训练</h1><ul>
+<li><p>为啥会有Loss Function目标函数：如果要调整一个东西，让它符合一个事件的话，首先需要定义需要符合的事件是啥，这就是目标函数。也就是说，要基于什么样的目标来调整这个东西（模型）。 </p>
+</li>
+<li><p>常使用的目标函数：</p>
+<ul>
+<li>平方差损失函数。样本标签值与预测值的距离之和</li>
+<li>交叉熵损失函数。衡量两个分布间的差距</li>
+</ul>
+</li>
+<li><p>训练目的：调整参数，使得模型在训练集上的损失函数值最小。</p>
+</li>
+<li><p>如何训练：直接解方程？不得行。所以有了以GD为代表的学习算法。</p>
+</li>
+<li><p>使用<code>Mini-batch梯度下降</code>。如果每一次都在整个数据集上计算梯度，计算量巨大，可能内存不够。如果使用随机梯度(<code>SGD</code>)下降，即每使用一个样本就计算一次梯度，在一个样本上得到的梯度不能反应整个数据集的梯度方向，所以收敛速度慢。所以一般使用<code>Mini-batch梯度下降</code>。</p>
+</li>
+<li><p>上述三种梯度下降法都存在一个缺点：会陷入局部最小值和鞍点。可以使用动量梯度下降(<code>SGD+Momentum</code>)。其特点是,如果当前步的方向与上一步的方向呈锐角，实际方向在二者之间，且步长较大，若是钝角，则步长小。也就是说:</p>
+<ul>
+<li>刚开始积累动量，加速学习。</li>
+<li>局部震荡时，梯度为0，由于动量的存在，跳出局部最优。</li>
+<li>梯度方向改变时，动量缓解震荡。</li>
+</ul>
+</li>
+</ul>
+<h1 id="CNN"><a href="#CNN" class="headerlink" title="CNN"></a>CNN</h1><ul>
+<li><p>为啥有CNN。在传统的NN处理图像时，由于全连接，导致</p>
+<ol>
+<li><p>计算量大</p>
+</li>
+<li><p>参数过多，使得过拟合</p>
+<p>CNN灵感来与生物的视觉感受野，其特点是局部连接，每个神经元在图片上移动时，其卷积核参数不变（参数共享），而不同的神经元间的卷积核参数不同。相比较于全连接，参数量减少了很多。参数共享：一个卷积核提取一个特征。所以CNN解决上述两个问题：</p>
+</li>
+<li><p>局部连接</p>
+</li>
+<li><p>参数共享</p>
+</li>
+</ol>
+</li>
+<li><p>一个卷积核3通道分别与输入的3通道计算，得到的3通道计算结果相加作为输出的一个通道。如下图：</p>
+<ul>
+<li><p>即一个卷积核得到一个输出通道，所以n个卷积核得到n个输出通道。</p>
+</li>
+<li><p>一个卷积核提取一个特征，所以6个卷积核提取6个特征。</p>
+</li>
+<li><p>其中<code>28 =（32-5)/1+1</code>，即<code>输出长=(输入长-卷积核长)/stride步长+1</code>(步长为1)。<br></p>
+<div align="center"><img src="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/conv.png" width="600"></div>
+
+<p>注意图中的参数个数和计算量的计算与输入尺寸无关。参数计算=（核长×核宽）×（输入通道数×输出通道数）。与图中一致。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="激活函数选择（添加图示）"><a href="#激活函数选择（添加图示）" class="headerlink" title="激活函数选择（添加图示）"></a>激活函数选择（添加图示）</h1><ul>
+<li>线性激活函数，对于网络无效，因为是全等变换，无论网络由多少层，都相当于只有一层。我们说激活函数的作用是非线性变换，而现行变换无效果。</li>
+<li>深层网络不适用<code>sigmoid</code>，因其计算复杂，输出均值非0，且会发生梯度消失，即更深的层参数得不到更新。</li>
+<li><code>tanh</code>虽然输出均值为0，但计算复杂，有和<code>sigmoid</code>相同的问题。</li>
+<li><code>ReLU</code>首次在AlexNet中使用，计算简单，但输出均值非0，会存在dead 神经元。</li>
+<li><code>Leaky ReLU</code>解决了<code>ReLU</code>的dead 神经源问题。</li>
+<li><code>ELU</code>输出均值接近于0，</li>
+<li><code>MaxOut</code>是<code>ReLU</code>的泛华版本，没有dead神经元，但参数会翻倍。</li>
+</ul>
+<p>总结：一般使用<code>Leaky ReLU</code>，<code>ELU</code>，<code>MaxOut</code>。</p>
+<h1 id="Pooling"><a href="#Pooling" class="headerlink" title="Pooling"></a>Pooling</h1><p>max-pooling,average-pooling, 特点：</p>
+<ul>
+<li>池化核移动不重叠，</li>
+<li>不补零，</li>
+<li>无可训练过参数，</li>
+<li>作用：降采样，为下一层减少尺寸，减少计算量，减少训练参数，</li>
+<li>平移鲁棒性</li>
+</ul>
+<h1 id="全连接层FC"><a href="#全连接层FC" class="headerlink" title="全连接层FC"></a>全连接层FC</h1><p>将上一层输出展开并连接到每一个神经元上。<code>2D</code>变<code>1D</code>，没有了<code>2D</code>信息，所以不能再加卷基层。实际上就是普通的<code>NN</code>。全连接层的参数很多，一般占整个模型参数量的60%~80%。</p>
+<h1 id="优化算法"><a href="#优化算法" class="headerlink" title="优化算法"></a>优化算法</h1><ul>
+<li><p>SGD：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    x += lr * dx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>动量SGD，解决鞍点和局部最优值，问题，每个维度的学习速率都一样：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Vx = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    Vx = rho * Vx + dx</span><br><span class="line">    x += lr * Vx</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>AdaBrad：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured += dx * dx    <span class="comment"># 积累平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  缺点：当learning rate较大时，分母敏感，使梯度爆炸。后期分母变大，使更新变得很小，提前结束训练。</p>
+</li>
+<li><p>RMSProp：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured = delay_rate * grad_sqaured + (<span class="number">1</span>-delay_rate) * dx * dx    <span class="comment"># 平均平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  解决了后期训练提前结束的问题。</p>
+</li>
+<li><p>Adam：</p>
+<p>  结合了动量SGD和RMSProp优点</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">frst_moment = <span class="number">0</span></span><br><span class="line">scnd_moment = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    frst_moment = beta1 * frst_moment + (<span class="number">1</span>-beta1) * dx</span><br><span class="line">    scnd_moment = beta2 * scnd_moment + (<span class="number">1</span>-beta2) * dx * dx</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 校准</span></span><br><span class="line">    frst_unbias = frst_moment/(<span class="number">1</span>-beta1**t)</span><br><span class="line">    scnd_unbias = scnd_moment/(<span class="number">1</span>-beta2**t)</span><br><span class="line">    x -= lr * frst_unbias / (np.sqrt(scnd_unbias)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
+
+<p>  使得开始训练时frst_moment和scnd_moment变大来加速训练。一般使用Adam算法，从经验来讲，beta1=0.9， beta2=0.999，lr=1e-3。</p>
+</li>
+<li><p>lr自适应方法：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Exponetial Decay:</span></span><br><span class="line">lr = lr * e**(-kt)</span><br><span class="line"><span class="comment"># 1/t Decay:</span></span><br><span class="line">lr = lr / (<span class="number">1</span>+kt)</span><br></pre></td></tr></table></figure>
+<p>  SGD训练时间长但效果好，不过需要好的初始化，和lr自适应，如果不能找到好的初始化和lr自适应，用Adam。如果要训练更深更复杂的网络，且要求收敛速度快，推荐使用Adam。</p>
+</li>
+</ul>
+<h1 id="网络需要初始化-添加图示"><a href="#网络需要初始化-添加图示" class="headerlink" title="网络需要初始化 (添加图示)"></a>网络需要初始化 (添加图示)</h1><p>好的初始化使训练速度快，且达到一个好的结果。多层网络不适用0来初始化。</p>
+<p>如何判断初始化的好坏？查看初始化后各层的激活函数的分布，如果分布在一个区间内，好；如果输出集中在某个值上，不好。<br>一般使用均值为0方差为0.02的正态分布来初始化。<br>对于<code>tanh</code>使用<code>Xavior</code>初始化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in)</span><br></pre></td></tr></table></figure>
+
+<p>对于ReLU使用<code>He-ReLU</code>初始化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in/<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>其网络每一层分布都相近。</p>
+<h1 id="批归一化"><a href="#批归一化" class="headerlink" title="批归一化"></a>批归一化</h1><p>通用的归一化方法：</p>
+<ul>
+<li><p>为了使得每层激活函数的分布一致，在得到激活函数值后，把输出做归一化处理：减去均值，除以方差，使得其值分布在均值为0，方差为1 的分分布上。</p>
+</li>
+<li><p>缺点：表示在每一批上做归一化，但是，一批的分布不能反应整个数据集的分布，结果是，得到一个特征，批归一化后，这个特征不能在批不批间区分样本了，即特征无效了。</p>
+</li>
+<li><p>解决：设置alpha&amp;beta两个参数做逆归一化：</p>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数学公式 填坑</span><br></pre></td></tr></table></figure>
+
+<h1 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h1><p>多尺度剪裁。</p>
+<h1 id="Fine-Tuning"><a href="#Fine-Tuning" class="headerlink" title="Fine-Tuning"></a>Fine-Tuning</h1><p>在已经训练好的网络上进行微调。使用已经微调好的模型来初始化。见Fine-tuning博客。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" data-id="ckatsrgs0002rxqfz39t0c2rt" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-文本分类-三-构建模型III-LSTM网络参数" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" class="article-date">
+  <time datetime="2019-08-08T14:04:31.000Z" itemprop="datePublished">2019-08-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/">文本分类(三)-构建模型III-LSTM网络参数</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>假如网络的超参数配置如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">set_default_parameters</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> tf.contrib.training.HParams(</span><br><span class="line">        embedding_size=<span class="number">16</span>,</span><br><span class="line">        encoded_length=<span class="number">50</span>,</span><br><span class="line">        num_word_threshold=<span class="number">20</span>,</span><br><span class="line">        num_lstm_nodes=[<span class="number">999</span>, <span class="number">32</span>],    <span class="comment"># 999</span></span><br><span class="line">        num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">        num_fc_nodes=<span class="number">555</span>,            <span class="comment"># 555</span></span><br><span class="line">        batch_size=<span class="number">100</span>,</span><br><span class="line">        learning_rate=<span class="number">0.001</span>,</span><br><span class="line">        clip_lstm_grads=<span class="number">1.0</span>,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>在构建模型图的过程中，需要对LSTM单元中的每一个门制定参数大小：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_generate_params_for_lstm_cell</span><span class="params">(x_size, h_size, bias_size)</span>:</span></span><br><span class="line">    x_w = tf.get_variable(<span class="string">'x_weights'</span>, x_size)</span><br><span class="line">    h_w = tf.get_variable(<span class="string">'h_weights'</span>, h_size)</span><br><span class="line">    b = tf.get_variable(<span class="string">'bias'</span>, bias_size, initializer=tf.constant_initializer(<span class="number">0.0</span>))</span><br><span class="line">    <span class="keyword">return</span> x_w, h_w, b</span><br><span class="line"><span class="comment"># one LSTM layer</span></span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'lstm'</span>, initializer=lstm_init):</span><br><span class="line">    <span class="comment"># all params in the lstm cell:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'inputs'</span>):</span><br><span class="line">        ix_w, ih_w, ib = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'outputs'</span>):</span><br><span class="line">        ox_w, oh_w, ob = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'forget'</span>):</span><br><span class="line">        fx_w, fh_w, fb = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="comment"># tanh</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'memory'</span>):</span><br><span class="line">        cx_w, ch_w, cb = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    state_C = tf.Variable(</span><br><span class="line">        tf.zeros([batch_size, hps.num_lstm_nodes[<span class="number">0</span>]]),</span><br><span class="line">        trainable=<span class="literal">False</span></span><br><span class="line">    )</span><br><span class="line">    h = tf.Variable(</span><br><span class="line">        tf.zeros([batch_size, hps.num_lstm_nodes[<span class="number">0</span>]]),</span><br><span class="line">        trainable=<span class="literal">False</span></span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>查看所有可训练的参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&lt;tf.Variable <span class="string">'embedding/embedding:0'</span> shape=(<span class="number">50513</span>, <span class="number">16</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc1/kernel:0'</span> shape=(<span class="number">999</span>, <span class="number">555</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc1/bias:0'</span> shape=(<span class="number">555</span>,) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc2/kernel:0'</span> shape=(<span class="number">555</span>, <span class="number">10</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc2/bias:0'</span> shape=(<span class="number">10</span>,) dtype=float32_ref&gt;</span><br></pre></td></tr></table></figure>
+<p>可以看出LSTM单元中每一个部件的参数大小。模型中只有一层LSTM，所有的LSTM层中的999，均指的是该层有999个LSTM单元。完整实现<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_built_in.py" target="_blank" rel="noopener">看这里</a>。</p>
+<p>结合<a href="http://colah.github.io/posts/2015-08-Understanding-LSTMs/" target="_blank" rel="noopener">colah的这篇文章</a>进一步理解。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" data-id="ckatsrgt4005bxqfz837a8kkf" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-回看SVM-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/" class="article-date">
@@ -840,311 +1053,6 @@
 
 
   
-    <article id="post-文本分类-三-构建模型II-LSTM层结点实现细节" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" class="article-date">
-  <time datetime="2019-08-04T17:12:02.000Z" itemprop="datePublished">2019-08-05</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/">文本分类(三)-构建模型II-LSTM层结点实现细节</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在上一篇笔记<a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">文本分类(三)-构建模型I-built-in-LSTM</a> 中<code>tensorflow</code>中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 <code>from scratch</code></p>
-<p>理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。</p>
-<p>LSTM结点如下图：</p>
-<div align="center">
-    <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/node_lstm.png" width="500">
-</div>
-<div align="center">图：单个LSTM结点内部结构</div>
-<br><br>
-
-<p>一般RNN存在信息过载而<font color="red">不能长久传播</font>的问题，LSTM单元结构存在<font color="red">三重门机制</font>尝试解决这个问题。<br><br>假如一个词的编号为12，将它对应的<code>embedding向量</code>输入LSTM 结点中有一下过程发生：</p>
-<ul>
-<li>得到这个词的embedding，大小为<code>[batch_size, 1, embedd_size]</code>：</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedd_input = embedded_inputs[:, <span class="number">12</span>, :]</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>变形为：<code>[batch_size, embedd_size]</code></li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedd_input = tf.reshape(embedd_input, [batch_size, hps.num_embedding_size])</span><br></pre></td></tr></table></figure>
-
-<h1 id="三重门过程，公式及实现："><a href="#三重门过程，公式及实现：" class="headerlink" title="三重门过程，公式及实现："></a>三重门过程，公式及实现：</h1><h2 id="遗忘门："><a href="#遗忘门：" class="headerlink" title="遗忘门："></a>遗忘门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-f.png" width="700"></div>
-<div align="center">图：遗忘门</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">forget_gate = tf.sigmoid( </span><br><span class="line">                        tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br></pre></td></tr></table></figure>
-
-<h2 id="输入门："><a href="#输入门：" class="headerlink" title="输入门："></a>输入门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-i.png" width="700"></div>
-<div align="center">图：输入门</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">mid_state = tf.tanh(</span><br><span class="line">                        tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br></pre></td></tr></table></figure>
-
-<h2 id="结点隐含状态输出："><a href="#结点隐含状态输出：" class="headerlink" title="结点隐含状态输出："></a><strong>结点隐含状态</strong>输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-C.png" width="700"></div>
-<div align="center">图：隐含状态</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">state_C = mid_state * input_gate + state_C * forget_gate</span><br></pre></td></tr></table></figure>
-
-<h2 id="输出门及结点LSTM的输出："><a href="#输出门及结点LSTM的输出：" class="headerlink" title="输出门及结点LSTM的输出："></a>输出门及结点LSTM的输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-o.png" width="700"></div>
-<div align="center">图：输出门</div>
-<br><br>
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">output_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">h = output_gate * tf.tanh(state)</span><br></pre></td></tr></table></figure>
-
-<p>以上是对于样本中<font color="red">一个词</font>的操作，对于该样本中<font color="red">所有词</font>的操作如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(encoded_length):</span><br><span class="line">    embedd_input = embedded_inputs[:, i, :]   </span><br><span class="line">    embedd_input = tf.reshape(embedd_input, [batch_size, hps.num_embedding_size])</span><br><span class="line">    forget_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br><span class="line">    input_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">    mid_state = tf.tanh(</span><br><span class="line">                            tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br><span class="line"></span><br><span class="line">    state_C = mid_state * input_gate + state_C * forget_gate </span><br><span class="line"></span><br><span class="line">    output_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">    h = output_gate * tf.tanh(state)</span><br><span class="line">last = h</span><br></pre></td></tr></table></figure>
-
-<p>其中<code>encode_lenght</code>表示每一个样本(一条评论)的长度，即评论词的个数，此处是50个。<br>这个序列操作中有那两个值在不断更新</p>
-<ul>
-<li>state_C</li>
-<li>h</li>
-</ul>
-<p>这两个值的不断更新<strong>使得对每个词操作的每个LSTM结点在逻辑上是连在一起的</strong>，如下图：</p>
-<div align="center">
-    <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/logicly_unroll.png" width="700">
-</div>
-<div align="center">
-    图：左侧是实际LSTM结点，右侧是这个结点从时间上展开后的
-</div>
-<br><br>
-
-<p><font color="green" size="5">敲黑板</font>将等号左边按时间次序展开就是右边。实现中一个LSTM结点可以代表一个神经元，只不过这一个神经元内部有5个非线性变换。对于复杂问题一个这样的神经元不足以表达输入数据，所以会有多个这样的神经元。<br>这里的实现源码<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_pure.py" target="_blank" rel="noopener">看这里</a>。源码中对网络的设置为：  </p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">num_lstm_nodes=[<span class="number">32</span>, <span class="number">32</span>],    </span><br><span class="line">num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">encoded_length=<span class="number">50</span>,</span><br></pre></td></tr></table></figure>
-
-<p><font color="orange">表示这个模型有2层LSTM，每一层的神经原结点有32个，而每一层中的每一个神经元所处理的输入序列长50！</font></p>
-<p>务必理解</p>
-<hr>
-<p>完成<br><br>LSTM结点实现。</p>
-<p>本笔记所有图片来源与<a href="http://colah.github.io/posts/2015-08-Understanding-LSTMs/" target="_blank" rel="noopener">colah’s blog</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" data-id="ckatsrgt6005fxqfz8rjrevjx" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-文本分类-三-构建模型I-built-in-LSTM" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" class="article-date">
-  <time datetime="2019-08-04T07:58:14.000Z" itemprop="datePublished">2019-08-04</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/">文本分类(三)-构建模型I-built-in-LSTM</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录使用tensorflow的built-in LSTM创建一个文本分类模型，数据来自<a href="https://ashburnlee.github.io/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" target="_blank" rel="noopener">文本预处理(二)词编码</a>。</p>
-<h1 id="超参数"><a href="#超参数" class="headerlink" title="超参数"></a>超参数</h1><p>首先定义模型使用的超参数，使用<code>tf.contrib.training.HParams()</code>来管理,如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">huper_param</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> tf.contrib.training.HParams(</span><br><span class="line">            num_embedding_size=<span class="number">16</span>,  <span class="comment">#  每一个词所作embedding的向量长度</span></span><br><span class="line">            encoded_length=<span class="number">50</span>,      <span class="comment">#  每一条编码后的样本切取或补充后的长度，</span></span><br><span class="line">            num_word_threshold=<span class="number">20</span>,  <span class="comment">#  词频数&lt;=该值，不考虑</span></span><br><span class="line">            num_lstm_nodes=[<span class="number">32</span>, <span class="number">32</span>],  <span class="comment"># 每一层LSTM的节点个数 </span></span><br><span class="line">            num_lstm_layers=<span class="number">2</span>,       <span class="comment">#  LSTM层数</span></span><br><span class="line">            num_fc_nodes=<span class="number">32</span>,         <span class="comment">#  全连接层节点数</span></span><br><span class="line">            batch_size=<span class="number">100</span>,          <span class="comment">#  每一次输入样本书</span></span><br><span class="line">            learning_rate=<span class="number">0.001</span>,    <span class="comment"># 学习率</span></span><br><span class="line">            clip_lstm_grads=<span class="number">1.0</span>, )   <span class="comment">#  设置LSTM梯度大小，防止梯度爆炸</span></span><br></pre></td></tr></table></figure>
-
-<p>默认每一个参数含初始值，各个参数的含义见注释。其中具体解释两个：</p>
-<ul>
-<li><code>num_embedding_size</code>： 每一个词会用一个向量来表示，该值指明这个向量的大小。而且这个向量是被学习的。</li>
-<li><code>clip_lstm_grads</code>： 这是LSTM<strong>梯度值的上限</strong>，当一个梯度值大于这个上限时，把这个值设置为上限值，来防止<strong>梯度爆炸</strong>。</li>
-</ul>
-<p>调用该函数生成一个对象，可以用<code>对象名.参数名</code>来使用相应的参数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hp = huper_param()</span><br><span class="line">encoded_length = hp.encoded_length</span><br></pre></td></tr></table></figure>
-
-<h1 id="定义计算图"><a href="#定义计算图" class="headerlink" title="定义计算图"></a>定义计算图</h1><p>先定义输入：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">inputs = tf.placeholder(tf.int32, (batch_size, encoded_length))</span><br><span class="line">outputs = tf.placeholder(tf.int32, (batch_size, ))</span><br></pre></td></tr></table></figure>
-
-<p>定义DropOut比率：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keep_prob = tf.placeholder(tf.float32, name=<span class="string">'keep_prob'</span>)</span><br></pre></td></tr></table></figure>
-
-<p>保存当前训练到了那一步：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">global_step = tf.Variable(tf.zeros([], tf.int64), name=<span class="string">'global_step'</span>, trainable=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
-
-<h2 id="1-Embedding层"><a href="#1-Embedding层" class="headerlink" title="1. Embedding层"></a>1. Embedding层</h2><p>使用均匀分布来初始化：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedding_init = tf.random_uniform_initializer(<span class="number">-1.0</span>, <span class="number">1.</span>)</span><br></pre></td></tr></table></figure>
-
-<p>定义embedding：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">embedding = tf.get_variable(</span><br><span class="line">            <span class="string">'embedding'</span>,</span><br><span class="line">            [vocab_size, hps.embedding_size],   <span class="comment"># size of embedding matrix</span></span><br><span class="line">            tf.float32</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-
-<p>说明：</p>
-<ul>
-<li>使用<code>get_varable()</code>，当这个变量存在，就重用它，不存在，则创建它。</li>
-<li><font color="red">embedding矩阵</font>：<code>[vocab_size, hps.embedding_size]</code>：一共有多少个词，每个词用多大的向量表示。</li>
-</ul>
-<p>下一步，将每一条输入中每一个词对应的向量在<code>embedding matrix</code>中<font color="red">查找</font>，比如，当前词<code>id</code>为12，就从<code>embedding matrix</code>中把第12行的向量取出来，对一条记录中每个词作此操作：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[2, 34, 5, 67]-&gt;[[234,565,1,45,57,73],</span><br><span class="line">                 [12,76,23,54,123,48],</span><br><span class="line">                 [43,87,239,57,13,14],</span><br><span class="line">                 [98,64,421,13,63,36]]</span><br></pre></td></tr></table></figure>
-
-<p>用长度为6的向量表示一个词的id。可以看作是对每一条记录的<font color="red" size="4">进一步编码</font>。而且这个编码是要<font color="red" size="4">被学习</font>的。</p>
-<p>给出完整embedding层：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">embedding_init = tf.random_uniform_initializer(<span class="number">-1.0</span>, <span class="number">1.</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'embedding'</span>, initializer=embedding_init):</span><br><span class="line">        embedding = tf.get_variable(</span><br><span class="line">            <span class="string">'embedding'</span>,</span><br><span class="line">            [vocab_size, hps.embedding_size],   <span class="comment"># size of embedding matrix</span></span><br><span class="line">            tf.float32</span><br><span class="line">        )</span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        embedded_inputs = tf.nn.embedding_lookup(embedding, inputs)</span><br></pre></td></tr></table></figure>
-
-<h2 id="2-LSTM-层"><a href="#2-LSTM-层" class="headerlink" title="2. LSTM 层"></a>2. LSTM 层</h2><p>定义initializer：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">scale = <span class="number">1.0</span>/math.sqrt(hps.num_embedding_size + hps.nums_lstm_nodes[<span class="number">-1</span>])/<span class="number">3.0</span></span><br><span class="line">lstm_init = tf.random_uniform_initializer(-scale, scale)</span><br></pre></td></tr></table></figure>
-
-<p>即使用<a href>xavior</a>初始化。</p>
-<p>定义两层LSTM：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">cells = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">2</span>):</span><br><span class="line">    cell = tf.contrib.rnn.BasicLSTMCell(</span><br><span class="line">        hps.nums_lstm_nodes[i],</span><br><span class="line">        state_is_tuple=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line">    cell = tf.contrib.rnn.DropoutWrapper(</span><br><span class="line">        cell,</span><br><span class="line">        output_keep_prob=keep_prob</span><br><span class="line">    )</span><br><span class="line">    cells.append(cell)</span><br></pre></td></tr></table></figure>
-
-<p><code>cells</code>接收每一层，使用<code>BasicLSTMCell</code>创建一LSTM层。紧接着使用<code>DropoutWrapper</code>执行DropOut操作。此时<code>cells</code>中含有两层LSTM。</p>
-<p>然后使用<code>MultiRNNCell</code>合并两LSTM层，第一个<code>cell</code>的输出为第二个<code>cell</code>的输入：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cell = tf.contrib.rnn.MultiRNNCell(cells)</span><br></pre></td></tr></table></figure>
-
-<p>此时就可以把两层的LSTM当作模型中的一层来操作。</p>
-<p>紧接着初始化LSTM单元中的<code>state</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">initialize_state = cell.zero_state(batch_size, tf.float32)</span><br></pre></td></tr></table></figure>
-
-<p>此时便可以使用<code>dynamic_rnn</code>把<font color="red" size="4">序列式的输入</font>传入LSTM层，后得到一系列中间状态和输出值：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rnn_outputs, _ = tf.nn.dynamic_rnn(cell, embedded_inputs, initial_state=initialize_state)</span><br></pre></td></tr></table></figure>
-
-<p>其中<code>_</code>表示中间隐含状态，不需要。<code>rnn_outputs</code>中包含了所有中间输出。对于<strong>多对一</strong>的问题，我们只需要最后一个值：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">last = rnn_outputs[:, <span class="number">-1</span>, :]</span><br></pre></td></tr></table></figure>
-
-<p>给出完整的LSTM层：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">scale = <span class="number">1.0</span>/math.sqrt(hps.num_embedding_size + hps.nums_lstm_nodes[<span class="number">-1</span>])/<span class="number">3.0</span></span><br><span class="line">lstm_init = tf.random_uniform_initializer(-scale, scale)</span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'lstm'</span>, initializer=lstm_init):</span><br><span class="line">    <span class="comment"># store two LSTM layers</span></span><br><span class="line">    cells = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(hps.num_lstm_layer):</span><br><span class="line">        cell = tf.contrib.rnn.BasicLSTMCell(</span><br><span class="line">            hps.nums_lstm_nodes[i],</span><br><span class="line">            state_is_tuple=<span class="literal">True</span></span><br><span class="line">        )</span><br><span class="line">        cell = tf.contrib.rnn.DropoutWrapper(</span><br><span class="line">            cell,</span><br><span class="line">            output_keep_prob=keep_prob</span><br><span class="line">        )</span><br><span class="line">        cells.append(cell)</span><br><span class="line">    <span class="comment"># combine two LSTM layers: 第一个cell的输出为第二个cell的输入</span></span><br><span class="line">    cell = tf.contrib.rnn.MultiRNNCell(cells)</span><br><span class="line">    <span class="comment"># init state</span></span><br><span class="line">    initialize_state = cell.zero_state(batch_size, tf.float32)</span><br><span class="line">    <span class="comment"># input a sentence to cell, 此时就可以把句子输入到cell中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># rnn_outputs: [batch_size, encoded_length, lstm_output[-1]]</span></span><br><span class="line">    rnn_outputs, _ = tf.nn.dynamic_rnn(</span><br><span class="line">        cell, embedded_inputs, initial_state=initialize_state)</span><br><span class="line">    last = rnn_outputs[:, <span class="number">-1</span>, :]</span><br></pre></td></tr></table></figure>
-
-<h2 id="3-全连接层"><a href="#3-全连接层" class="headerlink" title="3. 全连接层"></a>3. 全连接层</h2><p>使用<code>dence()</code>构建全连接层，指定<code>ReLU</code>为激活函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fc1 = tf.layers.dense(last, hps.num_fc_nodes, activation=tf.nn.relu, name=<span class="string">'fc1'</span>)</span><br></pre></td></tr></table></figure>
-
-<p>紧接着进行<code>dropOut</code>操作：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fc1_dropout = tf.contrib.layers.dropout(fc1, keep_prob)</span><br></pre></td></tr></table></figure>
-
-<p>最后再接一个全连接层：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits = tf.layers.dense(fc1_dropout, classes_size, name=<span class="string">'fc2'</span>)</span><br></pre></td></tr></table></figure>
-
-<p>给出完整的全连接层：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">fc_init = tf.uniform_unit_scaling_initializer(factor=<span class="number">1.0</span>)</span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'fc'</span>, initializer=fc_init):</span><br><span class="line">    fc1 = tf.layers.dense(last, hps.num_fc_nodes, activation=tf.nn.relu, name=<span class="string">'fc1'</span>)</span><br><span class="line">    fc1_dropout = tf.contrib.layers.dropout(fc1, keep_prob)</span><br><span class="line">    logits = tf.layers.dense(fc1_dropout, classes_size, name=<span class="string">'fc2'</span>)</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-模型输出"><a href="#4-模型输出" class="headerlink" title="4. 模型输出"></a>4. 模型输出</h2><p>首先：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=outputs)</span><br></pre></td></tr></table></figure>
-
-<p><code>tf.nn.sparse_softmax_cross_entropy_with_logits()</code>做了三件事：</p>
-<ul>
-<li>填坑</li>
-<li>填坑</li>
-<li>填坑</li>
-</ul>
-<p>其次，传入代价函数，并且算出模型输出：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">loss = tf.reduce_mean(softmax_loss)</span><br><span class="line">y_pred = tf.argmax(tf.nn.softmax(logits), <span class="number">1</span>, output_type=tf.int32)</span><br></pre></td></tr></table></figure>
-
-<p>最后，用最简单的正确率衡量模型性能：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">correct_pred = tf.equal(outputs, y_pred)</span><br><span class="line">accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))</span><br></pre></td></tr></table></figure>
-
-<p>说明下面二者的不同：</p>
-<ul>
-<li><code>tf.variable_scope</code>：需要初始化</li>
-<li><code>tf.name_scope</code>：无需初始化</li>
-</ul>
-<p>此部分完整实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.name_scope(<span class="string">'metrics'</span>):</span><br><span class="line">    softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(</span><br><span class="line">        logits=logits, labels=outputs</span><br><span class="line">    )</span><br><span class="line">    loss = tf.reduce_mean(softmax_loss)</span><br><span class="line">    y_pred = tf.argmax(tf.nn.softmax(logits), <span class="number">1</span>, output_type=tf.int32)</span><br><span class="line">    correct_pred = tf.equal(outputs, y_pred)</span><br><span class="line">    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))</span><br></pre></td></tr></table></figure>
-
-<h2 id="5-得到train-op"><a href="#5-得到train-op" class="headerlink" title="5. 得到train_op"></a>5. 得到train_op</h2><p>因为之前对梯度值设定了一个上界，所以要把截断后的梯度值得到，作用于所有可训练变量。所以第一步得到所有可训练变量：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">trainable_vars = tf.trainable_variables()</span><br></pre></td></tr></table></figure>
-
-<p>可以查看所有的可训练变量：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> var <span class="keyword">in</span> trainable_vars:</span><br><span class="line">    print(<span class="string">'variable name: %s'</span> % (var.name))</span><br></pre></td></tr></table></figure>
-
-<p>对所有可训练变量求导数，得到实际梯度后对其<font color="red" size="4">执行剪切操作</font>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grads, _ = tf.clip_by_global_norm(tf.gradients(loss, trainable_vars), hps.clip_lstm_grads)</span><br></pre></td></tr></table></figure>
-
-<p>指定优化算法，应用剪切后的梯度于所有可训练变量。最后训练：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">optimizer = tf.train.AdamOptimizer(hps.learning_rate)</span><br><span class="line">train_op = optimizer.apply_gradients(zip(grads, trainable_vars), global_step=global_step)</span><br></pre></td></tr></table></figure>
-
-<p>完整实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.name_scope(<span class="string">'train_op'</span>):</span><br><span class="line">    trainable_vars = tf.trainable_variables()</span><br><span class="line">    <span class="keyword">for</span> var <span class="keyword">in</span> trainable_vars:</span><br><span class="line">        print(<span class="string">'variable name: %s'</span> % (var.name))</span><br><span class="line">    grads, _ = tf.clip_by_global_norm(</span><br><span class="line">        tf.gradients(loss, trainable_vars), hps.clip_lstm_grads</span><br><span class="line">    )</span><br><span class="line">    optimizer = tf.train.AdamOptimizer(hps.learning_rate)</span><br><span class="line">    train_op = optimizer.apply_gradients(</span><br><span class="line">        zip(grads, trainable_vars), global_step=global_step</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
-
-<h2 id="6-返回值"><a href="#6-返回值" class="headerlink" title="6. 返回值"></a>6. 返回值</h2><p>最后指定函数返回值：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> ((inputs, outputs, keep_prob),  <span class="comment">#  all placeholders</span></span><br><span class="line">        (loss, accuracy),              <span class="comment"># loss &amp; accuracy</span></span><br><span class="line">        (train_op, global_step))      <span class="comment"># tain_op</span></span><br></pre></td></tr></table></figure>
-
-<p>到此位置计算图设计完成。</p>
-<p>假设上述定义计算图可以封装到函数：<code>create_model()</code>。测试一下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataPreProcess <span class="keyword">import</span> encodeWords</span><br><span class="line">vocab_instance = encodeWords.VocabDict(vocab_file, hps.num_word_threshold)</span><br><span class="line">catego_instance = encodeWords.CategoryDict(category_file)</span><br><span class="line">placeholders, metrics, others = create_model(hps,</span><br><span class="line">                                             vocab_instance.size(),</span><br><span class="line">                                             catego_instance.size())</span><br></pre></td></tr></table></figure>
-
-<p><a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/encodeWords.py" target="_blank" rel="noopener">encodedWords</a>中是在<em>文本预处理(二)词编码篇</em>实现的两个类<code>VocabDict</code>和<code>CategoryDict</code>。分别调用其<code>.size()</code>方法，可返回词数量和类别数量。</p>
-<p>打印所有可训练变量，控制台结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">variable name: &lt;tf.Variable <span class="string">'embedding/embedding:0'</span> shape=(50513, 16) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel:0'</span> shape=(48, 128) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias:0'</span> shape=(128,) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel:0'</span> shape=(64, 128) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'lstm/rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias:0'</span> shape=(128,) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc1/kernel:0'</span> shape=(32, 32) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc1/bias:0'</span> shape=(32,) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc2/kernel:0'</span> shape=(32, 10) dtype=float32_ref&gt;</span><br><span class="line">variable name: &lt;tf.Variable <span class="string">'fc/fc2/bias:0'</span> shape=(10,) dtype=float32_ref&gt;</span><br></pre></td></tr></table></figure>
-
-<p>注意，训练并没有执行计算，只是打印了计算图中的可训练变量。结果显示有三部分：</p>
-<ul>
-<li>embedding层</li>
-<li>两层LSTM的权值阈值</li>
-<li>两层全连接层的权值和阈值</li>
-</ul>
-<p>并且每部分参数的形状也可知。</p>
-<h1 id="执行计算流程"><a href="#执行计算流程" class="headerlink" title="执行计算流程"></a>执行计算流程</h1><p>先执行<code>create_model()</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">placeholders, metrics, others = create_model(hps,</span><br><span class="line">                                             vocab_instance.size(),</span><br><span class="line">                                             catego_instance.size())</span><br><span class="line">inputs, outputs, keep_prob = placeholders</span><br><span class="line">loss, accuracy = metrics</span><br><span class="line">train_op, global_step = others</span><br></pre></td></tr></table></figure>
-<p>然后初始化整个网络，给训练过程的<code>keep_prob</code>赋值，并指明训练步数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">init_op = tf.global_variables_initializer()</span><br><span class="line">train_keep_prob = <span class="number">0.8</span></span><br><span class="line">num_train_steps = <span class="number">1000</span></span><br></pre></td></tr></table></figure>
-
-<p>最后创建执行图的<code>tf.session</code>，并执行：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    <span class="comment"># init whole network</span></span><br><span class="line">    sess.run(init_op)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(num_train_steps):</span><br><span class="line">        batch_inputs, batch_label = train_dataset.next_batch(hps.batch_size)</span><br><span class="line">        <span class="comment"># training: global_step+1 when sess.run() is called</span></span><br><span class="line">        outputs_val = sess.run([loss, accuracy, train_op, global_step],</span><br><span class="line">                               feed_dict=&#123;</span><br><span class="line">                                   inputs: batch_inputs,</span><br><span class="line">                                   outputs: batch_label,</span><br><span class="line">                                   keep_prob: train_keep_prob</span><br><span class="line">                               &#125;)</span><br><span class="line">        <span class="comment"># get three values from output_val</span></span><br><span class="line">        loss_val, accuracy_val, _, global_step_val = outputs_val</span><br><span class="line"></span><br><span class="line">        <span class="comment"># print for every 100 times</span></span><br><span class="line">        <span class="keyword">if</span> global_step_val % <span class="number">20</span> == <span class="number">0</span>:</span><br><span class="line">            print(<span class="string">"step: %5d, loss: %3.3f, accuracy: %3.5f"</span> %</span><br><span class="line">                  (global_step_val, loss_val, accuracy_val)</span><br><span class="line">                  )</span><br></pre></td></tr></table></figure>
-
-<p>其中用到了一个重要方法：给placeholders赋值。所以在运行之前使用训练集创建<code>EncodedDataset</code>对象，就可以调用<code>train_dataset.next_batch(hps.batch_size)</code>了：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_dataset &#x3D; createEncodedDataset.EncodedDataset(</span><br><span class="line">        seg_train_file, vocab_instance, catego_instance, hps.encoded_length)</span><br></pre></td></tr></table></figure>
-
-<p>如下时执行1000次的结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">step:   200, loss: 1.732, accuracy: 0.25000</span><br><span class="line">step:   400, loss: 1.720, accuracy: 0.32000</span><br><span class="line">step:   600, loss: 1.537, accuracy: 0.39000</span><br><span class="line">step:   800, loss: 1.279, accuracy: 0.53000</span><br><span class="line">step:  1000, loss: 0.994, accuracy: 0.67000</span><br></pre></td></tr></table></figure>
-
-<p>至少证明模型是正确的。完整实现<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_built_in.py" target="_blank" rel="noopener">看这里</a>。<br>这是第一步，之后便可以进一步优化。本笔记只记录使用<code>tf</code>内置LSTM模块构建基本LSTM文本分类模型，对于优化，调参以后讨论。</p>
-<h1 id="最后一点"><a href="#最后一点" class="headerlink" title="最后一点*"></a>最后一点*</h1><p>在参数列表中有一项<code>num_lstm_nodes</code>，什么意思？！在构建LSTM时的核心函数是：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cell &#x3D; tf.contrib.rnn.BasicLSTMCell( hps.nums_lstm_nodes[i], state_is_tuple&#x3D;True)</span><br></pre></td></tr></table></figure>
-
-<p><font color="green" size="5">敲黑板</font></p>
-<p>查看官方文档：首个参数<code>num_units</code>：它表示<font color="red">LSTM单元内部的神经元数量</font>，即<strong>输出神经元数</strong>。<a href="https://ashburnlee.github.io/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" target="_blank" rel="noopener">LSTM结点结构图</a>中有5个主要非线性变换，他们中的每一个都相当于普通神经网络的的<font color="red">一个<strong>神经原</strong></font>，相对于解决异或问题只需要3个神经元(逻辑门)，解决复杂问题的网络神经元数量都<font color="red">远远不止一个</font>。<br><br><font color="red">相同道理</font>，包含5个非线性变换的一个LSTM结点在解决复杂问题时一定也远不只需要一个。图中只是示意图，表示一个结点，实际上会有很多。从LSTM层使用xavior初始化的角度看，<code>sqrt(hps.num_embedding_size + hps.nums_lstm_nodes[-1])</code>定义代表<code>sqrt(输入大小 + 输出大小)</code>，<code>hps.nums_lstm_nodes[-1]</code>正对应这一层的输出大小。<br><br>诶，在图中也有多个LSTM节点呀！？，这些结点是逻辑上按时间序列展开的节点，空间上只有一个。这里讨论的是另一个维度的LSTM结点。并不矛盾。可以从<a href="https://ashburnlee.github.io/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" target="_blank" rel="noopener">下一节笔记</a>的代码实现中体会。</p>
-<p>理解这个很重要！</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" data-id="ckatsrgvb0088xqfz8aud6db4" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1160,7 +1068,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1189,7 +1097,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1202,11 +1110,15 @@
       <ul>
         
           <li>
-            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
           <li>
-            <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
+            <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
           </li>
         
           <li>
@@ -1215,10 +1127,6 @@
         
           <li>
             <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
           </li>
         
       </ul>

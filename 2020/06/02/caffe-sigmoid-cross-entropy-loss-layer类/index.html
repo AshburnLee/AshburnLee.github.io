@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>caffe-sigmoid_cross_entropy_loss_layer类 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="sigmoid_cross_entropy_loss_layer类头文件： .&#x2F;include&#x2F;caffe&#x2F;layers&#x2F;sigmoid_cross_entropy_loss_layer.hppCPU实现： .&#x2F;src&#x2F;caffe&#x2F;layers&#x2F;sigmoid_cross_entropy_loss_layer.cppGPU实现： .&#x2F;src&#x2F;caffe&#x2F;layers&#x2F;sigmoid_cross_e">
+<meta property="og:type" content="article">
+<meta property="og:title" content="caffe-sigmoid_cross_entropy_loss_layer类">
+<meta property="og:url" content="http://yoursite.com/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="sigmoid_cross_entropy_loss_layer类头文件： .&#x2F;include&#x2F;caffe&#x2F;layers&#x2F;sigmoid_cross_entropy_loss_layer.hppCPU实现： .&#x2F;src&#x2F;caffe&#x2F;layers&#x2F;sigmoid_cross_entropy_loss_layer.cppGPU实现： .&#x2F;src&#x2F;caffe&#x2F;layers&#x2F;sigmoid_cross_e">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-06-01T22:46:30.000Z">
+<meta property="article:modified_time" content="2020-06-01T22:47:03.117Z">
+<meta property="article:author" content="Junhui">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-caffe-sigmoid-cross-entropy-loss-layer类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/" class="article-date">
+  <time datetime="2020-06-01T22:46:30.000Z" itemprop="datePublished">2020-06-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      caffe-sigmoid_cross_entropy_loss_layer类
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="sigmoid-cross-entropy-loss-layer类"><a href="#sigmoid-cross-entropy-loss-layer类" class="headerlink" title="sigmoid_cross_entropy_loss_layer类"></a>sigmoid_cross_entropy_loss_layer类</h1><p>头文件： <code>./include/caffe/layers/sigmoid_cross_entropy_loss_layer.hpp</code><br>CPU实现： <code>./src/caffe/layers/sigmoid_cross_entropy_loss_layer.cpp</code><br>GPU实现： <code>./src/caffe/layers/sigmoid_cross_entropy_loss_layer.cu</code></p>
+<h2 id="所需要基本操作的CPU和GPU实现："><a href="#所需要基本操作的CPU和GPU实现：" class="headerlink" title="所需要基本操作的CPU和GPU实现："></a>所需要基本操作的CPU和GPU实现：</h2><p><code>bottom_diff = sigmoid_output_data - target</code> 的实现如下</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CPU</span></span><br><span class="line">caffe_sub(count, sigmoid_output_data, target, bottom_diff):</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对应的GPU</span></span><br><span class="line">caffe_copy(count, sigmoid_output_data, bottom_diff);</span><br><span class="line">caffe_gpu_axpy(count, Dtype(<span class="number">-1</span>), target, bottom_diff);</span><br></pre></td></tr></table></figure>
+
+<p><code>bottom_diff</code> 中每个元素乘以<code>loss_weight</code>， 共操作<code>count</code>个元素。其实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CPU</span></span><br><span class="line">caffe_scal(count, loss_weight, bottom_diff);</span><br><span class="line"><span class="comment">// GPU</span></span><br><span class="line">caffe_gpu_scal(count, loss_weight, bottom_diff);</span><br></pre></td></tr></table></figure>
+
+<p>上述函数分别使用了<code>cBLAS</code> 和<code>cuBlas</code>两个库函数。<code>sigmoid_output_data</code>是前向传播的结果。上述两步其实是反向传播的过程，最终将结果写入<code>bottom_diff</code>中，它是<code>Blob</code>的一部分，会随着数据的走向继续传播下去。</p>
+<h2 id="后向传播"><a href="#后向传播" class="headerlink" title="后向传播"></a>后向传播</h2><ol>
+<li><p>CPU</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Backward_cpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line"><span class="keyword">if</span> (propagate_down[<span class="number">1</span>]) &#123;</span><br><span class="line">	LOG(FATAL) &lt;&lt; <span class="keyword">this</span>-&gt;type()</span><br><span class="line">			&lt;&lt; <span class="string">" Layer cannot backpropagate to label inputs."</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">	<span class="comment">// First, compute the diff</span></span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">	<span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;cpu_data();</span><br><span class="line">	<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line">	Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line">	caffe_sub(count, sigmoid_output_data, target, bottom_diff);</span><br><span class="line">	<span class="comment">// Zero out gradient of ignored targets.</span></span><br><span class="line">	<span class="keyword">if</span> (has_ignore_label_) &#123;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</span><br><span class="line">			<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">			<span class="keyword">if</span> (target_value == ignore_label_) &#123;</span><br><span class="line">				bottom_diff[i] = <span class="number">0</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Scale down gradient</span></span><br><span class="line">	Dtype loss_weight = top[<span class="number">0</span>]-&gt;cpu_diff()[<span class="number">0</span>] / normalizer_;</span><br><span class="line">	caffe_scal(count, loss_weight, bottom_diff);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 因为是在CPU端，与GPU无关，所以上述code中没有<code>gpu_data</code>或<code>gpu_diff</code>。<br> 主要操作，取数据，执行操作：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 取Blob数据</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"><span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;cpu_data();</span><br><span class="line"><span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line">Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line"><span class="comment">// 如上述操作</span></span><br><span class="line">caffe_sub(count, sigmoid_output_data, target, bottom_diff);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>GPU</p>
+<p> 与cpu相似：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Backward_gpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">1</span>]) &#123;</span><br><span class="line">	LOG(FATAL) &lt;&lt; <span class="keyword">this</span>-&gt;type()</span><br><span class="line">				&lt;&lt; <span class="string">" Layer cannot backpropagate to label inputs."</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">		<span class="comment">// First, compute the diff</span></span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">		<span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;gpu_data();</span><br><span class="line">		<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;gpu_data();</span><br><span class="line">		Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">		caffe_copy(count, sigmoid_output_data, bottom_diff);</span><br><span class="line">		caffe_gpu_axpy(count, Dtype(<span class="number">-1</span>), target, bottom_diff);</span><br><span class="line">		<span class="comment">// Zero out gradient of ignored targets.</span></span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_) &#123;</span><br><span class="line">			<span class="comment">// NOLINT_NEXT_LINE(whitespace/operators)</span></span><br><span class="line">			SigmoidCrossEntropyLossIgnoreDiffGPU&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count),</span><br><span class="line">			CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(count, ignore_label_, target, bottom_diff);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// Scale down gradient</span></span><br><span class="line">		Dtype loss_weight = top[<span class="number">0</span>]-&gt;cpu_diff()[<span class="number">0</span>] / normalizer_;</span><br><span class="line">		caffe_gpu_scal(count, loss_weight, bottom_diff);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 加上kernel函数，其作用是将不需要计算梯度的位置设为零，与CPU含义相同：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidCrossEntropyLossIgnoreDiffGPU</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> count,</span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> ignore_label, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> Dtype* target, </span></span></span><br><span class="line"><span class="function"><span class="params">						Dtype* diff)</span> </span>&#123;</span><br><span class="line">		CUDA_KERNEL_LOOP(i, count) &#123;</span><br><span class="line">			<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">			<span class="keyword">if</span> (target_value == ignore_label) &#123;</span><br><span class="line">				diff[i] = <span class="number">0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="前向传播"><a href="#前向传播" class="headerlink" title="前向传播"></a>前向传播</h2><p>头文件中的成员属性：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 一个SigmoidLayer类对象指针，预测值到概率值的映射</span></span><br><span class="line"><span class="built_in">shared_ptr</span>&lt;SigmoidLayer&lt;Dtype&gt; &gt; sigmoid_layer_;</span><br><span class="line"><span class="comment">/// 接收SigmoidLayer的输出.</span></span><br><span class="line"><span class="built_in">shared_ptr</span>&lt;Blob&lt;Dtype&gt; &gt; sigmoid_output_;</span><br><span class="line"><span class="comment">/// bottom vector holder to call the underlying SigmoidLayer::Forward</span></span><br><span class="line"><span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt; sigmoid_bottom_vec_;</span><br><span class="line"><span class="comment">/// top vector holder to call the underlying SigmoidLayer::Forward</span></span><br><span class="line"><span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt; sigmoid_top_vec_;</span><br><span class="line"><span class="comment">/// Whether to ignore instances with a certain label.</span></span><br><span class="line"><span class="keyword">bool</span> has_ignore_label_;</span><br><span class="line"><span class="comment">/// The label indicating that an instance should be ignored.</span></span><br><span class="line"><span class="keyword">int</span> ignore_label_;</span><br><span class="line"><span class="comment">/// How to normalize the loss.</span></span><br><span class="line">LossParameter_NormalizationMode normalization_;</span><br><span class="line">Dtype normalizer_;</span><br><span class="line"><span class="keyword">int</span> outer_num_, inner_num_;</span><br></pre></td></tr></table></figure>
+
+<p>先执行forward操作：<code>sigmoid_layer_-&gt;Forward(_, _)</code> 。其参数<code>sigmoid_bottom_vec_</code>和<code>sigmoid_top_vec_</code>是两个该类的成员变量，其值随操作的执行而改变，这里要改变的是前者，这个实现在源码中的成员函数<code>LayerSetUp()</code>。</p>
+<p><code>sigmoid_layer_</code>也是成员变量，其定义：<code>shared_ptr&lt;SigmoidLayer&lt;Dtype&gt; &gt; sigmoid_layer_;</code>。CPU和GPU实现见下：</p>
+<ol>
+<li><p>CPU</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Forward_cpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	<span class="comment">// The forward pass computes the sigmoid outputs.</span></span><br><span class="line">	<span class="comment">// 1. Forward计算sigmoid 的输出，并且取数据</span></span><br><span class="line">	sigmoid_bottom_vec_[<span class="number">0</span>] = bottom[<span class="number">0</span>];</span><br><span class="line">	sigmoid_layer_-&gt;Forward(sigmoid_bottom_vec_, sigmoid_top_vec_);</span><br><span class="line">	<span class="comment">// Compute the loss (negative log likelihood)</span></span><br><span class="line">	<span class="comment">// Stable version of loss computation from input data</span></span><br><span class="line">	<span class="keyword">const</span> Dtype* input_data = bottom[<span class="number">0</span>]-&gt;cpu_data();</span><br><span class="line">	<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. 计算 对数似然</span></span><br><span class="line">	<span class="keyword">int</span> valid_count = <span class="number">0</span>;</span><br><span class="line">	Dtype loss = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bottom[<span class="number">0</span>]-&gt;count(); ++i) &#123;</span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_ &amp;&amp; target_value == ignore_label_) &#123;</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		loss -= input_data[i] * (target[i] - (input_data[i] &gt;= <span class="number">0</span>)) -</span><br><span class="line">			<span class="built_in">log</span>(<span class="number">1</span> + <span class="built_in">exp</span>(input_data[i] - <span class="number">2</span> * input_data[i] * (input_data[i] &gt;= <span class="number">0</span>)));</span><br><span class="line">		++valid_count;</span><br><span class="line">	&#125;</span><br><span class="line">	normalizer_ = get_normalizer(normalization_, valid_count);</span><br><span class="line">	top[<span class="number">0</span>]-&gt;mutable_cpu_data()[<span class="number">0</span>] = loss / normalizer_;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>再看<code>sigmoid_layer_-&gt;Forward(_, _);</code>，<code>SigmoidLayer</code>类并没有<code>Formard()</code>方法，所以此方法一定是从其父类继承而来。看源码找到继承顺序：<code>SigmoidLayer::NeuronLayer::Layer</code>，所以这里的<code>Forward()</code>是<code>Layer</code>类的方法，祥看<code>Layer.hpp</code>。</p>
+<ol start="2">
+<li><p>GPU</p>
+<p> 与CPU类似，将CPU中的for循环由kernel函数代替：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidCrossEntropyLossForwardGPU</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> nthreads,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">const</span> Dtype* input_data, <span class="keyword">const</span> Dtype* target, Dtype* loss,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">const</span> <span class="keyword">bool</span> has_ignore_label_, <span class="keyword">const</span> <span class="keyword">int</span> ignore_label_,</span></span></span><br><span class="line"><span class="function"><span class="params">		Dtype* counts)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(i, nthreads) &#123;</span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_ &amp;&amp; target_value == ignore_label_) &#123;</span><br><span class="line">			loss[i] = <span class="number">0</span>;</span><br><span class="line">			counts[i] = <span class="number">0</span>;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			loss[i] = input_data[i] * (target[i] - (input_data[i] &gt;= <span class="number">0</span>)) -</span><br><span class="line">				<span class="built_in">log</span>(<span class="number">1</span> + <span class="built_in">exp</span>(input_data[i] - <span class="number">2</span> * input_data[i] *</span><br><span class="line">				(input_data[i] &gt;= <span class="number">0</span>)));</span><br><span class="line">			counts[i] = <span class="number">1</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> GPU中的前传播：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Forward_gpu()&#123;...&#125;</span><br></pre></td></tr></table></figure>
+<p> 函数体省略，不过在源码中有一点提出：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Since this memory is not used for anything, we use it here to avoid having</span></span><br><span class="line"><span class="comment">// to allocate new GPU memory to accumulate intermediate results.</span></span><br><span class="line">Dtype* loss_data = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">Dtype* count_data = bottom[<span class="number">1</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line"><span class="comment">// Clear scratch memory to prevent interfering with backward (see #6202).</span></span><br><span class="line">caffe_gpu_set(bottom[<span class="number">0</span>]-&gt;count(), Dtype(<span class="number">0</span>), bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff());</span><br><span class="line">caffe_gpu_set(bottom[<span class="number">1</span>]-&gt;count(), Dtype(<span class="number">0</span>), bottom[<span class="number">1</span>]-&gt;mutable_gpu_diff());</span><br></pre></td></tr></table></figure>
+
+<p> 这是CPU版本中没有的，因为kernel函数中需要传入对象数组，但是这部分的地址没有被开辟，所以为了避免在GPU上为中间结果开辟空间，所以使用Blob的暂时没有使用到的部分，作为临时存储空间，只不过，函数结束后要清理这部分空间。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p> 这个类除了上述的方法，还有其他方法详见源文件。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/" data-id="ckax32ye80002lcfz8wrwhkd6" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">caffe-sigmoidLayer类</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">39</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 15px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/26/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/">anaconda 虚拟环境</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

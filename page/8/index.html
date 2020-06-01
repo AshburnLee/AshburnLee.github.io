@@ -64,6 +64,166 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-集成学习-三-随机森林" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/21/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-%E4%B8%89-%E9%9A%8F%E6%9C%BA%E6%A3%AE%E6%9E%97/" class="article-date">
+  <time datetime="2019-08-21T06:04:54.000Z" itemprop="datePublished">2019-08-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/21/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-%E4%B8%89-%E9%9A%8F%E6%9C%BA%E6%A3%AE%E6%9E%97/">集成学习-(三)-随机森林</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="为什么随机森林强"><a href="#为什么随机森林强" class="headerlink" title="为什么随机森林强"></a>为什么随机森林强</h1><p>当集成学习的基学习器均为决策树时，称随机森林，是Bagging的一种变体。决策树在<font color="orange">选择划分属性</font>时，是在当前属性集合中选择最优属性；<font color="red">而在随机森林中，对每个基决策树的每个结点，从该节点的属性集合中随机选择一个包含<code>k</code>个属性的子集，再从这个子集中选择最优的属性用作划分</font>。</p>
+<p><font color="red">这个<code>k</code>控制了随机性的程度</font>：当k值等于当前结点的属性集合中所有属性时，表示随机性为0；当k=1时，则表示，在当前结点的属性集合中随机选取一个，之后就使用这一个作为划分，不管它是好是坏(因为没得选，只有这一个)。一般情况下，选取k为<code>log(d)</code>, 以2为底数。</p>
+<p>为什么随机森林可以“代表集成学习技术”，Bagging中的基学习器<font color="orange">多样性</font>是仅仅通过数据的扰动达到的。而随机森林的多样性，<font color="red">不仅来源于数据扰动，还来自属性的扰动</font>。</p>
+<p>实现随机森林：</p>
+<h1 id="例"><a href="#例" class="headerlink" title="例"></a>例</h1><p>使用moon数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x, y = datasets.make_moons(n_samples=<span class="number">1000</span>, noise=<span class="number">0.2</span>, random_state=<span class="number">111</span>)</span><br></pre></td></tr></table></figure>
+
+<p>构建一片由500棵树的森林：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestClassifier</span><br><span class="line"></span><br><span class="line">rf = RandomForestClassifier(n_estimators=<span class="number">500</span>,</span><br><span class="line">                            random_state=<span class="number">233</span>,</span><br><span class="line">                            oob_score=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = rf.fit(x, y)</span><br><span class="line"><span class="comment"># 查看模型参数</span></span><br><span class="line">print(model)</span><br><span class="line"><span class="comment"># 使用oob，用剩下的样本做测试</span></span><br><span class="line">print(model.oob_score_)</span><br></pre></td></tr></table></figure>
+
+<p>模型参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">RandomForestClassifier(bootstrap=<span class="literal">True</span>, class_weight=<span class="literal">None</span>, criterion=<span class="string">'gini'</span>,</span><br><span class="line">            max_depth=<span class="literal">None</span>, max_features=<span class="string">'auto'</span>, max_leaf_nodes=<span class="literal">None</span>,</span><br><span class="line">            min_impurity_decrease=<span class="number">0.0</span>, min_impurity_split=<span class="literal">None</span>,</span><br><span class="line">            min_samples_leaf=<span class="number">1</span>, min_samples_split=<span class="number">2</span>,</span><br><span class="line">            min_weight_fraction_leaf=<span class="number">0.0</span>, n_estimators=<span class="number">500</span>, n_jobs=<span class="number">1</span>,</span><br><span class="line">            oob_score=<span class="literal">True</span>, random_state=<span class="number">233</span>, verbose=<span class="number">0</span>, warm_start=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+
+<p>可以看出随机森林由那些参数，可以如何设置。<font color="red" size="3">理解了算法原理，才能理解每个参数如何使用</font>。测试集上准确率为95.6%.</p>
+<h1 id="Extra-Tree"><a href="#Extra-Tree" class="headerlink" title="Extra-Tree"></a>Extra-Tree</h1><p>还有一种特殊随机森林：Extra-Tree，与经典森林不同的是，这种森林在结点划分时，完全随机，也就是说在当前节点的<font color="red">所有属性里随机选择一个，而非选择最优的</font>。如此一来，森林中的每一棵树的就更加不同了，即多样性更强了。示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> ExtraTreesClassifier</span><br><span class="line">etree = ExtraTreesClassifier(n_estimators=<span class="number">500</span>,</span><br><span class="line">                             bootstrap=<span class="literal">True</span>,</span><br><span class="line">                             oob_score=<span class="literal">True</span>,</span><br><span class="line">                             random_state=<span class="number">233</span>)</span><br><span class="line"></span><br><span class="line">model2 = etree.fit(x, y)</span><br><span class="line">print(model2)</span><br><span class="line">print(model2.oob_score_)</span><br></pre></td></tr></table></figure>
+
+<p>结果 95.5%</p>
+<p>回顾了Bagging，随机森林，Extra-Tree 都进行了分类任务的应用。也可以将这些集成用于回归任务。</p>
+<p><font color="gree" size="5">敲黑板</font>样本数量的扰动，样本属性的扰动，增强不同决策树的<font color="red">多样性</font>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/21/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-%E4%B8%89-%E9%9A%8F%E6%9C%BA%E6%A3%AE%E6%9E%97/" data-id="ckatsrgtk006jxqfzdinf39uk" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-集成学习-ensemble-learning-二" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/" class="article-date">
+  <time datetime="2019-08-20T15:43:46.000Z" itemprop="datePublished">2019-08-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/">集成学习-(二)-Bagging</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>集成学习可以分为两大类：</p>
+<ul>
+<li>学习器之间存在依赖关系，必须串行生成序列化方法。</li>
+<li>学习器之间不存在依赖关系，可以同时生成的并行化方法。</li>
+</ul>
+<p>前者的代表是“Boosting”，后者的代表是“Bagging”和“随机森林(Random Forest)”.</p>
+<p>得到泛化能力强的集成，每个学习器要尽量不同，如何做到不同。一个方法是由训练集产生多个不同的子集，在每个子集上训练学习器。如5000个样本，用5个学习器分别学习1000个样本集。如此产生5个不同的模型。但是如此一来，每个模型的性能会有所下降，同时，集成学习的一个优势是每个学习器并不需要具有很强的性能。</p>
+<h1 id="从数据中采样"><a href="#从数据中采样" class="headerlink" title="从数据中采样"></a>从数据中采样</h1><p>但是，“好而不同”毕竟每个学习器要“好”。所以根据每个学习器只使用数据的一部分，产生两种采样方式：</p>
+<ul>
+<li>有放回抽样 自助采样（Bootstrap Sampling）</li>
+<li>无放回抽样</li>
+</ul>
+<p>自助采样：假设原始数据集由m个样本，对于第一个学习器，随机采样一个样本，放入采样集中，后把该样本放回原数据集。如此采样m次便得到含有m个样本的子集来训练学习器<code>#1</code>。对于其他学习器，采用同样的方式得到训练集。如此得到的不同子集中一定存在重复的元素。最后基于每一个子集训练学习器，后集成。此过程成为<code>Bagging</code>。</p>
+<p>对于无放回抽样，就如上述所述，5000个样本是数据集，若分给5个学习器，每个得到1000个样本；10 个学习器，每个得到500个样本。这种方法成为<code>Pasting</code>。其局限性很显然，学习器个数与其子集样本数成反比。</p>
+<p>Bagging常用。例：<br>所使用数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x, y = datasets.make_moons(n_samples=<span class="number">1000</span>, noise=<span class="number">0.2</span>, random_state=<span class="number">111</span>)</span><br><span class="line">x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=<span class="number">111</span>)</span><br></pre></td></tr></table></figure>
+
+<p>使用决策树为基学习器，设置<code>5</code>个，采样为放回采样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier</span><br><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> BaggingClassifier</span><br><span class="line"></span><br><span class="line">bagg = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                         n_estimators=<span class="number">5</span>, max_samples=<span class="number">100</span>, bootstrap=<span class="literal">True</span>)</span><br><span class="line">bagg.fit(x_train, y_train)</span><br><span class="line">print(bagg.score(x_test, y_test))</span><br></pre></td></tr></table></figure>
+
+<p>测试集的正确率为：94.4%</p>
+<p>设置<code>500</code>个基学习器：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bagg2 = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                         n_estimators=<span class="number">500</span>, max_samples=x_train.shape[<span class="number">0</span>], bootstrap=<span class="literal">True</span>)</span><br><span class="line">bagg2.fit(x_train, y_train)</span><br><span class="line">print(bagg2.score(x_test, y_test))</span><br></pre></td></tr></table></figure>
+
+<p>测试集准确率： 96.0%</p>
+<h1 id="Out-of-bag-Estimate（OOB）"><a href="#Out-of-bag-Estimate（OOB）" class="headerlink" title="Out-of-bag Estimate（OOB）"></a>Out-of-bag Estimate（OOB）</h1><p>可以计算，<font color="red">通过自助采样，原始数据集中大约有36.8%的样本未出现在每个学习器的样本子集中。所以对于Bagging，天然的，在原始数据集中就有测试集了</font>，即那剩下的原始数据集中的36.7%。</p>
+<p>使用sklearn 中的<code>oob_score_</code> 实现<code>oob</code>：<br><font color="red">在放回采样过程中，记录那些样本没有被取到，这些未被取到的作为验证集或测试集</font>，这个过程由oob_score=True 实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bagg3 = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                          n_estimators=<span class="number">500</span>, max_samples=x.shape[<span class="number">0</span>],</span><br><span class="line">                          bootstrap=<span class="literal">True</span>, oob_score=<span class="literal">True</span>)</span><br><span class="line">bagg3.fit(x, y)</span><br><span class="line">print(bagg3.oob_score_)</span><br></pre></td></tr></table></figure>
+
+<p>结果0.958。</p>
+<h1 id="多核心并行"><a href="#多核心并行" class="headerlink" title="多核心并行"></a>多核心并行</h1><p>由于每个学习器没有相互影响，所以所有学习器可以同时学习：<br>指定<code>n_jobs</code>的值，当其为<code>-1</code>时，表示使用计算机所有物理核心：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 并行执行，使用所有核心</span></span><br><span class="line">bagg4 = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                          n_estimators=<span class="number">500</span>, max_samples=x.shape[<span class="number">0</span>],</span><br><span class="line">                          bootstrap=<span class="literal">True</span>,</span><br><span class="line">                          oob_score=<span class="literal">True</span>,</span><br><span class="line">                          n_jobs=<span class="number">-1</span>)</span><br><span class="line">start2 = clock()</span><br><span class="line">bagg4.fit(x, y)</span><br><span class="line">end2 = clock()</span><br><span class="line">print(bagg4.oob_score_)</span><br><span class="line">print(end2 - start2)</span><br></pre></td></tr></table></figure>
+<p>计时得到最终执行时间：0.1591450000000001<br>而使用一个核心的执行时间为：0.6764169999999998</p>
+<h1 id="更多采样方式"><a href="#更多采样方式" class="headerlink" title="更多采样方式"></a>更多采样方式</h1><p><font color="red">当数据集的特征较多时，可是对特征进行随机采样</font>：<code>Random Subspaces</code>。只在列上随机采样。如下左图。<br><br>另一种采样方式，既对样本随机采样，又对特征的随机采样：<code>Random Patches</code>。既在行又在列上随机采样。如下右图：</p>
+<div align="center"><img src="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/sampling.png" width="600"></div>
+<div align="center">左Radom Subspaces & 右Random Patches</div>
+
+<p>既然有对样本数量的自助采样（bootstrap sampling），也有对样本特征的自助采样。如此得到的特征为<code>bootstrap features</code>：</p>
+<ul>
+<li><p>Random Subspaces</p>
+<p>  只对特征进行随机采样，将学习机的<code>bootstrap_features</code>参数置为<code>True</code>：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 关闭样数量的随机采样</span></span><br><span class="line">random_subspaces_bag = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                                        n_estimators=<span class="number">500</span>,</span><br><span class="line">                                        max_samples=x.shape[<span class="number">0</span>],  <span class="comment"># 所有行</span></span><br><span class="line">                                        max_features=<span class="number">1</span>,</span><br><span class="line">                                        bootstrap=<span class="literal">True</span>,</span><br><span class="line">                                        bootstrap_features=<span class="literal">True</span>,  <span class="comment"># 一部分列</span></span><br><span class="line">                                        oob_score=<span class="literal">True</span>,</span><br><span class="line">                                        n_jobs=<span class="number">-1</span>)</span><br><span class="line">start3 = clock()</span><br><span class="line">random_subspaces_bag.fit(x, y)</span><br><span class="line">end3 = clock()</span><br><span class="line">print(random_subspaces_bag.oob_score_)</span><br><span class="line">print(end3 - start3)</span><br></pre></td></tr></table></figure>
+<p>  结果为： 0.835<br>  运行时间：0.1876460000000002</p>
+</li>
+</ul>
+<ul>
+<li><p>Random Patches，</p>
+<p>  既对样本数据量采样，又对特征进行采样。因为原始数据只有2个特征，所以此处只采样一个特征。</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## random patches 既有样本数的随机采样， 又有特征的随机采样：</span></span><br><span class="line">random_patches_bag = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                                        n_estimators=<span class="number">500</span>,</span><br><span class="line">                                        max_samples=<span class="number">200</span>,  <span class="comment"># 一部分行</span></span><br><span class="line">                                        max_features=<span class="number">1</span>,</span><br><span class="line">                                        bootstrap=<span class="literal">True</span>,</span><br><span class="line">                                        bootstrap_features=<span class="literal">True</span>,  <span class="comment"># 一部分列</span></span><br><span class="line">                                        oob_score=<span class="literal">True</span>,</span><br><span class="line">                                        n_jobs=<span class="number">-1</span>)</span><br><span class="line">start3 = clock()</span><br><span class="line">random_patches_bag.fit(x, y)</span><br><span class="line">end3 = clock()</span><br><span class="line">print(random_patches_bag.oob_score_)</span><br><span class="line">print(end3 - start3)</span><br></pre></td></tr></table></figure>
+<p>  结果为：0.897<br>  运行时间： 0.16168400000000016</p>
+<p>  对于图像信息，<font color="red">除了pooling采样操作，还可以使用这两种采样操作</font>。</p>
+</li>
+</ul>
+<p><font color="gree" size="5">敲黑板</font></p>
+<pre><code>”好而不同“是集成学习的核心。
+”不同“的实现方式之一是”采样“：对样本数量采样，对样本特征采样。
+即，使用一部分数据训练基学习器。</code></pre>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/" data-id="ckatsrgtl006mxqfz51xi2dww" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-集成学习-ensemble-learning-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" class="article-date">
@@ -707,219 +867,6 @@
 
 
   
-    <article id="post-Deep-Learning-知识点" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" class="article-date">
-  <time datetime="2019-08-08T14:48:42.000Z" itemprop="datePublished">2019-08-08</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/">Deep Learning 知识点</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>杂记：</p>
-<h1 id="Loss-Fucntion与训练"><a href="#Loss-Fucntion与训练" class="headerlink" title="Loss Fucntion与训练"></a>Loss Fucntion与训练</h1><ul>
-<li><p>为啥会有Loss Function目标函数：如果要调整一个东西，让它符合一个事件的话，首先需要定义需要符合的事件是啥，这就是目标函数。也就是说，要基于什么样的目标来调整这个东西（模型）。 </p>
-</li>
-<li><p>常使用的目标函数：</p>
-<ul>
-<li>平方差损失函数。样本标签值与预测值的距离之和</li>
-<li>交叉熵损失函数。衡量两个分布间的差距</li>
-</ul>
-</li>
-<li><p>训练目的：调整参数，使得模型在训练集上的损失函数值最小。</p>
-</li>
-<li><p>如何训练：直接解方程？不得行。所以有了以GD为代表的学习算法。</p>
-</li>
-<li><p>使用<code>Mini-batch梯度下降</code>。如果每一次都在整个数据集上计算梯度，计算量巨大，可能内存不够。如果使用随机梯度(<code>SGD</code>)下降，即每使用一个样本就计算一次梯度，在一个样本上得到的梯度不能反应整个数据集的梯度方向，所以收敛速度慢。所以一般使用<code>Mini-batch梯度下降</code>。</p>
-</li>
-<li><p>上述三种梯度下降法都存在一个缺点：会陷入局部最小值和鞍点。可以使用动量梯度下降(<code>SGD+Momentum</code>)。其特点是,如果当前步的方向与上一步的方向呈锐角，实际方向在二者之间，且步长较大，若是钝角，则步长小。也就是说:</p>
-<ul>
-<li>刚开始积累动量，加速学习。</li>
-<li>局部震荡时，梯度为0，由于动量的存在，跳出局部最优。</li>
-<li>梯度方向改变时，动量缓解震荡。</li>
-</ul>
-</li>
-</ul>
-<h1 id="CNN"><a href="#CNN" class="headerlink" title="CNN"></a>CNN</h1><ul>
-<li><p>为啥有CNN。在传统的NN处理图像时，由于全连接，导致</p>
-<ol>
-<li><p>计算量大</p>
-</li>
-<li><p>参数过多，使得过拟合</p>
-<p>CNN灵感来与生物的视觉感受野，其特点是局部连接，每个神经元在图片上移动时，其卷积核参数不变（参数共享），而不同的神经元间的卷积核参数不同。相比较于全连接，参数量减少了很多。参数共享：一个卷积核提取一个特征。所以CNN解决上述两个问题：</p>
-</li>
-<li><p>局部连接</p>
-</li>
-<li><p>参数共享</p>
-</li>
-</ol>
-</li>
-<li><p>一个卷积核3通道分别与输入的3通道计算，得到的3通道计算结果相加作为输出的一个通道。如下图：</p>
-<ul>
-<li><p>即一个卷积核得到一个输出通道，所以n个卷积核得到n个输出通道。</p>
-</li>
-<li><p>一个卷积核提取一个特征，所以6个卷积核提取6个特征。</p>
-</li>
-<li><p>其中<code>28 =（32-5)/1+1</code>，即<code>输出长=(输入长-卷积核长)/stride步长+1</code>(步长为1)。<br></p>
-<div align="center"><img src="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/conv.png" width="600"></div>
-
-<p>注意图中的参数个数和计算量的计算与输入尺寸无关。参数计算=（核长×核宽）×（输入通道数×输出通道数）。与图中一致。</p>
-</li>
-</ul>
-</li>
-</ul>
-<h1 id="激活函数选择（添加图示）"><a href="#激活函数选择（添加图示）" class="headerlink" title="激活函数选择（添加图示）"></a>激活函数选择（添加图示）</h1><ul>
-<li>线性激活函数，对于网络无效，因为是全等变换，无论网络由多少层，都相当于只有一层。我们说激活函数的作用是非线性变换，而现行变换无效果。</li>
-<li>深层网络不适用<code>sigmoid</code>，因其计算复杂，输出均值非0，且会发生梯度消失，即更深的层参数得不到更新。</li>
-<li><code>tanh</code>虽然输出均值为0，但计算复杂，有和<code>sigmoid</code>相同的问题。</li>
-<li><code>ReLU</code>首次在AlexNet中使用，计算简单，但输出均值非0，会存在dead 神经元。</li>
-<li><code>Leaky ReLU</code>解决了<code>ReLU</code>的dead 神经源问题。</li>
-<li><code>ELU</code>输出均值接近于0，</li>
-<li><code>MaxOut</code>是<code>ReLU</code>的泛华版本，没有dead神经元，但参数会翻倍。</li>
-</ul>
-<p>总结：一般使用<code>Leaky ReLU</code>，<code>ELU</code>，<code>MaxOut</code>。</p>
-<h1 id="Pooling"><a href="#Pooling" class="headerlink" title="Pooling"></a>Pooling</h1><p>max-pooling,average-pooling, 特点：</p>
-<ul>
-<li>池化核移动不重叠，</li>
-<li>不补零，</li>
-<li>无可训练过参数，</li>
-<li>作用：降采样，为下一层减少尺寸，减少计算量，减少训练参数，</li>
-<li>平移鲁棒性</li>
-</ul>
-<h1 id="全连接层FC"><a href="#全连接层FC" class="headerlink" title="全连接层FC"></a>全连接层FC</h1><p>将上一层输出展开并连接到每一个神经元上。<code>2D</code>变<code>1D</code>，没有了<code>2D</code>信息，所以不能再加卷基层。实际上就是普通的<code>NN</code>。全连接层的参数很多，一般占整个模型参数量的60%~80%。</p>
-<h1 id="优化算法"><a href="#优化算法" class="headerlink" title="优化算法"></a>优化算法</h1><ul>
-<li><p>SGD：</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    x += lr * dx</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>动量SGD，解决鞍点和局部最优值，问题，每个维度的学习速率都一样：</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Vx = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    Vx = rho * Vx + dx</span><br><span class="line">    x += lr * Vx</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>AdaBrad：</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured += dx * dx    <span class="comment"># 积累平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
-
-<p>  缺点：当learning rate较大时，分母敏感，使梯度爆炸。后期分母变大，使更新变得很小，提前结束训练。</p>
-</li>
-<li><p>RMSProp：</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grad_squared = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    grad_sqaured = delay_rate * grad_sqaured + (<span class="number">1</span>-delay_rate) * dx * dx    <span class="comment"># 平均平方梯度</span></span><br><span class="line">    x -= lr * dx / (np.sqrt(grad_sqaured)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
-
-<p>  解决了后期训练提前结束的问题。</p>
-</li>
-<li><p>Adam：</p>
-<p>  结合了动量SGD和RMSProp优点</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">frst_moment = <span class="number">0</span></span><br><span class="line">scnd_moment = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> true:</span><br><span class="line">    dx = compute_gradient(x)</span><br><span class="line">    frst_moment = beta1 * frst_moment + (<span class="number">1</span>-beta1) * dx</span><br><span class="line">    scnd_moment = beta2 * scnd_moment + (<span class="number">1</span>-beta2) * dx * dx</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 校准</span></span><br><span class="line">    frst_unbias = frst_moment/(<span class="number">1</span>-beta1**t)</span><br><span class="line">    scnd_unbias = scnd_moment/(<span class="number">1</span>-beta2**t)</span><br><span class="line">    x -= lr * frst_unbias / (np.sqrt(scnd_unbias)+<span class="number">1e-7</span>)</span><br></pre></td></tr></table></figure>
-
-<p>  使得开始训练时frst_moment和scnd_moment变大来加速训练。一般使用Adam算法，从经验来讲，beta1=0.9， beta2=0.999，lr=1e-3。</p>
-</li>
-<li><p>lr自适应方法：</p>
-  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Exponetial Decay:</span></span><br><span class="line">lr = lr * e**(-kt)</span><br><span class="line"><span class="comment"># 1/t Decay:</span></span><br><span class="line">lr = lr / (<span class="number">1</span>+kt)</span><br></pre></td></tr></table></figure>
-<p>  SGD训练时间长但效果好，不过需要好的初始化，和lr自适应，如果不能找到好的初始化和lr自适应，用Adam。如果要训练更深更复杂的网络，且要求收敛速度快，推荐使用Adam。</p>
-</li>
-</ul>
-<h1 id="网络需要初始化-添加图示"><a href="#网络需要初始化-添加图示" class="headerlink" title="网络需要初始化 (添加图示)"></a>网络需要初始化 (添加图示)</h1><p>好的初始化使训练速度快，且达到一个好的结果。多层网络不适用0来初始化。</p>
-<p>如何判断初始化的好坏？查看初始化后各层的激活函数的分布，如果分布在一个区间内，好；如果输出集中在某个值上，不好。<br>一般使用均值为0方差为0.02的正态分布来初始化。<br>对于<code>tanh</code>使用<code>Xavior</code>初始化：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in)</span><br></pre></td></tr></table></figure>
-
-<p>对于ReLU使用<code>He-ReLU</code>初始化：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.rand(channel_in, channel_out)/np.sqrt(channel_in/<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
-<p>其网络每一层分布都相近。</p>
-<h1 id="批归一化"><a href="#批归一化" class="headerlink" title="批归一化"></a>批归一化</h1><p>通用的归一化方法：</p>
-<ul>
-<li><p>为了使得每层激活函数的分布一致，在得到激活函数值后，把输出做归一化处理：减去均值，除以方差，使得其值分布在均值为0，方差为1 的分分布上。</p>
-</li>
-<li><p>缺点：表示在每一批上做归一化，但是，一批的分布不能反应整个数据集的分布，结果是，得到一个特征，批归一化后，这个特征不能在批不批间区分样本了，即特征无效了。</p>
-</li>
-<li><p>解决：设置alpha&amp;beta两个参数做逆归一化：</p>
-</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">数学公式 填坑</span><br></pre></td></tr></table></figure>
-
-<h1 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h1><p>多尺度剪裁。</p>
-<h1 id="Fine-Tuning"><a href="#Fine-Tuning" class="headerlink" title="Fine-Tuning"></a>Fine-Tuning</h1><p>在已经训练好的网络上进行微调。使用已经微调好的模型来初始化。见Fine-tuning博客。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" data-id="ckatsrgs0002rxqfz39t0c2rt" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-文本分类-三-构建模型III-LSTM网络参数" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" class="article-date">
-  <time datetime="2019-08-08T14:04:31.000Z" itemprop="datePublished">2019-08-08</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/">文本分类(三)-构建模型III-LSTM网络参数</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>假如网络的超参数配置如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">set_default_parameters</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> tf.contrib.training.HParams(</span><br><span class="line">        embedding_size=<span class="number">16</span>,</span><br><span class="line">        encoded_length=<span class="number">50</span>,</span><br><span class="line">        num_word_threshold=<span class="number">20</span>,</span><br><span class="line">        num_lstm_nodes=[<span class="number">999</span>, <span class="number">32</span>],    <span class="comment"># 999</span></span><br><span class="line">        num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">        num_fc_nodes=<span class="number">555</span>,            <span class="comment"># 555</span></span><br><span class="line">        batch_size=<span class="number">100</span>,</span><br><span class="line">        learning_rate=<span class="number">0.001</span>,</span><br><span class="line">        clip_lstm_grads=<span class="number">1.0</span>,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
-
-<p>在构建模型图的过程中，需要对LSTM单元中的每一个门制定参数大小：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_generate_params_for_lstm_cell</span><span class="params">(x_size, h_size, bias_size)</span>:</span></span><br><span class="line">    x_w = tf.get_variable(<span class="string">'x_weights'</span>, x_size)</span><br><span class="line">    h_w = tf.get_variable(<span class="string">'h_weights'</span>, h_size)</span><br><span class="line">    b = tf.get_variable(<span class="string">'bias'</span>, bias_size, initializer=tf.constant_initializer(<span class="number">0.0</span>))</span><br><span class="line">    <span class="keyword">return</span> x_w, h_w, b</span><br><span class="line"><span class="comment"># one LSTM layer</span></span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'lstm'</span>, initializer=lstm_init):</span><br><span class="line">    <span class="comment"># all params in the lstm cell:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'inputs'</span>):</span><br><span class="line">        ix_w, ih_w, ib = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'outputs'</span>):</span><br><span class="line">        ox_w, oh_w, ob = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'forget'</span>):</span><br><span class="line">        fx_w, fh_w, fb = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="comment"># tanh</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'memory'</span>):</span><br><span class="line">        cx_w, ch_w, cb = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    state_C = tf.Variable(</span><br><span class="line">        tf.zeros([batch_size, hps.num_lstm_nodes[<span class="number">0</span>]]),</span><br><span class="line">        trainable=<span class="literal">False</span></span><br><span class="line">    )</span><br><span class="line">    h = tf.Variable(</span><br><span class="line">        tf.zeros([batch_size, hps.num_lstm_nodes[<span class="number">0</span>]]),</span><br><span class="line">        trainable=<span class="literal">False</span></span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
-
-<p>查看所有可训练的参数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&lt;tf.Variable <span class="string">'embedding/embedding:0'</span> shape=(<span class="number">50513</span>, <span class="number">16</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc1/kernel:0'</span> shape=(<span class="number">999</span>, <span class="number">555</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc1/bias:0'</span> shape=(<span class="number">555</span>,) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc2/kernel:0'</span> shape=(<span class="number">555</span>, <span class="number">10</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc2/bias:0'</span> shape=(<span class="number">10</span>,) dtype=float32_ref&gt;</span><br></pre></td></tr></table></figure>
-<p>可以看出LSTM单元中每一个部件的参数大小。模型中只有一层LSTM，所有的LSTM层中的999，均指的是该层有999个LSTM单元。完整实现<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_built_in.py" target="_blank" rel="noopener">看这里</a>。</p>
-<p>结合<a href="http://colah.github.io/posts/2015-08-Understanding-LSTMs/" target="_blank" rel="noopener">colah的这篇文章</a>进一步理解。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" data-id="ckatsrgt4005bxqfz837a8kkf" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -935,7 +882,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -964,7 +911,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -977,11 +924,15 @@
       <ul>
         
           <li>
-            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
           <li>
-            <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
+            <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
           </li>
         
           <li>
@@ -990,10 +941,6 @@
         
           <li>
             <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
           </li>
         
       </ul>

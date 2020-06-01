@@ -64,6 +64,126 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-Grid-stride-Loop" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/26/CUDA-Grid-stride-Loop/" class="article-date">
+  <time datetime="2019-11-26T15:29:29.000Z" itemprop="datePublished">2019-11-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/26/CUDA-Grid-stride-Loop/">CUDA-Grid stride Loop</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Grid-stride-loop"><a href="#Grid-stride-loop" class="headerlink" title="Grid-stride loop"></a>Grid-stride loop</h2><p>Grid-stride loop 长这个样子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> index = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">  <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = index; i &lt; n; i += stride)</span><br><span class="line">    y[i] = x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当有足够的线程可以覆盖所有需要处理的数据时，一个线程处理一个数据。线程ID不需要更新，一次并行执行结束，如下:<br>Common CUDA guidance is to launch one thread per data element, which means to parallelize the above SAXPY loop we write a kernel that assumes we have enough threads to more than cover the array size:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) </span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一个grid可以覆盖所有数据，这种方式的kernel被称作<em>monolithic kernel</em>. 如下kernel可以一次处理1M的数据量:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">4096</span>,<span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>但是，当数据量很大时，超过可用的线程数，那么所有线程由不能只干一次活了，所有线程做完一批后更新ID接着做下一批。这种方式被称作<em>grid-stride loop</em>，如下边的kernel:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x; </span><br><span class="line">         i &lt; n; </span><br><span class="line">         i += blockDim.x * gridDim.x) &#123;</span><br><span class="line">          y[i] = a * x[i] + y[i];</span><br><span class="line">      &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>自然地，更新ID的方式就是，让ID加上grid的大小，即所有线程个数。一个grid 的所有线程个数就是<code>blockDim.x * gridDim.x</code>。<br>这个值可以称作为ID更新步长。加入我有1280个线程，那么线程0 将会处理元素0,1280,2560，…。这样做的好处是，保证了相邻的线程处理相邻的数据，这是效率最高的执行方式。如本文所讲“we ensure that all addressing within warps is unit-stride, so we get maximum memory coalescing, just as in the monolithic version.”</p>
+<p>总结下<em>grid-stride loop</em>的优势:</p>
+<p>1) <strong>Scalability and thread reuse</strong>. </p>
+<p>保证可以处理任何量的数据，一批一批地串行就可以啦，没办法，可用线程数有限，这可以保证所有数据正确被处理。另一方面，可以限制block的数量，做微调，尝试提升性能。<br>“By using a loop, you can support <span style="color:red">any problem size</span>. even if it exceeds the largest grid size your CUDA device supports. Moreover, you can <span style="color:red">limit the number of blocks</span> you use to tune performance. For example, it’s often useful to launch a number of blocks <span style="color:red">that is a multiple of the number of multiprocessors on the device</span>, to balance utilization. As an example, we might launch the loop version of the kernel like this:”</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> numSMs;</span><br><span class="line">cudaDeviceGetAttribute(&amp;numSMs, cudaDevAttrMultiProcessorCount, devId);</span><br><span class="line"><span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">saxpy&lt;&lt;&lt;<span class="number">32</span>*numSMs, <span class="number">256</span>&gt;&gt;&gt;(<span class="number">1</span> &lt;&lt; <span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>When you limit the number of blocks in your grid, threads are reused for multiple computations. Thread reuse amortizes thread creation and destruction cost along with any other processing the kernel might do before or after the loop (such as thread-private or shared data initialization).</p>
+<p>2) <strong>Debugging</strong></p>
+<p>方便Debug，只是用一个线程，使整个过程变为串行处理，通过使用打印语句，找到错误，便于修改。<br>By using a loop instead of a <em>monolithic kernel</em>, you can easily switch to serial processing by launching one block with one thread. </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saxpy&lt;&lt;&lt;<span class="number">1</span>,<span class="number">1</span>&gt;&gt;&gt;(<span class="number">1</span>&lt;&lt;<span class="number">20</span>, <span class="number">2.0</span>, x, y);</span><br></pre></td></tr></table></figure>
+<p>This makes it easier to emulate a serial host implementation to validate results, and it can make printf debugging easier by <span style="color:red">serializing the print order</span>. Serializing the computation also allows you to eliminate numerical variations caused by changes in the order of operations from run to run, helping you to verify that your numerics are correct before tuning the parallel version.</p>
+<p>3) <strong>Portability and readability</strong></p>
+<p>The grid-stride loop code is more like the original sequential loop code than the monolithic kernel code, making it clearer for other users. In fact we can pretty easily write a version of the kernel that compiles and runs either as a parallel CUDA kernel on the GPU or as a sequential loop on the CPU. The Hemi library provides a <code>grid_stride_range()</code> helper that makes this trivial using C++11 range-based for loops. </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HEMI_LAUNCHABLE</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> i : hemi::grid_stride_range(<span class="number">0</span>, n)) &#123;</span><br><span class="line">        y[i] = a * x[i] + y[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>We can launch the kernel using this code, which generates a kernel launch when compiled for CUDA, or a function call when compiled for the CPU. <code>hemi::cudaLaunch(saxpy, 1&lt;&lt;20, 2.0, x, y);</code><br>Grid-stride loops are a great way to make your CUDA kernels flexible, scalable, debuggable, and even portable. </p>
+<p>原文内容来自 Mark Harris<br>原文<a href="https://devblogs.nvidia.com/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/" target="_blank" rel="noopener">链接</a></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/11/26/CUDA-Grid-stride-Loop/" data-id="ckatsrgqw0006xqfz8bek00y7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-求三角形顶点坐标-Cross-Production" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/" class="article-date">
+  <time datetime="2019-10-10T14:05:01.000Z" itemprop="datePublished">2019-10-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/">CUDA-求三角形顶点坐标-Cross Production</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="三角型，已知三个角度和两个定点坐标，求第三个定点坐标"><a href="#三角型，已知三个角度和两个定点坐标，求第三个定点坐标" class="headerlink" title="三角型，已知三个角度和两个定点坐标，求第三个定点坐标"></a>三角型，已知三个角度和两个定点坐标，求第三个定点坐标</h1><p>一个三角形，已知两个顶点坐标<code>p1</code>和<code>p2</code>，和三个顶角<code>angle1</code>, <code>angle2</code>, <code>angle3</code>，求第三个顶点p3的坐标。方法如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">x = (p1X * cot(angle2) + p2X * cot(angle1) + p2Y - p1Y) / cot(angle1) + cot(angle2));</span><br><span class="line"></span><br><span class="line">y = (p1Y * cot(angle2) + p2Y * cot(angle1) + p1X - p2X) / (cot(angle1) + cot(angle2));</span><br></pre></td></tr></table></figure>
+
+<p>其中 <code>cot(alpha) = 1/tan(alpha);</code>， 注意，<code>p1</code>，<code>p2</code>，<code>p3</code>逆时针位置关系。</p>
+<h1 id="叉乘-Cross-Production"><a href="#叉乘-Cross-Production" class="headerlink" title="叉乘-Cross Production"></a>叉乘-Cross Production</h1><p>叉乘是用于判断点与向量的位置关系。如已知向量起点为 p1，终点为 p2，待判断的点为 pt。那么点与向量的位置关系由以下公式决定：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> tmp = (pt1-&gt;y - pt2-&gt;y)*pt-&gt;x + (pt2-&gt;x - pt1-&gt;x)*pt-&gt;y + pt1-&gt;x*pt2-&gt;y - pt2-&gt;x*pt1-&gt;y;</span><br></pre></td></tr></table></figure>
+
+<p>其中各个点由struct 定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Points</span>&#123;</span></span><br><span class="line">	<span class="keyword">int</span> x;</span><br><span class="line">	<span class="keyword">int</span> y;</span><br><span class="line">	<span class="keyword">float</span> value;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>简单的数学完整实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Points</span>&#123;</span></span><br><span class="line">	<span class="keyword">int</span> x;</span><br><span class="line">	<span class="keyword">int</span> y;</span><br><span class="line">	<span class="keyword">float</span> value;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pointLinePosition</span><span class="params">(struct Points*, struct Points*, struct Points*)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line">	<span class="comment">// 已知的向量</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Points</span> <span class="title">p0</span>, <span class="title">p1</span>;</span></span><br><span class="line">	p0.x = <span class="number">0</span>, p0.y = <span class="number">0</span>;</span><br><span class="line">	p1.x = <span class="number">2</span>, p1.y = <span class="number">6</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 待判断的点</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Points</span> <span class="title">px</span>;</span></span><br><span class="line">	px.x = <span class="number">5</span>, px.y = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> res = pointLinePosition(&amp;p0, &amp;p1, &amp;px);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (res == <span class="number">1</span>)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"left on  \n"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (res == <span class="number">0</span>)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"right \n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Determine the position bewteen a VECTOR(pt1-&gt;pt2) and a POINT(pt)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pointLinePosition</span><span class="params">(struct Points* pt1, struct Points* pt2, struct Points* pt)</span></span>&#123;</span><br><span class="line">	<span class="keyword">float</span> tmp = (pt1-&gt;y - pt2-&gt;y)*pt-&gt;x + (pt2-&gt;x - pt1-&gt;x)*pt-&gt;y + pt1-&gt;x*pt2-&gt;y - pt2-&gt;x*pt1-&gt;y;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tmp &gt; <span class="number">0</span> )&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"tmp: %.5f \n"</span>, tmp);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(tmp &lt; <span class="number">0</span>)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"tmp: %.5f \n"</span>, tmp);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span>&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"tmp: %.5f \n"</span>, tmp);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/10/CUDA-%E6%B1%82%E4%B8%89%E8%A7%92%E5%BD%A2%E9%A1%B6%E7%82%B9%E5%9D%90%E6%A0%87-Cross-Production/" data-id="ckatsrgrp0022xqfz3jsjd7i6" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-在Device上初始化" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/10/06/CUDA-%E5%9C%A8Device%E4%B8%8A%E5%88%9D%E5%A7%8B%E5%8C%96/" class="article-date">
@@ -652,210 +772,6 @@
 
 
   
-    <article id="post-回顾cpp-继承-一" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/" class="article-date">
-  <time datetime="2019-09-05T10:37:14.000Z" itemprop="datePublished">2019-09-05</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/">回顾cpp-继承-一</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li>继承方式  check</li>
-<li>隐藏   check</li>
-<li>多继承</li>
-<li>多重继承</li>
-<li>虚继承</li>
-</ul>
-<h1 id="定义类"><a href="#定义类" class="headerlink" title="定义类"></a>定义类</h1><p>定义一个<code>base class</code>（父类，基类）（虚析构函数），和一个<code>derived class</code>（子类，派生类）：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Person()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" Person() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Person()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" ~Person() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">string</span> m_strName;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Worker</span> :</span> <span class="keyword">public</span> Person&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Worker()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" Worker() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    ~Worker()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" ~Worker() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;  <span class="comment">// 非虚</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> m_iSalary;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p><code>derived class</code>析构函数的<font color="red">虚拟性继承于<code>base class</code></font>，所以也是<code>virtual</code>。</p>
-<p>一个<code>derived class</code>继承<code>base class</code>，那么<code>derived class</code>对象在内存中，既有<code>derived class</code>自身定义的成员属性<code>m_iSalary</code>，又有从<code>base class</code>继承来的成员属性<code>m_strName</code>。<br><font color="red">拷贝</font>所继承的内容到内存。</p>
-<h1 id="实例化对象"><a href="#实例化对象" class="headerlink" title="实例化对象"></a>实例化对象</h1><p>在堆中实例化<code>derived class</code>对象，当使用<font color="orange">子</font>类指针指向<font color="orange">子</font>类对象时：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Worker *worker = <span class="keyword">new</span> Worker();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">delete</span> worker;</span><br><span class="line">    worker=<span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在栈中实例化<code>derived class</code>对象时：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Worker w;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>两种实例化方式输出相同：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Person() </span><br><span class="line">Worker() </span><br><span class="line">~Worker() </span><br><span class="line">~Person()</span><br></pre></td></tr></table></figure>
-
-<p>这说明了，实例化一个<font color="orange">子</font>类，必然先实例化一个<font color="orange">父</font>类。当内存中有了<code>base class</code>对象，其内容就可以被<code>derived class</code>继承下来。销毁对象时，先执行<code>derived class</code>析构函数，后执行<code>base class</code>析构函数。逆序。</p>
-<p>如果在栈中实例化<font color="orange">父</font>类对象：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Person person;</span><br></pre></td></tr></table></figure>
-
-<p>输出：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Person() </span><br><span class="line">~Person()</span><br></pre></td></tr></table></figure>
-
-<p>在堆中实例化<code>base class</code>对象：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Person *p = <span class="keyword">new</span> Person();</span><br><span class="line"><span class="keyword">delete</span> p;</span><br><span class="line">p = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
-<p>输出：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Person() </span><br><span class="line">~Person()</span><br></pre></td></tr></table></figure>
-
-<p>由结果得出，与代码执行与<code>derived class</code>无关。</p>
-<p>但是，当使用<font color="orange">父</font>类指针指向<font color="orange">子</font>类对象时：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Person *p = <span class="keyword">new</span> Worker();</span><br><span class="line"><span class="keyword">delete</span> p;</span><br><span class="line">p = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
-
-<p>输出：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Person() </span><br><span class="line">Worker() </span><br><span class="line">~Worker() <span class="comment">// 因为析构函数是虚函数，所以执行父子的析构函数都被执行</span></span><br><span class="line">~Person()</span><br></pre></td></tr></table></figure>
-
-<p>即<font color="red" size="3">这种情况也执行了<font color="orange">子</font>类的析构函数。</font>因为定义了<font color="orange">父</font>类和<font color="orange">子</font>类析构函数为<a href="https://ashburnlee.github.io/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E8%99%9A%E5%87%BD%E6%95%B0/" target="_blank" rel="noopener">虚析构函数</a></p>
-<p>但是如果没有<code>virtual</code>修饰<font color="orange">父子</font>类的析构函数，那么<code>derived class</code>的析构函数不会被执行。这造成了一个“局部销毁”现象。会造成资源泄露，数据结构被破坏。（Effective C++ 中的条款7）。</p>
-<h1 id="继承方式"><a href="#继承方式" class="headerlink" title="继承方式"></a>继承方式</h1><p>公有继承：</p>
-<div align="center"><img src="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/public.png" width="600"></div>
-
-<p><code>base class</code>的public属性被继承到<code>derived class</code>public下，<br><code>base class</code>的protected属性被继承到<code>derived class</code>protected下，<br><code>base class</code>的private属性被继承到<code>derived class</code>不可见位置，即没有被继承。</p>
-<p>保护继承：</p>
-<div align="center"><img src="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/protected.png" width="600"></div>
-
-<p><code>base class</code>的public，protected成员都被继承到<code>derived class</code>的protected下，<br>而<code>base class</code>的private成员不被继承。</p>
-<p>私有继承：</p>
-<div align="center"><img src="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/private.png" width="600"></div>
-
-<p><code>base class</code>的public，protected成员被继承到<code>derived class</code>的private下，<br>而<code>base class</code>的private不被继承。</p>
-<h1 id="隐藏"><a href="#隐藏" class="headerlink" title="隐藏"></a>隐藏</h1><p>给上述<code>base class</code>，<code>derived class</code>增加一个<font color="red">同名非虚函数</font><code>print()</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Person()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" Person() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Person()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" ~Person() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">"Person print"</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">string</span> m_strName;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Worker</span> :</span> <span class="keyword">public</span> Person&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Worker()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" Worker() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    ~Worker()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" ~Worker() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;  <span class="comment">// 非虚</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">"Worker print"</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> m_iSalary;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>代码只是实验用</p>
-<p>如果main中：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Worker w;</span><br><span class="line">w.print();    <span class="comment">//`base class`print方法被隐藏</span></span><br></pre></td></tr></table></figure>
-
-<p>输出内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Person() </span><br><span class="line">Worker() </span><br><span class="line">Worker print</span><br><span class="line">~Worker() </span><br><span class="line">~Person()</span><br></pre></td></tr></table></figure>
-
-<p>只执行<font color="orange">子</font>类同名函数，<font color="red"><code>base class</code>同名函数被隐藏</font>。</p>
-<p>但是，也是可以强制调试用<code>base class</code>同名函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Worker w;</span><br><span class="line">w.Person::print();  <span class="comment">//调用`base class`print方法</span></span><br><span class="line"><span class="comment">// 输出</span></span><br><span class="line">Person print</span><br></pre></td></tr></table></figure>
-
-<p>同样的，如果main中用<font color="orange">父</font>类指针指向<font color="orange">子</font>类对象：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Person *p = <span class="keyword">new</span> Worker();   <span class="comment">// `base class`指针指向`derived class`对象</span></span><br><span class="line">p-&gt;print();</span><br><span class="line"><span class="keyword">delete</span> p;</span><br><span class="line">p = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
-
-<p>输出内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Person() </span><br><span class="line">Worker() </span><br><span class="line">Person print</span><br><span class="line">~Worker()</span><br><span class="line">~Person()</span><br></pre></td></tr></table></figure>
-
-<p>因为p是<code>base class</code>指针，所以调用<code>base class</code>的同名函数。但是很多时候是用<code>base class</code>指针指向<code>derived class</code>对象，此时我希望指针指向哪个<code>derived class</code>，就调用哪个<code>derived class</code>的同名函数。要想实现这个功能，只需在<code>base class</code>的同名函数前用<code>virtual</code>修饰。<br><br><code>virtual</code>的目的是允许<code>derived class</code>的同名函数的实现客制化。</p>
-<p>所以实际中要这样定义：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Person()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" Person() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Person()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" ~Person() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;   <span class="comment">// 虚</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">"Person print"</span>&lt;&lt;<span class="built_in">endl</span>; &#125; <span class="comment">// 虚</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">string</span> m_strName;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Worker</span> :</span> <span class="keyword">public</span> Person&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Worker()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" Worker() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line">    ~Worker()&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">" ~Worker() "</span>&lt;&lt;<span class="built_in">endl</span>; &#125;  </span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>&#123; <span class="built_in">cout</span>&lt;&lt;<span class="string">"Worker print"</span>&lt;&lt;<span class="built_in">endl</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> m_iSalary;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="is-A"><a href="#is-A" class="headerlink" title="is-A"></a>is-A</h1><p>解释了为什么通常这样写：<code>Person *p = new Worker();</code>，而不是<code>Worker *p = new Worker();</code></p>
-<p>有两个类：<code>base class</code>“人”，<code>derived class</code>“亚洲人”。<code>derived class</code>继承<code>base class</code>，此时称“亚洲人”<code>is-A</code>”人“。实例如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Asian a1;</span><br><span class="line">    Person p1 = a1;     <span class="comment">// `derived class`对象可以复制给`base class`</span></span><br><span class="line">    Person *p2 = &amp;a1;    <span class="comment">// `base class`指针可以指向`derived class`对象</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这是正确地：<br><br>例中，先实例化一个<code>Asian</code>对象<code>a1</code>，后实例化一个<code>Person</code>对象<code>p1</code> 用<code>a1</code>初始化<code>p1</code>，可以表达<code>Asian is-A Person</code>。即<font color="red" size="4"><code>derived class</code>对象可以复制给<code>base class</code></font>。或说<font color="red" size="4"><code>base class</code>指针可以指向<code>derived class</code>对象</font>。</p>
-<p>但当关系反过来就不对了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Person p1;</span><br><span class="line">    Asian a1 = p1;</span><br><span class="line">    Asian *a2 = &amp;p1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>Person is-A Asian</code>显然就不对了。</p>
-<p>所以有了这条规律：<font color="red" size="4"><code>derived class</code>对象可以复制给<code>base class</code>；<code>base class</code>指针可以指向<code>derived class</code>对象</font></p>
-<p>这样就可以将<font color="orange">父</font>类的<code>对象</code>，或<font color="orange">父</font>类的<code>指针</code>，或<font color="orange">父</font>类的<code>引用</code>作为<strong>函数参数</strong>，来使得该函数可以接收<font color="orange">子</font>类的对象或<font color="orange">父</font>类对象。（这也说明了为什么之前总是使用<strong><code>base class</code>指针指向<code>derived class</code>对象</strong>，不使用<code>derived class</code>指针就是防止<code>derived class</code>指针指向<code>base class</code>对象），实例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func1</span><span class="params">(Person *p)</span></span>&#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func2</span><span class="params">(Person &amp;p)</span></span>&#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func3</span><span class="params">(Person p)</span></span>&#123;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>当分别有一个<code>base class</code>对象和一个<code>derived class</code>对象，下面的调用没有违反上述规律或Is-A规律：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Person p1;  </span><br><span class="line">    Asian a1;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 下面的函数调用都是可以的：</span></span><br><span class="line">    func1(&amp;p1); func2(p1); func3(p1);</span><br><span class="line">    func1(&amp;a1); func2(a1); func3(a1);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>如<code>func1()</code>的参数是<code>base class</code>指针，所以既可以指向<code>base class</code>对象<code>func1(&amp;p1)</code>，又可以指向<code>derived class</code>对象<code>func1(&amp;a1)</code>。三个函数都可以传入<code>base class</code>或<code>derived class</code>的相关实参。</p>
-<p>所以<font color="red">通常将函数参数类型指明为<code>base class</code>，避免错误</font>。</p>
-<p>此外，<code>func3()</code>中传入的是<code>Person</code>对象的拷贝（先创建后拷贝），而<code>func1()</code>，<code>fucn2()</code>的参数是指针和引用，不产生临时变量。</p>
-<h1 id="截断"><a href="#截断" class="headerlink" title="截断"></a>截断</h1><p>如果一个<font color="red" size="4">对象类型是<code>base class</code></font>，那么它<font color="red" size="4">只能访问<code>base class</code></font>的成员，这个现象称为截断：</p>
-<ol>
-<li><p>将<font color="orange">子</font>类对象赋值给<font color="orange">父</font>类对象，即用<font color="orange">子</font>类对象初始化<font color="orange">父</font>类变量：</p>
-<p> 由于<code>derived class</code>中有从<code>base class</code>继承过来的成员，当用<code>derived class</code>对象初始化<code>base class</code>变量时，<code>derived class</code>中继承来的成员会<strong>赋值给</strong><code>base class</code>对象中对应的成员，而<code>derived class</code>自身的成员<strong>被截断</strong>。原因是，<code>base class</code>变量只能接收自身拥有的成员的数据，</p>
-<p> 假如Worker类继承Person类。分别实例化两个对象，当用<code>derived class</code>对象初始化<code>base class</code>对象：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Worker w;</span><br><span class="line">Person p;</span><br><span class="line">p = w;</span><br></pre></td></tr></table></figure>
-<p> 两个对象在内存中的存储如下：</p>
- <div align="center"><img src="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/pw2.png" width="550"></div>
-
-<p> <code>Worker</code> 的<code>m_name</code> 赋值给<code>Person</code>的<code>m_name</code>，而且<code>p</code>只能调用函数<code>func1()</code>。<code>p</code>只能访问<code>base class</code>成员。</p>
-</li>
-<li><p>用<font color="orange">父</font>类指针指向<font color="orange">子</font>类对象：</p>
-<p> <code>base class</code>指针也只能够访问到<code>base class</code>所拥有的数据成员。而无法访问到<code>derived class</code>自身的数据成员，<code>derived class</code>成员变量<strong>被截断</strong>。</p>
-<p> 当使用<code>base class</code>指针指向<code>derived class</code>对象：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Person p &#x3D; new Worker(&quot;Woston&quot;, 100);</span><br></pre></td></tr></table></figure>
- <div align="center"><img src="/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/pw1.png" width="550"></div>
-
-<p> 同样地，<code>Worker</code> 的<code>m_name</code> 赋值给<code>Person</code>的<code>m_name</code>，而且<code>p</code>只能调用函数<code>func1()</code>。<code>p</code>只能访问<code>base class</code>成员。</p>
-</li>
-</ol>
-<p><font color="#9932CC" size="5">敲黑板</font></p>
-<ul>
-<li><code>is-A</code>的逻辑不能错。</li>
-<li>如果一个对象<strong>类型</strong>是<code>base class</code>，那么它<strong>只能</strong>访问<code>base class</code>的成员，</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/09/05/%E5%9B%9E%E9%A1%BEcpp-%E7%BB%A7%E6%89%BF-%E4%B8%80/" data-id="ckatsrgv90082xqfzdoh99v35" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-线性模型-二-评价线性模型" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/09/01/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%BA%8C-%E8%AF%84%E4%BB%B7%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B/" class="article-date">
-  <time datetime="2019-09-01T09:29:05.000Z" itemprop="datePublished">2019-09-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/09/01/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%BA%8C-%E8%AF%84%E4%BB%B7%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B/">线性模型-(二)-Logistic Regression</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>过程推到见笔记本。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/09/01/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%BA%8C-%E8%AF%84%E4%BB%B7%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B/" data-id="ckatsrgtf0063xqfz4npx7jc8" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -871,7 +787,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -900,7 +816,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -913,11 +829,15 @@
       <ul>
         
           <li>
-            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
+            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
           <li>
-            <a href="/2020/03/31/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-如何使用-2</a>
+            <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
           </li>
         
           <li>
@@ -926,10 +846,6 @@
         
           <li>
             <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
           </li>
         
       </ul>
