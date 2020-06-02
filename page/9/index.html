@@ -64,6 +64,212 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-更新线程ID" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" class="article-date">
+  <time datetime="2019-08-12T06:13:44.000Z" itemprop="datePublished">2019-08-12</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/">CUDA-更新线程ID</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="更新-thread-ID"><a href="#更新-thread-ID" class="headerlink" title="更新 thread ID"></a>更新 thread ID</h1><p>当数据个数 <code>≥ CUDA core</code> 个数时，<code>thread id</code> 不用更新，一次同时习性完。</p>
+<p>如我有2024个数据，而我的GPU每次可分配2048个threads。我的<code>kernel</code>配置<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>，那么2024个数据可以被2024个threads一次执行完毕，其中有24个threads空闲，因为因为没有多余的数据去处理。</p>
+<p>如果还是2024个数据，而我的GPU只允许用户一次配置512个threads。我的kernel配置是&lt;&lt;&lt;1, 512&gt;&gt;&gt;，一次是不能把数据全部处理完的。当第一次处理完后，还要3次threads的id更新，最后一次有24个threads空闲，因为没有多余出具需要被处理。</p>
+<p>kernel代码片段如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> id = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line"><span class="keyword">while</span>(id &lt; N)&#123;</span><br><span class="line">    <span class="comment">// TODO excute operation</span></span><br><span class="line">    id += blockDIm.x * gridDim.x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>while()</code>判断当前thread的id需要更新多少次。</p>
+<ul>
+<li><p>对于<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>的kernel，处理2024个数据，其中<code>N=2024</code>。假如其中一个thread的起始<code>id</code>为0，干完活后，判断<code>0＜2024</code>，所以这个thread的<code>id</code>会被跟新为2048，此时再判断<code>2048＜2024</code>，返回<code>false</code>，这个thread的工作结束。thread的id未被更新。</p>
+</li>
+<li><p>对于&lt;&lt;&lt;1, 512&gt;&gt;&gt;的kernel，处理2024个数据， 其中N=2024。<br>仍假如有一个thread是起始id为0，判断0＜2024，执行操作。所以跟新id为512；<br>判断512＜2024，执行操作，再更新id为1024；<br>判断1024＜2024，执行操作，再更新id为1536；<br>判断1536＜2024，执行操作，再更新id为2048；<br>判断2048＜2024，返回false。该thread的工作结束。</p>
+</li>
+</ul>
+<p>期间这个thread的id被更新了4次，第4次更新玩后，并无操作。</p>
+<h1 id="Matrix-Transpose-理解id更新"><a href="#Matrix-Transpose-理解id更新" class="headerlink" title="Matrix Transpose 理解id更新"></a>Matrix Transpose 理解id更新</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" data-id="ckatsrgrk001nxqfzcb12f9g7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-基本步骤-逻辑概念-物理概念" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" class="article-date">
+  <time datetime="2019-08-10T13:03:23.000Z" itemprop="datePublished">2019-08-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/">CUDA-基本步骤-逻辑概念-物理概念</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="一个实例"><a href="#一个实例" class="headerlink" title="一个实例"></a>一个实例</h2><p>检查环境：</p>
+<ul>
+<li><code>nvcc -V</code>：CUDA编译器是否安装</li>
+<li><code>nvidia-smi</code>：显卡驱动是否安装</li>
+</ul>
+<p>cuda代码文件以<code>.cu</code>结尾，当写好一个文件后，使用NVIDIA 的编译器编译 <code>nvcc FILE-NAME.cu</code>，后<code>./FILE-NAME</code>执行。</p>
+<p>从一个实例讲起：<br>两个向量相加，结果存入另一个向量。<br>代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 1&lt;&lt;10  </span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ARRAY_BYTES N*sizeof(float)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 1) add __global__ to kernel, AKA device code</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">float</span>* x, <span class="keyword">float</span>* y, <span class="keyword">float</span>* z)</span></span>&#123;  </span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">	<span class="keyword">if</span> (tid &lt; N)&#123;</span><br><span class="line">		z[tid] = x[tid] + y[tid];</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//host code (runs on cpu)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//allocate mem on steak for a,b,c </span></span><br><span class="line">	<span class="keyword">float</span> h_a[N], h_b[N], h_c[N];</span><br><span class="line"></span><br><span class="line">	<span class="comment">//declare pointers in gpu   </span></span><br><span class="line">	<span class="keyword">float</span> *dev_a, *dev_b, *dev_c;  </span><br><span class="line"></span><br><span class="line">	<span class="comment">//allocate mem in gpu </span></span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_a, ARRAY_BYTES);</span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_b, ARRAY_BYTES);</span><br><span class="line">	cudaMalloc((<span class="keyword">void</span>**)&amp;dev_c, ARRAY_BYTES);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//initialize a, b  arrays in the host</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)&#123;</span><br><span class="line">		h_a[i] = i * <span class="number">1.0f</span>;</span><br><span class="line">		h_b[i] = i * <span class="number">2.0f</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//copy a, b to gpu</span></span><br><span class="line">	cudaMemcpy(dev_a, h_a, ARRAY_BYTES, cudaMemcpyHostToDevice);</span><br><span class="line">	cudaMemcpy(dev_b, h_b, ARRAY_BYTES, cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//run kernel on 1M elements on the CPU</span></span><br><span class="line">	add&lt;&lt;&lt;<span class="number">1</span>, <span class="number">1024</span>&gt;&gt;&gt;(dev_a, dev_b, dev_c);  <span class="comment">//one block and 1024 threads</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//copy c back from gpu</span></span><br><span class="line">	cudaMemcpy(h_c, dev_c ,ARRAY_BYTES, cudaMemcpyDeviceToHost);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//display results</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;N;i++)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"%f + %f = %f \n"</span>, h_a[i], h_b[i], h_c[i]);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//2) free memory</span></span><br><span class="line">	cudaFree(dev_a);</span><br><span class="line">	cudaFree(dev_b);</span><br><span class="line">	cudaFree(dev_c);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//new &amp; delete go together. </span></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码包含了CUDA代码的一般步骤：</p>
+<ul>
+<li><p>1）声明所需指针在GPU，并且在GPU上开辟空间， 使用函数<code>cudaMalloc()</code></p>
+</li>
+<li><p>2）从CPU拷贝所需内容到GPU的内存中，使用函数<code>cudaMemcpy()</code></p>
+</li>
+<li><p>3）配置核函数，并执行操作。该函数在main函数之外，以<code>__global__</code>开头</p>
+</li>
+<li><p>4）把GPU上计算得到的结果拷贝回RAM，使用函数<code>cudaMemcpy()</code></p>
+</li>
+<li><p>5）释放VRAM中的空间</p>
+  <div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/main-process.png" width="600"></div>
+
+
+</li>
+</ul>
+<pre><code>从两个维度理解CUDA基本概念</code></pre><ul>
+<li><strong>物理层</strong></li>
+<li><strong>逻辑层</strong></li>
+</ul>
+<h2 id="物理概念"><a href="#物理概念" class="headerlink" title="物理概念"></a>物理概念</h2><p>CUDA中的两个对象：Host，Device</p>
+<ul>
+<li>Host 包括 CPU 和内存 DRAM</li>
+<li>Device 包括 GPU 和存在与其上的存储 VRAM</li>
+</ul>
+<p>VRAM 是 off-chip memory，即不在芯片上。由三部分组成：Global Memory，Texture Memory 和 Constant Memory。其中后二者为 read-only。<br>GPU 芯片上的 memory 包括 Registers，l1-cache, 和 Shared Memory。</p>
+<p>每个 GPU 芯片拥有一组不同的 memory，如上述。其中最重要的两个是 Global Memory 和 Shared Memory。<br>Global Memory 类似CPU系统的 RAM，Shared Memory 相当于CPU的片内缓存。</p>
+<p>Host 和 Device 由北桥芯片连接：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/host-device.png" width="500"></div>
+
+<p>对于CUDA编程，你需要负责以下内容：</p>
+<p>1) 在 GPU memory 上开辟空间<br>2) 拷贝数据从CPU上到GPU上<br>3) 在GPU上执行 kernel 代码<br>4) 再把结果从GPU上考回CPU<br>5) 协调Host 和 Device中的操作</p>
+<p>使用GPU编程时，要从 MIMD(Multiple Instructions Multiple Data) 的思考形式转变到 SIMD(Single Instruction Multiple Data)，在CUDA 中，每个核心执行的代码指令都是一样的，所以说是Single。</p>
+<p>CUDA 提供的重要功能：组织线程，memory access。</p>
+<p>与CUDA并行编程的代码分为两部分：</p>
+<ul>
+<li>Host 部分代码由 ANSI C 来完成</li>
+<li>Device 部分由 CUDA C 来完成</li>
+</ul>
+<p>知道怎样组织 threads 在使用 CUDA 是十分重要的。</p>
+<h2 id="逻辑概念"><a href="#逻辑概念" class="headerlink" title="逻辑概念"></a>逻辑概念</h2><p>在一个 grid 中所有的 thread 共享相同的 Global Memory。来自不同 block 的 threads 不能相互交流。即属于同一个 block 的 thread 可以相互交流。   </p>
+<ul>
+<li>threadIdx.x: 每个 block 中 x 方向 thread 的 id</li>
+<li>threadIdx.y: 每个 block 中 y 方向 thread 的 id</li>
+<li>threadIdx.z: 每个 block 中 z 方向 thread 的 id</li>
+</ul>
+<ul>
+<li>blockIdx.x: 每个 block 的 x 方向上所含的 id</li>
+<li>blockIdx.y: 每个 block 的 y 方向上所含的 id</li>
+<li>blockIdx.z: 每个 block 的 z 方向上所含的 id</li>
+</ul>
+<ul>
+<li>blockDim.x: 每个 block 的 x 方向上所含的 thread 数</li>
+<li>blockDim.y: 每个 block 的 y 方向上所含的 thread 数</li>
+<li>blockDim.z: 每个 block 的 z 方向上所含的 thread 数</li>
+</ul>
+<ul>
+<li>gridDim.x: 每个 grid 的 x 方向上的 block 数</li>
+<li>gridDim.y: 每个 grid 的 y 方向上的 block 数</li>
+<li>gridDim.z: 每个 grid 的 z 方向上的 block 数</li>
+</ul>
+<p>grids 和 blocks 使用 dim3 数据类型。 当给了数据的大小，如何决定 grid &amp; block 的维度。</p>
+<ul>
+<li>1）先决定 block 大小，即每个 block 由多少 threads，</li>
+<li>2）然后根据数据大小和 block 大小，计算 grid dim。</li>
+</ul>
+<p>为了得到 block dim，考虑两点：</p>
+<ul>
+<li>1）kernel 的性能特点</li>
+<li>2）GPU的物理极限<ul>
+<li>我的芯片的数据：</li>
+</ul>
+</li>
+</ul>
+<p>func&lt;&lt;&lt;32, 1024&gt;&gt;&gt;()：</p>
+<ul>
+<li>32：block 的数量为32个</li>
+<li>1024：每一个 block 的 thread 数为1024个</li>
+</ul>
+<p>为了配置 kernel 你需要知道：</p>
+<ul>
+<li>1）kernel 的 thread 总数</li>
+<li>2）这些 threads 的分布：block &amp; grid 的维数，每个 block 由多少 threads</li>
+</ul>
+<p>举例子：<br>假如我想使用32个threads，我想 配置一个<em>1D grid 1D block</em> kernel func&lt;&lt;&lt;4, 8&gt;&gt;&gt;()，其 thread 分布是：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/1d.png"></div>
+
+<p><strong>32个 threads 决定了会有32 份func()的拷贝，每一份由一个thread 执行，唯一不同的是每一个thread 的ID</strong>，这样计算：<br><code>idx=threadIdx.x + blockDim.x * blockIdx.x</code>。<br>如第二个block的第一个thread 的ID是 <code>0+8*1=8</code>，最后一个thread的ID是<code>7+8*3=31</code>，所以，这个配置中的所有threads由唯一的ID：<code>0~31</code>。</p>
+<p>再如：<em>2D grid，2D block</em> kernel：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">dim3 <span class="title">threads</span><span class="params">(<span class="number">2</span>, <span class="number">4</span>)</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">blocks</span><span class="params">(<span class="number">2</span>, <span class="number">4</span>)</span></span></span><br><span class="line">func&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>下图是所有相关的参数，及怎样得到每个 thread 的 ID：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/2d-2d.png"></div>
+其中每个矩形代表一个 block：blockDim.x=4，blockDim.y=2。每个 block 中的 thread 的组织是4行2列。
+
+<p>更多kernel的配置：</p>
+<div align="center"><img src="/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/more-configure.png" width="600"></div>
+
+<p>其中矩形表示一个block，相邻blocks组织成grid。</p>
+<p>核心概念：<br>grid 由 block 组成，可以是1D，2D，和3D。<br>block 由 thread 组成，也可以是1D，2D，和3D。<br>根据具体问题，选择 block/grid 的维度。一般来说：<br>1D 适用于 vector 操作<br>2D 适用于 images<br>3D 适用于 3D space</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/10/CUDA-%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4-%E9%80%BB%E8%BE%91%E6%A6%82%E5%BF%B5-%E7%89%A9%E7%90%86%E6%A6%82%E5%BF%B5/" data-id="ckatsrgri001hxqfzh26f7bt9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Deep-Learning-知识点" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/08/Deep-Learning-%E7%9F%A5%E8%AF%86%E7%82%B9/" class="article-date">
@@ -401,8 +607,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>226, 112, 589, 337, 508, 107, 637, 108, 199, 109, </p>
-<h1 id="写在前面："><a href="#写在前面：" class="headerlink" title="写在前面："></a>写在前面：</h1><ul>
+        <h1 id="写在前面："><a href="#写在前面：" class="headerlink" title="写在前面："></a>写在前面：</h1><ul>
 <li>别忘了递归终止条件。</li>
 <li>明确递归函数的定义，并确保实现中函数保持定义不变。</li>
 <li>理解问题。分析出递归结构。</li>
@@ -466,7 +671,7 @@
 </li>
 </ul>
 <p><font color="green" size="6">敲黑板</font>这里有个模式：对于几乎所有树的问题，本质上都是树的遍历。遍历本质上是结点的<font color="red" size="5">移动控制</font>。而对于当前节点来说，它的value是可得到的，对这个value的操作称之为<font color="red" size="5">结点操作</font>。</p>
-<h1 id="257-Binary-Tree-Paths"><a href="#257-Binary-Tree-Paths" class="headerlink" title="#257 Binary Tree Paths"></a>#257 Binary Tree Paths</h1><h1 id="437-Path-Sum-III"><a href="#437-Path-Sum-III" class="headerlink" title="#437 Path Sum III"></a>#437 Path Sum III</h1>
+
       
     </div>
     <footer class="article-footer">
@@ -932,127 +1137,6 @@
 
 
   
-    <article id="post-模型评价-F1度量-F-beta度量" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" class="article-date">
-  <time datetime="2019-08-06T04:46:00.000Z" itemprop="datePublished">2019-08-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/">模型评价-F1度量-F_beta度量</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="F1"><a href="#F1" class="headerlink" title="F1"></a>F1</h1><p>F1度量是基于Precision和recall的调和平均定义的：</p>
-<p><font color="red">定义</font></p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">f1_score</span><span class="params">(precision, recall)</span>:</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span> * precision * recall/(precision+recall)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br></pre></td></tr></table></figure>
-
-<p>对于一个训练好的模型，用于测试样本上得到测试样本的预测值，和真实值一起，计算出P&amp;R。代入F1定义，得这个模型的F1值：</p>
-<p>代入不同的P&amp;R组合，看看对应F1：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">print(f1_score(<span class="number">0.9</span>, <span class="number">0.8</span>))    <span class="comment"># 0.8470588235294118</span></span><br><span class="line">print(f1_score(<span class="number">0.9</span>, <span class="number">0.1</span>))    <span class="comment"># 0.18000000000000002</span></span><br><span class="line">print(f1_score(<span class="number">0.5</span>, <span class="number">0.5</span>))    <span class="comment"># 0.5</span></span><br><span class="line">print(f1_score(<span class="number">0.1</span>, <span class="number">0.1</span>))    <span class="comment"># 0.10000000000000002</span></span><br></pre></td></tr></table></figure>
-<p>根据这些结果可以看出调和平均值的特点：<font color="red">当P&amp;R值都较大时，对应F1也较大。当P&amp;R一大一小差别很大时，对应F1接近较小值。当P&amp;R值很平均时，F1接近两者的平均值</font>。</p>
-<p>F1是综合考虑了P值和R值，一般地，F1值越大表示模型性能越好。但是，如上一篇笔记所述，<font color="red">不同的实际应用场景对于P和R的重视程度是不同的</font>。如，在推荐系统中，为了尽可能精准推荐，P就相对重要；逃犯系统中，为了不漏掉任何一个罪犯，哪怕一个很可疑但无辜的嫌疑人，先认为他是罪犯，抓起来再说。此时R相对重要。对于冤枉的，进一步审问就好了；而对于实际是罪犯，但被模型漏掉了，此情况代价是很高的。<br>所以<font color="red">对于具体问题，使用F-beta度量</font>。</p>
-<h1 id="F-beta"><a href="#F-beta" class="headerlink" title="F-beta"></a>F-beta</h1><p>F-beta是F1的更一般形式，它表达出对<font color="red">P&amp;R的不同偏好</font>：</p>
-<p>定义</p>
-<p>把训练好的样本用于测试集<code>y_test</code>后，得到的预测值<code>y_predict</code>，代入F-beta定义：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> fbeta_score</span><br><span class="line"></span><br><span class="line">print(f1_score(y_test, y_predict))          <span class="comment"># 0.867469879518</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">1</span>))    <span class="comment"># 0.867469879518   when beta=1,</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">0.2</span>))  <span class="comment"># 0.940703517588   when beta=0.2,</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">0.8</span>))  <span class="comment"># 0.883832335329   when beta=0.8,</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">1.8</span>))  <span class="comment"># 0.830467899891   when beta=1.8,</span></span><br></pre></td></tr></table></figure>
-<p>beta&gt;0为前提条件。beta为1时，退化为F1。beta&lt;1，P影响大，beta&gt;1，R影响大。<br><strong>不同的beta值代表不同的应用场景，一个训练好的模型有它实用的场景</strong>。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" data-id="ckatsrgtc005sxqfz5weh4wry" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-模型评价-混淆矩阵-Confusion-Matrix" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" class="article-date">
-  <time datetime="2019-08-06T03:17:11.000Z" itemprop="datePublished">2019-08-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/">模型评价-混淆矩阵(Confusion Matrix)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录Confusion Matrix。</p>
-<p>当训练好了模型，需要评价它的性能。错误率和准确率是常用的，一般为了测试一个模型的正确性，用这个指标，尤其对于<strong>极度均衡</strong>的数据。但是对于<strong>极度偏斜</strong>的数据，用准确率评价模型很可能得到的结果表示，这个模型还不如随机猜测的准确率高。此时准确率不足以衡量模型性能。所以必要使用其他性能指标。</p>
-<p>由混淆矩阵得到的Precision， Recall 和 F1度量，F-beta度量。</p>
-<p>其定义不赘述，看下图。</p>
-<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/p-r.png" width="350"></div>
-
-<p>图中，P，R的含义在清楚不过了。</p>
-<p>使用真实数据集算一下。</p>
-<p>引入数据，把它变为极度偏斜的二分类问题：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">digits = datasets.load_digits()</span><br><span class="line">x = digits.data</span><br><span class="line">y = digits.target.copy()</span><br><span class="line"></span><br><span class="line">y[digits.target == <span class="number">9</span>] = <span class="number">1</span></span><br><span class="line">y[digits.target != <span class="number">9</span>] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 分训练样本和测试样本</span></span><br><span class="line">x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=<span class="number">666</span>)</span><br></pre></td></tr></table></figure>
-
-<p>这里使用Logistic Regression对其学习：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line">log_reg = LogisticRegression()</span><br><span class="line">log_reg.fit(x_train, y_train)</span><br><span class="line">acc = log_reg.score(x_test, y_test)</span><br><span class="line">y_log_predict = log_reg.predict(x_test)</span><br><span class="line">print(acc)</span><br></pre></td></tr></table></figure>
-<p>得结果：0.975555555556。注意数据集是很不平衡的，所以这个值不可靠。</p>
-<p>根据混淆矩阵的定义，可得：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">confusion_matrix</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> np.array([[TN(y_true, y_predict), FP(y_true, y_predict)],</span><br><span class="line">                     [FN(y_true, y_predict), TP(y_true, y_predict)]])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印出混淆矩阵：</span></span><br><span class="line">print(confusion_matrix(y_test, y_log_predict))</span><br></pre></td></tr></table></figure>
-
-<p>结果：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[[<span class="number">403</span>   <span class="number">2</span>]</span><br><span class="line"> [  <span class="number">9</span>  <span class="number">36</span>]]</span><br></pre></td></tr></table></figure>
-
-<p>一般来说，最优情况是，其对角线的值最大，斜对角线值为0。详见多分类问题的混淆矩阵。</p>
-<p>Precision=0.947368421053， Recall=0.8。标准是，此而值同时越大模型性能约优。可以说这个模型的性能还不错。</p>
-<p><font color="green" size="5">敲黑板</font>啥是R，“<strong>所有实际为正的样本，我的模型有多少也认为为正</strong>”。啥是P，“<strong>所有我的模型认为为正的样本，有多少确实为正</strong>”。可以体会到，P&amp;R 是不同角度的两个指标。根据信息论观点，<strong>引入相似但不相同的信息有助于减少系统的不确定性</strong>。两个指标同时考虑比单单考虑一个指标更能确定模型的性能。实际上，可能的情况下，对于一个训练好的模型，所有可能的指标都应该看看。<br>另一方面，P&amp;R两者的关注点不同，所以对于不同的实际任务，P&amp;R值的相对大小可以有所不同。举例，对于病例数据，尽可能希望所有实际有病的样本，模型也认为有病。即实际有病的样本模型都可以判断出来，即使没病的模型认为有病，没关系，复查就好了。这就是R值越大模型性能越好。反而P值相对不重要。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" data-id="ckatsrgtd005wxqfzcov0h8m0" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1068,7 +1152,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1078,7 +1162,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">39</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">40</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1097,7 +1181,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">11</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1126,7 +1210,7 @@
           </li>
         
           <li>
-            <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode/nowcoder 深入理解链表</a>
+            <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode-符串通配符</a>
           </li>
         
       </ul>
