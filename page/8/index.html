@@ -64,6 +64,84 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-回顾cpp-多态-四-RTTI" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" class="article-date">
+  <time datetime="2019-08-31T13:30:26.000Z" itemprop="datePublished">2019-08-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/">回顾cpp-多态-RTTI</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="RTTI的主要内容"><a href="#RTTI的主要内容" class="headerlink" title="RTTI的主要内容"></a>RTTI的主要内容</h1><p>RTTI：运行时类型识别。主要有两个运算符实现：</p>
+<ul>
+<li>typeid： 返回对象</li>
+<li>dynamic_cast： 用于将父类的<strong>指针或引用</strong>安全地转化成子类的<strong>指针或引用</strong>。</li>
+</ul>
+<h1 id="为什么设计RTTI"><a href="#为什么设计RTTI" class="headerlink" title="为什么设计RTTI"></a>为什么设计RTTI</h1><p>当处于这种情况时，使用RTTI：当我们想使用基类对象的指针或引用，执行某个派生类的操作，并且该操作不是虚函数时。</p>
+<p>一般讲，只要有可能，我们应该尽量使用虚函数。当一个方法被定义成虚函数时，编译器将根据对象的动态类型自动正确地选择正确的方法版本。</p>
+<p>但，并不是任何时候都能定义虚函数的。当无法使用虚函数时，就使用RTTI。另一方面，使用RTTI，程序员必须清楚地知道要转换成什么类型，并且检查转换是否成功。</p>
+<p>dynamic_cast 使用规则：</p>
+<ul>
+<li>只能使用<strong>对象指针</strong>或<strong>对象引用</strong>的转换：dynamic_cast&lt;bird*&gt;或dynamci_cast&lt;&amp;bird&gt;，而不能是对象本身。</li>
+<li>需要转换的类型中必须包含<strong>虚函数</strong>，</li>
+<li>如果转换成功返回子类地址，否则返回NULL。</li>
+</ul>
+<p>typeid 使用规则：</p>
+<ul>
+<li>type_id 返回一个type_info对象的引用。</li>
+<li>如果想通过基类指针获得派生类的数据类型，基类必须带有<strong>虚函数</strong>。</li>
+<li>只能判断当前<strong>对象</strong>是基类还是子类，无法判断<strong>指针</strong>是基类还是子类。即typeid()参数是对象，而非指针。</li>
+</ul>
+<p>type_info 中的内容：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">type_info</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">name</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br><span class="line">    <span class="keyword">bool</span> <span class="keyword">operator</span>==(<span class="keyword">const</span> typ_info&amp; rhs) <span class="keyword">const</span>;</span><br><span class="line">    <span class="keyword">bool</span> <span class="keyword">operator</span>!=(<span class="keyword">const</span> typ_info&amp; rhs) <span class="keyword">const</span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">before</span><span class="params">(<span class="keyword">const</span> type_info&amp; rhs)</span> <span class="keyword">const</span></span>;</span><br><span class="line">    <span class="keyword">virtual</span> ~type_info();</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    ......</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h1 id="用法与实例"><a href="#用法与实例" class="headerlink" title="用法与实例"></a>用法与实例</h1><p>假如由两个类都继承了借口类Flyable：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Flyable</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">takeoff</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">landing</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bird</span> :</span> <span class="keyword">public</span> Flyable&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// foraging()方法不是虚函数</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">foraging</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"bird--foraging"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">takeoff</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"bird--takeoff"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">landing</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"bird--landing"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Plane</span> :</span> <span class="keyword">public</span> Flyable&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// carry()方法不是虚函数</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">carry</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"plane--carray"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">takeoff</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"plane--takeoff"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">landing</span><span class="params">()</span></span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"plane--landing"</span>&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>Bird由飞行能力，且可以觅食，Plane有飞行能力，且可以运输。</p>
+<p>可以定义一个函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(Flyable* obj)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 1)</span></span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(*obj).name()&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    obj-&gt;takeoff();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2)</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">typeid</span>(*obj)== <span class="keyword">typeid</span>(Bird))&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 3)</span></span><br><span class="line">        Bird* bird = <span class="keyword">dynamic_cast</span>&lt;Bird*&gt;(obj);</span><br><span class="line">        bird-&gt;foraging();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 4)</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">typeid</span>(*obj)== <span class="keyword">typeid</span>(Plane))&#123;</span><br><span class="line">        Plane* plane = <span class="keyword">dynamic_cast</span>&lt;Plane*&gt;(obj);</span><br><span class="line">        plane-&gt;carray();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    obj-&gt;landing();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>1)打印<code>obj</code>是什么类型。<code>typeid(对象)</code>：参数是<code>obj</code>所指向的对象<br>2)判断当前<code>obj</code>指针所指向的是什么类型。如果<code>obj</code>指向的对象是<code>Bird</code>类型，<br>3)将原本是<code>Flyable 类型</code>的<code>obj指针</code>，cast为<code>Bird 类指针</code>。并且将转化后的指针复制给一个新的指针。<br>4)同3)。</p>
+<p>此时在main中调用func()。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Bird b ;</span><br><span class="line">func(&amp;b);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(b).name()&lt;&lt;<span class="built_in">endl</span>;     <span class="comment">//</span></span><br></pre></td></tr></table></figure>
+
+<p>b为<code>Bird类</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Flyable* plane = <span class="keyword">new</span> Plane();</span><br><span class="line">func(plane);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(plane).name()&lt;&lt;<span class="built_in">endl</span>;     <span class="comment">// </span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt; <span class="keyword">typeid</span>(*plane).name()&lt;&lt;<span class="built_in">endl</span>;    <span class="comment">//</span></span><br></pre></td></tr></table></figure>
+
+<p>分别返回<code>Flyable 指针类</code>，和<code>Plane 类</code>。</p>
+<p><code>typeid().name()</code>使用前需要<code>#include &lt;typeinfo&gt;</code>。</p>
+<p><font color="gree" size="5">敲黑板</font>在可能的情况下，最好定义虚函数，而非直接管理类型。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/31/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E5%9B%9B-RTTI/" data-id="ckatsrgsz004zxqfz6tx4fseq" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-回顾cpp-多态-三-接口类" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/30/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%89-%E6%8E%A5%E5%8F%A3%E7%B1%BB/" class="article-date">
@@ -1100,87 +1178,6 @@
 
 
   
-    <article id="post-集成学习-ensemble-learning-一" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" class="article-date">
-  <time datetime="2019-08-20T14:28:32.000Z" itemprop="datePublished">2019-08-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/">集成学习(ensemble-learning)-(一)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li>类似，生病了找多名专家从不同方面一起确诊。</li>
-<li>集成学习将多个学习器进行结合，通常可以获得比单一的学习器更优的泛化性能。</li>
-<li>集成学习可以得带3中不同结果：提升性能，不起作用，起负作用。</li>
-<li>所以要想获得好的集成结果，每个学习器应该“好而不同”，即每个学习器要有一定的准确性，同时，每个学习器各不相同。即“多样性”。</li>
-<li>实际上，如何产生“好而不同”的基学习器，是集成学习的核心。</li>
-</ul>
-<h1 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h1><p>使用数据集：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x, y = datasets.make_moons(n_samples=<span class="number">500</span>, noise=<span class="number">0.2</span>, random_state=<span class="number">321</span>)</span><br></pre></td></tr></table></figure>
-
-<p>构建三个基学习器：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#1） 使用逻辑回归</span></span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line">log = LogisticRegression()</span><br><span class="line">log.fit(x_train, y_train)</span><br><span class="line">print(log.score(x_test, y_test))   <span class="comment">#  0.896</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#2) 使用SVM</span></span><br><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVC</span><br><span class="line">svm = SVC()</span><br><span class="line">svm.fit(x_train, y_train)</span><br><span class="line">print(svm.score(x_test, y_test))   <span class="comment">#  0.952</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#3) 使用决策树分类</span></span><br><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier</span><br><span class="line">tree = DecisionTreeClassifier()</span><br><span class="line">tree.fit(x_train, y_train)</span><br><span class="line">print(tree.score(x_test, y_test))  <span class="comment">#  0.944</span></span><br></pre></td></tr></table></figure>
-
-<p>结果分别为 0.896, 0.952, 0.944.</p>
-<p>投票操作：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># voting</span></span><br><span class="line">y_pre1 = log.predict(x_test)</span><br><span class="line">y_pre2 = svm.predict(x_test)</span><br><span class="line">y_pre3 = tree.predict(x_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 少数服从多数</span></span><br><span class="line"><span class="comment"># 对于三个模型的预测值，至少2个模型判断它为1，我才认为它是1：</span></span><br><span class="line">y_p = np.asarray((y_pre1 + y_pre2 + y_pre3) &gt;= <span class="number">2</span>, dtype=int)</span><br><span class="line">print(y_pre1[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 0]</span></span><br><span class="line">print(y_pre2[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br><span class="line">print(y_pre3[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br><span class="line">print(y_p[:<span class="number">10</span>])      <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br></pre></td></tr></table></figure>
-
-<p>判断集成效果：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> accuracy_score</span><br><span class="line">acc = accuracy_score(y_test, y_p)</span><br><span class="line">print(acc)     <span class="comment">#  0.96</span></span><br></pre></td></tr></table></figure>
-
-<p>最终集成性能是0.96。</p>
-<h2 id="Hard-voting"><a href="#Hard-voting" class="headerlink" title="Hard voting"></a>Hard voting</h2><p>hard voting 即少数服从多数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> VotingClassifier</span><br><span class="line"></span><br><span class="line">voting = VotingClassifier(estimators=[</span><br><span class="line">    (<span class="string">'log'</span>, LogisticRegression()),</span><br><span class="line">    (<span class="string">'svm'</span>, SVC()),</span><br><span class="line">    (<span class="string">'tree'</span>, DecisionTreeClassifier())</span><br><span class="line">], voting=<span class="string">'hard'</span>)</span><br><span class="line"></span><br><span class="line">voting.fit(x_train, y_train)</span><br><span class="line">print(voting.score(x_test, y_test))    <span class="comment">#  0.96</span></span><br></pre></td></tr></table></figure>
-
-<p>实际中，<font color="red">通常把基学习器调参到最优，后再集成</font>。</p>
-<h2 id="Soft-voting"><a href="#Soft-voting" class="headerlink" title="Soft voting"></a>Soft voting</h2><p>hard voting 其实是“少数服从多数”，而 soft voting <font color="red">带权投票</font>，如歌唱的专业评审团的投票权重就大。如：</p>
-<p>5个学习器把同一个样本分为A类或B类的概率分别如下：</p>
-<pre><code>            A类    B类
-学习器#0   99.0%  1.0%
-学习器#1   49.0%  51.0%
-学习器#2   43.0%  57.0%
-学习器#3   98.0%  2.0%
-学习器#4   34.0%  64.0%</code></pre><p>如果使用hard voting 该样本最终本分为B类。</p>
-<p>但是，显然学习器<code>#0</code>和<code>#3</code>有很大的把握认为该样本属于A类，而其他三个学习器并没有很确定该样本的类别。所以“少数服从多数”不合适。使用Soft voting 计算<br>属于A类：(99.0%+49.0%+43.0%+98.0%+34.0%) / 5 = 64.6%. <br>属于B类：(1.0%+51.0%+57.0%+2.0%+64.0%) / 5 = 35.0%.<br> 所以该样本应该被分类为A。</p>
-<p><font color="red">使用 Soft voting 的基学习器要求都应该估计概率</font>，即可以调用 predict_proba 函数。SVM模型把probability设为true，便可以进行概率估计。调用VotingClassifier时指明voting方式为soft即可：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> VotingClassifier</span><br><span class="line">voting2 = VotingClassifier(estimators=[</span><br><span class="line">    (<span class="string">'log'</span>, LogisticRegression()),</span><br><span class="line">    (<span class="string">'svm'</span>, SVC(probability=<span class="literal">True</span>)),</span><br><span class="line">    (<span class="string">'tree'</span>, DecisionTreeClassifier())</span><br><span class="line">], voting=<span class="string">'soft'</span>)</span><br><span class="line"></span><br><span class="line">voting2.fit(x_train, y_train)</span><br><span class="line">print(voting2.score(x_test, y_test))   <span class="comment">#  0.976</span></span><br></pre></td></tr></table></figure>
-
-<p>所以，当基学习器可以求出样本概率估计时，Soft voting 比 hard voting 性能优。 </p>
-<p><font color="green" size="5">敲黑板</font>理解当前问题，才能找到已有方法的不足，才能找到更合适的方法。就如本文表达的用Soft voting 替代已有的Hard voting。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" data-id="ckatsrgti006dxqfz76k8gph2" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1196,7 +1193,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1225,7 +1222,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1238,6 +1235,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
           </li>
         
@@ -1247,14 +1252,6 @@
         
           <li>
             <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/">LeetCode-判断是否是子树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
       </ul>

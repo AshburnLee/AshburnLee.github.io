@@ -64,6 +64,87 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-集成学习-ensemble-learning-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-20T14:28:32.000Z" itemprop="datePublished">2019-08-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/">集成学习(ensemble-learning)-(一)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li>类似，生病了找多名专家从不同方面一起确诊。</li>
+<li>集成学习将多个学习器进行结合，通常可以获得比单一的学习器更优的泛化性能。</li>
+<li>集成学习可以得带3中不同结果：提升性能，不起作用，起负作用。</li>
+<li>所以要想获得好的集成结果，每个学习器应该“好而不同”，即每个学习器要有一定的准确性，同时，每个学习器各不相同。即“多样性”。</li>
+<li>实际上，如何产生“好而不同”的基学习器，是集成学习的核心。</li>
+</ul>
+<h1 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h1><p>使用数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x, y = datasets.make_moons(n_samples=<span class="number">500</span>, noise=<span class="number">0.2</span>, random_state=<span class="number">321</span>)</span><br></pre></td></tr></table></figure>
+
+<p>构建三个基学习器：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#1） 使用逻辑回归</span></span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line">log = LogisticRegression()</span><br><span class="line">log.fit(x_train, y_train)</span><br><span class="line">print(log.score(x_test, y_test))   <span class="comment">#  0.896</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#2) 使用SVM</span></span><br><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVC</span><br><span class="line">svm = SVC()</span><br><span class="line">svm.fit(x_train, y_train)</span><br><span class="line">print(svm.score(x_test, y_test))   <span class="comment">#  0.952</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#3) 使用决策树分类</span></span><br><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier</span><br><span class="line">tree = DecisionTreeClassifier()</span><br><span class="line">tree.fit(x_train, y_train)</span><br><span class="line">print(tree.score(x_test, y_test))  <span class="comment">#  0.944</span></span><br></pre></td></tr></table></figure>
+
+<p>结果分别为 0.896, 0.952, 0.944.</p>
+<p>投票操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># voting</span></span><br><span class="line">y_pre1 = log.predict(x_test)</span><br><span class="line">y_pre2 = svm.predict(x_test)</span><br><span class="line">y_pre3 = tree.predict(x_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 少数服从多数</span></span><br><span class="line"><span class="comment"># 对于三个模型的预测值，至少2个模型判断它为1，我才认为它是1：</span></span><br><span class="line">y_p = np.asarray((y_pre1 + y_pre2 + y_pre3) &gt;= <span class="number">2</span>, dtype=int)</span><br><span class="line">print(y_pre1[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 0]</span></span><br><span class="line">print(y_pre2[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br><span class="line">print(y_pre3[:<span class="number">10</span>])   <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br><span class="line">print(y_p[:<span class="number">10</span>])      <span class="comment">#  [1 1 1 1 1 0 1 0 0 1]</span></span><br></pre></td></tr></table></figure>
+
+<p>判断集成效果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> accuracy_score</span><br><span class="line">acc = accuracy_score(y_test, y_p)</span><br><span class="line">print(acc)     <span class="comment">#  0.96</span></span><br></pre></td></tr></table></figure>
+
+<p>最终集成性能是0.96。</p>
+<h2 id="Hard-voting"><a href="#Hard-voting" class="headerlink" title="Hard voting"></a>Hard voting</h2><p>hard voting 即少数服从多数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> VotingClassifier</span><br><span class="line"></span><br><span class="line">voting = VotingClassifier(estimators=[</span><br><span class="line">    (<span class="string">'log'</span>, LogisticRegression()),</span><br><span class="line">    (<span class="string">'svm'</span>, SVC()),</span><br><span class="line">    (<span class="string">'tree'</span>, DecisionTreeClassifier())</span><br><span class="line">], voting=<span class="string">'hard'</span>)</span><br><span class="line"></span><br><span class="line">voting.fit(x_train, y_train)</span><br><span class="line">print(voting.score(x_test, y_test))    <span class="comment">#  0.96</span></span><br></pre></td></tr></table></figure>
+
+<p>实际中，<font color="red">通常把基学习器调参到最优，后再集成</font>。</p>
+<h2 id="Soft-voting"><a href="#Soft-voting" class="headerlink" title="Soft voting"></a>Soft voting</h2><p>hard voting 其实是“少数服从多数”，而 soft voting <font color="red">带权投票</font>，如歌唱的专业评审团的投票权重就大。如：</p>
+<p>5个学习器把同一个样本分为A类或B类的概率分别如下：</p>
+<pre><code>            A类    B类
+学习器#0   99.0%  1.0%
+学习器#1   49.0%  51.0%
+学习器#2   43.0%  57.0%
+学习器#3   98.0%  2.0%
+学习器#4   34.0%  64.0%</code></pre><p>如果使用hard voting 该样本最终本分为B类。</p>
+<p>但是，显然学习器<code>#0</code>和<code>#3</code>有很大的把握认为该样本属于A类，而其他三个学习器并没有很确定该样本的类别。所以“少数服从多数”不合适。使用Soft voting 计算<br>属于A类：(99.0%+49.0%+43.0%+98.0%+34.0%) / 5 = 64.6%. <br>属于B类：(1.0%+51.0%+57.0%+2.0%+64.0%) / 5 = 35.0%.<br> 所以该样本应该被分类为A。</p>
+<p><font color="red">使用 Soft voting 的基学习器要求都应该估计概率</font>，即可以调用 predict_proba 函数。SVM模型把probability设为true，便可以进行概率估计。调用VotingClassifier时指明voting方式为soft即可：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> VotingClassifier</span><br><span class="line">voting2 = VotingClassifier(estimators=[</span><br><span class="line">    (<span class="string">'log'</span>, LogisticRegression()),</span><br><span class="line">    (<span class="string">'svm'</span>, SVC(probability=<span class="literal">True</span>)),</span><br><span class="line">    (<span class="string">'tree'</span>, DecisionTreeClassifier())</span><br><span class="line">], voting=<span class="string">'soft'</span>)</span><br><span class="line"></span><br><span class="line">voting2.fit(x_train, y_train)</span><br><span class="line">print(voting2.score(x_test, y_test))   <span class="comment">#  0.976</span></span><br></pre></td></tr></table></figure>
+
+<p>所以，当基学习器可以求出样本概率估计时，Soft voting 比 hard voting 性能优。 </p>
+<p><font color="green" size="5">敲黑板</font>理解当前问题，才能找到已有方法的不足，才能找到更合适的方法。就如本文表达的用Soft voting 替代已有的Hard voting。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" data-id="ckatsrgti006dxqfz76k8gph2" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-回顾决策树-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/20/%E5%9B%9E%E9%A1%BE%E5%86%B3%E7%AD%96%E6%A0%91-%E4%B8%80/" class="article-date">
@@ -839,104 +920,6 @@
 
 
   
-    <article id="post-回看SVM-一" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/" class="article-date">
-  <time datetime="2019-08-07T20:23:21.000Z" itemprop="datePublished">2019-08-08</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/">回看SVM-(一)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><ul>
-<li>支持向量：两类别距离决策边界最近且相等的点。</li>
-<li>SVM目的：使得两个类别的SV间的距离最小。即最大化Margin间的距离。</li>
-<li>SVM考虑当前样本同时，又考虑到未来可能出现的样本，即使找到的决策边界尽量有强的泛化能力。</li>
-<li>经过数学推到，可以将问题转化为最优化问题。如同其他参数学习算法。</li>
-<li>其他机器学习算法一般是全局最优化问题，而SVM是<font color="red">有条件的最优化问题</font>。</li>
-<li>有条件的最优化问题使用拉格朗日算子求解。</li>
-<li>KKT条件</li>
-<li>Hard Margin要严格满足两个Margin见没有没有任何样本点。这由该最优化问题的条件决定。</li>
-<li>Soft Margin允许两个Margin之间存在样本点，即有<font color="red">容错的能力</font>。相应的模型条件与目标都会体现该容错能力。</li>
-<li>L1正则；L2正则</li>
-<li>Hinge损失函数，Exponential Loss，Logistic Loss，是常用的损失函数，由好的数学性质。</li>
-<li>惩罚项表达了<font color="red">容错空间</font>，不能太大。</li>
-<li>目标表达式中的<code>C</code>，目的是平衡前后两部分的比例。</li>
-<li>此处C（正则化惩罚系数）与其他ML算法C含义不同，但是可以相同地解读。且C越大，越接近Hard Margin。</li>
-<li>SVM中涉及距离，所以要对数据进行标准化处理。否则当不同维数的特征尺度不同时，影响模型性能。</li>
-</ul>
-<h1 id="1-数据"><a href="#1-数据" class="headerlink" title="1. 数据"></a>1. 数据</h1><p>有二分类样本：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">iris = datasets.load_iris()</span><br><span class="line"></span><br><span class="line">x = iris.data    <span class="comment"># 150 x 4</span></span><br><span class="line">y = iris.target  <span class="comment"># 150</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 二分类模型</span></span><br><span class="line">x = x[y &lt; <span class="number">2</span>, :<span class="number">2</span>]  <span class="comment"># 100 x 2</span></span><br><span class="line">y = y[y &lt; <span class="number">2</span>]     <span class="comment"># 100</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="2-首先标准化处理："><a href="#2-首先标准化处理：" class="headerlink" title="2. 首先标准化处理："></a>2. 首先标准化处理：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler</span><br><span class="line"></span><br><span class="line">stand = StandardScaler()</span><br><span class="line">stand.fit(x)</span><br><span class="line">x_standard = stand.transform(x)</span><br></pre></td></tr></table></figure>
-<p>得到标准化后的<code>x_standard</code>。</p>
-<p>为了说明问题，使用所有数据fit，使用原来数据predict。</p>
-<h1 id="3-当C取很大值时，如C-1e9："><a href="#3-当C取很大值时，如C-1e9：" class="headerlink" title="3. 当C取很大值时，如C=1e9："></a>3. 当C取很大值时，如C=1e9：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc = LinearSVC(C=<span class="number">1e9</span>)</span><br><span class="line">svc.fit(x_standard, y)</span><br><span class="line">y_predict = svc.predict(x_standard)</span><br></pre></td></tr></table></figure>
-
-<p>查看模型所学，<code>w和b</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc.coef_)       <span class="comment"># w [[ 4.03242779 -2.49296705]] </span></span><br><span class="line">print(svc.intercept_)  <span class="comment"># b [ 0.95365901]</span></span><br></pre></td></tr></table></figure>
-
-<p>绘出决策边界， 及两个Margin：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-
-<p>如图：</p>
-<div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/hard.png" width="600"></div>
-<div align="center">图 C=1e9的分类边界</div>
-
-
-
-<h1 id="4-当C取很小值时，如C-0-05："><a href="#4-当C取很小值时，如C-0-05：" class="headerlink" title="4. 当C取很小值时，如C=0.05："></a>4. 当C取很小值时，如C=0.05：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc2 = LinearSVC(C=<span class="number">0.005</span>)</span><br><span class="line">svc2.fit(x_standard, y)</span><br><span class="line">y_y_predict = svc2.predict(x_standard)</span><br></pre></td></tr></table></figure>
-
-<p>查看模型所学，w&amp;b：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc2.coef_)       <span class="comment"># w [[ 0.33360588 -0.30904355]]</span></span><br><span class="line">print(svc2.intercept_)  <span class="comment"># b [  3.81794231e-08]</span></span><br></pre></td></tr></table></figure>
-
-<p>绘出决策边界，及两个Margin：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc2, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p>如图：</p>
-<div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/soft.png" width="600"></div>
-<div align="center">图 C=0.005的分类边界</div>
-
-<p>当C太小时，容错空间太大，以至于大量明显分错的点也被模型认为是允许的。</p>
-<p>这是当只指明C后，模型的参数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">LinearSVC(C=<span class="number">1000000000.0</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, f   it_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-
-<p>可以看出，使用的是hinge损失函数，L2正则化，ovr…等其他设置。</p>
-<hr>
-<h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>绘出决策边界，及两个Margin的函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># show margins and boundary:</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">plot_svc_decision_boundary</span><span class="params">(model, axis)</span>:</span></span><br><span class="line">    x0, x1 = np.meshgrid(</span><br><span class="line">        np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], int((axis[<span class="number">1</span>] - axis[<span class="number">0</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">        np.linspace(axis[<span class="number">2</span>], axis[<span class="number">3</span>], int((axis[<span class="number">3</span>] - axis[<span class="number">2</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">    )</span><br><span class="line">    X_new = np.c_[x0.ravel(), x1.ravel()]</span><br><span class="line"></span><br><span class="line">    y_predict = model.predict(X_new)</span><br><span class="line">    zz = y_predict.reshape(x0.shape)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">from</span> matplotlib.colors <span class="keyword">import</span> ListedColormap</span><br><span class="line">    custom_cmap = ListedColormap([<span class="string">'#EF9A9A'</span>, <span class="string">'#FFF59D'</span>, <span class="string">'#90CAF9'</span>])</span><br><span class="line"></span><br><span class="line">    plt.contourf(x0, x1, zz, linewidth=<span class="number">5</span>, cmap=custom_cmap)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># margin lines:</span></span><br><span class="line">    w = model.coef_[<span class="number">0</span>]</span><br><span class="line">    b = model.intercept_[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># w0*x0 + w1*x1 + b = 0</span></span><br><span class="line">    <span class="comment"># =&gt; x1 = -w0/w1 * x0 - b/w1</span></span><br><span class="line">    plot_x = np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], <span class="number">200</span>)</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = 1</span></span><br><span class="line">    above_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] + (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = -1</span></span><br><span class="line">    below_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] - (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># two boolean vectors: set the length of lines</span></span><br><span class="line">    above_index = (above_y &gt;= axis[<span class="number">2</span>]) &amp; (above_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    below_index = (below_y &gt;= axis[<span class="number">2</span>]) &amp; (below_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    plt.plot(plot_x[above_index], above_y[above_index], color=<span class="string">'black'</span>)</span><br><span class="line">    plt.plot(plot_x[below_index], below_y[below_index], color=<span class="string">'black'</span>)</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/" data-id="ckatsrgss004jxqfz8pvs72qs" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -952,7 +935,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -981,7 +964,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -994,6 +977,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
           </li>
         
@@ -1003,14 +994,6 @@
         
           <li>
             <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/">LeetCode-判断是否是子树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
       </ul>

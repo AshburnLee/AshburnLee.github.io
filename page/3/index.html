@@ -64,6 +64,55 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-再看规约-一段规约" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" class="article-date">
+  <time datetime="2020-02-20T02:27:03.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="一阶段规约"><a href="#一阶段规约" class="headerlink" title="一阶段规约"></a>一阶段规约</h1><p>使用原子操作和shared memory的组合可以避免第二个kernel的调用。使用一个（global还是shared）变量记录哪个block已经做完了自己的工作。一旦所有的block都完成后，使用一个block执行最有的规约。</p>
+<p>【CUDA专家手册 269页】</p>
+<h1 id="更简洁的一段规约"><a href="#更简洁的一段规约" class="headerlink" title="更简洁的一段规约"></a>更简洁的一段规约</h1><p>在之前的二段归约中，每一阶段的第一步是每个block的每个thread得到部分和，由于block间是不能同步的，所以才有了第二阶段。</p>
+<p>现在是使用一个寄存器来存储每个thread对应的自己的部分和，最后使用 原子操作对这些部分和再求和：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个thread得到自己的部分和，</span></span><br><span class="line">    <span class="keyword">int</span> partialSum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        partialSum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用原子操作，求部分和的和</span></span><br><span class="line">    atomicAdd(out, partialSum);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">    cudaMemset(res, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line">    reductionKernel&lt;&lt;&lt;numBlock, threadsPerBlock&gt;&gt;&gt;(answer, in ,N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意一点，要写入<code>out数组</code>，那么<code>out数组</code>的初始值必须设为0；</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" data-id="ckatsrgrf0018xqfz2qubhfs7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-再看规约-循环展开" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/" class="article-date">
@@ -992,82 +1041,6 @@
 
 
   
-    <article id="post-CUDA-资源分配" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" class="article-date">
-  <time datetime="2020-02-20T01:27:25.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/">CUDA-资源分配</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>GPU系统中的各种<font color="red" size="4">内存数量</font>约束了整个系统中的<code>block</code>数量个<code>threads</code>数量。每个<code>thread</code>使用各种存储的多少影响着可以使用<code>threads</code>的数量。 </p>
-<p>SM资源分割:</p>
-<p>GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大，所以每个thread不管使用多少global memory，对可调用的threads数量几乎没有影响（本来设计kernel的原则之一就是最少的使用Global memory）。</p>
-<p>增加资源占量后（<code>thread</code>占用<code>Registers</code>的数量或<code>block</code>占用<code>Shared memory</code>的数量）导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降。使用<code>CUDA Occupancy Calculator</code>工具可以修改某一资源的数值，得到其他资源的相应变化。</p>
-<ol>
-<li><p>一个<code>SM</code>中的Registers数量是有限的</p>
-<p> 这些寄存器要被划分给这个SM中的所有threads。所以如果每个thread使用的寄存器过多时，这个SM中实际使用的threads数会减少，使得资源（应用程序对GPU处理单元）占用率下降。</p>
-<p> 比如一个SM中有768个threads，含有8k个registers。要想最大并行化（最大化占用率），即使用所有的threads，那么就要保证每个thread分配最多10个registers，这种情况下共使用<code>10x768=7680</code>个registers，没有超过8k个。</p>
-<p> 但是如果每个threads分配11个registers，此时<code>11x768=8448</code>个registers，此时算数上最多只能使用727个threads（<code>8000/11=727.27</code>），实际情况会比727还要少，因为超出限制后，threads数的减少是以<font color="red" size="4">block为粒度</font>的减少：如果一个block有256个threads，那么可用threads数就不是<code>从768减少到727</code>，而是<code>从768减少到512</code>，只要threads数减少，就以<font color="red">block为单位（粒度）</font>地减少。如果要减少threads超过256（一个block的threads数），如257，那么实际就要减少<code>2个block（256+1，2个blocks）</code>。</p>
-<p> 分析一个资源分配的例子：一个SM有<code>768</code>个threads，<code>8000</code>个registers。如果每个threads使用<code>11</code>个registers，并且每个block含有<code>256</code>个threads。（上面计算过：最大并行化的register的分配是每个thread使用10个registers。）</p>
-<ul>
-<li><p>一个SM驻扎的threads个数有多少</p>
-<p>  可用threads个数：<code>8000/11=727</code>个threads，而且<code>2x256=512</code>，<code>3x256=768</code>超过了<code>727</code>，所以这个SM驻扎<code>2</code>个blocks（512threads，与上述相符合）。</p>
-</li>
-<li><p>一个SM驻扎的warp数量有多少</p>
-<p>  <code>2</code>个blocks共有<code>512</code>个threads，所以<code>512/32=16</code>个warps，这个SM驻扎<code>16</code>个warps。而理论极限是驻扎<code>768/32=24</code>个warps。16远小于24.</p>
-</li>
-<li><p>warp数量减少意味着什么</p>
-<p>  通过上述计算，没有合理分配registers的结果是，存在资源的浪费，不能最大并行化。</p>
-</li>
-</ul>
-</li>
-</ol>
-<ol start="2">
-<li><p>同样的，一个<code>SM</code>中的<code>shared memory</code>的大小也是有限的</p>
-<p> 回忆：在同一个<code>block</code>的<code>threads</code>共享同一块<code>shared memory</code>。</p>
-<p> 一个SM中实际使用的block数量也是与<font color="orange">每个block被分配的shared memory的大小有关</font>。</p>
-<p> 比如：一个SM有<code>8</code>个blocks，可使用shared memory为<code>16kB</code>。所以想要充分使用所有的blocks，每个block被分配shared memory最多为<code>2kB（16kB/8）</code>. 换句话说，为了最大并行化，充分使用SM的计算资源，这个SM中每个block可使用的shared memory最多为<code>2kB</code>。</p>
-<p> 假如，每个block使用了<code>4kB</code>，则实际只是用了<code>4个（16kB/4kB）blocks</code>，相较于上一种中情况只是用了一半的threads。</p>
-<p> 假如，每个block使用<code>5kB</code>，则实际只用了<code>3个（16kB/5kB）blocks</code>，此种情况可使用的threads就更少了。</p>
-</li>
-</ol>
-<p>回忆实战中，有一回，对kernel的配置没有超过硬件极限，但是实际上每个block只能使用256个threads，超过256，程序就不会得到正确结果。当时不清楚为什么，通过这篇笔记，可以解释了。是因为每个threads使用了过多的Registers（当时程序中没有使用Shared memory）的原因。导致可用threads数减少。</p>
-<p><font color="purple" size="5">敲黑板</font>Registers数量和每个block分配到的shared memory的大小，<font color="red">共同约束了</font>整个系统中的block数量个threads数量。实际应用中也要尽量少的使用存储资源，从而最大化并行程度。<font color="red">内存是竞争资源</font></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" data-id="ckatsrgru002bxqfz2lf84eyo" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1083,7 +1056,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1112,7 +1085,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1125,6 +1098,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
           </li>
         
@@ -1134,14 +1115,6 @@
         
           <li>
             <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/">LeetCode-判断是否是子树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
       </ul>

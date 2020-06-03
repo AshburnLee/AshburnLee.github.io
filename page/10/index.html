@@ -64,6 +64,104 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-回看SVM-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-07T20:23:21.000Z" itemprop="datePublished">2019-08-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/">回看SVM-(一)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><ul>
+<li>支持向量：两类别距离决策边界最近且相等的点。</li>
+<li>SVM目的：使得两个类别的SV间的距离最小。即最大化Margin间的距离。</li>
+<li>SVM考虑当前样本同时，又考虑到未来可能出现的样本，即使找到的决策边界尽量有强的泛化能力。</li>
+<li>经过数学推到，可以将问题转化为最优化问题。如同其他参数学习算法。</li>
+<li>其他机器学习算法一般是全局最优化问题，而SVM是<font color="red">有条件的最优化问题</font>。</li>
+<li>有条件的最优化问题使用拉格朗日算子求解。</li>
+<li>KKT条件</li>
+<li>Hard Margin要严格满足两个Margin见没有没有任何样本点。这由该最优化问题的条件决定。</li>
+<li>Soft Margin允许两个Margin之间存在样本点，即有<font color="red">容错的能力</font>。相应的模型条件与目标都会体现该容错能力。</li>
+<li>L1正则；L2正则</li>
+<li>Hinge损失函数，Exponential Loss，Logistic Loss，是常用的损失函数，由好的数学性质。</li>
+<li>惩罚项表达了<font color="red">容错空间</font>，不能太大。</li>
+<li>目标表达式中的<code>C</code>，目的是平衡前后两部分的比例。</li>
+<li>此处C（正则化惩罚系数）与其他ML算法C含义不同，但是可以相同地解读。且C越大，越接近Hard Margin。</li>
+<li>SVM中涉及距离，所以要对数据进行标准化处理。否则当不同维数的特征尺度不同时，影响模型性能。</li>
+</ul>
+<h1 id="1-数据"><a href="#1-数据" class="headerlink" title="1. 数据"></a>1. 数据</h1><p>有二分类样本：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">iris = datasets.load_iris()</span><br><span class="line"></span><br><span class="line">x = iris.data    <span class="comment"># 150 x 4</span></span><br><span class="line">y = iris.target  <span class="comment"># 150</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 二分类模型</span></span><br><span class="line">x = x[y &lt; <span class="number">2</span>, :<span class="number">2</span>]  <span class="comment"># 100 x 2</span></span><br><span class="line">y = y[y &lt; <span class="number">2</span>]     <span class="comment"># 100</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="2-首先标准化处理："><a href="#2-首先标准化处理：" class="headerlink" title="2. 首先标准化处理："></a>2. 首先标准化处理：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler</span><br><span class="line"></span><br><span class="line">stand = StandardScaler()</span><br><span class="line">stand.fit(x)</span><br><span class="line">x_standard = stand.transform(x)</span><br></pre></td></tr></table></figure>
+<p>得到标准化后的<code>x_standard</code>。</p>
+<p>为了说明问题，使用所有数据fit，使用原来数据predict。</p>
+<h1 id="3-当C取很大值时，如C-1e9："><a href="#3-当C取很大值时，如C-1e9：" class="headerlink" title="3. 当C取很大值时，如C=1e9："></a>3. 当C取很大值时，如C=1e9：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc = LinearSVC(C=<span class="number">1e9</span>)</span><br><span class="line">svc.fit(x_standard, y)</span><br><span class="line">y_predict = svc.predict(x_standard)</span><br></pre></td></tr></table></figure>
+
+<p>查看模型所学，<code>w和b</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc.coef_)       <span class="comment"># w [[ 4.03242779 -2.49296705]] </span></span><br><span class="line">print(svc.intercept_)  <span class="comment"># b [ 0.95365901]</span></span><br></pre></td></tr></table></figure>
+
+<p>绘出决策边界， 及两个Margin：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>如图：</p>
+<div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/hard.png" width="600"></div>
+<div align="center">图 C=1e9的分类边界</div>
+
+
+
+<h1 id="4-当C取很小值时，如C-0-05："><a href="#4-当C取很小值时，如C-0-05：" class="headerlink" title="4. 当C取很小值时，如C=0.05："></a>4. 当C取很小值时，如C=0.05：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc2 = LinearSVC(C=<span class="number">0.005</span>)</span><br><span class="line">svc2.fit(x_standard, y)</span><br><span class="line">y_y_predict = svc2.predict(x_standard)</span><br></pre></td></tr></table></figure>
+
+<p>查看模型所学，w&amp;b：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc2.coef_)       <span class="comment"># w [[ 0.33360588 -0.30904355]]</span></span><br><span class="line">print(svc2.intercept_)  <span class="comment"># b [  3.81794231e-08]</span></span><br></pre></td></tr></table></figure>
+
+<p>绘出决策边界，及两个Margin：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc2, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>如图：</p>
+<div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/soft.png" width="600"></div>
+<div align="center">图 C=0.005的分类边界</div>
+
+<p>当C太小时，容错空间太大，以至于大量明显分错的点也被模型认为是允许的。</p>
+<p>这是当只指明C后，模型的参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">LinearSVC(C=<span class="number">1000000000.0</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, f   it_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+<p>可以看出，使用的是hinge损失函数，L2正则化，ovr…等其他设置。</p>
+<hr>
+<h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>绘出决策边界，及两个Margin的函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># show margins and boundary:</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">plot_svc_decision_boundary</span><span class="params">(model, axis)</span>:</span></span><br><span class="line">    x0, x1 = np.meshgrid(</span><br><span class="line">        np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], int((axis[<span class="number">1</span>] - axis[<span class="number">0</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">        np.linspace(axis[<span class="number">2</span>], axis[<span class="number">3</span>], int((axis[<span class="number">3</span>] - axis[<span class="number">2</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">    )</span><br><span class="line">    X_new = np.c_[x0.ravel(), x1.ravel()]</span><br><span class="line"></span><br><span class="line">    y_predict = model.predict(X_new)</span><br><span class="line">    zz = y_predict.reshape(x0.shape)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">from</span> matplotlib.colors <span class="keyword">import</span> ListedColormap</span><br><span class="line">    custom_cmap = ListedColormap([<span class="string">'#EF9A9A'</span>, <span class="string">'#FFF59D'</span>, <span class="string">'#90CAF9'</span>])</span><br><span class="line"></span><br><span class="line">    plt.contourf(x0, x1, zz, linewidth=<span class="number">5</span>, cmap=custom_cmap)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># margin lines:</span></span><br><span class="line">    w = model.coef_[<span class="number">0</span>]</span><br><span class="line">    b = model.intercept_[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># w0*x0 + w1*x1 + b = 0</span></span><br><span class="line">    <span class="comment"># =&gt; x1 = -w0/w1 * x0 - b/w1</span></span><br><span class="line">    plot_x = np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], <span class="number">200</span>)</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = 1</span></span><br><span class="line">    above_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] + (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = -1</span></span><br><span class="line">    below_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] - (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># two boolean vectors: set the length of lines</span></span><br><span class="line">    above_index = (above_y &gt;= axis[<span class="number">2</span>]) &amp; (above_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    below_index = (below_y &gt;= axis[<span class="number">2</span>]) &amp; (below_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    plt.plot(plot_x[above_index], above_y[above_index], color=<span class="string">'black'</span>)</span><br><span class="line">    plt.plot(plot_x[below_index], below_y[below_index], color=<span class="string">'black'</span>)</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/" data-id="ckatsrgss004jxqfz8pvs72qs" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-方法论-二叉树与递归" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" class="article-date">
@@ -1046,94 +1144,6 @@
 
 
   
-    <article id="post-文本分类-二-文本预处理II-词编码" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" class="article-date">
-  <time datetime="2019-08-03T15:12:59.000Z" itemprop="datePublished">2019-08-03</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/">文本分类(二)-文本预处理II-词编码</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>接文本预处理(一)，这篇笔记记录把分词后的记录编码为计算机可识别的数值型序列，如将<code>[你好 呀 ， 参加 比赛 了 吗]</code>编码为<code>[91, 57, 1, 31, 14, 6, 5]</code>。同时编码类别。</p>
-<h1 id="词编码"><a href="#词编码" class="headerlink" title="词编码"></a>词编码</h1><p>在上<a href="https://ashburnlee.github.io/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86/" target="_blank" rel="noopener">一篇笔记</a>中得到的<code>vocab_file</code>，再看一下其内容：</p>
-<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
-
-<p>每个词与其编号一一对应，可以<font color="red">用词的标号来对词进行编码</font>。这就是下面主要做的事。</p>
-<h2 id="1-一一对应"><a href="#1-一一对应" class="headerlink" title="1. 一一对应"></a>1. 一一对应</h2><p>首先读取<code>vocab_file</code>，得到每个词，其编号，其频数，以<code>{词：编号}</code>为元素存入一个字典。同时指定一个整数<code>threshold</code>，当一个词的词频小于<code>threshold</code>，不再考虑该词，原因是频数太低的词没有统计意义。对每一条数据执行此操作，实现过程如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_read_dict</span><span class="params">(self, filename)</span>:</span></span><br><span class="line">    <span class="string">""" read filename and generate &#123;word: id&#125; dict """</span></span><br><span class="line">    <span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># 读词与词频</span></span><br><span class="line">        word, frequency = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        frequency = int(frequency)</span><br><span class="line">        <span class="keyword">if</span> frequency &lt; self._num_word_threshold:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        idx = len(self._word_to_id)  <span class="comment"># idx随_word_to_id大小递增</span></span><br><span class="line">        <span class="keyword">if</span> word == <span class="string">'&lt;UNK&gt;'</span>:   <span class="comment"># 特殊处理UNK</span></span><br><span class="line">            self._unk = idx</span><br><span class="line">        self._word_to_id[word] = idx  <span class="comment"># 构建处字典：&#123;词： idx&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>最终得到目标dict：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'&lt;UNK&gt;'</span>: 0, <span class="string">'，'</span>: 1, <span class="string">'的'</span>: 2, <span class="string">'。'</span>: 3, <span class="string">'在'</span>: 4, <span class="string">'、'</span>: 5, <span class="string">'了'</span>: 6, <span class="string">'是'</span>: 7,...,<span class="string">'铭记'</span>: 20350, <span class="string">'多时'</span>: 20351, <span class="string">'轩然大波'</span>: 20352,...,<span class="string">'孵化器'</span>: 39545, <span class="string">'党史'</span>: 39546, <span class="string">'纸飞机'</span>: 39547,...&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="2-编码"><a href="#2-编码" class="headerlink" title="2. 编码"></a>2. 编码</h2><p>第二步，对于一个清洗后样本<code>[你好 呀 ， 参加 比赛 了 吗]</code>，从上一步得到的<code>dict</code>中找每一个<code>key</code>对应的<code>value</code>，从而生成<code>[91, 57, 1, 31, 14, 6, 5]</code>。实现过程：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sentence_to_id</span><span class="params">(self, sentence)</span>:</span></span><br><span class="line">    <span class="string">""" 用词的idx编码每个句子 """</span></span><br><span class="line">    <span class="comment"># 切分句子后的每个词，找它的idx，</span></span><br><span class="line">    word_ids = [self.word_to_id(cur_word) <span class="keyword">for</span> cur_word <span class="keyword">in</span> sentence.split()]</span><br><span class="line">    <span class="keyword">return</span> word_ids</span><br></pre></td></tr></table></figure>
-
-<p>现在用一个样本做测试：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test_word = <span class="string">'你好 呀 ， 参加 比赛 了 吗'</span></span><br></pre></td></tr></table></figure>
-
-<p>返回实际结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[9901, 5667, 1, 381, 124, 6, 445]</span><br></pre></td></tr></table></figure>
-
-<p>同样的方法，处理<code>label</code>，如：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">科技的id： 8</span><br></pre></td></tr></table></figure>
-
-<p>上述完整过程在<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/encodeWords.py" target="_blank" rel="noopener">这里</a></p>
-<hr>
-<p>到此到此为止，所有的样本都已用数字编码。下一步为模型提供数据，batch by batch</p>
-<h1 id="3-生成batch"><a href="#3-生成batch" class="headerlink" title="3. 生成batch"></a>3. 生成batch</h1><p>首先读取清洗后的样本文件，对于每一条记录中的类别和内容按照上述方式编码，并分别存储与两个<code>list</code>。编码完一条记录，加入到<code>list</code>中。最终的到的内容list和类别list。</p>
-<p>实现如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># for each line,</span></span><br><span class="line">    label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">    <span class="comment"># convert label and content to sequence of ids</span></span><br><span class="line">    id_label = self._catego_dict.category_to_id(label)</span><br><span class="line">    id_words = self._vocab_dict.sentence_to_id(content)</span><br><span class="line">    id_words = id_words[<span class="number">0</span>: self._encoded_length]           <span class="comment"># cut</span></span><br><span class="line">    padding_length = self._encoded_length - len(id_words)  <span class="comment"># pad</span></span><br><span class="line">    id_words = id_words + [self._vocab_dict.unk <span class="keyword">for</span> _ <span class="keyword">in</span> range(padding_length)]</span><br><span class="line"></span><br><span class="line">    self._input.append(id_words)</span><br><span class="line">    self._output.append(id_label)</span><br><span class="line"><span class="comment"># convert to numpy array</span></span><br><span class="line">self._input = np.asarray(self._input, dtype=np.int32)</span><br><span class="line">self._output = np.asarray(self._output, dtype=np.int32)</span><br></pre></td></tr></table></figure>
-
-<p><code>self._input</code>中存储编码后的每一条内容，<code>self._output</code>中存储编码后的每一条对应的类别。特别说明，因为实际每条编码后的记录长度都不同，有的长，有的短。所以在代码中<code>self._encoded_length</code>表示每条记录保留多少个词。长的切去，短的用<code>-1</code>补全。</p>
-<p>额外地对<code>self._input</code>和<code>self._output</code>做一个随机洗牌操作：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">p = np.random.permutation(len(self._input))</span><br><span class="line">self._input = self._input[p]</span><br><span class="line">self._output = self._output[p]</span><br></pre></td></tr></table></figure>
-
-<p>这个操作使每个<code>batch</code>中数据<strong>分布尽可能一致</strong>，尽可能可以<strong>代表整个数据集的分布</strong>。</p>
-<p>第二步，生成<code>batch</code>。其过程如下图：</p>
-<div align="center"><img src="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/batch.png" width="600"></div>
-<div align="center">洗牌后继续取下一个batch</div>
-
-<p>当图中最后的数据<code>#*</code>不足一个<code>batch</code>时，所有数据随机洗牌，这样就可以再得到一个<code>batch</code>。当然最后一个batch中有部分重复使用，这没关系。 代码实现如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">next_batch</span><span class="params">(self, batch_size)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    get next batch data</span></span><br><span class="line"><span class="string">    :param batch_size:</span></span><br><span class="line"><span class="string">    :return: the next batch of input and output</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    end_indicator = self._indicator + batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        self._random_shuffle()</span><br><span class="line">        self._indicator = <span class="number">0</span></span><br><span class="line">        end_indicator = batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"batch size : %d is too large"</span> % batch_size)</span><br><span class="line"></span><br><span class="line">    batch_input = self._input[self._indicator: end_indicator]</span><br><span class="line">    batch_ouput = self._output[self._indicator: end_indicator]</span><br><span class="line">    self._indicator = end_indicator</span><br><span class="line">    <span class="comment"># return what we require</span></span><br><span class="line">    <span class="keyword">return</span> batch_input, batch_ouput</span><br></pre></td></tr></table></figure>
-
-<p>测试：当<code>_encoded_length</code>为50，<code>batch_size</code>为2时，可能输出如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(array([[ 5639,  5529, 28692, 14277,   108,     0,   825,    87,  7763,</span><br><span class="line">        22153, 17930,    17,   250,    16,   156,   481,   456,    45,</span><br><span class="line">            6,   102,    45,     1,  5639, 20799,    30, 39057,   949,</span><br><span class="line">         3640, 22153,    92,    15,  5639,    30, 20562, 21187,    14,</span><br><span class="line">         3193, 18589,    30,  5529,    17, 24157,     0,    16,   831,</span><br><span class="line">         3810,     4,  4406,  2849,  3092],</span><br><span class="line">       [24102, 11066,  1375,    52,  7379,   224,  1027,   956,  2962,</span><br><span class="line">        17510,    17,   250,    16,     4,   138, 13230,     2, 10477,</span><br><span class="line">         1375,    21,     1,    13,   119,   406,  3380,    41,     1,</span><br><span class="line">        13230,    17,  1647,    16, 32614,     2,     0,   147,   216,</span><br><span class="line">            6,  5447,     5,     0,   136,     5,  8616,     5, 41351,</span><br><span class="line">        25425,   136,     5, 12401,    45]], dtype=int32), array([1, 4], dtype=int32))</span><br></pre></td></tr></table></figure>
-<p>两条记录，第一条记录的类别为1，另一条的类别为4。</p>
-<p>整个过程完整代码看<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/createEncodedDataset.py" target="_blank" rel="noopener">这里</a>。数据准备完成，便可以用于训练模型了。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" data-id="ckatsrgt8005kxqfzda0fguyk" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1149,7 +1159,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1178,7 +1188,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1191,6 +1201,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
           </li>
         
@@ -1200,14 +1218,6 @@
         
           <li>
             <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/">LeetCode-判断是否是子树</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
           </li>
         
       </ul>
