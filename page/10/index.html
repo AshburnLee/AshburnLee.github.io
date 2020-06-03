@@ -64,6 +64,562 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-二叉树与递归" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" class="article-date">
+  <time datetime="2019-08-07T10:28:54.000Z" itemprop="datePublished">2019-08-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/">LeetCode-方法论-二叉树与递归</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="写在前面："><a href="#写在前面：" class="headerlink" title="写在前面："></a>写在前面：</h1><ul>
+<li>别忘了递归终止条件。</li>
+<li>明确递归函数的定义，并确保实现中函数保持定义不变。</li>
+<li>理解问题。分析出递归结构。</li>
+<li>大脑不适应递归，像盗梦空间，你需要跳进跳出。一层一层跳入，到底，再一层一层跳出。令人恍惚的是每一层的变量都长一样！</li>
+<li>用彩色笔画递归树，不同颜色表示不同层，你就不懵了。</li>
+<li>除了多见类似的问题，训练大脑。目前找不出其他方法让大脑适应递归。</li>
+<li>深度优先遍历，回朔，都是递归。</li>
+<li>递归函数占用额外空间，调用递归函数需要额外开销。</li>
+<li>由于二叉树天然具有递归性，解决问题时可以从树中拿出一个合适大小的子树，来构建出初步代码。</li>
+<li>大多问题与二叉树的4种常见的<font color="red" size="4">遍历</font>方法有关。</li>
+<li>一个模式：<font color="red" size="4">移动控制+结点操作</font></li>
+</ul>
+<hr>
+<h1 id="226-Invert-Binary-Tree"><a href="#226-Invert-Binary-Tree" class="headerlink" title="#226 Invert Binary Tree"></a>#226 Invert Binary Tree</h1><ul>
+<li><p>描述：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line"></span><br><span class="line">    <span class="number">4</span></span><br><span class="line">/   \</span><br><span class="line"><span class="number">2</span>     <span class="number">7</span></span><br><span class="line">/ \   / \</span><br><span class="line"><span class="number">1</span>   <span class="number">3</span> <span class="number">6</span>   <span class="number">9</span></span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line"></span><br><span class="line">    <span class="number">4</span></span><br><span class="line">/   \</span><br><span class="line"><span class="number">7</span>     <span class="number">2</span></span><br><span class="line">/ \   / \</span><br><span class="line"><span class="number">9</span>   <span class="number">6</span> <span class="number">3</span>   <span class="number">1</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  递归树：</p>
+  <div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/bt-1.png" width="600"></div>
+
+<p>  要想实现问题描述的Invert，就需要从下往上Swap。具体说：<br>先执行灰三角A，swap(空，空)；执行灰三角B，swap(空，空)；执行绿三角，swap(9子树, 6子树)；<br>先执行灰三角C，swap(空，空)；执行灰三角D，swap(空，空)；执行红三角，swap(3子树, 1子树)；<br>最后执行黄三角，swap(2子树, 7子树)<br>结束。</p>
+</li>
+</ul>
+<ul>
+<li><p>代码实现：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义：交换以root为跟的左右子树，返回交换后的root。</span></span><br><span class="line"><span class="function">TreeNode* <span class="title">invertTree</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    invertTree(root-&gt;left);</span><br><span class="line">    invertTree(root-&gt;right);</span><br><span class="line">    swap(root-&gt;left, root-&gt;right);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> root;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  这个过程其实是Binary Tree的后续遍历：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义：打印输出root的值。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">postOrder</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    postOrder(root-&gt;left);</span><br><span class="line">    postOrder(root-&gt;right);</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;root-&gt;val&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  除了返回值，唯一的不同是<strong>前者执行交换root的左右子树，后者执行打印root-&gt;val。本质一样：后续遍历</strong>。</p>
+</li>
+</ul>
+<p>相似问题：#337 #508</p>
+<h1 id="112-Path-Sum"><a href="#112-Path-Sum" class="headerlink" title="#112 Path Sum"></a>#112 Path Sum</h1><p>描述：</p>
+<pre><code><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Given the below binary tree and sum = 26,</span><br><span class="line"></span><br><span class="line">    5</span><br><span class="line">    / \</span><br><span class="line">    4   8</span><br><span class="line">/   / \</span><br><span class="line">11  13  4</span><br><span class="line"><span class="built_in">return</span> <span class="literal">true</span>,</span><br><span class="line">as there exist a root-to-leaf path 5-&gt;8-&gt;13 <span class="built_in">which</span> sum is 26.</span><br></pre></td></tr></table></figure></code></pre><ul>
+<li><p>思路</p>
+<p>  两种思路，先序遍历，保存所有root-to-leaf的路径值，后搜索。见<a href="https://github.com/AshburnLee/LeetCode/blob/master/_112SumPath/Solution.h" target="_blank" rel="noopener">这里</a>，效率低。</p>
+<p>  另一种思路，递归树：</p>
+  <div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/bt-2.png" width="600"></div>
+
+<p>  执行过程，即是<strong>先序遍历</strong>，每“跳进”一个新的子树，就更新sum值。最终可以找到<code>sum:13==13</code>，</p>
+</li>
+<li><p>实现：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义： 以root为根的数中是否含有和为sum的路径</span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasPathSum</span><span class="params">(TreeNode* root, <span class="keyword">int</span> sum)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// if root is NULL</span></span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if this root is a leaf</span></span><br><span class="line">    <span class="keyword">if</span> (root-&gt;left == <span class="literal">nullptr</span> &amp;&amp; root-&gt;right == <span class="literal">nullptr</span>)</span><br><span class="line">        <span class="keyword">return</span> root-&gt;val == sum;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if root has the left child</span></span><br><span class="line">    <span class="keyword">if</span> (hasPathSum(root-&gt;left, sum-root-&gt;val))</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if root has the right child</span></span><br><span class="line">    <span class="keyword">if</span> (hasPathSum(root-&gt;right, sum-root-&gt;val))</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  本质上还是先序遍历。<font color="green" size="5">敲黑板</font>sum值在“跳进”后，变小，<strong>“跳出”后，又变回原来值</strong>。<strong>“跳进”表示，递归调用自己，“跳出”表示，这次递归调用执行到return语句</strong>。就本问题而言，但遍历到结点13时，满足<code>sum 13==13</code>，所以在此返回<code>true</code>。遍历不再执行，所以右下角结点4从未被遍历到。</p>
+</li>
+</ul>
+<h1 id="589-N-ary-Tree-Preorder-Traversal"><a href="#589-N-ary-Tree-Preorder-Traversal" class="headerlink" title="#589 N-ary Tree Preorder Traversal"></a>#589 N-ary Tree Preorder Traversal</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Given an n-ary tree, return the preorder traversal of its nodes&#39; values.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  多叉树的先序遍历，思路很直接：先遍历root，后对于这个root的所有子节点，以子节点为新的root做同样的操作。<br>  这里的<font color="red" size="4">操作</font>具体说是将节点值放入vector。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">travel</span><span class="params">(Node* root, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; res)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    res.push_back(root-&gt;val);  <span class="comment">// root</span></span><br><span class="line">    <span class="keyword">for</span> (Node* chld : root-&gt;children) <span class="comment">// all children of root</span></span><br><span class="line">        travel(chld, res);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; preorder(Node* root)&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; res;</span><br><span class="line">    travel(root, res);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// The definition of Node</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    <span class="built_in">vector</span>&lt;Node*&gt; children;</span><br><span class="line"></span><br><span class="line">    Node() &#123;&#125;</span><br><span class="line"></span><br><span class="line">    Node(<span class="keyword">int</span> _val, <span class="built_in">vector</span>&lt;Node*&gt; _children) &#123;</span><br><span class="line">        val = _val;</span><br><span class="line">        children = _children;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p><font color="green" size="6">敲黑板</font>这里有个模式：对于几乎所有树的问题，本质上都是树的遍历。遍历本质上是结点的<font color="red" size="5">移动控制</font>。而对于当前节点来说，它的value是可得到的，对这个value的操作称之为<font color="red" size="5">结点操作</font>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" data-id="ckatsrgs7003axqfzfml90mb2" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-DP-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-07T07:11:57.000Z" itemprop="datePublished">2019-08-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/">LeetCode-方法论-DP-一</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>总结一下与DP相关的问题。</p>
+<p>64, 300(LIS), LCS, 120, 62, 303, 198, </p>
+<p><strong>DP特点</strong>：</p>
+<ul>
+<li>把重复计算的结果保存下来，避免重复计算（记忆机制）。</li>
+<li>DP自下而上执行，通过可计算的最小子结构逐步向上求值，直到得到最终值。</li>
+<li>通常问题是要求最优值。</li>
+</ul>
+<p><strong>实现DP方法</strong>：</p>
+<ul>
+<li>画递归树，自顶向下思考，自下而上实现</li>
+<li>找到合适的<strong>状态</strong>及<strong>状态转移方程</strong><ul>
+<li>状态：递归树的结点啥定义，即每一步记忆的内容是啥<code>memo[i]</code>，即函数是啥。</li>
+<li>状态转移方程：结点怎样实现，即怎样得到<code>memo[i]</code>，即函数怎么做。</li>
+</ul>
+</li>
+</ul>
+<h1 id="64-Minimum-Sum-Path"><a href="#64-Minimum-Sum-Path" class="headerlink" title="#64 Minimum Sum Path"></a>#64 Minimum Sum Path</h1><p>问题描述：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Given a m x n grid filled with non-negative numbers, find a path from **top left** to **bottom right** which minimizes the sum of all numbers along its path.</span><br><span class="line">Note: You can only move either *down* or *right* at any point in time.</span><br><span class="line"></span><br><span class="line">Input:</span><br><span class="line">[</span><br><span class="line">  [1,3,1],</span><br><span class="line">  [1,5,1],</span><br><span class="line">  [4,2,1]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">Output: 7</span><br><span class="line">the path 1→3→1→1→1 minimizes the sum, which is 7.</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>思路</p>
+<p>  记忆的逐步实现：</p>
+<ul>
+<li><p>初始化：memo所有元素初始化为0，且第一行第一列特殊处理。</p>
+</li>
+<li><p>状态定义：<code>memo[i][j]</code>表示从左上角到<code>Input[i][j]</code>的最短路径。</p>
+</li>
+<li><p>状态转移方程：<code>memo[i][j] = Input[i][j] + min(memo[i][j-1], memo[i-1][j])</code>。</p>
+</li>
+<li><p>返回值：<code>memo[i-1][j-1]</code></p>
+<p>图示：</p>
+<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/dp1.png" width="700"></div>
+
+<p>最终返回memo右下角值：7。</p>
+</li>
+</ul>
+</li>
+<li><p>看图说话</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minPathSum</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; grid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> m = grid.size();</span><br><span class="line">    <span class="keyword">int</span> n = grid[<span class="number">0</span>].size();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)</span><br><span class="line">        grid[i][<span class="number">0</span>] += grid[i<span class="number">-1</span>][<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;n; i++)</span><br><span class="line">        grid[<span class="number">0</span>][i] += grid[<span class="number">0</span>][i<span class="number">-1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            grid[i][j] += min(grid[i][j<span class="number">-1</span>], grid[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> grid[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="300-Longest-Increasing-Subsequence"><a href="#300-Longest-Increasing-Subsequence" class="headerlink" title="#300 Longest Increasing Subsequence"></a>#300 Longest Increasing Subsequence</h1><ul>
+<li>描述</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input: [10,9,2,5,3,7,101,18]</span><br><span class="line">Output: 4 </span><br><span class="line">Explanation: The longest increasing subsequence is [2,3,7,101], therefore the length is 4. </span><br><span class="line"></span><br><span class="line">返回最长公共子序列的长度。</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>逻辑</p>
+<ul>
+<li>初始化：mem数组为全1。</li>
+<li>状态的定义：定义<code>mem[i]</code>为以<code>nums[i]</code> 为结尾的最长上升子序列的长度。</li>
+<li>状态转移方程：当前元素<code>nums[i]</code>与其前元素逐个比较，如果当前元素大于其前某个元素<code>nums[j]</code>，更新<code>mem[i]=max(mem[i], 1+mem[j])</code>.</li>
+<li>最终：找到<code>mem</code>数组中最大的值即可。DONE</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lengthOfLIS</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// calculate memo</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;i; j++)&#123;</span><br><span class="line">            <span class="keyword">if</span> (nums[i]&gt;nums[j])</span><br><span class="line">                memo[i] = max(memo[i], <span class="number">1</span>+memo[j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// get max length</span></span><br><span class="line">    <span class="keyword">int</span> res = memo[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;memo.size(); i++)</span><br><span class="line">        res = max(res, memo[i]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">由最小已知求未知，接着根据当前的已知求进一步的未知</font>， <font color="red" size="4">状态的定义</font>，<font color="red" size="4">找到状态转移方程</font>，</p>
+<h1 id="LCS-Longest-Common-Subsequence"><a href="#LCS-Longest-Common-Subsequence" class="headerlink" title="#LCS Longest Common Subsequence"></a>#LCS Longest Common Subsequence</h1><ul>
+<li>描述</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">给定两个字符数组，求其公共的子序列。公共子序列的元素在原序列中可以不连续。</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>逻辑</li>
+</ul>
+<ul>
+<li>实现</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">getLCS</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; s1, <span class="keyword">const</span> <span class="built_in">string</span>&amp; s2)</span></span>&#123;</span><br><span class="line">		<span class="keyword">int</span> m = s1.size();</span><br><span class="line">		<span class="keyword">int</span> n = s2.size();</span><br><span class="line">		</span><br><span class="line">		<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m ,<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">		<span class="comment">// initilize memo</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[i]==s2[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=i; k&lt;m; k++)</span><br><span class="line">					memo[k][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s2[j]==s1[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=j; k&lt;n; k++)</span><br><span class="line">					memo[<span class="number">0</span>][k]=<span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// DP progress for the rest</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)&#123;</span><br><span class="line">				<span class="keyword">if</span> (s1[i]==s2[j])</span><br><span class="line">					memo[i][j] = <span class="number">1</span> + memo[i<span class="number">-1</span>][j<span class="number">-1</span>];</span><br><span class="line">				<span class="keyword">else</span></span><br><span class="line">					memo[i][j] = max(memo[i<span class="number">-1</span>][j], memo[i][j<span class="number">-1</span>]);</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;<span class="string">"The lenght of the LCS: "</span>&lt;&lt;memo[m<span class="number">-1</span>][n<span class="number">-1</span>]&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">		<span class="comment">// get the longest common sequence</span></span><br><span class="line">		<span class="built_in">string</span> res = <span class="string">""</span>;</span><br><span class="line">		<span class="keyword">while</span> (m&gt;=<span class="number">0</span> &amp;&amp; n&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[m] == s2[n])&#123;</span><br><span class="line">				res = s1[m] + res;</span><br><span class="line">				m--;</span><br><span class="line">				n--;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (m==<span class="number">0</span>) n--;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (n==<span class="number">0</span>) m--;</span><br><span class="line">			<span class="keyword">else</span>&#123;</span><br><span class="line">				<span class="keyword">if</span> (memo[m<span class="number">-1</span>][n]&gt;memo[m][n<span class="number">-1</span>]) m--;</span><br><span class="line">				<span class="keyword">else</span> n--;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> res;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="120-Triangle"><a href="#120-Triangle" class="headerlink" title="#120 Triangle"></a>#120 Triangle</h1><ul>
+<li>描述</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Given a triangle, find the minimum path sum from top to bottom. </span><br><span class="line">Each step you may move to adjacent numbers on the row below.</span><br><span class="line"></span><br><span class="line">For example, given the following triangle</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">     [2],</span><br><span class="line">    [3,4],</span><br><span class="line">   [6,5,7],</span><br><span class="line">  [4,1,8,3]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 &#x3D; 11).</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>逻辑</p>
+<p>  bottom-up DP或者Top-down DP。使用Top-down：</p>
+<ul>
+<li><p>状态定义：<code>triangle[i][j]</code> 表示从顶端到第<code>i</code>行第<code>j</code>个位置的最小路径</p>
+</li>
+<li><p>状态转移方程：见下图</p>
+<p>Top-down DP过程如下图表示：其中椭圆结点构成的triangle为源triangle，矩形结点构成的triangle就是DP的<code>mem</code>，即状态。</p>
+<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/120.png" width="650"></div>
+
+
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>看图说话</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minimumTotal</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; triangle)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = triangle.size();  <span class="comment">// height of this triangle</span></span><br><span class="line"></span><br><span class="line">    triangle[<span class="number">0</span>][<span class="number">0</span>] = triangle[<span class="number">0</span>][<span class="number">0</span>];  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i&lt;n; i++)&#123;    <span class="comment">// </span></span><br><span class="line">        <span class="comment">// 这一行第一个值</span></span><br><span class="line">        triangle[i][<span class="number">0</span>] += triangle[i<span class="number">-1</span>][<span class="number">0</span>];  </span><br><span class="line">        <span class="comment">// 这一行最后一个值</span></span><br><span class="line">        triangle[i][i] += triangle[i<span class="number">-1</span>][i<span class="number">-1</span>];</span><br><span class="line">        <span class="comment">// 这一行其他值</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>;j&lt;i;j++)</span><br><span class="line">            triangle[i][j] += min(triangle[i<span class="number">-1</span>][j<span class="number">-1</span>], triangle[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 源triangle被修改了，所以最终结果在这个triangle的最后一层找最小值即可</span></span><br><span class="line">    <span class="keyword">return</span> *min_element(triangle[n<span class="number">-1</span>].begin(), triangle[n<span class="number">-1</span>].end());</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：当处理最值相关问题，考虑DP</p>
+<h1 id="62-Unique-Path"><a href="#62-Unique-Path" class="headerlink" title="#62 Unique Path"></a>#62 Unique Path</h1><ul>
+<li>描述</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">从grid的左上角位置到右下角位置有几种走法？只能向下走或向右走。</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>逻辑</p>
+<p>  Top-down DP或者Bottom-up DP，使用Bottom-up：</p>
+<ul>
+<li>状态定义：从<code>(i,j)</code>出发到终点<code>(m-1,n-1)</code>由多少条路径。</li>
+<li>状态转移方程：同Fibonacci()，<code>numPath(i,j) = numPath(i,j+1) + numPath(i+1,j)</code>;</li>
+<li>初始化最右边和最下边值为1. 过程从这里开始<code>up</code>。</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+<ul>
+<li>Bottom-up<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line">    <span class="comment">// 初始化最下行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][n<span class="number">-1</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最右行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[m<span class="number">-1</span>][j] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// Bottom up</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = m<span class="number">-2</span>; i&gt;=<span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> j = n<span class="number">-2</span>; j&gt;=<span class="number">0</span>; j-- )</span><br><span class="line">            memo[i][j] = memo[i][j+<span class="number">1</span>] + memo[i+<span class="number">1</span>][j];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> memo[<span class="number">0</span>][<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>Top-down <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 初始化第一行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最左行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[<span class="number">0</span>][j] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// top-down</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>;i&lt;m; i++)</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            memo[i][j] = memo[i<span class="number">-1</span>][j] + memo[i][j<span class="number">-1</span>];</span><br><span class="line">    <span class="keyword">return</span> memo[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="303-Range-Sum-Query-Immutable"><a href="#303-Range-Sum-Query-Immutable" class="headerlink" title="#303 Range Sum Query - Immutable"></a>#303 Range Sum Query - Immutable</h1><ul>
+<li>描述</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Given an integer array nums, find the sum of the elements between indices i and j (i ≤ j), inclusive.</span><br><span class="line"></span><br><span class="line">Example:</span><br><span class="line">Given nums &#x3D; [-2, 0, 3, -5, 2, -1]</span><br><span class="line"></span><br><span class="line">sumRange(0, 2) -&gt; 1</span><br><span class="line">sumRange(2, 5) -&gt; -1</span><br><span class="line">sumRange(0, 5) -&gt; -3</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>逻辑</p>
+<p>  从nums[i] 到nums[j] 元素累加就可以了。这种方法对于一条query，没问题。但是query一般频繁的。最好可以把结果提前计算出来，之后的query操作秩序做一次减法，便可以得到结果。所以使用DP。</p>
+<ul>
+<li>状态定义：mem[0]=0，mem[i]表示从第一个数到第i个数的和。</li>
+<li>状态转移方程：<code>memo[i+1] = memo[i] + nums[i]</code>;</li>
+<li>初始化mem为全零。</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NumArray2</span>&#123;</span></span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        NumArray2(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)&#123;</span><br><span class="line">            <span class="comment">// n+1个元素。</span></span><br><span class="line">            memo = <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(nums.size()+<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)</span><br><span class="line">                memo[i+<span class="number">1</span>] = memo[i] + nums[i];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 频繁操作只需求一次减法。效率高</span></span><br><span class="line">        <span class="function"><span class="keyword">int</span> <span class="title">sumRange</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>&#123;</span><br><span class="line">            <span class="keyword">return</span> memo[j+<span class="number">1</span>] - memo[i];</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="198-House-Robber"><a href="#198-House-Robber" class="headerlink" title="#198 House Robber"></a>#198 House Robber</h1><ul>
+<li>描述</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">一条街上有若干房子，现在要抢劫房子，从街头到街尾，所抢的房子不能直接相邻，求可能的最大收益。</span><br><span class="line"></span><br><span class="line">Input: [2,7,9,3,1]</span><br><span class="line">Output: 12</span><br><span class="line">Explanation: Rob house 1 (money &#x3D; 2), rob house 3 (money &#x3D; 9) and rob house 5 (money &#x3D; 1).</span><br><span class="line">             Total amount you can rob &#x3D; 2 + 9 + 1 &#x3D; 12.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>逻辑</p>
+<ul>
+<li><p>状态定义：mem[i]表示抢[0~i]可获得的最大收益。</p>
+</li>
+<li><p>状态转移方程：<code>memo[i] = max(memo[i-1], nums[i]+tmp</code>;</p>
+<p>下图为抢house=[5,2,3,1,1,5]的DP过程：</p>
+<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/198.png" width="500"></div>
+</li>
+</ul>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 切入口：前两个值特殊处理</span></span><br><span class="line">    memo[<span class="number">0</span>] = nums[<span class="number">0</span>];  </span><br><span class="line">    memo[<span class="number">1</span>] = max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 开始切~~</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="comment">// 求tmp：当前位置之前可抢劫最大收益（不包括与当前位置紧邻的房子）</span></span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;    </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)</span><br><span class="line">            <span class="keyword">if</span> (memo[j]&gt;tmp)</span><br><span class="line">                tmp = memo[j];</span><br><span class="line"></span><br><span class="line">        memo[i] = max(memo[i<span class="number">-1</span>], nums[i]+tmp);</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> memo[nums.size()<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关键：<font color="red" size="4">mem[],以初始化的值为切入点，一个一个计算。</font>，</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" data-id="ckatsrgu2007cxqfz3h4l48rl" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-模拟退火-增强学习任务间的迁移学习" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" class="article-date">
+  <time datetime="2019-08-06T14:20:35.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/">模拟退火-增强学习任务间的迁移学习</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记为概述，记录使用模拟退火算法(Simulated Anneling)解决，迁移学习(Transfer Learning)应用在增强学习(Reinforcemet Learning)任务间整体效率的问题。实现过程看<a href="https://github.com/AshburnLee/earlyTerminationOfTransferLearningInReinforcementLearning" target="_blank" rel="noopener">这里</a>。</p>
+<h2 id="增强学习"><a href="#增强学习" class="headerlink" title="增强学习"></a>增强学习</h2><p>增强学习是一个agent在与它所处的环境相互作用中学习的过程。比如把一只老鼠放在一个迷宫中，让它自己试错找到出口。agent与环境的相互作用由三个变量体现：状态，动作，奖励。状态指agent当前的位置，动作指agent在当前位置有哪些行动的选择。比如老鼠在迷宫中的当前位置可以向前，后，左，右移动。奖励指agent在每次行动后得到的奖励。比如迷宫中的老鼠每找到一粒花生得+10奖励，若它掉进陷阱里得到-10的奖励，且本次学习结束。为了让老鼠尽快学习，一般设置，如果每次执行一个动作，没有正负效果的话，获得-1奖励。这激励agent用较少的步数达到目标，对于老鼠说，吃到花生。</p>
+<p>增强学习的可视化环境使用开源<a href="http://burlap.cs.brown.edu/index.html" target="_blank" rel="noopener">BURLAP</a>可视化RL环境。其中agent是个像素小人儿，小人儿的目标是执行不同的动作来找到出口。使用Q-learning学习算法后，可以得到关于本阶段相关数据。一个阶段可能要执行多次学习，比如100次学习。这个项目使用3列数据：Episode Index，#Actions，Reward。这些数据在学习过程中生成，并且保存在外部文件中。</p>
+<p>经过一个阶段的学习后，可视化这个阶段学习：<font color="green" size="4">Reward-EpisodesIndex图像</font>。E-R图像表示每一个episode对应的reward。可以观察到小人儿确实学习了的。因为钱若干次的R值较小且波动，但是呈上升趋势，直到上升到一个稳定值。此时可以认为小人儿停止学习了，或者说，小人儿找到了最优路径。开始稳定横坐标暂且称为“完全学习Episode”。</p>
+<p>为了减少噪声对R-E图像的影响，可以尝试让小人儿学习多阶段，比如10阶段，每阶段学习相同次数，后对R&amp;A分别求均值。为了使图像便于观察，对平均操作后的图像加上平滑操作。<font color="green" size="4">平滑后的图像</font>。</p>
+<h2 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h2><p>迁移学习对于相似但又不同的任务(一个成为源任务，另一个成为目标任务)，可以把在源任务中学习到的内容应用于目标任务的学习中，进而可以加速目标学习的速度。这已被实验证实。</p>
+<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>进一步实验发现，其实即使只在源任务学习少于“完全学习Episode”的Episode，在目标任务中的学习也可以提前拟合，相较于从零开始学习目标任务。<font color="green" size="4">目标任务提前拟合</font>。那么小人儿在源中学习具体学习多少次，可以使迁移后的整体步数更少来达到拟合。</p>
+<p>此处对于图像有个改动，横轴不再是Episode Index，而换成每一个Episode对应的Accumulated Actions。即从此往下使用AA-R图像。为什么要如此做，这么做，横轴不单单是Episode，更增加了到达这一Episode为止一共执行了多少Actions。换句话说，之前这个“系统”中的信息只有Episode Index和对应的Reward，两个有用信息。现在这个“系统”中的有用信息包括，Episode Index，当前Episode的Actions数和从开始到现在一共的Actions数。根据信息论观点，<strong>增加有用信息，可以减少系统不确定性</strong>。</p>
+<p>回到问题，具体在源任务中学习多少次。先探索一下。我的做法是，1）分别在源任务中学习1E，2E，3E，… ，nE后迁移到目标任务中，如此得到n个迁移学习过程。对应n个AA-R条曲线，并合并到一幅图中。2）设定一个具体Reward值为R。观察哪条曲线先穿过R。<strong>现在我的目标转化为</strong>，在不需要执行完n个迁移学习过程的前提下，如何确定哪条曲线先穿过R。</p>
+<p>记录第二步中每条曲线穿过R时的对应Episode值，如此便可以得到在源任务中学习次数与其对应的穿过R时的AA值。绘出这条曲线。<font color="green" size="4">E-AA图像</font>。此时的<strong>目标转化为</strong>：在这条曲线中搜索最小值。多次实验发现这条曲线是非凸的，即有局部最小值，且很多。所以在线搜索只能找到第一个局部最优值，不可取。那遍历一遍就可以搜索到最小值。错，如果那样做，整个过程将毫无意义。为了搜索最值，而把所有值求出来。记住求出曲线中一个值，其代价是要完整地执行RL(Surce task)-&gt;TL-&gt;RL(Target task) 阶段数×每阶段的Episode数。比如10阶段，每阶段执行100Episode。得到一个值要执行1000次完整的上述过程。成本太高。</p>
+<p>这个问题类似TSP(Traveling Salesman Problem)问题。同样是求最值，TSP提前得到所有方案是不可能的，就现在的计算机。借鉴TSP的解法，<a href="https://github.com/AshburnLee/GeneticAlgorithmForTSP" target="_blank" rel="noopener">遗传算法</a>或<a href="https://github.com/AshburnLee/simulatedAnnealingForTSP" target="_blank" rel="noopener">模拟退火</a>，分别点击见实现。因为此问题的输入不是序列，所以遗传算法不适用，实验模拟退火，成功。</p>
+<p>模拟退火与遗传算法都属于带有随机性的算法。遗传算法中的交叉，变异操作，模拟退火中的以一定概率接受一个比之前差的结果，都是引入随机性。而随机性给了算法跳出当前局部最有值的能力。</p>
+<p><font color="gree" size="5">敲黑板</font></p>
+<ol>
+<li>这个项目中达到目标进行了至少两次的问题转化。</li>
+<li>借鉴相同性质问题的成熟解法。</li>
+<li>积累不同问题的解法。</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" data-id="ckatsrgte0060xqfz0eayfek8" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-模型评价-ROC曲线" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/" class="article-date">
+  <time datetime="2019-08-06T12:25:23.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/">模型评价-ROC曲线</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>ROC曲线是由TPR和FPR为横纵轴，</p>
+<ul>
+<li>TPR表示：所有实际为<strong>正</strong>，我的模型有多少也预测为<strong>正</strong>；</li>
+<li>FPR表示：所有实际为<strong>反</strong>，我的模型由多少预测为<strong>正</strong>。</li>
+</ul>
+<p>二者实现如下，其中你已经知道TP，FN，FP，TN的含义：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TPR</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    tp = TP(y_true, y_predict)</span><br><span class="line">    fn = FN(y_true, y_predict)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> tp / (tp + fn)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FPR</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    fp = FP(y_true, y_predict)</span><br><span class="line">    tn = TN(y_true, y_predict)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> fp / (fp + tn)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.</span></span><br></pre></td></tr></table></figure>
+
+<p>TPR和FPR是和P&amp;R相似的概念，计算所用到的值都在Confusion Matrix中。所以<font color="red">绘制ROC图过程同PR曲线</font>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">fprs = []</span><br><span class="line">tprs = []</span><br><span class="line">thresholds = np.arange(np.min(decision_scores), np.max(decision_scores), <span class="number">0.1</span>)</span><br><span class="line"><span class="keyword">for</span> threshold <span class="keyword">in</span> thresholds:</span><br><span class="line">    y_predict = np.array(decision_scores &gt;= threshold, dtype=<span class="string">'int'</span>)</span><br><span class="line">    fprs.append(FPR(y_test, y_predict))</span><br><span class="line">    tprs.append(TPR(y_test, y_predict))</span><br></pre></td></tr></table></figure>
+
+<p>得到不同的threshold值，每一个值对应一个模型，计算每一个模型的TPR和FPR，分别放入空列表中。就可以绘图了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(fprs, tprs, label=<span class="string">'ROC'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower right'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'FPR'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'TPR'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/roc.png" width="600"></div>
+<div align="center">图 ROC曲线</div>
+
+<p>使用sklearn中自带实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> roc_curve</span><br><span class="line"></span><br><span class="line">fprs, tprs, thresholds = roc_curve(y_test, decision_scores)</span><br><span class="line"></span><br><span class="line">plt.plot(fprs, tprs, label=<span class="string">'ROC'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower right'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'FPR'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'TPR'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>如图：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/roc2.png" width="600"></div>
+<div align="center">图 ROC曲线 built-in</div>
+
+<p><strong>ROC的作用</strong>是为了计算AUC(Area Under Curve)。而比较模型的相对性能，只要得到两个模型各自的ROC，分别计算各自的AUC，谁大，谁的相对性能好。</p>
+<p>sklearn提供AUC的计算：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> roc_auc_score</span><br><span class="line"></span><br><span class="line">print(roc_auc_score(y_test, decision_scores))     <span class="comment">#  0.98304526749</span></span><br></pre></td></tr></table></figure>
+
+<p>传入y_test和decision_scores即可得到。</p>
+<p><font color="green" size="5">敲黑板</font>ROC的两个指标，与PR指标相似又不同，是另一个角度的对模型性能的量化。引入相似但不同的信息有助于减少系统的不确定性，这里是模型选择的不确定性。衡量一个模型的性能，通常要尽可能把所有指标都找到，综合衡量。<br>给出<a href="https://coding.imooc.com/learn/questiondetail/42693.html" target="_blank" rel="noopener">liuyubobobo老师的话</a>：<br><font color="grey" size="3">我们的目的不是“找到”单一的“最好”的指标；而是了解所有的指标背后在反映什么，在看到这个指标出现问题的时候，能够判断问题可能出现在哪里，进而改进我们的模型。虽然我们的改进方向可能是单一的。<br><br>具体到PR曲线和ROC曲线，他们的核心区别在TN。可以看出来，PR曲线其实不反应TN。所以，如果你的应用场景中，如果TN并不重要，那么PR曲线是一个很好的指标（事实上，Precision和Recall就是通过抹去TN，来去除极度的偏斜数据带来的影响，进而放大FP, FN和TP三者的关系的）。<br><br>而ROC曲线则综合了TN, FP, FN和TP。虽然它对TN极度多的情况下，FP，FN和TP的变化不敏感。所以在TN没有那么多（数据没有那么偏斜），或者TN是一种很重要的需要考虑的情况下，ROC能反映出PR不能反映的问题。</font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/" data-id="ckatsrgta005oxqfz3w3t8kr1" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-模型评价-PR曲线" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/" class="article-date">
+  <time datetime="2019-08-06T06:17:48.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/">模型评价-PR曲线</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。</p>
+<h1 id="绘制P-R曲线"><a href="#绘制P-R曲线" class="headerlink" title="绘制P-R曲线"></a>绘制P-R曲线</h1><p>根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。</p>
+<h2 id="1-如何得到不同模型"><a href="#1-如何得到不同模型" class="headerlink" title="1. 如何得到不同模型"></a>1. 如何得到不同模型</h2><p><font color="red">图示</font></p>
+<p>假设已经使用训练样本训练出一个Logistic Regression模型<code>log_reg</code>，测试集<code>x_test</code>，<code>y_test</code>。调用训练好模型的<code>decision_function()</code>，返回<font color="red">所有分类平面</font>。其实Logistic Regression的<font color="red">默认分类平面是y=0，即threshold=0</font>。</p>
+<p>decision_scores记录所有分类平面：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">decision_scores = log_reg.decision_function(x_test)  </span><br><span class="line">print(len(decision_scores))         <span class="comment">#  450</span></span><br><span class="line">print(np.min(decision_scores))      <span class="comment">#  -85.6861241675</span></span><br><span class="line">print(np.max(decision_scores))      <span class="comment">#  19.8896068857</span></span><br></pre></td></tr></table></figure>
+
+<p>当threshold = 0时，即默认分类平面对应的模型各指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">y_predict = log_reg.predict(x_test)            </span><br><span class="line">print(confusion_matrix(y_test, y_predict))    <span class="comment">#  [[403   2]</span></span><br><span class="line">                                              <span class="comment">#   [  9  36]]</span></span><br><span class="line">print(precision_score(y_test, y_predict))     <span class="comment">#  0.947368421053</span></span><br><span class="line">print(recall_score(y_test, y_predict))        <span class="comment">#  0.8</span></span><br></pre></td></tr></table></figure>
+
+<p>当使用threshold = -5为分类平面时，三指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到-5得到不同的模型：</span></span><br><span class="line">y_predict_m5 = np.asarray(decision_scores &gt;= <span class="number">-5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_m5))   <span class="comment">#  [[390  15]</span></span><br><span class="line">                                                <span class="comment">#   [  5  40]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_m5))    <span class="comment">#  0.727272727273</span></span><br><span class="line">print(recall_score(y_test, y_predict_m5))       <span class="comment">#  0.888888888889</span></span><br></pre></td></tr></table></figure>
+
+<p>相较threshold = 0的模型，P下降，R上升。</p>
+<p>当使用threshold = 5为分类平面时，三指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到5得到不同的模型：</span></span><br><span class="line">y_predict_5 = np.asarray(decision_scores &gt;= <span class="number">5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_5))    <span class="comment">#  [[404   1]</span></span><br><span class="line">                                                <span class="comment">#   [ 21  24]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_5))     <span class="comment">#  0.96</span></span><br><span class="line">print(recall_score(y_test, y_predict_5))        <span class="comment">#  0.533333333333</span></span><br></pre></td></tr></table></figure>
+
+<p>相较threshold = 0的模型，P上升，R下降。</p>
+<h2 id="2-绘制曲线"><a href="#2-绘制曲线" class="headerlink" title="2. 绘制曲线"></a>2. 绘制曲线</h2><p>得到每一个threshold对应的P，R值，绘制P-R曲线。</p>
+<p>有了对某一个threshold的理解，现在相隔0.1取一个threshold，获得所有P，所有R：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">precisions = []                           <span class="comment"># 记录所有P</span></span><br><span class="line">recalls = []                              <span class="comment"># 记录所有R</span></span><br><span class="line"><span class="comment"># 相隔0.1取一个threshold值保存：</span></span><br><span class="line">thresholds = np.arange(np.min(decision_scores), np.max(decision_scores), <span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 记录每一个threshold对应模型的P&amp;R:</span></span><br><span class="line"><span class="keyword">for</span> threshold <span class="keyword">in</span> thresholds:</span><br><span class="line">    y_predict = np.array(decision_scores &gt;= threshold, dtype=<span class="string">'int'</span>)</span><br><span class="line">    precisions.append(precision_score(y_test, y_predict))</span><br><span class="line">    recalls.append(recall_score(y_test, y_predict))</span><br></pre></td></tr></table></figure>
+<p>绘图<code>thresholds vs precisions</code>和<code>thresholds vs recalls</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(thresholds, precisions, label=<span class="string">'P'</span>)</span><br><span class="line">plt.plot(thresholds, recalls, label=<span class="string">'R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 </div>
+
+<p>绘制<code>precision vs recall</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(precisions, recalls, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r.png" width="600"></div>
+<div align="center">图 P/R曲线 </div>
+
+<p><font color="green" size="5">敲黑板</font>经过实验得出：</p>
+<ol>
+<li>最优threshold基本都在0附近，因此可以说，<font color="red">若没有对某一指标有具体的定量要求，只用判别<code>threshold=0</code>时的指标就可以对整个模型的性能进行评估了</font>。</li>
+<li>第二点，一个二分类模型尝试移动分类平面，可以<strong>得到对于P&amp;R不同重视程度的模型</strong>。</li>
+</ol>
+<p>对于P-R曲线的几点补充：</p>
+<ul>
+<li>实际中，对P-R曲线进行平滑操作</li>
+<li>如果由若干个模型的P-R曲线在同一个图中，如何判断哪个最优。<ol>
+<li>看哪一个曲线把其他的“包住”</li>
+<li>比较每条曲线与坐标轴围成的面积</li>
+</ol>
+</li>
+</ul>
+<h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>sklearn package中的绘制P-R曲线的方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> precision_recall_curve</span><br><span class="line"></span><br><span class="line">pres, recs, thrs = precision_recall_curve(y_test, decision_scores)</span><br><span class="line"></span><br><span class="line">plt.plot(thrs, pres[:<span class="number">-1</span>], label=<span class="string">'thr-P'</span>)</span><br><span class="line">plt.plot(thrs, recs[:<span class="number">-1</span>], label=<span class="string">'thr-R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>不同threshold的P/R值:</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r-2.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 built-in方法</div>
+
+<p>与上述实现不同在于，上述实现的threashold值从<code>decision_scores</code>的最小值到最大值，而package中函数把threshold值小于-18的值忽略未记，因为图一中这部分对于用户是没有决策贡献的。抓住要矛盾。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(pres, recs, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>P/R曲线</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r-2.png" width="600"></div>
+<div align="center">图 P/R曲线 built-in方法</div>
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/" data-id="ckatsrgt7005hxqfzaog57c2e" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-模型评价-F1度量-F-beta度量" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" class="article-date">
@@ -578,406 +1134,11 @@
 
 
   
-    <article id="post-文本分类-二-文本预处理I-词频统计" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" class="article-date">
-  <time datetime="2019-08-03T07:22:37.000Z" itemprop="datePublished">2019-08-03</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/">文本分类(二)-文本预处理I-词频统计</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>文本数据与图像数据本质一样，图像本身的每个通道，像素点值就是数据本身。而文本数据要被计算机理解，首先要被处理成数值型，也就是说需要给文本编码，如embedding。这篇笔记记录将<strong>文本数值化</strong>。</p>
-<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><p>一个样本文件有5000条记录，存在于txt中。如下为样本文本中的索引为204的记录：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(train_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line">print(len(lines))</span><br><span class="line">print(lines[<span class="number">204</span>])</span><br></pre></td></tr></table></figure>
-
-<p>输出：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">5000</span><br><span class="line">体育	绿衫军vs热火首发：新老三巨头对抗 小奥单挑大Z新浪体育讯北京时间5月4日，热火和凯尔特人迎来第二回合巅峰对决，本场比赛双方主帅均未对首发名单做出任何更改。而凯尔特人主帅道格-里弗斯赛前也向媒体表示，本场比赛“大鲨鱼”沙奎尔-奥尼尔将继续作壁上观，以下为双方首发名单——凯尔特人：隆多、雷-阿伦、皮尔斯、加内特、杰梅因-奥尼尔热火：毕比、韦德、詹姆斯、波什、伊尔戈斯卡斯(小林)</span><br></pre></td></tr></table></figure>
-
-<p>格式是：类别+样本描述。</p>
-<p>分成label和content：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br></pre></td></tr></table></figure>
-
-<h2 id="分词"><a href="#分词" class="headerlink" title="分词"></a>分词</h2><p>使用<a href="https://github.com/fxsjy/jieba" target="_blank" rel="noopener">jieba</a>对content进行分词：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">word_iter = jieba.cut(content)</span><br><span class="line"></span><br><span class="line">word_content = <span class="string">''</span>         <span class="comment"># 保存每一个词</span></span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> word_iter:     <span class="comment"># 对切分结果中每个词作如下操作</span></span><br><span class="line">    word = word.strip(<span class="string">' '</span>)</span><br><span class="line">    <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">        word_content += word + <span class="string">' '</span></span><br><span class="line">out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))</span><br><span class="line">print(out_line)</span><br></pre></td></tr></table></figure>
-
-<p>写入文件的每一条数据格式：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">体育	vs 热火 首发 ： 新 老三 巨头 对抗 小奥 单挑 大 Z 新浪 体育讯 北京 时间 5 月 4 日 ， 热火 和 凯尔特人 迎来 第二 回合 巅峰 对决 ， 本场 比赛 双方 主帅 均 未 对 首发 名单 做出 任何 更改 。 而 凯尔特人 主帅 道 格 - 里 弗斯 赛前 也 向 媒体 表示 ， 本场 比赛 “ 大 鲨鱼 ” 沙奎尔 - 奥尼尔 将 继续 作壁上观 ， 以下 为 双方 首发 名单 — — 凯尔特人 ： 隆多 、 雷 - 阿伦 、 皮尔斯 、 加内特 、 杰 梅因 - 奥尼尔 热火 ： 毕比 、 韦德 、 詹姆斯 、 波什 、 伊尔 戈斯卡 斯 ( 小林 )</span><br></pre></td></tr></table></figure>
-
-<p>如上述过程将源文件中每一条记录执行此操作后写入目标文件。整理成函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_seg_file</span><span class="params">(input_file, output_seg_file)</span>:</span></span><br><span class="line">    <span class="string">"""对input_file内容分词"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:    <span class="comment"># 读文件</span></span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">with</span> open(output_seg_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:                   <span class="comment"># 写的方式打开写文件</span></span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> lines:                                   <span class="comment"># 对于每一行</span></span><br><span class="line">            label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)  <span class="comment"># 分出lenbel和content</span></span><br><span class="line">            word_iter = jieba.cut(content)                   <span class="comment"># 对content切分成词</span></span><br><span class="line">            word_content = <span class="string">''</span>                                    <span class="comment"># 保存每个次</span></span><br><span class="line">            <span class="keyword">for</span> word <span class="keyword">in</span> word_iter:                               <span class="comment"># 对切分结果中每个词作如下操作：</span></span><br><span class="line">                word = word.strip(<span class="string">' '</span>)</span><br><span class="line">                <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">                    word_content += word + <span class="string">' '</span></span><br><span class="line">            out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))  <span class="comment"># 输入文件每一行的格式</span></span><br><span class="line">            </span><br><span class="line">            f.write(out_line)     <span class="comment"># 写入文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 对三个数据集作同样操作</span></span><br><span class="line">generate_seg_file(train_file, seg_train_file)</span><br><span class="line">generate_seg_file(val_file, seg_val_file)</span><br><span class="line">generate_seg_file(test_file, seg_test_file)</span><br></pre></td></tr></table></figure>
-
-<p>此时三个样本集各自的分词结果。</p>
-<h2 id="统计词频"><a href="#统计词频" class="headerlink" title="统计词频"></a>统计词频</h2><p>对上一步得到的分词后的文件进行词频统计。如对索引为204的记录统计：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(output_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">        </span><br><span class="line">word_dict = &#123;&#125;</span><br><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">        word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">        word_dict[word] += <span class="number">1</span></span><br><span class="line">print(word_dict)</span><br></pre></td></tr></table></figure>
-
-<p>结果为：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'绿衫'</span>: 1, <span class="string">'军'</span>: 1, <span class="string">'vs'</span>: 1, <span class="string">'热火'</span>: 3, <span class="string">'首发'</span>: 3, <span class="string">'：'</span>: 3, <span class="string">'新'</span>: 1, <span class="string">'老三'</span>: 1, <span class="string">'巨头'</span>: 1, <span class="string">'对抗'</span>: 1, <span class="string">'小奥'</span>: 1, <span class="string">'单挑'</span>: 1, <span class="string">'大'</span>: 2, <span class="string">'Z'</span>: 1, <span class="string">'新浪'</span>: 1, <span class="string">'体育讯'</span>: 1, <span class="string">'北京'</span>: 1, <span class="string">'时间'</span>: 1, <span class="string">'5'</span>: 1, <span class="string">'月'</span>: 1, <span class="string">'4'</span>: 1, <span class="string">'日'</span>: 1, <span class="string">'，'</span>: 4, <span class="string">'和'</span>: 1, <span class="string">'凯尔特人'</span>: 3, <span class="string">'迎来'</span>: 1, <span class="string">'第二'</span>: 1, <span class="string">'回合'</span>: 1, <span class="string">'巅峰'</span>: 1, <span class="string">'对决'</span>: 1, <span class="string">'本场'</span>: 2, <span class="string">'比赛'</span>: 2, <span class="string">'双方'</span>: 2, <span class="string">'主帅'</span>: 2, <span class="string">'均'</span>: 1, <span class="string">'未'</span>: 1, <span class="string">'对'</span>: 1, <span class="string">'名单'</span>: 2, <span class="string">'做出'</span>: 1, <span class="string">'任何'</span>: 1, <span class="string">'更改'</span>: 1, <span class="string">'。'</span>: 1, <span class="string">'而'</span>: 1, <span class="string">'道'</span>: 1, <span class="string">'格'</span>: 1, <span class="string">'-'</span>: 4, <span class="string">'里'</span>: 1, <span class="string">'弗斯'</span>: 1, <span class="string">'赛前'</span>: 1, <span class="string">'也'</span>: 1, <span class="string">'向'</span>: 1, <span class="string">'媒体'</span>: 1, <span class="string">'表示'</span>: 1, <span class="string">'“'</span>: 1, <span class="string">'鲨鱼'</span>: 1, <span class="string">'”'</span>: 1, <span class="string">'沙奎尔'</span>: 1, <span class="string">'奥尼尔'</span>: 2, <span class="string">'将'</span>: 1, <span class="string">'继续'</span>: 1, <span class="string">'作壁上观'</span>: 1, <span class="string">'以下'</span>: 1, <span class="string">'为'</span>: 1, <span class="string">'—'</span>: 2, <span class="string">'隆多'</span>: 1, <span class="string">'、'</span>: 8, <span class="string">'雷'</span>: 1, <span class="string">'阿伦'</span>: 1, <span class="string">'皮尔斯'</span>: 1, <span class="string">'加内特'</span>: 1, <span class="string">'杰'</span>: 1, <span class="string">'梅因'</span>: 1, <span class="string">'毕比'</span>: 1, <span class="string">'韦德'</span>: 1, <span class="string">'詹姆斯'</span>: 1, <span class="string">'波什'</span>: 1, <span class="string">'伊尔'</span>: 1, <span class="string">'戈斯卡'</span>: 1, <span class="string">'斯'</span>: 1, <span class="string">'('</span>: 1, <span class="string">'小林'</span>: 1, <span class="string">')'</span>: 1&#125;</span><br></pre></td></tr></table></figure>
-
-<p>此字典中键为词语，值为键出现的频数。当然这只是对一条记录的统计，对所有记录统计才有意义。</p>
-<p>按词语频数排序，方便之后输入模型的<strong>截取操作</strong>。****</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sorted_word_dict = sorted(</span><br><span class="line">    word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">print(sorted_word_dict)</span><br></pre></td></tr></table></figure>
-
-<p>结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[(<span class="string">'、'</span>, 8), (<span class="string">'，'</span>, 4), (<span class="string">'-'</span>, 4), (<span class="string">'热火'</span>, 3), (<span class="string">'首发'</span>, 3), (<span class="string">'：'</span>, 3), (<span class="string">'凯尔特人'</span>, 3), (<span class="string">'大'</span>, 2), (<span class="string">'本场'</span>, 2), (<span class="string">'比赛'</span>, 2), (<span class="string">'双方'</span>, 2), (<span class="string">'主帅'</span>, 2), (<span class="string">'名单'</span>, 2), (<span class="string">'奥尼尔'</span>, 2), (<span class="string">'—'</span>, 2), (<span class="string">'绿衫'</span>, 1), (<span class="string">'军'</span>, 1), (<span class="string">'vs'</span>, 1), (<span class="string">'新'</span>, 1), (<span class="string">'老三'</span>, 1), (<span class="string">'巨头'</span>, 1), (<span class="string">'对抗'</span>, 1), (<span class="string">'小奥'</span>, 1), (<span class="string">'单挑'</span>, 1), (<span class="string">'Z'</span>, 1), (<span class="string">'新浪'</span>, 1), (<span class="string">'体育讯'</span>, 1), (<span class="string">'北京'</span>, 1), (<span class="string">'时间'</span>, 1), (<span class="string">'5'</span>, 1), (<span class="string">'月'</span>, 1), (<span class="string">'4'</span>, 1), (<span class="string">'日'</span>, 1), (<span class="string">'和'</span>, 1), (<span class="string">'迎来'</span>, 1), (<span class="string">'第二'</span>, 1), (<span class="string">'回合'</span>, 1), (<span class="string">'巅峰'</span>, 1), (<span class="string">'对决'</span>, 1), (<span class="string">'均'</span>, 1), (<span class="string">'未'</span>, 1), (<span class="string">'对'</span>, 1), (<span class="string">'做出'</span>, 1), (<span class="string">'任何'</span>, 1), (<span class="string">'更改'</span>, 1), (<span class="string">'。'</span>, 1), (<span class="string">'而'</span>, 1), (<span class="string">'道'</span>, 1), (<span class="string">'格'</span>, 1), (<span class="string">'里'</span>, 1), (<span class="string">'弗斯'</span>, 1), (<span class="string">'赛前'</span>, 1), (<span class="string">'也'</span>, 1), (<span class="string">'向'</span>, 1), (<span class="string">'媒体'</span>, 1), (<span class="string">'表示'</span>, 1), (<span class="string">'“'</span>, 1), (<span class="string">'鲨鱼'</span>, 1), (<span class="string">'”'</span>, 1), (<span class="string">'沙奎尔'</span>, 1), (<span class="string">'将'</span>, 1), (<span class="string">'继续'</span>, 1), (<span class="string">'作壁上观'</span>, 1), (<span class="string">'以下'</span>, 1), (<span class="string">'为'</span>, 1), (<span class="string">'隆多'</span>, 1), (<span class="string">'雷'</span>, 1), (<span class="string">'阿伦'</span>, 1), (<span class="string">'皮尔斯'</span>, 1), (<span class="string">'加内特'</span>, 1), (<span class="string">'杰'</span>, 1), (<span class="string">'梅因'</span>, 1), (<span class="string">'毕比'</span>, 1), (<span class="string">'韦德'</span>, 1), (<span class="string">'詹姆斯'</span>, 1), (<span class="string">'波什'</span>, 1), (<span class="string">'伊尔'</span>, 1), (<span class="string">'戈斯卡'</span>, 1), (<span class="string">'斯'</span>, 1), (<span class="string">'('</span>, 1), (<span class="string">'小林'</span>, 1), (<span class="string">')'</span>, 1)]</span><br></pre></td></tr></table></figure>
-
-<p>整理成函数，对所有记录统计。注意该操作<strong>只针对训练集</strong>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_vocab_file</span><span class="params">(input_seg_file, output_vocab_file)</span>:</span></span><br><span class="line">    <span class="string">"""将input_seg_file中做词频统计，输出到out_put_file中"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    word_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        <span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">            word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">            word_dict[word] += <span class="number">1</span></span><br><span class="line">    <span class="comment"># [(word, frequency), ..., ()]</span></span><br><span class="line">    sorted_word_dict = sorted(</span><br><span class="line">        word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">with</span> open(output_vocab_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">'&lt;UNK&gt;\t10000000\n'</span>)      <span class="comment"># 当在测试集中找不到一个词时，用&lt;UNK&gt; 代替</span></span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> sorted_word_dict:</span><br><span class="line">            f.write(<span class="string">'%s\t%d\n'</span> % (item[<span class="number">0</span>], item[<span class="number">1</span>]))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 只对已知的训练集执行此操作</span></span><br><span class="line">generate_vocab_file(seg_train_file, vocab_file)</span><br></pre></td></tr></table></figure>
-<p>打开结果文件<code>vocab_file</code>查看：</p>
-<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
-
-<p>第一列为序号，表示第几个词，第二列为词（出现的数组和百分比都是文本中的实际数字），第三列为该词出现的频数。两点说明：</p>
-<ul>
-<li>频数太小的词无意义，因为神经网络为<font color="red">概率模型，只出现一次没有统计意义</font>。</li>
-<li>而<font color="red">频数很高但通用的词（停用词）同样无意义</font>，因为通用的词在分类问题中不能提供有用信息，从信息论角度看，使用通用词训练模型不能减少模型的不确定性。这两点之后会处理。</li>
-</ul>
-<p>对label统计：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_category_dict</span><span class="params">(input_file, category_file)</span>:</span></span><br><span class="line">    <span class="string">"""统计类别"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    category_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        category_dict.setdefault(label, <span class="number">0</span>)</span><br><span class="line">        category_dict[label] += <span class="number">1</span></span><br><span class="line">    category_number = len(category_dict)</span><br><span class="line">    <span class="keyword">with</span> open(category_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">for</span> category <span class="keyword">in</span> category_dict:</span><br><span class="line">            line = <span class="string">'%s\n'</span> % category</span><br><span class="line">            print(<span class="string">'%s\t%d'</span> % (category, category_dict[category]))</span><br><span class="line">            f.write(line)</span><br><span class="line">            </span><br><span class="line">generate_category_dict(train_file, category_file)</span><br></pre></td></tr></table></figure>
-<p>结果写入<code>catecory_file</code>, 并且控制台输出：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">体育	5000</span><br><span class="line">娱乐	5000</span><br><span class="line">家居	5000</span><br><span class="line">房产	5000</span><br><span class="line">教育	5000</span><br><span class="line">时尚	5000</span><br><span class="line">时政	5000</span><br><span class="line">游戏	5000</span><br><span class="line">科技	5000</span><br><span class="line">财经	5000</span><br></pre></td></tr></table></figure>
-
-<p>类别频数相同，表示这是一个<font color="orange">极度均匀数据集</font>。这是理想的！</p>
-<p>统计词的频率，是为了截取，每个词的数值化，可用其序号代替。</p>
-<p>整个过程生产5个文件：</p>
-<ul>
-<li>seg_train_file： 分词后的训练集</li>
-<li>seg_val_file： 分词后的验证集</li>
-<li>seg_test_file： 分词后的测试集</li>
-<li>vocab_file： 训练集的词频统计</li>
-<li>category_file： 训练集的类别统计</li>
-</ul>
-<p>完整程序与数据文件<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/preProcess.py" target="_blank" rel="noopener">这里</a>。</p>
-<p><font color="green" size="5">敲黑板</font>对于如本笔记所处理的极度均匀的数据集，评价模型时可以使用准确率。但是对于<font color="red">极度偏斜(Skewed Data)的数据</font>，如在数据集中某类病症的发病样本数与未发病样本书之比远小于1，只使用准确率评价模型是远远不够的。这时就需要使用其他模型评估方法如混淆矩阵(Confusion Matrix)等。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" data-id="ckatsrgvc008bxqfz5hsu77mp" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-方法论-Floyd-s-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" class="article-date">
-  <time datetime="2019-08-02T16:08:05.000Z" itemprop="datePublished">2019-08-03</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/">LeetCode-方法论-Floyd&#39;s Algorithm</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题<strong>转化</strong>的。当原问题棘手时，找到合适的方向可以转化为简单问题。</p>
-<h1 id="141-Linked-List-Cycle"><a href="#141-Linked-List-Cycle" class="headerlink" title="#141 Linked List Cycle"></a>#141 Linked List Cycle</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1</span><br><span class="line">Output: true</span><br><span class="line">Explanation: There is a cycle in the linked list, where tail connects to the second node.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p> 如果存在环，兔子与乌龟会第二次相遇；否则除了起点，龟兔不会再相遇。</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasCycle</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    ListNode* rabbit=head;</span><br><span class="line">    ListNode* turtle=head;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(rabbit &amp;&amp; turtle)&#123;</span><br><span class="line">        rabbit = rabbit-&gt;next;</span><br><span class="line">        turtle = turtle-&gt;next;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (rabbit) rabbit=rabbit-&gt;next; <span class="comment">// one step faster than the turtle</span></span><br><span class="line">        <span class="keyword">if</span> (rabbit &amp;&amp; (rabbit==turtle))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="287-Find-the-Duplicate-Number"><a href="#287-Find-the-Duplicate-Number" class="headerlink" title="#287 Find the Duplicate Number"></a>#287 Find the Duplicate Number</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,1,3,4,2]</span><br><span class="line">Output: 3</span><br><span class="line">Note:</span><br><span class="line"></span><br><span class="line">    You must not modify the array (assume the array is read only).</span><br><span class="line">    You must use only constant, O(1) extra space.</span><br><span class="line">    Your runtime complexity should be less than O(n2).</span><br><span class="line">    There is only one duplicate number in the array, but it could be repeated more than once.</span><br><span class="line"></span><br><span class="line">依照本题意，数组中一定有重复元素，找到数组中重复出现的元素。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  就题意而言，数组元素唯一和数组元素有重复的区别可用下图表示：</p>
-<p>  1) 当给定数组中无重复元素时，如<code>nums={3,4,5,2,1}</code>。以第一行为当前位置，第二行为下一位置。小人从位置0开始走最终走到5停止。</p>
-  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png" width="700"> </div>
-  <div align="center">路经无环</div>
-
-<p>  2) 当给定数组中有重复元素时，如<code>nums={1，4，6，5，6，2，3}</code>。小人从位置0开始走，路经有环始终不会停止。而且被两个箭头指向的节点6为重复元素。</p>
-  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png" width="700"> </div>
-  <div align="center">路经有环</div>
-
-
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findDuplicate</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> turtle = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> rabbit = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        turtle = nums[turtle];      <span class="comment">// one step</span></span><br><span class="line">        rabbit = nums[nums[rabbit]]; <span class="comment">// two steps</span></span><br><span class="line">    &#125;<span class="keyword">while</span>(turtle != rabbit);  </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ptr1 = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> ptr2 = turtle;</span><br><span class="line">    <span class="keyword">while</span>(ptr1 != ptr2)&#123;</span><br><span class="line">        ptr1 = nums[ptr1];</span><br><span class="line">        ptr2 = nums[ptr2];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ptr1;              </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  当龟兔位于同起点，向相同的方向跑，<strong>如果赛道无环，乌龟永远追不上兔子。若赛道有环，兔子会再次追上乌龟</strong>。这就是Floy’s 算法的来源。</p>
-<p>  表面上与龟兔赛跑无关，在<font color="red" size="4">逻辑上构建出类似链表</font>后，就水到渠成了。</p>
-<p>  本题并不复杂，但当经过<font color="red" size="4">转化</font>后时间空间复杂度达到若干方法中较优。时刻有转化问题的意识。</p>
-</li>
-</ul>
-<p>关键：<font color="red" size="4">问题转化</font>，<font color="red" size="4">龟兔赛跑</font></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" data-id="ckatsrgs40032xqfz8nl381b5" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-文本分类-一-几类模型" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" class="article-date">
-  <time datetime="2019-08-02T11:23:04.000Z" itemprop="datePublished">2019-08-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/">文本分类(一)-几类模型</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>文本分类任务中，输入为一条由词语组成的文本，模型判断这条文本的类别。</p>
-<h2 id="1-基本文本模型"><a href="#1-基本文本模型" class="headerlink" title="1.基本文本模型"></a>1.基本文本模型</h2><p>模型一：使用RNN(LSTM)的最后一个状态判断类别，是最基本的RNN模型。如图：</p>
-<p>&lt;&gt;pic&lt;&gt;</p>
-<div align="center"><img src></div>
-
-<p>LSTM的最后一个状态，或者说是该LSTM结点的最后一个time step 包含了整个句子的信息。将这个信息传入一个普通的全连接的神经网络。最终得到一个分类。比如一个句子传入模型后被判断为威胁类别。如果是二分类，使用sigmoid实现，若是多分类，使用softmax实现。</p>
-<p>这个过程中涉及到embedding，就是用向量来表示一个词语，或者说是对词语的进一步编码。第一次编码是将词语转化为数字，两者一一对应。</p>
-<p>不使用one-hot 编码，深度学习领域使用embedding的方式对词语进行编码。具体如何做，如下：</p>
-<table>
-<thead>
-<tr>
-<th align="right">词语</th>
-<th align="right">id1</th>
-<th align="right">id2</th>
-<th align="right">id3</th>
-<th align="right">id4</th>
-<th align="right">id5</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="right">海洋</td>
-<td align="right">0.11</td>
-<td align="right">0.52</td>
-<td align="right">0.45</td>
-<td align="right">1.27</td>
-<td align="right">0.72</td>
-</tr>
-<tr>
-<td align="right">阳光</td>
-<td align="right">0.63</td>
-<td align="right">0.24</td>
-<td align="right">1.12</td>
-<td align="right">0.27</td>
-<td align="right">1.27</td>
-</tr>
-<tr>
-<td align="right">冲浪</td>
-<td align="right">0.72</td>
-<td align="right">0.22</td>
-<td align="right">0.23</td>
-<td align="right">0.37</td>
-<td align="right">0.46</td>
-</tr>
-</tbody></table>
-<p>我把每一个出现了的词用长度为5的向量表示。并且embedding中的数值是变量，在训练模型时，所有数值是要被学习(更新)的。从而使得每个词语对应的向量与词语意思更相关。</p>
-<p>当把输入编码成一个向量时，过程就更类似对图像的处理了(两者还是很不一样)。输入与输出都是向量。</p>
-<h2 id="2-双向文本模型"><a href="#2-双向文本模型" class="headerlink" title="2.双向文本模型"></a>2.双向文本模型</h2><p>上述基本模型有个问题：虽然LSTM可以选择性地保存信息，但是，随后一个词语还是会与其较近的词语由更大的关系，而弱化较早以前的词语。所以更早些的信息可能不会被保存下来。双向RNN就是用来解决这个问题的，如图：</p>
-<p>&lt;&gt;pic&lt;&gt;</p>
-<div align="center"><img src></div>
-
-<p>特点：</p>
-<ul>
-<li>信息正向传播，并且逆向传播。</li>
-<li>把每一个词语经过这个LSTM的输出，做组合(拼接，pooling等)</li>
-<li>最终将组合结果传入一个全连接层</li>
-</ul>
-<h2 id="3-HAN"><a href="#3-HAN" class="headerlink" title="3.HAN"></a>3.HAN</h2><p>特点：</p>
-<ul>
-<li>分层，第一层词语编码，第二层句编码。</li>
-<li>每一层增加一个类似LSTM内部门的操作，成为Attention 机制</li>
-</ul>
-<h2 id="4-CNN解决文本问题"><a href="#4-CNN解决文本问题" class="headerlink" title="4.CNN解决文本问题"></a>4.CNN解决文本问题</h2>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" data-id="ckatsrgt30058xqfz07z6dfak" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-组成原理缓存置换算法" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" class="article-date">
-  <time datetime="2019-08-02T01:26:37.000Z" itemprop="datePublished">2019-08-02</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/">组成原理-缓存置换算法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录了4种缓存置换算法</p>
-<ul>
-<li>随机置换算法</li>
-<li>FIFO</li>
-<li>LRU</li>
-<li>LFU</li>
-</ul>
-<h2 id="FIFO-先进先出算法"><a href="#FIFO-先进先出算法" class="headerlink" title="FIFO(先进先出算法)"></a>FIFO(先进先出算法)</h2><p><strong>原理</strong>：置换缓存时，从硬件角度：当缓存不满时，直接添加所需内容，否则，将最先进入缓存的内容删除，并把需使用的内容添加到缓存。对应的逻辑角度：当缓存不满时，直接添加新节点到链表尾。若缓存满，先将链表头节点删除，并且把新的节点连接到链表尾部。</p>
-<p><strong>实现</strong>：缓存使用双向链表实现<em>DoubleLinkedList</em>，其中节点由<em>Node</em>实现。 </p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> DoubleLinkedList <span class="keyword">import</span> Node, DoubleLinkedList</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FIFO</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, capacity)</span>:</span></span><br><span class="line">        self.capacity = capacity</span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line">        self.map = &#123;&#125;   <span class="comment"># &#123;key: node&#125; as search table</span></span><br><span class="line">        self.dlist = DoubleLinkedList(self.capacity)  <span class="comment"># as the cache</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span><span class="params">(self, key)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> self.map:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node = self.map.get(key)</span><br><span class="line">            <span class="keyword">return</span> node.value</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">put</span><span class="params">(self, key, value)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> self.capacity == <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">in</span> self.map:   <span class="comment"># if this key exist in map</span></span><br><span class="line">            node = self.map.get(key)  <span class="comment"># get this key</span></span><br><span class="line">            self.dlist.remove(node)   <span class="comment"># remove the node with this key</span></span><br><span class="line">            node.value = value     <span class="comment"># update the value of that node</span></span><br><span class="line">            self.dlist.append(node)  <span class="comment"># add node to the tail</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">if</span> self.size == self.capacity:   <span class="comment"># if cache is full</span></span><br><span class="line">                node = self.dlist.pop()</span><br><span class="line">                <span class="keyword">del</span> self.map[node.key]   <span class="comment"># delete the node at the head</span></span><br><span class="line">                self.size -= <span class="number">1</span></span><br><span class="line">            node = Node(key, value)</span><br><span class="line">            self.dlist.append(node)   <span class="comment"># add new node to the tail</span></span><br><span class="line">            self.map[key] = node</span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.dlist.print()</span><br></pre></td></tr></table></figure>
-<p>测试：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    cache = FIFO(<span class="number">4</span>)</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">10</span>)</span><br><span class="line">    cache.put(<span class="number">2</span>, <span class="number">20</span>)</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">12</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(<span class="string">"------"</span>)</span><br><span class="line">    cache.put(<span class="number">4</span>, <span class="number">40</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">5</span>, <span class="number">50</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">11</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(cache.get(<span class="number">1</span>))</span><br><span class="line">    print(cache.get(<span class="number">2</span>))</span><br></pre></td></tr></table></figure>
-<p>结果如下，注释体现了FIFO<strong>算法过程</strong>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;1: 10&#125;-&gt;&#123;2: 20&#125;-&gt;&#123;3: 30&#125;            &#x2F;&#x2F; 该时刻的缓存内容</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;            &#x2F;&#x2F; 缓存未满，key&#x3D;1的接点在缓存中，删除头部key&#x3D;1的&#123;1: 10&#125;，尾部加入&#123;1: 12&#125;</span><br><span class="line">------</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;   &#x2F;&#x2F; 缓存未满，key&#x3D;4的节点不存在，所以在尾部加&#123;4: 40&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;5的节点不存在，删除头部&#123;2: 20&#125;，尾部加&#123;5: 50&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;1的节点在缓存中，删除key&#x3D;1的&#123;1: 12&#125;，尾部加&#123;1: 11&#125;</span><br><span class="line">&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;-&gt;&#123;3: 30&#125;   &#x2F;&#x2F; 同理</span><br><span class="line">11                                   &#x2F;&#x2F; 查找key&#x3D;1的value，存在</span><br><span class="line">-1                                   &#x2F;&#x2F; 查找key&#x3D;2的value，不存在</span><br></pre></td></tr></table></figure>
-<h2 id="LRU-最不经常使用算法"><a href="#LRU-最不经常使用算法" class="headerlink" title="LRU(最不经常使用算法)"></a>LRU(最不经常使用算法)</h2><p>待填坑</p>
-<h2 id="LFU-最近最少使用算法"><a href="#LFU-最近最少使用算法" class="headerlink" title="LFU(最近最少使用算法)"></a>LFU(最近最少使用算法)</h2><p>待填坑</p>
-<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><h3 id="Node定义"><a href="#Node定义" class="headerlink" title="Node定义"></a>Node定义</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, key, val)</span>:</span></span><br><span class="line">        self.key = key</span><br><span class="line">        self.value = val</span><br><span class="line">        self.prev = <span class="literal">None</span></span><br><span class="line">        self.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__repr__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br></pre></td></tr></table></figure>
-<h3 id="双向链表DoubleLinkedList定义"><a href="#双向链表DoubleLinkedList定义" class="headerlink" title="双向链表DoubleLinkedList定义"></a>双向链表DoubleLinkedList定义</h3><p>对于<strong>成员函数为什么返回看似无用的node节点</strong>，经验上讲这样做是最优的。在FIFO的实现过程中会发现，如果成员函数返回其他内容，或无返回值，最终的应用回出现逻辑错误。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DoubleLinkedList</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, cap=<span class="number">0xffff</span>)</span>:</span></span><br><span class="line">        self.capacity = cap</span><br><span class="line">        self.head = <span class="literal">None</span></span><br><span class="line">        self.tail = <span class="literal">None</span></span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.head.next = <span class="literal">None</span></span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.head.prev = node</span><br><span class="line">            node.next = self.head</span><br><span class="line">            self.head = node</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># append node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_tail</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            self.tail.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail.next = node</span><br><span class="line">            node.prev = self.tail</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_tail</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node.prev:</span><br><span class="line">            self.tail = node.prev</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            node.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail = self.head = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_head</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:  <span class="comment"># if empty list</span></span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.head  <span class="comment"># assign self.head to a new node</span></span><br><span class="line">        <span class="keyword">if</span> node.next:</span><br><span class="line">            self.head = node.next</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">            node.next = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:  <span class="comment"># only a head exist</span></span><br><span class="line">            self.head = self.tail = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove node in any position</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__remove</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="comment"># if node==None, remove tail by default</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> node:</span><br><span class="line">            node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node == self.tail:</span><br><span class="line">            self.__del_tail()</span><br><span class="line">        <span class="keyword">elif</span> node == self.head:</span><br><span class="line">            self.__del_head()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node.prev.next = node.next</span><br><span class="line">            node.next.prev = node.prev</span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># APIs</span></span><br><span class="line">    <span class="comment"># pop node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pop</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__del_head()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_tail(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_head(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">remove</span><span class="params">(self, node=None)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__remove(node)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        p = self.head</span><br><span class="line">        line = <span class="string">''</span></span><br><span class="line">        <span class="keyword">while</span> p:</span><br><span class="line">            line += <span class="string">'%s'</span> % p</span><br><span class="line">            p = p.next</span><br><span class="line">            <span class="keyword">if</span> p:</span><br><span class="line">                line += <span class="string">'-&gt;'</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> line:</span><br><span class="line">            print(<span class="string">"empty double linked list"</span>)</span><br><span class="line">        print(line)</span><br></pre></td></tr></table></figure>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" data-id="ckatsrgtj006gxqfzcuh7bb0o" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Mobile-Net-深度可分离卷积" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" class="article-date">
-  <time datetime="2019-08-01T11:37:36.000Z" itemprop="datePublished">2019-08-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/">MobileNet深度可分离卷积</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录MobileNet的深度可分离卷积操作的特点及实现。</p>
-<p>深度可分离卷积是将输入的<font color="red">每个通道展开</font>，在单个通道上做卷积，最后将结果合并。换句话说，通常的卷积层每个核要扫描输入的所有通道，而深度可分离卷积每个核只读输入的一个通道。与Inception 的<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积单元</a>相似，不同的是每个卷积核只对输入的一个通道操作。</p>
-<h2 id="深度可分离卷积结构"><a href="#深度可分离卷积结构" class="headerlink" title="深度可分离卷积结构"></a>深度可分离卷积结构</h2><p>假设深度可分离层的输入有3个通道，如图表示了该模块的过程：</p>
-<div align="center"><img src="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/seperable_conv_block.png" width="500"></div>
-<div align="center">对每个通道进行卷及操作</div>
-
-<p>下面是就上图结构实现的模块：</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">separable_conv_block</span><span class="params">(x, output_channel_number, name)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    x: input </span></span><br><span class="line"><span class="string">    output_channel_number: the output channel of the entire block, </span></span><br><span class="line"><span class="string">                            又是1x1卷据层的卷积核个数(卷积核个数==输出通道数)</span></span><br><span class="line"><span class="string">    name: namespace</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name):</span><br><span class="line">        <span class="comment"># get channel number:</span></span><br><span class="line">        input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># split channels to a channel list:</span></span><br><span class="line">        <span class="comment"># channel_wise_x: [channel1, channel2, ...]</span></span><br><span class="line">        channel_wise_x = tf.split(x, input_channel, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 对每一个通道分别执行3x3的卷积操作</span></span><br><span class="line">        output_channels = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len(channel_wise_x)):      </span><br><span class="line">            output_channel = tf.layers.conv2d(channel_wise_x[i],</span><br><span class="line">                                              <span class="number">1</span>,</span><br><span class="line">                                              (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                                              strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                              padding = <span class="string">'same'</span>,</span><br><span class="line">                                              activation = tf.nn.relu,</span><br><span class="line">                                              name = <span class="string">'conv_%d'</span> % i)</span><br><span class="line">            output_channels.append(output_channel)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># concat along channel(index=3)</span></span><br><span class="line">        concat_layer = tf.concat(output_channels, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 经过一个1x1的卷积操作</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(concat_layer,</span><br><span class="line">                                   output_channel_number,</span><br><span class="line">                                   (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">    <span class="keyword">return</span> conv1_1</span><br></pre></td></tr></table></figure>
-
-<p>将上述模块放入MobileNet的网络结构就可以搭建完整的MobileNet。实例实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/mobile_net.ipynb" target="_blank" rel="noopener">这里</a></p>
-<hr>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" data-id="ckatsrgsg003wxqfzbh7jg6q2" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/9/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><a class="extend next" rel="next" href="/page/11/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/9/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><a class="page-number" href="/page/12/">12</a><a class="extend next" rel="next" href="/page/11/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -988,7 +1149,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -998,7 +1159,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">40</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">43</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1017,7 +1178,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">11</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1030,23 +1191,23 @@
       <ul>
         
           <li>
+            <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/%E8%AE%BA%E6%96%87%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">论文下载加速</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/">LeetCode-判断是否是子树</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
-          </li>
-        
-          <li>
-            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/26/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/">anaconda 虚拟环境</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode-符串通配符</a>
           </li>
         
       </ul>

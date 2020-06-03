@@ -64,6 +64,401 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-文本分类-二-文本预处理I-词频统计" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" class="article-date">
+  <time datetime="2019-08-03T07:22:37.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/">文本分类(二)-文本预处理I-词频统计</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>文本数据与图像数据本质一样，图像本身的每个通道，像素点值就是数据本身。而文本数据要被计算机理解，首先要被处理成数值型，也就是说需要给文本编码，如embedding。这篇笔记记录将<strong>文本数值化</strong>。</p>
+<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><p>一个样本文件有5000条记录，存在于txt中。如下为样本文本中的索引为204的记录：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(train_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line">print(len(lines))</span><br><span class="line">print(lines[<span class="number">204</span>])</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">5000</span><br><span class="line">体育	绿衫军vs热火首发：新老三巨头对抗 小奥单挑大Z新浪体育讯北京时间5月4日，热火和凯尔特人迎来第二回合巅峰对决，本场比赛双方主帅均未对首发名单做出任何更改。而凯尔特人主帅道格-里弗斯赛前也向媒体表示，本场比赛“大鲨鱼”沙奎尔-奥尼尔将继续作壁上观，以下为双方首发名单——凯尔特人：隆多、雷-阿伦、皮尔斯、加内特、杰梅因-奥尼尔热火：毕比、韦德、詹姆斯、波什、伊尔戈斯卡斯(小林)</span><br></pre></td></tr></table></figure>
+
+<p>格式是：类别+样本描述。</p>
+<p>分成label和content：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="分词"><a href="#分词" class="headerlink" title="分词"></a>分词</h2><p>使用<a href="https://github.com/fxsjy/jieba" target="_blank" rel="noopener">jieba</a>对content进行分词：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">word_iter = jieba.cut(content)</span><br><span class="line"></span><br><span class="line">word_content = <span class="string">''</span>         <span class="comment"># 保存每一个词</span></span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> word_iter:     <span class="comment"># 对切分结果中每个词作如下操作</span></span><br><span class="line">    word = word.strip(<span class="string">' '</span>)</span><br><span class="line">    <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">        word_content += word + <span class="string">' '</span></span><br><span class="line">out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))</span><br><span class="line">print(out_line)</span><br></pre></td></tr></table></figure>
+
+<p>写入文件的每一条数据格式：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">体育	vs 热火 首发 ： 新 老三 巨头 对抗 小奥 单挑 大 Z 新浪 体育讯 北京 时间 5 月 4 日 ， 热火 和 凯尔特人 迎来 第二 回合 巅峰 对决 ， 本场 比赛 双方 主帅 均 未 对 首发 名单 做出 任何 更改 。 而 凯尔特人 主帅 道 格 - 里 弗斯 赛前 也 向 媒体 表示 ， 本场 比赛 “ 大 鲨鱼 ” 沙奎尔 - 奥尼尔 将 继续 作壁上观 ， 以下 为 双方 首发 名单 — — 凯尔特人 ： 隆多 、 雷 - 阿伦 、 皮尔斯 、 加内特 、 杰 梅因 - 奥尼尔 热火 ： 毕比 、 韦德 、 詹姆斯 、 波什 、 伊尔 戈斯卡 斯 ( 小林 )</span><br></pre></td></tr></table></figure>
+
+<p>如上述过程将源文件中每一条记录执行此操作后写入目标文件。整理成函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_seg_file</span><span class="params">(input_file, output_seg_file)</span>:</span></span><br><span class="line">    <span class="string">"""对input_file内容分词"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:    <span class="comment"># 读文件</span></span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">with</span> open(output_seg_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:                   <span class="comment"># 写的方式打开写文件</span></span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> lines:                                   <span class="comment"># 对于每一行</span></span><br><span class="line">            label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)  <span class="comment"># 分出lenbel和content</span></span><br><span class="line">            word_iter = jieba.cut(content)                   <span class="comment"># 对content切分成词</span></span><br><span class="line">            word_content = <span class="string">''</span>                                    <span class="comment"># 保存每个次</span></span><br><span class="line">            <span class="keyword">for</span> word <span class="keyword">in</span> word_iter:                               <span class="comment"># 对切分结果中每个词作如下操作：</span></span><br><span class="line">                word = word.strip(<span class="string">' '</span>)</span><br><span class="line">                <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">                    word_content += word + <span class="string">' '</span></span><br><span class="line">            out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))  <span class="comment"># 输入文件每一行的格式</span></span><br><span class="line">            </span><br><span class="line">            f.write(out_line)     <span class="comment"># 写入文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 对三个数据集作同样操作</span></span><br><span class="line">generate_seg_file(train_file, seg_train_file)</span><br><span class="line">generate_seg_file(val_file, seg_val_file)</span><br><span class="line">generate_seg_file(test_file, seg_test_file)</span><br></pre></td></tr></table></figure>
+
+<p>此时三个样本集各自的分词结果。</p>
+<h2 id="统计词频"><a href="#统计词频" class="headerlink" title="统计词频"></a>统计词频</h2><p>对上一步得到的分词后的文件进行词频统计。如对索引为204的记录统计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(output_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">        </span><br><span class="line">word_dict = &#123;&#125;</span><br><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">        word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">        word_dict[word] += <span class="number">1</span></span><br><span class="line">print(word_dict)</span><br></pre></td></tr></table></figure>
+
+<p>结果为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'绿衫'</span>: 1, <span class="string">'军'</span>: 1, <span class="string">'vs'</span>: 1, <span class="string">'热火'</span>: 3, <span class="string">'首发'</span>: 3, <span class="string">'：'</span>: 3, <span class="string">'新'</span>: 1, <span class="string">'老三'</span>: 1, <span class="string">'巨头'</span>: 1, <span class="string">'对抗'</span>: 1, <span class="string">'小奥'</span>: 1, <span class="string">'单挑'</span>: 1, <span class="string">'大'</span>: 2, <span class="string">'Z'</span>: 1, <span class="string">'新浪'</span>: 1, <span class="string">'体育讯'</span>: 1, <span class="string">'北京'</span>: 1, <span class="string">'时间'</span>: 1, <span class="string">'5'</span>: 1, <span class="string">'月'</span>: 1, <span class="string">'4'</span>: 1, <span class="string">'日'</span>: 1, <span class="string">'，'</span>: 4, <span class="string">'和'</span>: 1, <span class="string">'凯尔特人'</span>: 3, <span class="string">'迎来'</span>: 1, <span class="string">'第二'</span>: 1, <span class="string">'回合'</span>: 1, <span class="string">'巅峰'</span>: 1, <span class="string">'对决'</span>: 1, <span class="string">'本场'</span>: 2, <span class="string">'比赛'</span>: 2, <span class="string">'双方'</span>: 2, <span class="string">'主帅'</span>: 2, <span class="string">'均'</span>: 1, <span class="string">'未'</span>: 1, <span class="string">'对'</span>: 1, <span class="string">'名单'</span>: 2, <span class="string">'做出'</span>: 1, <span class="string">'任何'</span>: 1, <span class="string">'更改'</span>: 1, <span class="string">'。'</span>: 1, <span class="string">'而'</span>: 1, <span class="string">'道'</span>: 1, <span class="string">'格'</span>: 1, <span class="string">'-'</span>: 4, <span class="string">'里'</span>: 1, <span class="string">'弗斯'</span>: 1, <span class="string">'赛前'</span>: 1, <span class="string">'也'</span>: 1, <span class="string">'向'</span>: 1, <span class="string">'媒体'</span>: 1, <span class="string">'表示'</span>: 1, <span class="string">'“'</span>: 1, <span class="string">'鲨鱼'</span>: 1, <span class="string">'”'</span>: 1, <span class="string">'沙奎尔'</span>: 1, <span class="string">'奥尼尔'</span>: 2, <span class="string">'将'</span>: 1, <span class="string">'继续'</span>: 1, <span class="string">'作壁上观'</span>: 1, <span class="string">'以下'</span>: 1, <span class="string">'为'</span>: 1, <span class="string">'—'</span>: 2, <span class="string">'隆多'</span>: 1, <span class="string">'、'</span>: 8, <span class="string">'雷'</span>: 1, <span class="string">'阿伦'</span>: 1, <span class="string">'皮尔斯'</span>: 1, <span class="string">'加内特'</span>: 1, <span class="string">'杰'</span>: 1, <span class="string">'梅因'</span>: 1, <span class="string">'毕比'</span>: 1, <span class="string">'韦德'</span>: 1, <span class="string">'詹姆斯'</span>: 1, <span class="string">'波什'</span>: 1, <span class="string">'伊尔'</span>: 1, <span class="string">'戈斯卡'</span>: 1, <span class="string">'斯'</span>: 1, <span class="string">'('</span>: 1, <span class="string">'小林'</span>: 1, <span class="string">')'</span>: 1&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此字典中键为词语，值为键出现的频数。当然这只是对一条记录的统计，对所有记录统计才有意义。</p>
+<p>按词语频数排序，方便之后输入模型的<strong>截取操作</strong>。****</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sorted_word_dict = sorted(</span><br><span class="line">    word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">print(sorted_word_dict)</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[(<span class="string">'、'</span>, 8), (<span class="string">'，'</span>, 4), (<span class="string">'-'</span>, 4), (<span class="string">'热火'</span>, 3), (<span class="string">'首发'</span>, 3), (<span class="string">'：'</span>, 3), (<span class="string">'凯尔特人'</span>, 3), (<span class="string">'大'</span>, 2), (<span class="string">'本场'</span>, 2), (<span class="string">'比赛'</span>, 2), (<span class="string">'双方'</span>, 2), (<span class="string">'主帅'</span>, 2), (<span class="string">'名单'</span>, 2), (<span class="string">'奥尼尔'</span>, 2), (<span class="string">'—'</span>, 2), (<span class="string">'绿衫'</span>, 1), (<span class="string">'军'</span>, 1), (<span class="string">'vs'</span>, 1), (<span class="string">'新'</span>, 1), (<span class="string">'老三'</span>, 1), (<span class="string">'巨头'</span>, 1), (<span class="string">'对抗'</span>, 1), (<span class="string">'小奥'</span>, 1), (<span class="string">'单挑'</span>, 1), (<span class="string">'Z'</span>, 1), (<span class="string">'新浪'</span>, 1), (<span class="string">'体育讯'</span>, 1), (<span class="string">'北京'</span>, 1), (<span class="string">'时间'</span>, 1), (<span class="string">'5'</span>, 1), (<span class="string">'月'</span>, 1), (<span class="string">'4'</span>, 1), (<span class="string">'日'</span>, 1), (<span class="string">'和'</span>, 1), (<span class="string">'迎来'</span>, 1), (<span class="string">'第二'</span>, 1), (<span class="string">'回合'</span>, 1), (<span class="string">'巅峰'</span>, 1), (<span class="string">'对决'</span>, 1), (<span class="string">'均'</span>, 1), (<span class="string">'未'</span>, 1), (<span class="string">'对'</span>, 1), (<span class="string">'做出'</span>, 1), (<span class="string">'任何'</span>, 1), (<span class="string">'更改'</span>, 1), (<span class="string">'。'</span>, 1), (<span class="string">'而'</span>, 1), (<span class="string">'道'</span>, 1), (<span class="string">'格'</span>, 1), (<span class="string">'里'</span>, 1), (<span class="string">'弗斯'</span>, 1), (<span class="string">'赛前'</span>, 1), (<span class="string">'也'</span>, 1), (<span class="string">'向'</span>, 1), (<span class="string">'媒体'</span>, 1), (<span class="string">'表示'</span>, 1), (<span class="string">'“'</span>, 1), (<span class="string">'鲨鱼'</span>, 1), (<span class="string">'”'</span>, 1), (<span class="string">'沙奎尔'</span>, 1), (<span class="string">'将'</span>, 1), (<span class="string">'继续'</span>, 1), (<span class="string">'作壁上观'</span>, 1), (<span class="string">'以下'</span>, 1), (<span class="string">'为'</span>, 1), (<span class="string">'隆多'</span>, 1), (<span class="string">'雷'</span>, 1), (<span class="string">'阿伦'</span>, 1), (<span class="string">'皮尔斯'</span>, 1), (<span class="string">'加内特'</span>, 1), (<span class="string">'杰'</span>, 1), (<span class="string">'梅因'</span>, 1), (<span class="string">'毕比'</span>, 1), (<span class="string">'韦德'</span>, 1), (<span class="string">'詹姆斯'</span>, 1), (<span class="string">'波什'</span>, 1), (<span class="string">'伊尔'</span>, 1), (<span class="string">'戈斯卡'</span>, 1), (<span class="string">'斯'</span>, 1), (<span class="string">'('</span>, 1), (<span class="string">'小林'</span>, 1), (<span class="string">')'</span>, 1)]</span><br></pre></td></tr></table></figure>
+
+<p>整理成函数，对所有记录统计。注意该操作<strong>只针对训练集</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_vocab_file</span><span class="params">(input_seg_file, output_vocab_file)</span>:</span></span><br><span class="line">    <span class="string">"""将input_seg_file中做词频统计，输出到out_put_file中"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    word_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        <span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">            word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">            word_dict[word] += <span class="number">1</span></span><br><span class="line">    <span class="comment"># [(word, frequency), ..., ()]</span></span><br><span class="line">    sorted_word_dict = sorted(</span><br><span class="line">        word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">with</span> open(output_vocab_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">'&lt;UNK&gt;\t10000000\n'</span>)      <span class="comment"># 当在测试集中找不到一个词时，用&lt;UNK&gt; 代替</span></span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> sorted_word_dict:</span><br><span class="line">            f.write(<span class="string">'%s\t%d\n'</span> % (item[<span class="number">0</span>], item[<span class="number">1</span>]))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 只对已知的训练集执行此操作</span></span><br><span class="line">generate_vocab_file(seg_train_file, vocab_file)</span><br></pre></td></tr></table></figure>
+<p>打开结果文件<code>vocab_file</code>查看：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>第一列为序号，表示第几个词，第二列为词（出现的数组和百分比都是文本中的实际数字），第三列为该词出现的频数。两点说明：</p>
+<ul>
+<li>频数太小的词无意义，因为神经网络为<font color="red">概率模型，只出现一次没有统计意义</font>。</li>
+<li>而<font color="red">频数很高但通用的词（停用词）同样无意义</font>，因为通用的词在分类问题中不能提供有用信息，从信息论角度看，使用通用词训练模型不能减少模型的不确定性。这两点之后会处理。</li>
+</ul>
+<p>对label统计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_category_dict</span><span class="params">(input_file, category_file)</span>:</span></span><br><span class="line">    <span class="string">"""统计类别"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    category_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        category_dict.setdefault(label, <span class="number">0</span>)</span><br><span class="line">        category_dict[label] += <span class="number">1</span></span><br><span class="line">    category_number = len(category_dict)</span><br><span class="line">    <span class="keyword">with</span> open(category_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">for</span> category <span class="keyword">in</span> category_dict:</span><br><span class="line">            line = <span class="string">'%s\n'</span> % category</span><br><span class="line">            print(<span class="string">'%s\t%d'</span> % (category, category_dict[category]))</span><br><span class="line">            f.write(line)</span><br><span class="line">            </span><br><span class="line">generate_category_dict(train_file, category_file)</span><br></pre></td></tr></table></figure>
+<p>结果写入<code>catecory_file</code>, 并且控制台输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">体育	5000</span><br><span class="line">娱乐	5000</span><br><span class="line">家居	5000</span><br><span class="line">房产	5000</span><br><span class="line">教育	5000</span><br><span class="line">时尚	5000</span><br><span class="line">时政	5000</span><br><span class="line">游戏	5000</span><br><span class="line">科技	5000</span><br><span class="line">财经	5000</span><br></pre></td></tr></table></figure>
+
+<p>类别频数相同，表示这是一个<font color="orange">极度均匀数据集</font>。这是理想的！</p>
+<p>统计词的频率，是为了截取，每个词的数值化，可用其序号代替。</p>
+<p>整个过程生产5个文件：</p>
+<ul>
+<li>seg_train_file： 分词后的训练集</li>
+<li>seg_val_file： 分词后的验证集</li>
+<li>seg_test_file： 分词后的测试集</li>
+<li>vocab_file： 训练集的词频统计</li>
+<li>category_file： 训练集的类别统计</li>
+</ul>
+<p>完整程序与数据文件<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/preProcess.py" target="_blank" rel="noopener">这里</a>。</p>
+<p><font color="green" size="5">敲黑板</font>对于如本笔记所处理的极度均匀的数据集，评价模型时可以使用准确率。但是对于<font color="red">极度偏斜(Skewed Data)的数据</font>，如在数据集中某类病症的发病样本数与未发病样本书之比远小于1，只使用准确率评价模型是远远不够的。这时就需要使用其他模型评估方法如混淆矩阵(Confusion Matrix)等。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" data-id="ckatsrgvc008bxqfz5hsu77mp" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-Floyd-s-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" class="article-date">
+  <time datetime="2019-08-02T16:08:05.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/">LeetCode-方法论-Floyd&#39;s Algorithm</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题<strong>转化</strong>的。当原问题棘手时，找到合适的方向可以转化为简单问题。</p>
+<h1 id="141-Linked-List-Cycle"><a href="#141-Linked-List-Cycle" class="headerlink" title="#141 Linked List Cycle"></a>#141 Linked List Cycle</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1</span><br><span class="line">Output: true</span><br><span class="line">Explanation: There is a cycle in the linked list, where tail connects to the second node.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p> 如果存在环，兔子与乌龟会第二次相遇；否则除了起点，龟兔不会再相遇。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasCycle</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    ListNode* rabbit=head;</span><br><span class="line">    ListNode* turtle=head;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(rabbit &amp;&amp; turtle)&#123;</span><br><span class="line">        rabbit = rabbit-&gt;next;</span><br><span class="line">        turtle = turtle-&gt;next;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (rabbit) rabbit=rabbit-&gt;next; <span class="comment">// one step faster than the turtle</span></span><br><span class="line">        <span class="keyword">if</span> (rabbit &amp;&amp; (rabbit==turtle))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="287-Find-the-Duplicate-Number"><a href="#287-Find-the-Duplicate-Number" class="headerlink" title="#287 Find the Duplicate Number"></a>#287 Find the Duplicate Number</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,1,3,4,2]</span><br><span class="line">Output: 3</span><br><span class="line">Note:</span><br><span class="line"></span><br><span class="line">    You must not modify the array (assume the array is read only).</span><br><span class="line">    You must use only constant, O(1) extra space.</span><br><span class="line">    Your runtime complexity should be less than O(n2).</span><br><span class="line">    There is only one duplicate number in the array, but it could be repeated more than once.</span><br><span class="line"></span><br><span class="line">依照本题意，数组中一定有重复元素，找到数组中重复出现的元素。</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  就题意而言，数组元素唯一和数组元素有重复的区别可用下图表示：</p>
+<p>  1) 当给定数组中无重复元素时，如<code>nums={3,4,5,2,1}</code>。以第一行为当前位置，第二行为下一位置。小人从位置0开始走最终走到5停止。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png" width="700"> </div>
+  <div align="center">路经无环</div>
+
+<p>  2) 当给定数组中有重复元素时，如<code>nums={1，4，6，5，6，2，3}</code>。小人从位置0开始走，路经有环始终不会停止。而且被两个箭头指向的节点6为重复元素。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png" width="700"> </div>
+  <div align="center">路经有环</div>
+
+
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findDuplicate</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> turtle = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> rabbit = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        turtle = nums[turtle];      <span class="comment">// one step</span></span><br><span class="line">        rabbit = nums[nums[rabbit]]; <span class="comment">// two steps</span></span><br><span class="line">    &#125;<span class="keyword">while</span>(turtle != rabbit);  </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ptr1 = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> ptr2 = turtle;</span><br><span class="line">    <span class="keyword">while</span>(ptr1 != ptr2)&#123;</span><br><span class="line">        ptr1 = nums[ptr1];</span><br><span class="line">        ptr2 = nums[ptr2];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ptr1;              </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  当龟兔位于同起点，向相同的方向跑，<strong>如果赛道无环，乌龟永远追不上兔子。若赛道有环，兔子会再次追上乌龟</strong>。这就是Floy’s 算法的来源。</p>
+<p>  表面上与龟兔赛跑无关，在<font color="red" size="4">逻辑上构建出类似链表</font>后，就水到渠成了。</p>
+<p>  本题并不复杂，但当经过<font color="red" size="4">转化</font>后时间空间复杂度达到若干方法中较优。时刻有转化问题的意识。</p>
+</li>
+</ul>
+<p>关键：<font color="red" size="4">问题转化</font>，<font color="red" size="4">龟兔赛跑</font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" data-id="ckatsrgs40032xqfz8nl381b5" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-文本分类-一-几类模型" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2019-08-02T11:23:04.000Z" itemprop="datePublished">2019-08-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/">文本分类(一)-几类模型</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>文本分类任务中，输入为一条由词语组成的文本，模型判断这条文本的类别。</p>
+<h2 id="1-基本文本模型"><a href="#1-基本文本模型" class="headerlink" title="1.基本文本模型"></a>1.基本文本模型</h2><p>模型一：使用RNN(LSTM)的最后一个状态判断类别，是最基本的RNN模型。如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>LSTM的最后一个状态，或者说是该LSTM结点的最后一个time step 包含了整个句子的信息。将这个信息传入一个普通的全连接的神经网络。最终得到一个分类。比如一个句子传入模型后被判断为威胁类别。如果是二分类，使用sigmoid实现，若是多分类，使用softmax实现。</p>
+<p>这个过程中涉及到embedding，就是用向量来表示一个词语，或者说是对词语的进一步编码。第一次编码是将词语转化为数字，两者一一对应。</p>
+<p>不使用one-hot 编码，深度学习领域使用embedding的方式对词语进行编码。具体如何做，如下：</p>
+<table>
+<thead>
+<tr>
+<th align="right">词语</th>
+<th align="right">id1</th>
+<th align="right">id2</th>
+<th align="right">id3</th>
+<th align="right">id4</th>
+<th align="right">id5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">海洋</td>
+<td align="right">0.11</td>
+<td align="right">0.52</td>
+<td align="right">0.45</td>
+<td align="right">1.27</td>
+<td align="right">0.72</td>
+</tr>
+<tr>
+<td align="right">阳光</td>
+<td align="right">0.63</td>
+<td align="right">0.24</td>
+<td align="right">1.12</td>
+<td align="right">0.27</td>
+<td align="right">1.27</td>
+</tr>
+<tr>
+<td align="right">冲浪</td>
+<td align="right">0.72</td>
+<td align="right">0.22</td>
+<td align="right">0.23</td>
+<td align="right">0.37</td>
+<td align="right">0.46</td>
+</tr>
+</tbody></table>
+<p>我把每一个出现了的词用长度为5的向量表示。并且embedding中的数值是变量，在训练模型时，所有数值是要被学习(更新)的。从而使得每个词语对应的向量与词语意思更相关。</p>
+<p>当把输入编码成一个向量时，过程就更类似对图像的处理了(两者还是很不一样)。输入与输出都是向量。</p>
+<h2 id="2-双向文本模型"><a href="#2-双向文本模型" class="headerlink" title="2.双向文本模型"></a>2.双向文本模型</h2><p>上述基本模型有个问题：虽然LSTM可以选择性地保存信息，但是，随后一个词语还是会与其较近的词语由更大的关系，而弱化较早以前的词语。所以更早些的信息可能不会被保存下来。双向RNN就是用来解决这个问题的，如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>特点：</p>
+<ul>
+<li>信息正向传播，并且逆向传播。</li>
+<li>把每一个词语经过这个LSTM的输出，做组合(拼接，pooling等)</li>
+<li>最终将组合结果传入一个全连接层</li>
+</ul>
+<h2 id="3-HAN"><a href="#3-HAN" class="headerlink" title="3.HAN"></a>3.HAN</h2><p>特点：</p>
+<ul>
+<li>分层，第一层词语编码，第二层句编码。</li>
+<li>每一层增加一个类似LSTM内部门的操作，成为Attention 机制</li>
+</ul>
+<h2 id="4-CNN解决文本问题"><a href="#4-CNN解决文本问题" class="headerlink" title="4.CNN解决文本问题"></a>4.CNN解决文本问题</h2>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" data-id="ckatsrgt30058xqfz07z6dfak" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-组成原理缓存置换算法" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" class="article-date">
+  <time datetime="2019-08-02T01:26:37.000Z" itemprop="datePublished">2019-08-02</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/">组成原理-缓存置换算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录了4种缓存置换算法</p>
+<ul>
+<li>随机置换算法</li>
+<li>FIFO</li>
+<li>LRU</li>
+<li>LFU</li>
+</ul>
+<h2 id="FIFO-先进先出算法"><a href="#FIFO-先进先出算法" class="headerlink" title="FIFO(先进先出算法)"></a>FIFO(先进先出算法)</h2><p><strong>原理</strong>：置换缓存时，从硬件角度：当缓存不满时，直接添加所需内容，否则，将最先进入缓存的内容删除，并把需使用的内容添加到缓存。对应的逻辑角度：当缓存不满时，直接添加新节点到链表尾。若缓存满，先将链表头节点删除，并且把新的节点连接到链表尾部。</p>
+<p><strong>实现</strong>：缓存使用双向链表实现<em>DoubleLinkedList</em>，其中节点由<em>Node</em>实现。 </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> DoubleLinkedList <span class="keyword">import</span> Node, DoubleLinkedList</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FIFO</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, capacity)</span>:</span></span><br><span class="line">        self.capacity = capacity</span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line">        self.map = &#123;&#125;   <span class="comment"># &#123;key: node&#125; as search table</span></span><br><span class="line">        self.dlist = DoubleLinkedList(self.capacity)  <span class="comment"># as the cache</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span><span class="params">(self, key)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> self.map:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node = self.map.get(key)</span><br><span class="line">            <span class="keyword">return</span> node.value</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">put</span><span class="params">(self, key, value)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> self.capacity == <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">in</span> self.map:   <span class="comment"># if this key exist in map</span></span><br><span class="line">            node = self.map.get(key)  <span class="comment"># get this key</span></span><br><span class="line">            self.dlist.remove(node)   <span class="comment"># remove the node with this key</span></span><br><span class="line">            node.value = value     <span class="comment"># update the value of that node</span></span><br><span class="line">            self.dlist.append(node)  <span class="comment"># add node to the tail</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">if</span> self.size == self.capacity:   <span class="comment"># if cache is full</span></span><br><span class="line">                node = self.dlist.pop()</span><br><span class="line">                <span class="keyword">del</span> self.map[node.key]   <span class="comment"># delete the node at the head</span></span><br><span class="line">                self.size -= <span class="number">1</span></span><br><span class="line">            node = Node(key, value)</span><br><span class="line">            self.dlist.append(node)   <span class="comment"># add new node to the tail</span></span><br><span class="line">            self.map[key] = node</span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.dlist.print()</span><br></pre></td></tr></table></figure>
+<p>测试：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    cache = FIFO(<span class="number">4</span>)</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">10</span>)</span><br><span class="line">    cache.put(<span class="number">2</span>, <span class="number">20</span>)</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">12</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(<span class="string">"------"</span>)</span><br><span class="line">    cache.put(<span class="number">4</span>, <span class="number">40</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">5</span>, <span class="number">50</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">11</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(cache.get(<span class="number">1</span>))</span><br><span class="line">    print(cache.get(<span class="number">2</span>))</span><br></pre></td></tr></table></figure>
+<p>结果如下，注释体现了FIFO<strong>算法过程</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;1: 10&#125;-&gt;&#123;2: 20&#125;-&gt;&#123;3: 30&#125;            &#x2F;&#x2F; 该时刻的缓存内容</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;            &#x2F;&#x2F; 缓存未满，key&#x3D;1的接点在缓存中，删除头部key&#x3D;1的&#123;1: 10&#125;，尾部加入&#123;1: 12&#125;</span><br><span class="line">------</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;   &#x2F;&#x2F; 缓存未满，key&#x3D;4的节点不存在，所以在尾部加&#123;4: 40&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;5的节点不存在，删除头部&#123;2: 20&#125;，尾部加&#123;5: 50&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;1的节点在缓存中，删除key&#x3D;1的&#123;1: 12&#125;，尾部加&#123;1: 11&#125;</span><br><span class="line">&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;-&gt;&#123;3: 30&#125;   &#x2F;&#x2F; 同理</span><br><span class="line">11                                   &#x2F;&#x2F; 查找key&#x3D;1的value，存在</span><br><span class="line">-1                                   &#x2F;&#x2F; 查找key&#x3D;2的value，不存在</span><br></pre></td></tr></table></figure>
+<h2 id="LRU-最不经常使用算法"><a href="#LRU-最不经常使用算法" class="headerlink" title="LRU(最不经常使用算法)"></a>LRU(最不经常使用算法)</h2><p>待填坑</p>
+<h2 id="LFU-最近最少使用算法"><a href="#LFU-最近最少使用算法" class="headerlink" title="LFU(最近最少使用算法)"></a>LFU(最近最少使用算法)</h2><p>待填坑</p>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><h3 id="Node定义"><a href="#Node定义" class="headerlink" title="Node定义"></a>Node定义</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, key, val)</span>:</span></span><br><span class="line">        self.key = key</span><br><span class="line">        self.value = val</span><br><span class="line">        self.prev = <span class="literal">None</span></span><br><span class="line">        self.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__repr__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br></pre></td></tr></table></figure>
+<h3 id="双向链表DoubleLinkedList定义"><a href="#双向链表DoubleLinkedList定义" class="headerlink" title="双向链表DoubleLinkedList定义"></a>双向链表DoubleLinkedList定义</h3><p>对于<strong>成员函数为什么返回看似无用的node节点</strong>，经验上讲这样做是最优的。在FIFO的实现过程中会发现，如果成员函数返回其他内容，或无返回值，最终的应用回出现逻辑错误。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DoubleLinkedList</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, cap=<span class="number">0xffff</span>)</span>:</span></span><br><span class="line">        self.capacity = cap</span><br><span class="line">        self.head = <span class="literal">None</span></span><br><span class="line">        self.tail = <span class="literal">None</span></span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.head.next = <span class="literal">None</span></span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.head.prev = node</span><br><span class="line">            node.next = self.head</span><br><span class="line">            self.head = node</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># append node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_tail</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            self.tail.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail.next = node</span><br><span class="line">            node.prev = self.tail</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_tail</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node.prev:</span><br><span class="line">            self.tail = node.prev</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            node.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail = self.head = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_head</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:  <span class="comment"># if empty list</span></span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.head  <span class="comment"># assign self.head to a new node</span></span><br><span class="line">        <span class="keyword">if</span> node.next:</span><br><span class="line">            self.head = node.next</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">            node.next = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:  <span class="comment"># only a head exist</span></span><br><span class="line">            self.head = self.tail = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove node in any position</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__remove</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="comment"># if node==None, remove tail by default</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> node:</span><br><span class="line">            node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node == self.tail:</span><br><span class="line">            self.__del_tail()</span><br><span class="line">        <span class="keyword">elif</span> node == self.head:</span><br><span class="line">            self.__del_head()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node.prev.next = node.next</span><br><span class="line">            node.next.prev = node.prev</span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># APIs</span></span><br><span class="line">    <span class="comment"># pop node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pop</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__del_head()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_tail(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_head(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">remove</span><span class="params">(self, node=None)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__remove(node)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        p = self.head</span><br><span class="line">        line = <span class="string">''</span></span><br><span class="line">        <span class="keyword">while</span> p:</span><br><span class="line">            line += <span class="string">'%s'</span> % p</span><br><span class="line">            p = p.next</span><br><span class="line">            <span class="keyword">if</span> p:</span><br><span class="line">                line += <span class="string">'-&gt;'</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> line:</span><br><span class="line">            print(<span class="string">"empty double linked list"</span>)</span><br><span class="line">        print(line)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" data-id="ckatsrgtj006gxqfzcuh7bb0o" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Mobile-Net-深度可分离卷积" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" class="article-date">
+  <time datetime="2019-08-01T11:37:36.000Z" itemprop="datePublished">2019-08-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/">MobileNet深度可分离卷积</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录MobileNet的深度可分离卷积操作的特点及实现。</p>
+<p>深度可分离卷积是将输入的<font color="red">每个通道展开</font>，在单个通道上做卷积，最后将结果合并。换句话说，通常的卷积层每个核要扫描输入的所有通道，而深度可分离卷积每个核只读输入的一个通道。与Inception 的<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积单元</a>相似，不同的是每个卷积核只对输入的一个通道操作。</p>
+<h2 id="深度可分离卷积结构"><a href="#深度可分离卷积结构" class="headerlink" title="深度可分离卷积结构"></a>深度可分离卷积结构</h2><p>假设深度可分离层的输入有3个通道，如图表示了该模块的过程：</p>
+<div align="center"><img src="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/seperable_conv_block.png" width="500"></div>
+<div align="center">对每个通道进行卷及操作</div>
+
+<p>下面是就上图结构实现的模块：</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">separable_conv_block</span><span class="params">(x, output_channel_number, name)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    x: input </span></span><br><span class="line"><span class="string">    output_channel_number: the output channel of the entire block, </span></span><br><span class="line"><span class="string">                            又是1x1卷据层的卷积核个数(卷积核个数==输出通道数)</span></span><br><span class="line"><span class="string">    name: namespace</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name):</span><br><span class="line">        <span class="comment"># get channel number:</span></span><br><span class="line">        input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># split channels to a channel list:</span></span><br><span class="line">        <span class="comment"># channel_wise_x: [channel1, channel2, ...]</span></span><br><span class="line">        channel_wise_x = tf.split(x, input_channel, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 对每一个通道分别执行3x3的卷积操作</span></span><br><span class="line">        output_channels = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len(channel_wise_x)):      </span><br><span class="line">            output_channel = tf.layers.conv2d(channel_wise_x[i],</span><br><span class="line">                                              <span class="number">1</span>,</span><br><span class="line">                                              (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                                              strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                              padding = <span class="string">'same'</span>,</span><br><span class="line">                                              activation = tf.nn.relu,</span><br><span class="line">                                              name = <span class="string">'conv_%d'</span> % i)</span><br><span class="line">            output_channels.append(output_channel)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># concat along channel(index=3)</span></span><br><span class="line">        concat_layer = tf.concat(output_channels, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 经过一个1x1的卷积操作</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(concat_layer,</span><br><span class="line">                                   output_channel_number,</span><br><span class="line">                                   (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">    <span class="keyword">return</span> conv1_1</span><br></pre></td></tr></table></figure>
+
+<p>将上述模块放入MobileNet的网络结构就可以搭建完整的MobileNet。实例实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/mobile_net.ipynb" target="_blank" rel="noopener">这里</a></p>
+<hr>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" data-id="ckatsrgsg003wxqfzbh7jg6q2" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Google-Inception-Net-分组卷积单元-Inception-Module" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" class="article-date">
@@ -359,276 +754,11 @@
 
 
   
-    <article id="post-Linux下使用hexo创建静态博客并部署到github" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" class="article-date">
-  <time datetime="2019-07-28T04:36:32.000Z" itemprop="datePublished">2019-07-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/">Linux下使用hexo创建静态博客并部署到github</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇博客记录了在linux系统下，安装<code>hexo</code>及所需必要工具，并创建local博客，最终部署到远端如github的整个过程。</p>
-<h1 id="1-安装必要工具"><a href="#1-安装必要工具" class="headerlink" title="1. 安装必要工具"></a>1. 安装必要工具</h1><p>使用root权限</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ root -s</span><br></pre></td></tr></table></figure>
-
-<h2 id="1-1-下载node-js-root"><a href="#1-1-下载node-js-root" class="headerlink" title="1.1 下载node.js (root)"></a>1.1 下载node.js (root)</h2><p>下载<a href="https://nodejs.org/en/" target="_blank" rel="noopener">node.js</a>安装包到我的Applications目录，<br>解压并设置软连接</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ tar -xvf node-v10.16.0-linux-x64.tar.xz </span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/npm /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/node /usr/<span class="built_in">local</span>/bin/</span><br></pre></td></tr></table></figure>
-
-<p>检查是否安装好</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ node -v</span><br><span class="line">$ npm -v</span><br></pre></td></tr></table></figure>
-
-<p>若无误，进行下一步。</p>
-<h2 id="1-2-安装hexo-root"><a href="#1-2-安装hexo-root" class="headerlink" title="1.2 安装hexo (root)"></a>1.2 安装hexo (root)</h2><p>使用npm安装<a href="https://hexo.io" target="_blank" rel="noopener">hexo</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
-
-<p>如果终端提示平台不兼容，忽略它。可以转到<code>nodejs</code>的<code>bin</code>目录下，<code>hexo</code>存在表示<code>hexo</code>已经下载好了。<br>建立软连接，后检查。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/hexo /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ hexo -v</span><br></pre></td></tr></table></figure>
-<p>当不能正常下载时，用<code>cnpm</code>下载，先下载<code>cnpm</code>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g cnpm --registry=https://registry.npm.taobao.org</span><br></pre></td></tr></table></figure>
-<p>只需将<code>npm</code>换为<code>cnpm</code><br><br>若无误， 进行下一步。</p>
-<h1 id="2-生成本地静态博客"><a href="#2-生成本地静态博客" class="headerlink" title="2. 生成本地静态博客"></a>2. 生成本地静态博客</h1><h2 id="初始化博客-root"><a href="#初始化博客-root" class="headerlink" title="初始化博客 (root)"></a>初始化博客 (root)</h2><p>在目录中新建一个存放所有blogs的目录, 并进入该目录，之后的所有操作都在其中。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir blogs</span><br><span class="line">$ <span class="built_in">cd</span> blogs</span><br></pre></td></tr></table></figure>
-
-<p>第一次安装使用hexo需要初始化。初始化后该目录中回生成_config.yml, source 等文件。<br>开启本地服务。本地服务是用来显示blog的最终效果，并且可以及时修正。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo init</span><br><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>使用终端给出的端口登录，可以看到hexo为我们创建的默认博客: <code>Hello World</code>。</p>
-<p>当关闭本地端口后，用下面命令清理。尤其在页面显示不正常时</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br></pre></td></tr></table></figure>
-
-<h2 id="建立第一篇本地静态博客-所有用户"><a href="#建立第一篇本地静态博客-所有用户" class="headerlink" title="建立第一篇本地静态博客 (所有用户)"></a>建立第一篇本地静态博客 (所有用户)</h2><p>确保现在仍在blogs/目录中， 使用如下命令新建博客</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My_first_blog"</span></span><br></pre></td></tr></table></figure>
-<p>此时就可以在nvim(或vim)使用markdown写博客了</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nvim <span class="built_in">source</span>/_post/My_first_blog.md</span><br></pre></td></tr></table></figure>
-
-<p>当然可以转到<code>My_first_blog.md</code> 所在目录用其他编辑器写内容，但记得编辑结束后一定退回到blogs/目录。</p>
-<p>确保仍在blogs/目录中，使用如下命令生成静态博客。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>后开启本地服务。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>打开给出端口，可以显示所创建的静态博客。目前会有两篇博客: <code>Hello World</code> 和 <code>My_first_blog</code>。到此为止，本地静态博客已经成功初始化，并创建了自己的第一篇博客。<br><br>静态博客只是便于检查，修改博客。我们的目的是要把博客部署到服务上。</p>
-<h1 id="3-部署到github-root"><a href="#3-部署到github-root" class="headerlink" title="3. 部署到github (root)"></a>3. 部署到github (root)</h1><p>这部分假设你已经有github账户，本地已经安装github，并可以熟练使用github。<br>如果未安装，安装</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get install git-core</span><br></pre></td></tr></table></figure>
-
-<h2 id="3-1-为静态博客新建repository"><a href="#3-1-为静态博客新建repository" class="headerlink" title="3.1. 为静态博客新建repository"></a>3.1. 为静态博客新建repository</h2><p>新建repository并命名。个人博客的repo名是有规定的：<code>OWNER.github.io</code>，<code>OWNER</code> 一定是你的github账户名。点击<code>create repository</code>。此时一个空的repo建好了。不要关闭此页面。</p>
-<h2 id="3-2-本地安装git插件并配置-root"><a href="#3-2-本地安装git插件并配置-root" class="headerlink" title="3.2. 本地安装git插件并配置 (root)"></a>3.2. 本地安装git插件并配置 (root)</h2><p>确保现在仍在blogs/目录中, 如下命令安装插件，并忽略<code>warning</code></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install --save hexo-deployer-git</span><br></pre></td></tr></table></figure>
-<p>在<code>_config.yml</code>配置文件中添加第3.1步所建立空repo的信息。具体是在<code>_config.yml</code><br>的文件尾的<code># Deplotment</code>下添加<code>repo</code>和<code>branch</code>两行。注意冒号后有一空格。<br>更多细节参考<a href="https://hexo.io/docs/deployment" target="_blank" rel="noopener">官方主页</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/OWNER/OWNER.github.io.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
-<p>其中<code>https://github.com/OWNER/OWNER.github.io.git</code> 是第3.1步空repo的地址。<code>OWNER</code>是你的github账户名。</p>
-<h2 id="3-3-部署本地静态博客-root"><a href="#3-3-部署本地静态博客-root" class="headerlink" title="3.3. 部署本地静态博客  (root)"></a>3.3. 部署本地静态博客  (root)</h2><p>用下面命令执行部署(blogs/目录中)</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>在终端提示处输入<code>github</code>的<code>username</code>和<code>password</code><br>此时刷新第3.1步的页面，repo不再是空的了。</p>
-<h2 id="3-4-访问"><a href="#3-4-访问" class="headerlink" title="3.4. 访问"></a>3.4. 访问</h2><p>在浏览器输入<code>OWNER.github.io</code>即可从远端访问。<br>可能无法马上访问，稍等，刷新页面即可。</p>
-<h1 id="4-部署后对博客的修改或新建-root"><a href="#4-部署后对博客的修改或新建-root" class="headerlink" title="4. 部署后对博客的修改或新建 (root)"></a>4. 部署后对博客的修改或新建 (root)</h1><p>确保仍在blogs/目录中，创建新的博客后生成对应的<code>.md</code>文件。<br>对相应的<code>.md</code>文件添加或修改内容。<br>后在本地检查。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>本地检查无误后生成并部署到github</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>或一条命令完成</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate --deploy</span><br></pre></td></tr></table></figure>
-
-<h1 id="5-插入图片"><a href="#5-插入图片" class="headerlink" title="5. 插入图片"></a>5. 插入图片</h1><ol>
-<li>修改配置文件<code>_config.yml</code>中<code>post_asset_folder:</code>的值设置为<code>true</code>。</li>
-<li>回到blog/目录中，安装插件<code>cnpm install https://github.com/7ym0n/hexo-asset-image --save</code>。这个asset管理插件是没有bug的。</li>
-<li>新建博客<code>hexo new &quot;xxx&quot;</code>。在<code>/source/_posts</code>文件夹内会生成<code>xxx.md</code>和同名的<code>xxx文件夹</code>。</li>
-<li>把在<code>xxx.md</code>中要引用的图片放到<code>xxx文件夹</code>中。</li>
-<li>在写博客过程中引入图片：<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;xxx/resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：在你的md编辑器中图片可以正常显示，但4000端口和github上不能显示。<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：相反的，md编辑器中不能显示，远端可以。<br><br>后者才是正确的引用。</li>
-<li>回到blog/目录中，生成及部署<code>hexo g --d</code>。</li>
-</ol>
-<h1 id="6-更改当前主题属性-root"><a href="#6-更改当前主题属性-root" class="headerlink" title="6. 更改当前主题属性 (root)"></a>6. 更改当前主题属性 (root)</h1><p>以更改背景图片为例，保证当前目录为<code>blog</code>目录，图片存在于blog下的<code>blog/themes/landscape/source/css/images/</code>中，名为<code>banner.jpg</code>，选择自己喜欢的图片命名为<code>banner.jpg</code>并替换原来图片。在blog目录中开启服务<code>hexo server</code>。在localhost就可以看到变化。</p>
-<p>若果要更改主题其他参数，回到上一级目录即<code>blog/themes/landscape/source/css/</code>编辑器打开目录中的<code>_variables.styl</code>文件。内容类似：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">35 // Header</span><br><span class="line">36 logo-size = 50px</span><br><span class="line">37 subtitle-size = 16px</span><br><span class="line">38 banner-height = 400px</span><br><span class="line">39 banner-url = <span class="string">"images/banner.jpg"</span></span><br></pre></td></tr></table></figure>
-<p>修改对应参数值，后刷新localhost，就可以看到及时变化。</p>
-<p>最后，回到blog/目录，执行一下命令保证github远端也得到更新：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br><span class="line">$ hexo g --d</span><br></pre></td></tr></table></figure>
-<p>完成！</p>
-<h1 id="7-添加“分类”和“tags”-root"><a href="#7-添加“分类”和“tags”-root" class="headerlink" title="7. 添加“分类”和“tags” (root)"></a>7. 添加“分类”和“tags” (root)</h1><p>进入blog目录</p>
-<ol>
-<li><p>在<code>source</code>中生成<code>categories</code>文件夹：<code>tags</code>是默认就含有的，不用添加。</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new page categories</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>编辑 <code>blog/source/categories</code>中<code>index.md</code>。添加<code>type: categories</code>于末行。保存并退出</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: categories</span><br><span class="line">date: 2020-01-11 17:48:47</span><br><span class="line">type: categories</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ol>
-<ol start="3">
-<li><p>给每一篇blog添加<code>categories</code>，如下。注意：hexo一篇文章只能属于一个分类，即如果在“- web前端”下方添加“-xxx”，hexo不会产生两个分类，而是把分类嵌套（即该文章属于 “- web前端”下的 “-xxx ”分类）。</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: Linux(ubuntu)下使用hexo创建静态博客并部署到github</span><br><span class="line">date: 2019-07-28 12:36:32</span><br><span class="line">tags:</span><br><span class="line">    - hahaha</span><br><span class="line">categories: </span><br><span class="line">    - utility</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-<p>最终blog每一页都会出现<code>categories</code>，<code>tags</code>和<code>tag cloud</code>三个标签。</p>
-</li>
-</ol>
-<h1 id="8-修改页面显示博客数-root"><a href="#8-修改页面显示博客数-root" class="headerlink" title="8. 修改页面显示博客数 (root)"></a>8. 修改页面显示博客数 (root)</h1><ol>
-<li><p>获取<code>sudo</code>权限并安装<code>hexo</code>的三个插件，archive的，tag的category的：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo -s</span><br><span class="line">$ cnpm install hexo-generator-archive --save</span><br><span class="line">$ cnpm install hexo-generator-tag --save</span><br><span class="line">$ cnpm install hexo-generator-category --save</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>在目录<code>/media/junhui/DATA/blog/</code>下，编辑<code>_config.yml</code>，添加如下内容：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">archive_generator:</span><br><span class="line">  enabled: true</span><br><span class="line">  per_page: 0</span><br><span class="line">  yearly: true</span><br><span class="line">  monthly: true</span><br><span class="line">  daily: false</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">tag_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">category_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>自定义对应的<code>per_page</code>数值。其中<code>0</code>表示显示所有blog，就是说，不分页。</p>
-</li>
-</ol>
-<h1 id="9-Trouble-Shooting"><a href="#9-Trouble-Shooting" class="headerlink" title="9. Trouble Shooting"></a>9. Trouble Shooting</h1><ol>
-<li>如果需要更改blog文件明，直接在源文件中修改即可。</li>
-<li>对于已有的blog文件，只需要将源文件和其图片文件夹复制到<code>blogs</code>目录下。</li>
-<li>当生成及部署完毕后，<strong>远端不会马上生效</strong>，不慌张，稍等。</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" data-id="ckatsrgum007xxqfz9p7mfvg6" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Markdown-常用语法" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/" class="article-date">
-  <time datetime="2019-07-01T13:32:34.000Z" itemprop="datePublished">2019-07-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/">Markdown-常用语法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>常用的记录下来，方便查找</p>
-<ul>
-<li><p>插入图片</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div align&#x3D;center&gt;&lt;img src&#x3D;&quot;IMAGE_PATH.png&quot; width&#x3D;500&gt;&lt;&#x2F;div&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加图片描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div align&#x3D;center&gt;Description of images&lt;&#x2F;div&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>表格</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">指标 | 值   </span><br><span class="line">:-|:-</span><br><span class="line">Maximum dimensionality of grid of thread blocks | 3 |</span><br><span class="line">Maximum x- or y-dimension of a block | 1024 |</span><br><span class="line">Maximum z-dimension of a block | 64 |</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改文本中字体颜色大小</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;font color&#x3D;red size&#x3D;4&gt;字体颜色大小&lt;&#x2F;font&gt;</span><br></pre></td></tr></table></figure>
-<p>  更多颜色看<a href="https://www.w3school.com.cn/tags/html_ref_colornames.asp" target="_blank" rel="noopener">这里</a>.</p>
-</li>
-<li><p>链接</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[我的主页](https:&#x2F;&#x2F;ashburnlee.github.io&#x2F;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>另起一行 </p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">表示另起一行&lt;&#x2F;br&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>用线划掉</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~~用横线划掉~~</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/" data-id="ckatsrgsc003nxqfz0bb37f7b" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/1970/01/01/hello-world/" class="article-date">
-  <time datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/1970/01/01/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/1970/01/01/hello-world/" data-id="ckatsrgsn004dxqfz1ms45plc" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/10/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="page-number" href="/page/10/">10</a><span class="page-number current">11</span>
+    <a class="extend prev" rel="prev" href="/page/10/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="page-number" href="/page/10/">10</a><span class="page-number current">11</span><a class="page-number" href="/page/12/">12</a><a class="extend next" rel="next" href="/page/12/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -639,7 +769,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -649,7 +779,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">40</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">43</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -668,7 +798,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">11</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -681,23 +811,23 @@
       <ul>
         
           <li>
+            <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/%E8%AE%BA%E6%96%87%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">论文下载加速</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/">LeetCode-判断是否是子树</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
-          </li>
-        
-          <li>
-            <a href="/2020/04/23/%E5%8A%A0%E9%80%9Fpip-install/">加速pip install</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/26/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/">anaconda 虚拟环境</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode-符串通配符</a>
           </li>
         
       </ul>
