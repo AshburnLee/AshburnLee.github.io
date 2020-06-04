@@ -64,6 +64,104 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-集成学习-ensemble-learning-二" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/" class="article-date">
+  <time datetime="2019-08-20T15:43:46.000Z" itemprop="datePublished">2019-08-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/">集成学习-(二)-Bagging</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>集成学习可以分为两大类：</p>
+<ul>
+<li>学习器之间存在依赖关系，必须串行生成序列化方法。</li>
+<li>学习器之间不存在依赖关系，可以同时生成的并行化方法。</li>
+</ul>
+<p>前者的代表是“Boosting”，后者的代表是“Bagging”和“随机森林(Random Forest)”.</p>
+<p>得到泛化能力强的集成，每个学习器要尽量不同，如何做到不同。一个方法是由训练集产生多个不同的子集，在每个子集上训练学习器。如5000个样本，用5个学习器分别学习1000个样本集。如此产生5个不同的模型。但是如此一来，每个模型的性能会有所下降，同时，集成学习的一个优势是每个学习器并不需要具有很强的性能。</p>
+<h1 id="从数据中采样"><a href="#从数据中采样" class="headerlink" title="从数据中采样"></a>从数据中采样</h1><p>但是，“好而不同”毕竟每个学习器要“好”。所以根据每个学习器只使用数据的一部分，产生两种采样方式：</p>
+<ul>
+<li>有放回抽样 自助采样（Bootstrap Sampling）</li>
+<li>无放回抽样</li>
+</ul>
+<p>自助采样：假设原始数据集由m个样本，对于第一个学习器，随机采样一个样本，放入采样集中，后把该样本放回原数据集。如此采样m次便得到含有m个样本的子集来训练学习器<code>#1</code>。对于其他学习器，采用同样的方式得到训练集。如此得到的不同子集中一定存在重复的元素。最后基于每一个子集训练学习器，后集成。此过程成为<code>Bagging</code>。</p>
+<p>对于无放回抽样，就如上述所述，5000个样本是数据集，若分给5个学习器，每个得到1000个样本；10 个学习器，每个得到500个样本。这种方法成为<code>Pasting</code>。其局限性很显然，学习器个数与其子集样本数成反比。</p>
+<p>Bagging常用。例：<br>所使用数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x, y = datasets.make_moons(n_samples=<span class="number">1000</span>, noise=<span class="number">0.2</span>, random_state=<span class="number">111</span>)</span><br><span class="line">x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=<span class="number">111</span>)</span><br></pre></td></tr></table></figure>
+
+<p>使用决策树为基学习器，设置<code>5</code>个，采样为放回采样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier</span><br><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> BaggingClassifier</span><br><span class="line"></span><br><span class="line">bagg = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                         n_estimators=<span class="number">5</span>, max_samples=<span class="number">100</span>, bootstrap=<span class="literal">True</span>)</span><br><span class="line">bagg.fit(x_train, y_train)</span><br><span class="line">print(bagg.score(x_test, y_test))</span><br></pre></td></tr></table></figure>
+
+<p>测试集的正确率为：94.4%</p>
+<p>设置<code>500</code>个基学习器：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bagg2 = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                         n_estimators=<span class="number">500</span>, max_samples=x_train.shape[<span class="number">0</span>], bootstrap=<span class="literal">True</span>)</span><br><span class="line">bagg2.fit(x_train, y_train)</span><br><span class="line">print(bagg2.score(x_test, y_test))</span><br></pre></td></tr></table></figure>
+
+<p>测试集准确率： 96.0%</p>
+<h1 id="Out-of-bag-Estimate（OOB）"><a href="#Out-of-bag-Estimate（OOB）" class="headerlink" title="Out-of-bag Estimate（OOB）"></a>Out-of-bag Estimate（OOB）</h1><p>可以计算，<font color="red">通过自助采样，原始数据集中大约有36.8%的样本未出现在每个学习器的样本子集中。所以对于Bagging，天然的，在原始数据集中就有测试集了</font>，即那剩下的原始数据集中的36.7%。</p>
+<p>使用sklearn 中的<code>oob_score_</code> 实现<code>oob</code>：<br><font color="red">在放回采样过程中，记录那些样本没有被取到，这些未被取到的作为验证集或测试集</font>，这个过程由oob_score=True 实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bagg3 = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                          n_estimators=<span class="number">500</span>, max_samples=x.shape[<span class="number">0</span>],</span><br><span class="line">                          bootstrap=<span class="literal">True</span>, oob_score=<span class="literal">True</span>)</span><br><span class="line">bagg3.fit(x, y)</span><br><span class="line">print(bagg3.oob_score_)</span><br></pre></td></tr></table></figure>
+
+<p>结果0.958。</p>
+<h1 id="多核心并行"><a href="#多核心并行" class="headerlink" title="多核心并行"></a>多核心并行</h1><p>由于每个学习器没有相互影响，所以所有学习器可以同时学习：<br>指定<code>n_jobs</code>的值，当其为<code>-1</code>时，表示使用计算机所有物理核心：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 并行执行，使用所有核心</span></span><br><span class="line">bagg4 = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                          n_estimators=<span class="number">500</span>, max_samples=x.shape[<span class="number">0</span>],</span><br><span class="line">                          bootstrap=<span class="literal">True</span>,</span><br><span class="line">                          oob_score=<span class="literal">True</span>,</span><br><span class="line">                          n_jobs=<span class="number">-1</span>)</span><br><span class="line">start2 = clock()</span><br><span class="line">bagg4.fit(x, y)</span><br><span class="line">end2 = clock()</span><br><span class="line">print(bagg4.oob_score_)</span><br><span class="line">print(end2 - start2)</span><br></pre></td></tr></table></figure>
+<p>计时得到最终执行时间：0.1591450000000001<br>而使用一个核心的执行时间为：0.6764169999999998</p>
+<h1 id="更多采样方式"><a href="#更多采样方式" class="headerlink" title="更多采样方式"></a>更多采样方式</h1><p><font color="red">当数据集的特征较多时，可是对特征进行随机采样</font>：<code>Random Subspaces</code>。只在列上随机采样。如下左图。<br><br>另一种采样方式，既对样本随机采样，又对特征的随机采样：<code>Random Patches</code>。既在行又在列上随机采样。如下右图：</p>
+<div align="center"><img src="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/sampling.png" width="600"></div>
+<div align="center">左Radom Subspaces & 右Random Patches</div>
+
+<p>既然有对样本数量的自助采样（bootstrap sampling），也有对样本特征的自助采样。如此得到的特征为<code>bootstrap features</code>：</p>
+<ul>
+<li><p>Random Subspaces</p>
+<p>  只对特征进行随机采样，将学习机的<code>bootstrap_features</code>参数置为<code>True</code>：</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 关闭样数量的随机采样</span></span><br><span class="line">random_subspaces_bag = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                                        n_estimators=<span class="number">500</span>,</span><br><span class="line">                                        max_samples=x.shape[<span class="number">0</span>],  <span class="comment"># 所有行</span></span><br><span class="line">                                        max_features=<span class="number">1</span>,</span><br><span class="line">                                        bootstrap=<span class="literal">True</span>,</span><br><span class="line">                                        bootstrap_features=<span class="literal">True</span>,  <span class="comment"># 一部分列</span></span><br><span class="line">                                        oob_score=<span class="literal">True</span>,</span><br><span class="line">                                        n_jobs=<span class="number">-1</span>)</span><br><span class="line">start3 = clock()</span><br><span class="line">random_subspaces_bag.fit(x, y)</span><br><span class="line">end3 = clock()</span><br><span class="line">print(random_subspaces_bag.oob_score_)</span><br><span class="line">print(end3 - start3)</span><br></pre></td></tr></table></figure>
+<p>  结果为： 0.835<br>  运行时间：0.1876460000000002</p>
+</li>
+</ul>
+<ul>
+<li><p>Random Patches，</p>
+<p>  既对样本数据量采样，又对特征进行采样。因为原始数据只有2个特征，所以此处只采样一个特征。</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## random patches 既有样本数的随机采样， 又有特征的随机采样：</span></span><br><span class="line">random_patches_bag = BaggingClassifier(DecisionTreeClassifier(),</span><br><span class="line">                                        n_estimators=<span class="number">500</span>,</span><br><span class="line">                                        max_samples=<span class="number">200</span>,  <span class="comment"># 一部分行</span></span><br><span class="line">                                        max_features=<span class="number">1</span>,</span><br><span class="line">                                        bootstrap=<span class="literal">True</span>,</span><br><span class="line">                                        bootstrap_features=<span class="literal">True</span>,  <span class="comment"># 一部分列</span></span><br><span class="line">                                        oob_score=<span class="literal">True</span>,</span><br><span class="line">                                        n_jobs=<span class="number">-1</span>)</span><br><span class="line">start3 = clock()</span><br><span class="line">random_patches_bag.fit(x, y)</span><br><span class="line">end3 = clock()</span><br><span class="line">print(random_patches_bag.oob_score_)</span><br><span class="line">print(end3 - start3)</span><br></pre></td></tr></table></figure>
+<p>  结果为：0.897<br>  运行时间： 0.16168400000000016</p>
+<p>  对于图像信息，<font color="red">除了pooling采样操作，还可以使用这两种采样操作</font>。</p>
+</li>
+</ul>
+<p><font color="gree" size="5">敲黑板</font></p>
+<pre><code>”好而不同“是集成学习的核心。
+”不同“的实现方式之一是”采样“：对样本数量采样，对样本特征采样。
+即，使用一部分数据训练基学习器。</code></pre>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%BA%8C/" data-id="ckatsrgtl006mxqfz51xi2dww" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-集成学习-ensemble-learning-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/20/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-ensemble-learning-%E4%B8%80/" class="article-date">
@@ -868,58 +966,6 @@
 
 
   
-    <article id="post-文本分类-三-构建模型III-LSTM网络参数" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" class="article-date">
-  <time datetime="2019-08-08T14:04:31.000Z" itemprop="datePublished">2019-08-08</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/">文本分类(三)-构建模型III-LSTM网络参数</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>假如网络的超参数配置如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">set_default_parameters</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> tf.contrib.training.HParams(</span><br><span class="line">        embedding_size=<span class="number">16</span>,</span><br><span class="line">        encoded_length=<span class="number">50</span>,</span><br><span class="line">        num_word_threshold=<span class="number">20</span>,</span><br><span class="line">        num_lstm_nodes=[<span class="number">999</span>, <span class="number">32</span>],    <span class="comment"># 999</span></span><br><span class="line">        num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">        num_fc_nodes=<span class="number">555</span>,            <span class="comment"># 555</span></span><br><span class="line">        batch_size=<span class="number">100</span>,</span><br><span class="line">        learning_rate=<span class="number">0.001</span>,</span><br><span class="line">        clip_lstm_grads=<span class="number">1.0</span>,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
-
-<p>在构建模型图的过程中，需要对LSTM单元中的每一个门制定参数大小：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_generate_params_for_lstm_cell</span><span class="params">(x_size, h_size, bias_size)</span>:</span></span><br><span class="line">    x_w = tf.get_variable(<span class="string">'x_weights'</span>, x_size)</span><br><span class="line">    h_w = tf.get_variable(<span class="string">'h_weights'</span>, h_size)</span><br><span class="line">    b = tf.get_variable(<span class="string">'bias'</span>, bias_size, initializer=tf.constant_initializer(<span class="number">0.0</span>))</span><br><span class="line">    <span class="keyword">return</span> x_w, h_w, b</span><br><span class="line"><span class="comment"># one LSTM layer</span></span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'lstm'</span>, initializer=lstm_init):</span><br><span class="line">    <span class="comment"># all params in the lstm cell:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'inputs'</span>):</span><br><span class="line">        ix_w, ih_w, ib = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'outputs'</span>):</span><br><span class="line">        ox_w, oh_w, ob = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'forget'</span>):</span><br><span class="line">        fx_w, fh_w, fb = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    <span class="comment"># tanh</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'memory'</span>):</span><br><span class="line">        cx_w, ch_w, cb = _generate_params_for_lstm_cell(</span><br><span class="line">            x_size=[hps.embedding_size, hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            h_size=[hps.num_lstm_nodes[<span class="number">0</span>], hps.num_lstm_nodes[<span class="number">0</span>]],</span><br><span class="line">            bias_size=[<span class="number">1</span>, hps.num_lstm_nodes[<span class="number">0</span>]]</span><br><span class="line">        )</span><br><span class="line">    state_C = tf.Variable(</span><br><span class="line">        tf.zeros([batch_size, hps.num_lstm_nodes[<span class="number">0</span>]]),</span><br><span class="line">        trainable=<span class="literal">False</span></span><br><span class="line">    )</span><br><span class="line">    h = tf.Variable(</span><br><span class="line">        tf.zeros([batch_size, hps.num_lstm_nodes[<span class="number">0</span>]]),</span><br><span class="line">        trainable=<span class="literal">False</span></span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
-
-<p>查看所有可训练的参数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&lt;tf.Variable <span class="string">'embedding/embedding:0'</span> shape=(<span class="number">50513</span>, <span class="number">16</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/inputs/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/outputs/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/forget/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/x_weights:0'</span> shape=(<span class="number">16</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/h_weights:0'</span> shape=(<span class="number">999</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'lstm/memory/bias:0'</span> shape=(<span class="number">1</span>, <span class="number">999</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc1/kernel:0'</span> shape=(<span class="number">999</span>, <span class="number">555</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc1/bias:0'</span> shape=(<span class="number">555</span>,) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc2/kernel:0'</span> shape=(<span class="number">555</span>, <span class="number">10</span>) dtype=float32_ref&gt;</span><br><span class="line">&lt;tf.Variable <span class="string">'fc/fc2/bias:0'</span> shape=(<span class="number">10</span>,) dtype=float32_ref&gt;</span><br></pre></td></tr></table></figure>
-<p>可以看出LSTM单元中每一个部件的参数大小。模型中只有一层LSTM，所有的LSTM层中的999，均指的是该层有999个LSTM单元。完整实现<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_built_in.py" target="_blank" rel="noopener">看这里</a>。</p>
-<p>结合<a href="http://colah.github.io/posts/2015-08-Understanding-LSTMs/" target="_blank" rel="noopener">colah的这篇文章</a>进一步理解。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/08/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BIII-LSTM%E7%BD%91%E7%BB%9C%E5%8F%82%E6%95%B0/" data-id="ckatsrgt4005bxqfz837a8kkf" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -935,7 +981,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -964,7 +1010,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -975,6 +1021,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/">caffe-所使用的数据格式</a>
+          </li>
         
           <li>
             <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
@@ -990,10 +1040,6 @@
         
           <li>
             <a href="/2020/06/03/%E8%AE%BA%E6%96%87%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">论文下载加速</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
           </li>
         
       </ul>

@@ -64,6 +64,53 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-caffe-所使用的数据格式" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/" class="article-date">
+  <time datetime="2020-06-04T03:12:30.000Z" itemprop="datePublished">2020-06-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/">caffe-所使用的数据格式</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="caffe为什么使用LMDB和levelDB，而不是直接使用原始数据"><a href="#caffe为什么使用LMDB和levelDB，而不是直接使用原始数据" class="headerlink" title="caffe为什么使用LMDB和levelDB，而不是直接使用原始数据"></a>caffe为什么使用LMDB和levelDB，而不是直接使用原始数据</h1><p>第一，原始数据的类型，种类很多，如二进制文件，.npy文件，多种图像可是文件等等，不可能使用统一的代码来读取，所以转换成统一的格式可以简化数据读取层的实现。具体说是将不同类型的数据存储为<code>key-value</code>的对应关系。便于caffe <code>DataLayer</code>获取这些数据。</p>
+<p>第二，使用LMDB和LEVELDB可以提高磁盘的IO利用率。</p>
+<p>较新的caffe，都使用<code>LMDB</code>，<code>LEVELDB</code>是caffe早起使用的。</p>
+<h1 id="什么是protobuff"><a href="#什么是protobuff" class="headerlink" title="什么是protobuff"></a>什么是protobuff</h1><p>ProtoBuff是一种实现内存和其他存储介质数据交换的协议。在caffe中protobuff用于解析<code>.prototxt</code>文件，包括超参数设置，和模型结构的定义。protobuff将<code>.prototxt</code>文件中的配置参数按照<code>caffe.proto</code>的协议解析并加载到内存变量<code>Caffe::SolverParameter</code>对象中。自己可以尝试对一个<code>solver.prototxt</code>文件按照<code>caffe.proto</code>解析出参数.</p>
+<h1 id="什么是HDF5"><a href="#什么是HDF5" class="headerlink" title="什么是HDF5"></a>什么是HDF5</h1><p>HDF5是一种数据格式，同时还有处理这种数据格式的同意函数库。</p>
+<h1 id="HDF5-LMDB-ProtoBuff分别在什么时候使用"><a href="#HDF5-LMDB-ProtoBuff分别在什么时候使用" class="headerlink" title="HDF5, LMDB, ProtoBuff分别在什么时候使用"></a>HDF5, LMDB, ProtoBuff分别在什么时候使用</h1><p>caffe 模型的定义和超参数的定义，使用ProtoBuff（默认），可以看到相应的文件都是以<code>.prototxt</code>为后缀，也可以使用HDF5。而caffe所处理的数据，要转换成LMDB。</p>
+<p>在caffe官方文档中，由关于data layer的描述：数据可以是来自高效的LMDB，levelDB数据库，可以使来自内存，或者来自HDF4或通用的图像格式的数据（当效率不是很重要时）。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/" data-id="ckb07i8ne0000lofz6d850jmp" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-caffe-命令行与python接口" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/" class="article-date">
@@ -93,7 +140,8 @@
         <h1 id="命令行接口-cmdcaffe"><a href="#命令行接口-cmdcaffe" class="headerlink" title="命令行接口 cmdcaffe"></a>命令行接口 cmdcaffe</h1><p>caffe经过编译后才会生成对应的工具，这个工具在目录<code>caffe-ROOT/build/tools</code>中，在此路目录中可用的命令有：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">./caffe train           <span class="comment">#train or finetune a model</span></span><br><span class="line">./caffe <span class="built_in">test</span>            <span class="comment">#score a model</span></span><br><span class="line">./caffe device_query    <span class="comment">#show GPU diagnostic information</span></span><br><span class="line">./caffe time            <span class="comment">#benchmark model execution time</span></span><br></pre></td></tr></table></figure>
 
-<h2 id="caffe-train"><a href="#caffe-train" class="headerlink" title="caffe train"></a>caffe train</h2><h3 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h3><ol>
+<h2 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h2><h3 id="训练-1"><a href="#训练-1" class="headerlink" title="训练"></a>训练</h3><p>caffe提供三种训练方式。</p>
+<ol>
 <li><p>从头开始训练模型。需要提供<code>.prototxt</code>配置文件的路径，如：</p>
  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 训练，默认使用CPU</span></span><br><span class="line">./build/tools/caffe train -solver examples/mnist/lenet_solver.prototxt</span><br><span class="line"><span class="comment"># 使用编号为2 的GPU训练</span></span><br><span class="line">./build/tools/caffe train -solver examples/mnist/lenet_solver.prototxt -gpu 2</span><br></pre></td></tr></table></figure>
 </li>
@@ -116,10 +164,11 @@
 <p>返回0号GPU的硬件信息：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">I0603 16:40:28.905443 13455 caffe.cpp:138] Querying GPUs 0</span><br><span class="line">I0603 16:40:28.927069 13455 common.cpp:178] Device id:                     0</span><br><span class="line">I0603 16:40:28.927090 13455 common.cpp:179] Major revision number:         6</span><br><span class="line">I0603 16:40:28.927093 13455 common.cpp:180] Minor revision number:         1</span><br><span class="line">I0603 16:40:28.927096 13455 common.cpp:181] Name:                          GeForce GTX 1050</span><br><span class="line">I0603 16:40:28.927099 13455 common.cpp:182] Total global memory:           2099904512</span><br><span class="line">I0603 16:40:28.927103 13455 common.cpp:183] Total shared memory per block: 49152</span><br><span class="line">I0603 16:40:28.927106 13455 common.cpp:184] Total registers per block:     65536</span><br><span class="line">I0603 16:40:28.927109 13455 common.cpp:185] Warp size:                     32</span><br><span class="line">I0603 16:40:28.927112 13455 common.cpp:186] Maximum memory pitch:          2147483647</span><br><span class="line">I0603 16:40:28.927115 13455 common.cpp:187] Maximum threads per block:     1024</span><br><span class="line">I0603 16:40:28.927119 13455 common.cpp:188] Maximum dimension of block:    1024, 1024, 64</span><br><span class="line">I0603 16:40:28.927122 13455 common.cpp:191] Maximum dimension of grid:     2147483647, 65535, 65535</span><br><span class="line">I0603 16:40:28.927125 13455 common.cpp:194] Clock rate:                    1493000</span><br><span class="line">I0603 16:40:28.927129 13455 common.cpp:195] Total constant memory:         65536</span><br><span class="line">I0603 16:40:28.927151 13455 common.cpp:196] Texture alignment:             512</span><br><span class="line">I0603 16:40:28.927155 13455 common.cpp:197] Concurrent copy and execution: Yes</span><br><span class="line">I0603 16:40:28.927160 13455 common.cpp:199] Number of multiprocessors:     5</span><br><span class="line">I0603 16:40:28.927183 13455 common.cpp:200] Kernel execution timeout:      Yes</span><br></pre></td></tr></table></figure>
 
-<h3 id="准确度测试"><a href="#准确度测试" class="headerlink" title="准确度测试"></a>准确度测试</h3><p>测试会给出模型的每一batch的loss和accuracy以及整体平均的loss和accuracy：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># </span></span><br><span class="line">./build/tools/caffe <span class="built_in">test</span> -model examples/mnist/lenet_train_test.prototxt -weights examples/mnist/lenet_iter_10000.caffemodel -gpu 0 -iterations 100</span><br></pre></td></tr></table></figure>
-<p>在<code>lenet_train_test.prototxt</code>所定义的模型结构上，使用模型<code>lenet_iter_10000.caffemodel</code>，对valildation数据集测试100 iteration。</p>
-<h3 id="时间测试"><a href="#时间测试" class="headerlink" title="时间测试"></a>时间测试</h3><p>指明<code>./build/tools/caffe test</code>测试模型，输出每一层的前先计算后向计算的时间。</p>
+<h3 id="准确度测试"><a href="#准确度测试" class="headerlink" title="准确度测试"></a>准确度测试</h3><p>测试会给出模型的每一batch的loss和accuracy以及整体平均的loss和accuracy。<font color="red"><code>test</code>表示只进行forward计算，没有backward。即推理，而非训练</font>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe <span class="built_in">test</span> -model examples/mnist/lenet_train_test.prototxt -weights examples/mnist/lenet_iter_10000.caffemodel -gpu 0 -iterations 100</span><br></pre></td></tr></table></figure>
+
+<p>在<code>lenet_train_test.prototxt</code>所定义的模型结构上，使用模型<code>lenet_iter_10000.caffemodel</code>，对测试样本执行100次iteration。batch_size为100，所以iteration×batch_size=10000，覆盖了所有的测试样本<font color="orange">这个测试数据在哪??</font></p>
+<h3 id="时间测试"><a href="#时间测试" class="headerlink" title="时间测试"></a>时间测试</h3><p>指明<code>./build/tools/caffe time</code>测试模型，输出每一层的前先计算后向计算的时间。</p>
 <ol>
 <li><p>下面为lenet计时cpu计算10次迭代。（默认测试50次迭代）</p>
  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe time -model examples/mnist/lenet_train_test.prototxt -iterations 10</span><br></pre></td></tr></table></figure>
@@ -626,79 +675,6 @@
 
 
   
-    <article id="post-LeetCode-nowcoder-深入理解链表" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/" class="article-date">
-  <time datetime="2020-03-12T09:40:51.000Z" itemprop="datePublished">2020-03-12</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/">LeetCode-符串通配符</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>自己处理输入输出</p>
-<ul>
-<li><p>描述：</p>
-<p>  实现如下2个通配符：</p>
-<ol>
-<li><p><code>*</code>：匹配0个或以上的字符（字符由英文字母和数字0-9组成，不区分大小写。下同）</p>
-</li>
-<li><p><code>？</code>：匹配1个字符</p>
-<p>input:</p>
-<p>先输入一个带有通配符的字符串，再输入一个需要匹配的字符串。如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">te?t*.*</span><br><span class="line">txt12.xls</span><br></pre></td></tr></table></figure>
-
-<p>output:</p>
-<p>返回匹配的结果，正确输出true，错误输出false。如上例返回false。</p>
-</li>
-</ol>
-</li>
-<li><p>思路：</p>
-<ol>
-<li>终止条件先后有序</li>
-<li>对于<code>if(*str1 == &#39;*&#39;)</code>中，三个递归match，好好体会三种情况<ol>
-<li><code>a*c</code>, <code>ac</code>。<code>*</code>与0个匹配</li>
-<li><code>a*c</code>, <code>abc</code>。<code>*</code>与1个匹配</li>
-<li><code>a*c</code>, <code>abbbc</code>。<code>*</code>与多个匹配</li>
-</ol>
-</li>
-</ol>
-</li>
-<li><p>实现：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">match</span><span class="params">(<span class="keyword">char</span> *str1, <span class="keyword">char</span> *str2)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 终止条件 同时到字符串尾，放回true</span></span><br><span class="line">    <span class="keyword">if</span>(*str1 == <span class="string">'\0'</span>  &amp;&amp; *str2 == <span class="string">'\0'</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    <span class="comment">// 只有一个到尾，返回false</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(*str1 == <span class="string">'\0'</span> || *str2 == <span class="string">'\0'</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="comment">// 对于‘？’，一定匹配，所以查看下一对字符</span></span><br><span class="line">    <span class="keyword">if</span>(*str1 == <span class="string">'?'</span>)</span><br><span class="line">        <span class="keyword">return</span> match(str1+<span class="number">1</span>, str2+<span class="number">1</span>);</span><br><span class="line">    <span class="comment">// 当两个字符相等，一定匹配，查看下一对字符</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(*str1 == *str2)</span><br><span class="line">        <span class="keyword">return</span> match(str1+<span class="number">1</span>, str2+<span class="number">1</span>);</span><br><span class="line">    <span class="comment">// 对于‘*’, 匹配零个，一个或多个</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(*str1 == <span class="string">'*'</span>)</span><br><span class="line">        <span class="keyword">return</span> match(str1+<span class="number">1</span>, str2) ||    <span class="comment">//零个</span></span><br><span class="line">               match(str1+<span class="number">1</span>, str2+<span class="number">1</span>) ||  <span class="comment">// 一个</span></span><br><span class="line">               match(str1, str2+<span class="number">1</span>);      <span class="comment">// 多个</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> str1[<span class="number">100</span>], str2[<span class="number">100</span>];</span><br><span class="line">    <span class="keyword">while</span>(<span class="built_in">cin</span>&gt;&gt;str1&gt;&gt;str2)&#123;</span><br><span class="line">        <span class="keyword">if</span>(match(str1, str2))</span><br><span class="line">            <span class="built_in">cout</span>&lt;&lt;<span class="string">"true"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="built_in">cout</span>&lt;&lt;<span class="string">"false"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/12/LeetCode-nowcoder-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E9%93%BE%E8%A1%A8/" data-id="ckatsrgs1002txqfz3xpwejc8" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -714,7 +690,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -743,7 +719,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -754,6 +730,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/">caffe-所使用的数据格式</a>
+          </li>
         
           <li>
             <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
@@ -769,10 +749,6 @@
         
           <li>
             <a href="/2020/06/03/%E8%AE%BA%E6%96%87%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">论文下载加速</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
           </li>
         
       </ul>

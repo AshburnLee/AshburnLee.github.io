@@ -64,6 +64,98 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-对大数的操作" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" class="article-date">
+  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/">LeetCode-对大数的操作</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>当所处理的对象数值很大时，如<code>(int)32634573563452724846734573</code>，使用整型长整型，都会溢出，这种情况就要使用字符串代替数字。此方法处理大数问题。</p>
+<p>两个知识点：</p>
+<ol>
+<li><p>字符型的数字与其对应的ASCII值：</p>
+<table>
+<thead>
+<tr>
+<th align="left">char</th>
+<th align="left">‘0’</th>
+<th align="left">‘1’</th>
+<th align="left">‘2’</th>
+<th align="left">‘3’</th>
+<th align="left">…</th>
+<th align="left">‘9’</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">int</td>
+<td align="left">48</td>
+<td align="left">49</td>
+<td align="left">50</td>
+<td align="left">51</td>
+<td align="left">…</td>
+<td align="left">57</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>char与对应int转换</p>
+<p> char-&gt;int: <code>&#39;3&#39;-&#39;0&#39; = 3</code><br><br> int-&gt;char: <code>3 +&#39;0&#39; = &#39;3&#39;</code></p>
+</li>
+</ol>
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>给一个n位数，打印从1到最大的n位数。比如n=3，则打印<code>1,2,3，...，998,999</code>.</p>
+<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>当n为20，其对应的数值已经远远超过了计算机可以表示的范围，所以用字符串表示一个大数，并且实现中不能出现<code>for</code>循环，因为循环变量<code>i</code>随循环次数也会超出表示范围的。所以用while循环避免使用循环变量。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>下面的实现是有冗余的，只用<code>addOne()</code>或<code>subtractOne()</code>其一即可。当使用<code>addOne()</code>时，只要加一后的string不等于最大的n位数，就打印，后循环；当使用<code>subtractOne()</code>，初始string设为最大的n位数，while循环减一，只要这个string不是空，就打印，后循环。</p>
+<p>当然两个函数可以配合使用，不过就多余了，但就当练习大数操作了。</p>
+<p>一个string表示的大数加一操作如下。先在string首位插入一个’0‘占位，可能加一后要进位：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 初始化为“0”，循环中加到最大值</span></span><br><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">addOne</span><span class="params">(<span class="built_in">string</span> num)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (num.size() == <span class="number">0</span>) <span class="keyword">return</span> <span class="string">" "</span>;</span><br><span class="line">    num.insert(<span class="number">0</span>, <span class="number">1</span>, <span class="string">'0'</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> carry = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> i = num.size() - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (carry != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> sum = (num[i] - <span class="string">'0'</span>) + carry;</span><br><span class="line">        carry = sum / <span class="number">10</span>;</span><br><span class="line">        <span class="keyword">int</span> remainder = sum % <span class="number">10</span>;</span><br><span class="line">        num[i] = remainder + <span class="string">'0'</span>;</span><br><span class="line">        i--;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> num[<span class="number">0</span>]==<span class="string">'0'</span> ? num.substr(<span class="number">1</span>) : num;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>一个string表示的大数减一的实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 初始化为最大值，循环中减到空</span></span><br><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">subtractOne</span><span class="params">(<span class="built_in">string</span> Nine)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">bool</span> borrow = <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">int</span> length = Nine.size();</span><br><span class="line">    <span class="keyword">int</span> iter = length - <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    <span class="keyword">if</span> (Nine[length - <span class="number">1</span>] == <span class="string">'0'</span>) &#123;</span><br><span class="line">        borrow = <span class="literal">true</span>;</span><br><span class="line">        val = <span class="number">10</span> + (Nine[length - <span class="number">1</span>] - <span class="string">'0'</span>) - <span class="number">1</span>;</span><br><span class="line">        Nine[length - <span class="number">1</span>] = val + <span class="string">'0'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> Nine[length - <span class="number">1</span>] = Nine[length - <span class="number">1</span>] - <span class="string">'0'</span> - <span class="number">1</span> + <span class="string">'0'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( borrow &amp;&amp; iter &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (Nine[iter] == <span class="string">'0'</span>) </span><br><span class="line">            val = <span class="number">10</span> + (Nine[iter] - <span class="string">'0'</span>) - <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            borrow = <span class="literal">false</span>;</span><br><span class="line">            val = (Nine[iter] - <span class="string">'0'</span>) - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Nine[iter] = val + <span class="string">'0'</span>;</span><br><span class="line">        iter--;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> Nine[<span class="number">0</span>]==<span class="string">'0'</span> ? Nine.substr(<span class="number">1</span>) : Nine;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>主函数，仔细分析，上述两个操作，使用一个就可以达到目的。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">solution</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n &lt;= <span class="number">0</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 最大的n位数 str</span></span><br><span class="line">    <span class="built_in">string</span> str;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        str += <span class="string">'9'</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; str &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">string</span> preNum = addOne(<span class="string">"0"</span>); <span class="comment">// 初始化为“0”，循环中加到最大值</span></span><br><span class="line">    <span class="built_in">string</span> isZero = subtractOne(str); <span class="comment">// 初始化为最大值，循环中减到空</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (isZero != <span class="string">""</span>) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; preNum &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">        preNum = addOne(preNum);</span><br><span class="line">        isZero = subtractOne(isZero);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt;str&lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><font color="gree" size="6">敲黑板</font></p>
+<ol>
+<li>体会<code>subtractOne</code>中的<code>bool borrow = false;</code>，表示向前借位否，</li>
+<li>实现中总会用到知识点2.</li>
+</ol>
+<h1 id="415大数相加"><a href="#415大数相加" class="headerlink" title="415大数相加"></a>415大数相加</h1><p>依然使用到上述知识点2，思路直接，实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">addStrings</span><span class="params">(<span class="built_in">string</span> num1, <span class="built_in">string</span> num2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> length1 = num1.size();</span><br><span class="line">    <span class="keyword">int</span> length2 = num2.size();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(length1 != length2)&#123;</span><br><span class="line">        <span class="keyword">int</span> diff = <span class="built_in">abs</span>(length1-length2);</span><br><span class="line">        length2 &gt; length1 ? </span><br><span class="line">            num1.insert(<span class="number">0</span>, diff, <span class="string">'0'</span>) :</span><br><span class="line">            num2.insert(<span class="number">0</span>, diff, <span class="string">'0'</span>);</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">int</span> length = num1.size() + <span class="number">1</span>;</span><br><span class="line">    <span class="function"><span class="built_in">string</span> <span class="title">res</span><span class="params">(length,<span class="string">'0'</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> carry=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=length<span class="number">-2</span>; i&gt;=<span class="number">0</span>; i--)&#123;</span><br><span class="line">        <span class="keyword">int</span> sum = (num1[i]-<span class="string">'0'</span>) + (num2[i]-<span class="string">'0'</span>) + carry;</span><br><span class="line">        carry = sum/<span class="number">10</span>;</span><br><span class="line">        <span class="keyword">int</span> remainder = sum%<span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">        res[i+<span class="number">1</span>] = remainder + <span class="string">'0'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (carry) res[<span class="number">0</span>] = carry + <span class="string">'0'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res[<span class="number">0</span>]==<span class="string">'0'</span> ? res.substr(<span class="number">1</span>) : res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" data-id="ckay1n2y900014afz92sqaa7u" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
@@ -1185,178 +1277,6 @@ else if（target == matrix[i][j]）return true  // 找到</code></pre></li>
 
 
   
-    <article id="post-vim-neovim" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/18/vim-neovim/" class="article-date">
-  <time datetime="2019-12-18T14:22:49.000Z" itemprop="datePublished">2019-12-18</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/18/vim-neovim/">vim-neovim</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>将这些操作变为肌肉记忆。<br>可以将常用操作写进配置文件文件中。</p>
-<ol>
-<li>vim 对应的配置文件 <code>~.vimrc</code> </li>
-<li>neovim 对应的配置文件 <code>~.config/nvim/init.vim</code></li>
-</ol>
-<ul>
-<li><p>Open files</p>
-<pre><code>vi a.txt b.txt -O   :窗口打开两个文件</code></pre></li>
-<li><p>Command Mode</p>
-<pre><code>:           :进入Command Mode
-e!          :重新加载文件，撤销这次修改
-set nu      :加上行号   .vimrc
-syntax on   :语法高亮   .vimrc
-help s      :查看s的文档
-ls          :列出打开的文件（所有的buffer）
-b a.txt     :跳到a.txt
-e b.txt     :打开b.txt 加入另一个buffer
-vs          :当前文件分一个窗口显示
-vs a.txt    :分窗口打开a.txt
-ZZ          :关闭这个窗口，但不退出对应的buffer
-
-ctrl w w            :光标移动到下一个文件
-
-ctrl w =            :所有窗口等宽度
-ctrl w |            :最大化当前窗口
-ctrl w p            :回到上一个窗口</code></pre></li>
-<li><p>Insert Mode</p>
-<pre><code>ctrl u  :删除当前行 从行首到当前位置的内容
-ctrl h  :删除当前位置前一个字符
-ctrl w  :删除当前单词 从单词首到当前位置内容</code></pre></li>
-<li><p>Visual Mode</p>
-<p>  Visual Mode的一般操作步骤：进入Visual Mode，后<font color="red" size="4">选择</font>所需内容，对所选内容进行<font color="red" size="4">操作</font>。</p>
-<pre><code>v   :从Normal Mode进入Visual Mode
-V   :从Normal Mode进入Visual Mode 并且选中当前行</code></pre></li>
-<li><p>Visual block mode</p>
-<pre><code>ctrl v  :进入visual block 模式 
-
-多行注释：
-        1. 进入visual block Mode，选中所需要猪似的所有行
-        2. 按大写i，在输出注释符//，按esc，全行注释
-取消多行注释：
-        1. 进入visual block Mode，选中所需要删除的行和列
-        2. 按d删除</code></pre></li>
-</ul>
-<ul>
-<li><p>Normal Mode (即Read Mode，是进入Vim的默认模式，Esc返回Normal Mode)</p>
-<pre><code>a   :从当前位置的下一个位置 进入Insert Mode
-i   :从当前位置开始 进入Insert Mode
-
-I   :从当前行行首开始 进入Insert Mode
-A   :从当前行行尾开始 进入Insert Mode
-
-o   :从下一行的行首 进入Insert Mode
-O   :从上一行的行首 进入Insert Mode
-
-gg      :跳到整个文件的首行
-25gg    :跳到25行行首
-G       :跳到整个文件的尾行
-
-H/M/L   :移动到窗口的高/中/低位置
-
-ctrl u  :向上翻页
-ctrl f  :向下翻页
-
-zz  :当前行放到窗口的中间
-
-w/b      :以单词为单位移动 向后移动/向前移动
-h/j/k/l  :以字符为单位移动 左/下/上/右
-
-0   :移到行首
-$   :移到行尾
-
-y   :复制
-yiw :复制这个词
-yy  :复制这一行
-p   :粘贴到下一行
-P   :大p粘到上一行
-dd  :删除这一行
-diw :删除这个词
-
-u   :撤销这一步
-ZZ  :保存并退出
-
-ctrl s/ctrl q   :锁vim窗口/解锁窗口</code></pre></li>
-<li><p>Combo operations</p>
-<pre><code>ciw     :进入insert mode 更改这个单词 i表示“in”
-viw     :选中这个单词
-caw     :改变这个单词
-viw-&gt;y-&gt;viw-&gt;p  :拷贝一个单词从这里拷贝到那里        
-
-vi(     :选中括号中内容
-ci&quot;     :改变这一行中“”中内容 
-ci[     :改变这一行中[]中内容
-vi&quot;     :选中这一行中“”中内容
-yi)     :选择()中所有内容
-da[     :删除[]中所有内容
-
-dt&quot;     :删除从此到“的内容 t表示“to”
-di&lt;
-:% s/XXX/YYY/g     :用YYY替换XXX   
-:32,65d            :delete from line 32 to line 65,  
-
-v, $, y :从此处复制到行尾
-v, $, p :从此处粘贴到行尾 
-
-ggvG    :全选</code></pre></li>
-<li><p>从外部拷贝内容进vim，3步走：</p>
-<pre><code>:set paste
-粘贴操作
-:set nopaste  //自动缩进才会起作用</code></pre></li>
-</ul>
-<ul>
-<li><p>命令中的字母含义</p>
-<pre><code>gg,G        : top, bottom
-d,c,y,v     : delete, change, copy, visually select
-w,s,p,t     : words, sentences, paragraphs, tags(HTML)
-a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
-<li><p>Code 补全</p>
-<pre><code>ctrl n + ctrl p     :自动补全词</code></pre></li>
-<li><p>查询且高亮</p>
-<pre><code>:set incsearch  :一边查一边高亮     
-:set hlsearch   :查询结果高亮      
-/JUNHUI         :(normal mode下)查询字符“JUNHUI”，n定位到下一个，N定位到上一个。 </code></pre></li>
-<li><p>有用插件</p>
-<ul>
-<li><p>NERDTree:显示目录的插件。</p>
-<p>  使用方法：<code>cd</code>到project目录-&gt;进入<code>nvim</code>-&gt;<code>Command Mode</code>输入<code>:NERDTree</code>，即可显示当前project的文件和文件夹。</p>
-<p>  可以使用<code>&lt;Leader&gt;</code>快捷键避免繁复输入<code>NERDTree</code>。类似的设置要写入配置文件。</p>
-</li>
-</ul>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/18/vim-neovim/" data-id="ckatsrgso004fxqfzbo9k8f7s" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1372,7 +1292,7 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">6</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1401,7 +1321,7 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1412,6 +1332,10 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/">caffe-所使用的数据格式</a>
+          </li>
         
           <li>
             <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
@@ -1427,10 +1351,6 @@ a,i,t,f,F   : all, in, till, find formard, find Backward</code></pre></li>
         
           <li>
             <a href="/2020/06/03/%E8%AE%BA%E6%96%87%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">论文下载加速</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/LeetCode-%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">LeetCode-对称的二叉树</a>
           </li>
         
       </ul>
