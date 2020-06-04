@@ -64,6 +64,86 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-caffe-Blob-1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/04/caffe-Blob-1/" class="article-date">
+  <time datetime="2020-06-04T15:10:24.000Z" itemprop="datePublished">2020-06-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/04/caffe-Blob-1/">caffe-Blob-(1)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>先看读lob.hpp, 再读Blob.cpp。</p>
+<p>若要调用caffe文件，可以使用g++命令，也可以使用cmake建立一个项目：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">└── test_blob</span><br><span class="line">    ├── build</span><br><span class="line">    ├── CMakeLists.txt</span><br><span class="line">    └── main.cpp</span><br></pre></td></tr></table></figure>
+
+<p>这个项目可以位于任何位置。接着编辑CMakeLists.tx，如下:</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.5</span>)</span><br><span class="line"><span class="keyword">project</span>(test_blob)</span><br><span class="line"> </span><br><span class="line"><span class="keyword">set</span>(Caffe_INCLUDE_DIRS ~/caffe-master/<span class="keyword">include</span> \</span><br><span class="line">/usr/local/cuda/<span class="keyword">include</span> ~/caffe-master/build/src)</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span>(Caffe_LIBRARIES caffe boost_system glog)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_CXX_STANDARD <span class="number">11</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">include_directories</span>(<span class="variable">$&#123;Caffe_INCLUDE_DIRS&#125;</span>)</span><br><span class="line"><span class="keyword">link_directories</span>(~/caffe-master/build/lib) </span><br><span class="line"> </span><br><span class="line"><span class="keyword">add_executable</span>(test_blob main.cpp)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(test_blob <span class="variable">$&#123;Caffe_LIBRARIES&#125;</span>)</span><br><span class="line">    </span><br><span class="line"><span class="keyword">install</span>(TARGETS test_blob RUNTIME DESTINATION bin)</span><br></pre></td></tr></table></figure>
+
+<p>使用下面命令编译执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ rm -rf build/*</span><br><span class="line">$ <span class="built_in">cd</span> build</span><br><span class="line">$ cmake ..</span><br><span class="line">$ make</span><br><span class="line">$ ./test_blob</span><br></pre></td></tr></table></figure>
+
+<p>在代码文件头部添加基本内容：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;caffe/blob.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> caffe;  <span class="comment">// 代码中依旧加上这个namespace</span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br></pre></td></tr></table></figure>
+
+<p>之后就可以在main函数中，进行探索测试了。</p>
+<p>基本地，Blob在内存中是4为数组，维度从高到低为（num，channels，height，width）。并包含data（待学习参数）和diff（增量）。包含一些基本操作。</p>
+<h1 id="帮助函数"><a href="#帮助函数" class="headerlink" title="帮助函数"></a>帮助函数</h1><p>先在main.cpp外自定义了两个函数：向Blob中写入数据，从Blob读取数据：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 向Blob中 写入数据</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writeInto</span><span class="params">(caffe::Blob&lt;<span class="keyword">float</span>&gt;&amp; a)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 获取cpu数据data部分</span></span><br><span class="line">    <span class="keyword">float</span>* ptr = a.mutable_cpu_data(); </span><br><span class="line">    <span class="comment">// 给每个位置赋值。count()表示元素个数</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;a.count();i++)&#123;</span><br><span class="line">        ptr[i] = i;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印blob信息 读取数据</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">printBlob</span><span class="params">(<span class="keyword">const</span> caffe::Blob&lt;<span class="keyword">float</span>&gt;&amp; blob)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// .shape_string() 返回一个string，包含shape和元素个数</span></span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"Size: "</span>&lt;&lt;blob.shape_string()&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (blob.shape_string() == <span class="string">"(0)"</span>) &#123;</span><br><span class="line">        <span class="built_in">cout</span>&lt;&lt;<span class="string">"No data initialized"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从内向外打印数据</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> u=<span class="number">0</span>; u&lt;blob.num(); u++)&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> v=<span class="number">0</span>; v&lt;blob.channels(); v++)&#123;</span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> w=<span class="number">0</span>; w&lt;blob.height(); w++)&#123;</span><br><span class="line">                <span class="keyword">for</span>(<span class="keyword">int</span> x=<span class="number">0</span>; x&lt;blob.width(); x++)&#123;</span><br><span class="line">                    <span class="comment">// .data_at(,,,): 访问某个位置数据</span></span><br><span class="line">                    <span class="built_in">cout</span>&lt;&lt;<span class="string">"blob: "</span>&lt;&lt;u&lt;&lt;v&lt;&lt;w&lt;&lt;x&lt;&lt;<span class="string">"-&gt;"</span>&lt;&lt;blob.data_at(u,v,w,x)&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 打印l1范数（绝对值之和） l2范数（平方和）</span></span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"ASUM = "</span>&lt;&lt;blob.asum_data()&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"SUMQ = "</span>&lt;&lt;blob.sumsq_data()&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"------------------------------------------"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="定义Blob"><a href="#定义Blob" class="headerlink" title="定义Blob"></a>定义Blob</h1><p>Blob.hpp中声明了构造函数，其用法见下例：</p>
+<p>如果没有特殊指明，一下代码均在main.cpp中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 默认构造函数</span></span><br><span class="line">caffe::Blob&lt;<span class="keyword">float</span>&gt; a;</span><br><span class="line"></span><br><span class="line"><span class="comment">//指明shape，1*2*3*4=24 共有24个数值，初始值为0</span></span><br><span class="line">caffe::Blob&lt;<span class="keyword">float</span>&gt; b(<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>);   </span><br><span class="line"></span><br><span class="line"><span class="comment">// 传入Shape每个维度为元素的vector</span></span><br><span class="line"><span class="keyword">int</span> shape_c[] = &#123;<span class="number">1</span>,<span class="number">3</span>,<span class="number">2</span>,<span class="number">4</span>&#125;; </span><br><span class="line">caffe::Blob&lt;<span class="keyword">float</span>&gt; c(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(shape_c, shape_c+<span class="number">4</span>));</span><br><span class="line"></span><br><span class="line">writeInto(c);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 将c大小从（1,3,2,4）变为（1,2,3,4）</span></span><br><span class="line">c.Reshape(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">printBlob(c);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 将c变为与相同大小</span></span><br><span class="line">c.ReshapeLike(b);</span><br><span class="line">printBlob(c);</span><br></pre></td></tr></table></figure>
+
+<p>如果只打印最后一次数的c：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">Size: 1 2 3 4 (24)</span><br><span class="line">Position: 0000-&gt; value: 0</span><br><span class="line">Position: 0001-&gt; value: 1</span><br><span class="line">Position: 0002-&gt; value: 2</span><br><span class="line">Position: 0003-&gt; value: 3</span><br><span class="line">Position: 0010-&gt; value: 4</span><br><span class="line">Position: 0011-&gt; value: 5</span><br><span class="line">Position: 0012-&gt; value: 6</span><br><span class="line">Position: 0013-&gt; value: 7</span><br><span class="line">Position: 0020-&gt; value: 8</span><br><span class="line">Position: 0021-&gt; value: 9</span><br><span class="line">Position: 0022-&gt; value: 10</span><br><span class="line">Position: 0023-&gt; value: 11</span><br><span class="line">Position: 0100-&gt; value: 12</span><br><span class="line">Position: 0101-&gt; value: 13</span><br><span class="line">Position: 0102-&gt; value: 14</span><br><span class="line">Position: 0103-&gt; value: 15</span><br><span class="line">Position: 0110-&gt; value: 16</span><br><span class="line">Position: 0111-&gt; value: 17</span><br><span class="line">Position: 0112-&gt; value: 18</span><br><span class="line">Position: 0113-&gt; value: 19</span><br><span class="line">Position: 0120-&gt; value: 20</span><br><span class="line">Position: 0121-&gt; value: 21</span><br><span class="line">Position: 0122-&gt; value: 22</span><br><span class="line">Position: 0123-&gt; value: 23</span><br><span class="line">ASUM = 276</span><br><span class="line">SUMQ = 4324</span><br></pre></td></tr></table></figure>
+
+<p>从上可以明显看出，（num，channels，height，width）是最右端看是变化（最右端变化最快），逐渐向左。</p>
+<h1 id="更新参数data"><a href="#更新参数data" class="headerlink" title="更新参数data"></a>更新参数data</h1><p>更新参数由Blob的Update()成员函数实现。具体是<code>data=data-diff</code>。所以要测试Updata()，首先就需要向data和diff分别读入数据：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义blob</span></span><br><span class="line">caffe::Blob&lt;<span class="keyword">float</span>&gt; a;</span><br><span class="line">a.Reshape(<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取cpu数据data部分 和diff部分</span></span><br><span class="line"><span class="keyword">float</span>* dataPtr = a.mutable_cpu_data();</span><br><span class="line"><span class="keyword">float</span>* diffPtr = a.mutable_cpu_diff();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 分别为data和diff写入值</span></span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;a.count();i++)&#123;</span><br><span class="line">    dataPtr[i] = i;</span><br><span class="line">    diffPtr[i] = a.count()<span class="number">-1</span>-i;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行更新操作</span></span><br><span class="line">a.Update();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 打印更新后的结果</span></span><br><span class="line">printBlob(a);</span><br></pre></td></tr></table></figure>
+
+<p>更新后的data（待学习参数）。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">Size: 1 2 3 4 (24)</span><br><span class="line">Position: 0000-&gt; value: -23</span><br><span class="line">Position: 0001-&gt; value: -21</span><br><span class="line">Position: 0002-&gt; value: -19</span><br><span class="line">Position: 0003-&gt; value: -17</span><br><span class="line">Position: 0010-&gt; value: -15</span><br><span class="line">Position: 0011-&gt; value: -13</span><br><span class="line">Position: 0012-&gt; value: -11</span><br><span class="line">Position: 0013-&gt; value: -9</span><br><span class="line">Position: 0020-&gt; value: -7</span><br><span class="line">Position: 0021-&gt; value: -5</span><br><span class="line">Position: 0022-&gt; value: -3</span><br><span class="line">Position: 0023-&gt; value: -1</span><br><span class="line">Position: 0100-&gt; value: 1</span><br><span class="line">Position: 0101-&gt; value: 3</span><br><span class="line">Position: 0102-&gt; value: 5</span><br><span class="line">Position: 0103-&gt; value: 7</span><br><span class="line">Position: 0110-&gt; value: 9</span><br><span class="line">Position: 0111-&gt; value: 11</span><br><span class="line">Position: 0112-&gt; value: 13</span><br><span class="line">Position: 0113-&gt; value: 15</span><br><span class="line">Position: 0120-&gt; value: 17</span><br><span class="line">Position: 0121-&gt; value: 19</span><br><span class="line">Position: 0122-&gt; value: 21</span><br><span class="line">Position: 0123-&gt; value: 23</span><br><span class="line">ASUM = 288</span><br><span class="line">SUMQ = 4600</span><br></pre></td></tr></table></figure>
+
+<p>由结果可看出，其实计算的是<code>data=data-diff</code>，<font color="red" size="4">模型就是正向传播求diff，反向传播更新data</font>。</p>
+<h1 id="保存Blob数据到磁盘，或从磁盘再如数据到Blob"><a href="#保存Blob数据到磁盘，或从磁盘再如数据到Blob" class="headerlink" title="保存Blob数据到磁盘，或从磁盘再如数据到Blob"></a>保存Blob数据到磁盘，或从磁盘再如数据到Blob</h1><p>从Blob写入protobuff：<code>.ToProto()</code>；从protobuff写入Blob：<code>.FromProto</code>。</p>
+<p>需要添加头文件<code>#include &lt;caffe/util/io.hpp&gt;</code>从而调用函数<code>WriteProtoToBinaryFile()</code>和<code>ReadProtoFromBinaryFileOrDie()</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//g++编译时加上 -lglog -lboost_system</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 实例化一个BlobProtot对象</span></span><br><span class="line">caffe::BlobProto bp;  </span><br><span class="line"><span class="comment">// 将啊序列化，包括diff，写入protobuff</span></span><br><span class="line">a.ToProto(&amp;bp, <span class="literal">true</span>); </span><br><span class="line"><span class="comment">// 将bp对象写入磁盘文件“a.blob”</span></span><br><span class="line">WriteProtoToBinaryFile(bp, <span class="string">"a.blob"</span>); </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">caffe::BlobProto bp2;</span><br><span class="line"><span class="comment">// 将“a.blob”文件内容读入protobuff对象bp2</span></span><br><span class="line">ReadProtoFromBinaryFileOrDie(<span class="string">"a.blob"</span>, &amp;bp2);</span><br><span class="line">caffe::Blob&lt;<span class="keyword">float</span>&gt; b;</span><br><span class="line"><span class="comment">// 将protobuff中内容 写入b</span></span><br><span class="line">b.FromProto(bp2, <span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">printBlob(b);</span><br></pre></td></tr></table></figure>
+<p>上述过程从读取Blob，写入磁盘，后从磁盘读取文件，写入里一个Blob。这对于加载，保存模型参数（权值）很实用。</p>
+<h1 id="其他Blob方法"><a href="#其他Blob方法" class="headerlink" title="其他Blob方法"></a>其他Blob方法</h1><p>略</p>
+<hr>
+<p>接下来从caffe.proto文件，读关于Blob的描述。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/04/caffe-Blob-1/" data-id="ckb0x3j440000tvfz2wl24zk6" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-caffe-所使用的数据格式" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/" class="article-date">
@@ -568,7 +648,8 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h1 id="sigmoid-layers类"><a href="#sigmoid-layers类" class="headerlink" title="sigmoid_layers类"></a>sigmoid_layers类</h1><p>这个类的所有内容</p>
+        <p>源码初体验，看一下sigmoid_layer类。</p>
+<h1 id="sigmoid-layers类"><a href="#sigmoid-layers类" class="headerlink" title="sigmoid_layers类"></a>sigmoid_layers类</h1><p>这个类的所有内容</p>
 <p>头文件： <code>./include/caffe/layers/sigmoid_layer.hpp</code><br>CPU实现： <code>./src/caffe/layers/sigmoid_layer.cpp</code><br>GPU实现：<code>./src/caffe/layers/sigmoid_layer.cu</code></p>
 <p>对于这个类的官方文档<a href="http://caffe.berkeleyvision.org/tutorial/net_layer_blob.html" target="_blank" rel="noopener">见此</a></p>
 <h2 id="头文件sigmoid-layer-hpp中包含"><a href="#头文件sigmoid-layer-hpp中包含" class="headerlink" title="头文件sigmoid_layer.hpp中包含"></a>头文件sigmoid_layer.hpp中包含</h2><ol>
@@ -589,12 +670,17 @@
 </li>
 <li><p>GPU<br> sigmoid()对应的GPU实现：</p>
  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidForward</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> n, <span class="keyword">const</span> Dtype* in, Dtype* out)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(index, n) &#123;</span><br><span class="line">		out[index] = <span class="number">0.5</span> * <span class="built_in">tanh</span>(<span class="number">0.5</span> * in[index]) + <span class="number">0.5</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p> 其中<code>CUDA_KERNEL_LOOP(index, n)</code>给定线程id，并且将线程映射到数据上，实现数据并行。具体细节见关于CUDA的笔记博客。<br> 暂时没有找到CUDA_KERNEL_LOOP()源码，不过可以肯定的是，这个操作中一定要先得到所使用机器GPU的相关硬件信息，使得程序可以在不同的GPU上运行。</p>
+<p> 其中<code>CUDA_KERNEL_LOOP(index, n)</code>给定线程id，并且将线程映射到数据上，实现数据并行。其宏定义在这里<code>include/caffe/util/device_alternate.hpp</code>：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CUDA: grid stride looping</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CUDA_KERNEL_LOOP(i, n) \</span></span><br><span class="line"> 	<span class="keyword">for</span> (<span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x; \</span><br><span class="line">      i &lt; (n); \</span><br><span class="line">      i += blockDim.x * gridDim.x)</span><br></pre></td></tr></table></figure>
+<p> 这是个通用的循环，具体细节见关于CUDA的笔记博客。</p>
 <p> 同样的，GPU的前行传播：</p>
  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Forward_gpu(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, <span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	Dtype* bottom_data = bottom[<span class="number">0</span>]-&gt;gpu_data();</span><br><span class="line">	Dtype* top_data = top[<span class="number">0</span>]-&gt;mutable_gpu_data();</span><br><span class="line">	<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"></span><br><span class="line">	SigmoidForward&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(</span><br><span class="line">	count, bottom_data, top_data);</span><br><span class="line">	CUDA_POST_KERNEL_CHECK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p> 同样的，为了兼容所有GPU，<code>&lt;&lt;&lt;CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;</code>中指明了当下机器的可用block数目和每block可用threads数目。</p>
-<p> 对于像sigmoid简单的算子，只管上看，GPU实现其实就是将CPU实现的最内层的循环去掉，用并行执行的kernel函数替代。</p>
+<p> 其中指定了当下机器每block可用threads数目，并可计算出使用到的block数。</p>
+<p> 具体地：<code>CAFFE_CUDA_NUM_THREADS</code>=512，每个block启用512个threads，而    <code>CAFFE_GET_BLOCKS(count)</code>：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">CAFFE_GET_BLOCKS</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> (N + <span class="number">512</span> - <span class="number">1</span>) / <span class="number">512</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 对于像sigmoid简单的算子，直观上看，GPU实现其实就是将CPU实现的最内层的循环去掉，用并行执行的kernel函数替代。</p>
 </li>
 </ol>
 <h2 id="后向传播"><a href="#后向传播" class="headerlink" title="后向传播"></a>后向传播</h2><ol>
@@ -612,60 +698,12 @@
 <p> 上述很直接。</p>
 </li>
 </ol>
-
+<p><font color="gree" size="5">敲黑板</font><br><font color="orange" size="4">技巧</font>：在linux中使用<code>grep</code>命令可以在一个项目中查找关键字：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n -H -r <span class="string">"CUDA_KERNEL_LOOP"</span></span><br></pre></td></tr></table></figure>
       
     </div>
     <footer class="article-footer">
       <a data-url="http://yoursite.com/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/" data-id="ckax32ycl0000lcfzhejk7s23" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-anaconda-虚拟环境" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/26/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/" class="article-date">
-  <time datetime="2020-03-25T23:54:49.000Z" itemprop="datePublished">2020-03-26</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/26/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/">anaconda 虚拟环境</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="conda-虚拟环境"><a href="#conda-虚拟环境" class="headerlink" title="conda 虚拟环境"></a>conda 虚拟环境</h2><p>conda使得在不同项目中使用不同版本的包包，不同环境中的包互不冲突。<br>而且可以指定包的版本，非常方便。</p>
-<p>常用命令：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">conda env list        <span class="comment"># 列出已存在的虚拟环境</span></span><br><span class="line">conda create --name yolo python=3.5  <span class="comment">#新建yolo环境并且安装python3.5</span></span><br><span class="line"></span><br><span class="line">conda activate yolo   <span class="comment">#进入或者切换到yolo</span></span><br><span class="line">conda deactivate</span><br><span class="line">conda info --envs</span><br><span class="line"></span><br><span class="line">conda search keras   <span class="comment">#搜索keras的所有可下载版本</span></span><br><span class="line">conda list -n yolo   <span class="comment">#列出yolo环境中已有 包</span></span><br><span class="line">conda install -n yolo keras==2.1.5  <span class="comment">#向指定环境中安装指定的包</span></span><br><span class="line"></span><br><span class="line">conda remove -n yolo keras</span><br><span class="line">conda upgrade -n yolo keras</span><br><span class="line"></span><br><span class="line">conda remove -n yolo --all    <span class="comment">#删除整个yolo环境</span></span><br><span class="line">conda create -n yolo --<span class="built_in">clone</span> yolov3   <span class="comment">#复制yolo环境</span></span><br><span class="line"></span><br><span class="line">conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/</span><br><span class="line">conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/</span><br><span class="line">conda config --<span class="built_in">set</span> show_channel_urls yes   <span class="comment">#设置搜索时显示通道地址</span></span><br><span class="line">conda config --show      <span class="comment">#产看镜像源</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="trouble-shooting"><a href="#trouble-shooting" class="headerlink" title="trouble shooting"></a>trouble shooting</h2><p>错误：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda install: Segmentation fault</span><br></pre></td></tr></table></figure>
-
-<p>原因：由于网络或者其他原因，包下载不完整。</p>
-<p>解决：清除所有不完整的缓存，后重新安装。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda clean -a</span><br></pre></td></tr></table></figure>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/26/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/" data-id="ckatxvx5c0002lzfzd7ej0jyx" class="article-share-link">Share</a>
       
       
     </footer>
@@ -690,7 +728,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -719,7 +757,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -730,6 +768,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/04/caffe-Blob-1/">caffe-Blob-(1)</a>
+          </li>
         
           <li>
             <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/">caffe-所使用的数据格式</a>
@@ -745,10 +787,6 @@
         
           <li>
             <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/%E8%AE%BA%E6%96%87%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">论文下载加速</a>
           </li>
         
       </ul>

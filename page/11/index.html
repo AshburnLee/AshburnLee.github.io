@@ -64,6 +64,117 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-文本分类-三-构建模型II-LSTM层结点实现细节" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" class="article-date">
+  <time datetime="2019-08-04T17:12:02.000Z" itemprop="datePublished">2019-08-05</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/">文本分类(三)-构建模型II-LSTM层结点实现细节</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在上一篇笔记<a href="https://ashburnlee.github.io/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" target="_blank" rel="noopener">文本分类(三)-构建模型I-built-in-LSTM</a> 中<code>tensorflow</code>中的LSTM相关函数实现了LSTM层。这篇笔记记录把LSTM单元拆解，一步一步实现，即 <code>from scratch</code></p>
+<p>理解这一篇笔记的细节，要结合上一篇笔记，尤其是其最后一段，结合这里的细节，体会。</p>
+<p>LSTM结点如下图：</p>
+<div align="center">
+    <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/node_lstm.png" width="500">
+</div>
+<div align="center">图：单个LSTM结点内部结构</div>
+<br><br>
+
+<p>一般RNN存在信息过载而<font color="red">不能长久传播</font>的问题，LSTM单元结构存在<font color="red">三重门机制</font>尝试解决这个问题。<br><br>假如一个词的编号为12，将它对应的<code>embedding向量</code>输入LSTM 结点中有一下过程发生：</p>
+<ul>
+<li>得到这个词的embedding，大小为<code>[batch_size, 1, embedd_size]</code>：</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedd_input = embedded_inputs[:, <span class="number">12</span>, :]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>变形为：<code>[batch_size, embedd_size]</code></li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedd_input = tf.reshape(embedd_input, [batch_size, hps.num_embedding_size])</span><br></pre></td></tr></table></figure>
+
+<h1 id="三重门过程，公式及实现："><a href="#三重门过程，公式及实现：" class="headerlink" title="三重门过程，公式及实现："></a>三重门过程，公式及实现：</h1><h2 id="遗忘门："><a href="#遗忘门：" class="headerlink" title="遗忘门："></a>遗忘门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-f.png" width="700"></div>
+<div align="center">图：遗忘门</div>
+<br><br>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">forget_gate = tf.sigmoid( </span><br><span class="line">                        tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br></pre></td></tr></table></figure>
+
+<h2 id="输入门："><a href="#输入门：" class="headerlink" title="输入门："></a>输入门：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-i.png" width="700"></div>
+<div align="center">图：输入门</div>
+<br><br>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">mid_state = tf.tanh(</span><br><span class="line">                        tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br></pre></td></tr></table></figure>
+
+<h2 id="结点隐含状态输出："><a href="#结点隐含状态输出：" class="headerlink" title="结点隐含状态输出："></a><strong>结点隐含状态</strong>输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-C.png" width="700"></div>
+<div align="center">图：隐含状态</div>
+<br><br>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">state_C = mid_state * input_gate + state_C * forget_gate</span><br></pre></td></tr></table></figure>
+
+<h2 id="输出门及结点LSTM的输出："><a href="#输出门及结点LSTM的输出：" class="headerlink" title="输出门及结点LSTM的输出："></a>输出门及结点LSTM的输出：</h2><div align="center"><img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/LSTM3-focus-o.png" width="700"></div>
+<div align="center">图：输出门</div>
+<br><br>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">output_gate = tf.sigmoid(</span><br><span class="line">                        tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">h = output_gate * tf.tanh(state)</span><br></pre></td></tr></table></figure>
+
+<p>以上是对于样本中<font color="red">一个词</font>的操作，对于该样本中<font color="red">所有词</font>的操作如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(encoded_length):</span><br><span class="line">    embedd_input = embedded_inputs[:, i, :]   </span><br><span class="line">    embedd_input = tf.reshape(embedd_input, [batch_size, hps.num_embedding_size])</span><br><span class="line">    forget_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, fx_w) + tf.matmul(h, fh_w) + fb)</span><br><span class="line">    input_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, ix_w) + tf.matmul(h, ih_w) + ib)</span><br><span class="line">    mid_state = tf.tanh(</span><br><span class="line">                            tf.matmul(embedd_input, cx_w) + tf.matmul(h, ch_w) + cb)</span><br><span class="line"></span><br><span class="line">    state_C = mid_state * input_gate + state_C * forget_gate </span><br><span class="line"></span><br><span class="line">    output_gate = tf.sigmoid(</span><br><span class="line">                            tf.matmul(embedd_input, ox_w) + tf.matmul(h, oh_w) + ob)</span><br><span class="line">    h = output_gate * tf.tanh(state)</span><br><span class="line">last = h</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>encode_lenght</code>表示每一个样本(一条评论)的长度，即评论词的个数，此处是50个。<br>这个序列操作中有那两个值在不断更新</p>
+<ul>
+<li>state_C</li>
+<li>h</li>
+</ul>
+<p>这两个值的不断更新<strong>使得对每个词操作的每个LSTM结点在逻辑上是连在一起的</strong>，如下图：</p>
+<div align="center">
+    <img src="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/logicly_unroll.png" width="700">
+</div>
+<div align="center">
+    图：左侧是实际LSTM结点，右侧是这个结点从时间上展开后的
+</div>
+<br><br>
+
+<p><font color="green" size="5">敲黑板</font>将等号左边按时间次序展开就是右边。实现中一个LSTM结点可以代表一个神经元，只不过这一个神经元内部有5个非线性变换。对于复杂问题一个这样的神经元不足以表达输入数据，所以会有多个这样的神经元。<br>这里的实现源码<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/models/LSTM_pure.py" target="_blank" rel="noopener">看这里</a>。源码中对网络的设置为：  </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">num_lstm_nodes=[<span class="number">32</span>, <span class="number">32</span>],    </span><br><span class="line">num_lstm_layers=<span class="number">2</span>,</span><br><span class="line">encoded_length=<span class="number">50</span>,</span><br></pre></td></tr></table></figure>
+
+<p><font color="orange">表示这个模型有2层LSTM，每一层的神经原结点有32个，而每一层中的每一个神经元所处理的输入序列长50！</font></p>
+<p>务必理解</p>
+<hr>
+<p>完成<br><br>LSTM结点实现。</p>
+<p>本笔记所有图片来源与<a href="http://colah.github.io/posts/2015-08-Understanding-LSTMs/" target="_blank" rel="noopener">colah’s blog</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" data-id="ckatsrgt6005fxqfz8rjrevjx" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-文本分类-三-构建模型I-built-in-LSTM" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/04/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BI-built-in-LSTM/" class="article-date">
@@ -855,68 +966,6 @@
 
 
   
-    <article id="post-CXX可调用对象" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/" class="article-date">
-  <time datetime="2019-07-29T07:16:11.000Z" itemprop="datePublished">2019-07-29</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/">CXX可调用对象</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录function模板与含有相同调用形式的可调用对象。</p>
-<p>c++中有一些可调用对象</p>
-<ul>
-<li>函数</li>
-<li>函数指针</li>
-<li>lambda</li>
-<li>bind创建的对象</li>
-<li>重载了函数调用运算符的类</li>
-</ul>
-<p>比如下面三个函数add, mod, divide</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#inlcude <span class="meta-string">&lt;unordered_map&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//一般函数</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span>  b)</span></span>&#123; <span class="keyword">return</span> a+b; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//命名的lambda函数</span></span><br><span class="line"><span class="keyword">auto</span> mod = [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a%b; &#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//重载了调用运算符的类，又称作函数对象</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">divide</span>&#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">int</span> denomenator, <span class="keyword">int</span> divisor)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> denomenator/divisor; </span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>三个不同可调用对象：普通函数<code>add</code>，命名了的<code>lambda</code>对象<code>mod</code>，函数对象(<code>function object</code>)<code>divide</code> 拥有相同的<font color="red">调用形式(<code>call signature</code>)</font>.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> (<span class="keyword">int</span>, <span class="keyword">int</span>)   <span class="comment">//表示传入两个int型，返回一个int型</span></span><br></pre></td></tr></table></figure>
-
-<p>而模板类<code>function</code>使用时需要指定类型，如上述调用形式。如此可以定义多个<code>function</code>对象</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f1 = add;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f2 = divide();    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f3 = [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a%b; &#125;;    </span><br><span class="line">    function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>, <span class="keyword">int</span>) &gt; f4 = mod;    </span><br><span class="line">        </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f1(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f2(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f3(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;f4(<span class="number">4</span>,<span class="number">2</span>)&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>接下来, 可以构建从算数符号到函数的映射，如</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//加入main中</span></span><br><span class="line">   <span class="built_in">unordered_map</span>&lt;<span class="built_in">string</span>, function&lt;<span class="keyword">int</span>(<span class="keyword">int</span>,<span class="keyword">int</span>)&gt;&gt; calculator = &#123;</span><br><span class="line">       &#123;<span class="string">"+"</span>, add&#125;,                                <span class="comment">//函数指针</span></span><br><span class="line">       &#123;<span class="string">"-"</span>, <span class="built_in">std</span>::minus&lt;<span class="keyword">int</span>&gt;()&#125;,                  <span class="comment">//STL函数            </span></span><br><span class="line">       &#123;<span class="string">"*"</span>, [](<span class="keyword">int</span> a, <span class="keyword">int</span> b)&#123; <span class="keyword">return</span> a*b; &#125;&#125;,    <span class="comment">//匿名lambda函数</span></span><br><span class="line">       &#123;<span class="string">"/"</span>, divide()&#125;,                           <span class="comment">//函数对象</span></span><br><span class="line">       &#123;<span class="string">"%"</span>, mod&#125; &#125;;                              <span class="comment">//命名的lambda函数</span></span><br><span class="line"></span><br><span class="line">   calculator[<span class="string">"+"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"-"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"*"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"/"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br><span class="line">   calculator[<span class="string">"%"</span>](<span class="number">10</span>,<span class="number">5</span>);</span><br></pre></td></tr></table></figure>
-
-<p>如同<code>vector&lt;int&gt;</code>可以作为容器内容的类型，此处只不过用<code>function&lt;int(int,int)&gt;</code>作为了map的val类型。</p>
-<p>结束<br>c++可调用对象</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/29/CXX%E5%8F%AF%E8%B0%83%E7%94%A8%E5%AF%B9%E8%B1%A1/" data-id="ckatsrgrv002exqfzf3sv43ar" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -932,7 +981,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">7</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -961,7 +1010,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">9</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -972,6 +1021,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/04/caffe-Blob-1/">caffe-Blob-(1)</a>
+          </li>
         
           <li>
             <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/">caffe-所使用的数据格式</a>
@@ -987,10 +1040,6 @@
         
           <li>
             <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/%E8%AE%BA%E6%96%87%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">论文下载加速</a>
           </li>
         
       </ul>
