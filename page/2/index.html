@@ -204,7 +204,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 尽可能不使用类型转换</a>
+      <a class="article-title" href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 杂记</a>
     </h1>
   
 
@@ -212,7 +212,11 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        
+        <h1 id="explicit-修饰constructor"><a href="#explicit-修饰constructor" class="headerlink" title="explicit 修饰constructor"></a>explicit 修饰constructor</h1><p>比较区别：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 无explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    foo(<span class="keyword">int</span> n)&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">// 有explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">bar</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">bar</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">foo <span class="title">f1</span><span class="params">(<span class="number">2</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    foo* f2 = <span class="keyword">new</span> foo(<span class="number">2</span>);  <span class="comment">// correct</span></span><br><span class="line">    foo f3 = <span class="number">2</span>;  <span class="comment">// correct </span></span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="function">bar <span class="title">b1</span><span class="params">(<span class="number">3</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    bar* b2 = <span class="keyword">new</span> bar(<span class="number">3</span>); <span class="comment">// correct</span></span><br><span class="line">    bar b3 = <span class="number">3</span>; <span class="comment">// incorrect</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>bar b3 = 3</code>含义是，3的类型int正好是bar单参数构造函数的参数类型int，这时候编译器就自动调用这个构造函数，创建一个bar的对象。这在<code>explicit</code>修饰下是不可行的，只能显式地以3为参数传给构造函数。</p>
+
       
     </div>
     <footer class="article-footer">
@@ -244,7 +248,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 2</a>
+      <a class="article-title" href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 尽可能使用const</a>
     </h1>
   
 
@@ -252,10 +256,10 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h1 id="尽可能使用const"><a href="#尽可能使用const" class="headerlink" title="尽可能使用const"></a>尽可能使用const</h1><p>如果某个值需要保持不变，那么你就应该说出来，这样编译器能确保这写约束不被违反。const可以放于很多位置。</p>
-<h2 id="1-作用于指针"><a href="#1-作用于指针" class="headerlink" title="1. 作用于指针"></a>1. 作用于指针</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> greeting[] = <span class="string">"hello"</span>;</span><br><span class="line"><span class="keyword">char</span>* p = greeting;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* p = greeting;   <span class="comment">// 1</span></span><br><span class="line"><span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;   <span class="comment">// 2</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;  <span class="comment">// 3</span></span><br></pre></td></tr></table></figure>
+        <p>如果某个值需要保持不变，那么你就应该说出来，这样编译器能确保这写约束不被违反。const可以放于很多位置。</p>
+<h1 id="1-作用于指针"><a href="#1-作用于指针" class="headerlink" title="1. 作用于指针"></a>1. 作用于指针</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> greeting[] = <span class="string">"hello"</span>;</span><br><span class="line"><span class="keyword">char</span>* p = greeting;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* p = greeting;   <span class="comment">// 1</span></span><br><span class="line"><span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;   <span class="comment">// 2</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;  <span class="comment">// 3</span></span><br></pre></td></tr></table></figure>
 
-<p>const的出现位置：</p>
+<p>const的出现位置[左数右针]：</p>
 <ol>
 <li><code>const *</code>，<font color="red">数据是常量</font>，表示被指向的对象是常量，而指针是可以变的。</li>
 <li><code>* const</code>，表示<font color="red">指针是常量</font>。<font color="red">这个指针不能指向不同的东西，但它指向东西的数据可以改变</font>。</li>
@@ -264,20 +268,27 @@
 <p>对于在*左侧，下面两种表达意义相同，都在左侧：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* greeting;</span><br><span class="line"><span class="keyword">char</span> <span class="keyword">const</span>* greeting;</span><br></pre></td></tr></table></figure>
 
-<h2 id="2-作用于特殊指针，iterator"><a href="#2-作用于特殊指针，iterator" class="headerlink" title="2. 作用于特殊指针，iterator"></a>2. 作用于特殊指针，iterator</h2><p>对于STL中的迭代器，加入我希望迭代器所指向的东西不可被修改（即对数据只读），那么就需要一个<code>const_iterator</code>：</p>
+<h1 id="2-作用于特殊指针，iterator"><a href="#2-作用于特殊指针，iterator" class="headerlink" title="2. 作用于特殊指针，iterator"></a>2. 作用于特殊指针，iterator</h1><p>对于STL中的迭代器，加入我希望迭代器所指向的东西不可被修改（即对数据只读），那么就需要一个<code>const_iterator</code>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; vec;</span><br><span class="line"><span class="comment">// 数据const</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::const_iterator cItr = vec.begain();</span><br><span class="line">*cItr = <span class="number">10</span>;   <span class="comment">// 错，所指向的东西不能改</span></span><br><span class="line">cItr++；      <span class="comment">// 对，指针可改</span></span><br></pre></td></tr></table></figure>
+
 <p>而另一种情况，指针不能改变其指向，但是可改变其所指向数据：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 指针const</span></span><br><span class="line"><span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::iterator itr = vec.begain();</span><br><span class="line">*itr = <span class="number">10</span>;   <span class="comment">// 对，所指向的东西可改</span></span><br><span class="line">itr++；      <span class="comment">// 错，指针指向不可改</span></span><br></pre></td></tr></table></figure>
 
-<h2 id="3-作用与函数"><a href="#3-作用与函数" class="headerlink" title="3. 作用与函数"></a>3. 作用与函数</h2><ol>
+<h1 id="3-作用与函数"><a href="#3-作用与函数" class="headerlink" title="3. 作用与函数"></a>3. 作用与函数</h1><ol>
 <li><p>函数返回值为const</p>
-<p> 将函数返回值声明为const，降低了因为用户的错误而造成的意外。</p>
+<p> 将函数返回值声明为const，这个返回值不能被修改。降低了因为用户的错误而造成的意外。</p>
 </li>
 <li><p>函数参数为const</p>
 <p> 除非你要改动局部变量（函数参数），否则将参数声明为const。</p>
 </li>
 </ol>
-<h2 id="4-作用与类成员"><a href="#4-作用与类成员" class="headerlink" title="4. 作用与类成员"></a>4. 作用与类成员</h2>
+<h1 id="4-作用与类成员函数"><a href="#4-作用与类成员函数" class="headerlink" title="4. 作用与类成员函数"></a>4. 作用与类成员函数</h1><p>即const位于成员函数()和{}之间，如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">area</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span> y)</span> </span>&#123;</span><br><span class="line">        length_ = x;</span><br><span class="line">        width_ = y;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// length和width，不能被这个函数修改。</span></span><br><span class="line">    <span class="comment">// 限制对象成员函数 改变对象数据成员，保护了程序的健壮性和稳定性</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"area="</span>&lt;&lt;length_ * width_&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> length_;</span><br><span class="line">    <span class="keyword">int</span> width_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>print()成员函数，为const函数，表示这个成员函数不能修改成员变量。所以不能将area()成员函数设为const，因为这个函数的 目的就是为成员变量赋值。</p>
+<p><font color="red">const成员函数，和非const成员函数使得我们知道一个类中哪些函数可以修改成员属性，哪些不可以</font>。</p>
+<p>tip:<br>提升c++程序效率的一个方法是以<code>pass by referrence-to-const</code>的方式或<code>pass by pointer-to-const</code>传递对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 此为以成员函数</span></span><br><span class="line"><span class="function"><span class="keyword">const</span> <span class="keyword">int</span> <span class="title">opt</span><span class="params">( <span class="keyword">const</span> foo&amp; x)</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> x.length_ * x.width_&#125;</span><br></pre></td></tr></table></figure>
       
     </div>
     <footer class="article-footer">
@@ -699,7 +710,7 @@
 <li>一个copy操作符</li>
 </ul>
 <p>这些函数都是<code>public</code>和<code>inline</code>的。如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass()&#123;...&#125;</span><br><span class="line">    Myclass(cosnt Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">    ~Myclass()&#123;...&#125;</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(cosnt Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实例化这个class，并使用</span></span><br><span class="line">Myclass e1;       <span class="comment">//default 构造函数</span></span><br><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span>;   <span class="comment">//copy构造函数</span></span><br><span class="line">e2=e1;            <span class="comment">//copy符号操作符</span></span><br><span class="line">                  <span class="comment">//析构函数</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass()&#123;...&#125;</span><br><span class="line">    Myclass(<span class="keyword">const</span> Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">    ~Myclass()&#123;...&#125;</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实例化这个class，并使用</span></span><br><span class="line">Myclass e1;       <span class="comment">//default 构造函数</span></span><br><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span>;   <span class="comment">//copy构造函数</span></span><br><span class="line">e2=e1;            <span class="comment">//copy符号操作符</span></span><br><span class="line">                  <span class="comment">//析构函数</span></span><br></pre></td></tr></table></figure>
 
 <p>其中</p>
 <ol>
@@ -737,7 +748,7 @@
 </ol>
 <p>对于封装性，可以访问private成员变量的只有<font color="orange">member函数</font>和<font color="orange">friend函数</font>。上述两种方式提供了相同的功能，而后者提供了较强的封装性，因为<font color="red">它不能增加访问private变量的能力</font>。</p>
 <p>P.S. friend函数和member函数对于类private成员的访问能力相同。</p>
-<p>在C++ 中自然的做法是将类<code>WebBrowser</code>和函数<code>clearBrowser()</code>房子啊同一个<code>namespace</code>中：</p>
+<p>在C++ 中自然的做法是将类<code>WebBrowser</code>和函数<code>clearBrowser()</code>放置于同一个<code>namespace</code>中：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> Web&#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span>...&#125;;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearBrowser</span><span class="params">(WebBrowser&amp; wb)</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>namespace 可以跨越多个源码文件，而class不能。就是说相同的namespace中可以有多个头文件，这正是C++标准库的组织方式：<code>std::vector</code>, <code>std::sort</code>, <code>std::map</code>, … C++ 将不同的部分，不同<code>container</code>放在不同的头文件中，每个声明了<code>std</code>的某部分功能，这样当使用<code>vector</code>，时只用<code>include &lt;vector&gt;</code>，而不必将所有的<code>std</code>内容<code>include</code>进来。就是说，用户只用对所用的部分进行编译。而class必须整体定义，不能分割。</p>
