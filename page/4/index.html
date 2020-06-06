@@ -64,6 +64,175 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-存储优化-例-矩阵转置" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" class="article-date">
+  <time datetime="2020-02-20T01:53:50.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/">CUDA-存储优化-例-矩阵转置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="存储优化"><a href="#存储优化" class="headerlink" title="存储优化"></a>存储优化</h1><p>重叠内存传输和计算，组团传输减少小块数据的频繁传输。</p>
+<p>现代GPU对访存做了优化，使得不是严格的Coalescing Access也是可以接受的。但是</p>
+<ul>
+<li>避免凌乱无规律的访存</li>
+<li>避免一个线程访问连续的一段空间。</li>
+</ul>
+<p>将global memory中的数据放入shared memory中，使得数据的位置相邻后写入global memory，此时相邻的threads就可以访问相邻的地址，满足Coalescing Access。<font color="orange">shared memory的设计目的之一就是通过对它的编程，来规则化访存模式。</font></p>
+<p>回忆：shared memory的架构是连续<code>32 bits(即4 Bytes)</code>的地址被分配到连续的bank中。见下图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/bank.png"></div>
+
+<p>原图来自<a href="https://www.microway.com/hpc-tech-tips/gpu-memory-types-performance-comparison/" target="_blank" rel="noopener">这里</a>。里面有不少其他资源可参考。</p>
+<p>对于bank冲突，注意理解<font color="orange">地址的编号和bank的编号的不同</font>。</p>
+<h1 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h1><p>Coalescing access是就global memory而言的。</p>
+<h1 id="存储优化，优化实列：矩阵转置"><a href="#存储优化，优化实列：矩阵转置" class="headerlink" title="存储优化，优化实列：矩阵转置"></a>存储优化，优化实列：矩阵转置</h1><ol>
+<li><p>未优化的矩阵转置</p>
+<p> 对global memory的读和写总有一个，对global存储的地址访问不是连续的，这就不能最大化coalescing access。看下图：</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic8.png" width="600"></div>
+
+<p> <font color="red">每个block负责矩阵的一个子块（tile），所有子块并行执行。<code>TILE_DIM=blockDIm.x</code></font>。</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    <span class="keyword">int</span> index_a = idx + WIDTH * idy;</span><br><span class="line">    <span class="keyword">int</span> index_b = idy + HEIGHT * idx;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_b] = a[index_a];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 所以：</p>
+</li>
+<li><p>使用shared memory优化的矩阵转置</p>
+<p> 在写入global memory之前，先从global中将所读取的元素存入shared memory中，当shared memory中有了所有元素，将此时的shared memory转置一下，最后将结果再写（<font color="red">合并地</font>）入global memory。</p>
+<p> <font color="orange">如此一来对global的读和写，地址都是被连续访问的</font>。看下图：</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic9.png" width="600"></div>
+
+<p> 实现：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global_ <span class="keyword">void</span> <span class="title">transpose</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> tile[TILE_DIM][TILE_DIM];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个线程的id</span></span><br><span class="line">    <span class="keyword">int</span> idx = threadIdx.x + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> idy = threadIdx.y + TILE_DIM * blockIdx.y;</span><br><span class="line">    <span class="comment">// idx 与 idy 线性组合 得到原矩阵的Index</span></span><br><span class="line">    <span class="keyword">int</span> index_in = idx + idy * WIDTH;  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个数据转置前后，在矩阵中的索引</span></span><br><span class="line">    idx = threadIdx.x + TILE_DIM * blockIdx.y;</span><br><span class="line">    idy = threadIdx.y + TILE_DIM * blockIdx.x;</span><br><span class="line">    <span class="comment">// // idx 与 idy 线性组合 得到转置后矩阵的Index</span></span><br><span class="line">    <span class="keyword">int</span> index_out = idx + idy * HEIGHT;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从a中写入到bank中，会产生冲突。(马上解决)</span></span><br><span class="line">    tile[threadIdx.y][threadIdx.x] = a[index_in];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待这个block对应的tile中的 元素都有了之后，再执行下后续操作。</span></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转置操作</span></span><br><span class="line">    b[index_out] = tile[threadIdx.x][threadIdx.y];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 在Shared memory中存在bank冲突，如何解决。</p>
+</li>
+<li><p>解决上述过程中的bank冲突</p>
+<p> 对于上述实现过程中<code>tile[threadIdx.y][threadIdx.x] = a[index_in];</code>，如果tile的大小是16x16，那么这一句会产生16路的bank冲突。  <font color="red">！！！如何理解bank的编号！！！</font></p>
+<p> 如何解决bank冲突，看下图：</p>
+ <div align="center"><img src="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/pic10.png" width="700"></div>
+
+<p> 实现中只需更tile的定义为<code>__shared__ float tile[TILE_DIM][TILE_DIM+1];</code>，列中的数据存于相同的bank。</p>
+<p> 如此一来，不论是对tile行或列的访存，都不会产生bank冲突。相同的颜色在不同的行和列。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" data-id="ckatsrgrj001kxqfzcp4773qn" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-例-规约" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" class="article-date">
+  <time datetime="2020-02-20T01:51:24.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/">CUDA-例-规约</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="优化实列：并行规约（parallel-reduction）"><a href="#优化实列：并行规约（parallel-reduction）" class="headerlink" title="优化实列：并行规约（parallel reduction）"></a>优化实列：并行规约（parallel reduction）</h1><p>规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
+<h1 id="未优化的规约（为便于图中展示，假设warp大小为2）"><a href="#未优化的规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="未优化的规约（为便于图中展示，假设warp大小为2）"></a>未优化的规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>过程看图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
+
+<p>其中</p>
+<ul>
+<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
+<li>n个元素需要<code>lg(n)</code>次平行。</li>
+</ul>
+<p><font color="gree">warp大小为2，从一开始的第一次并行，就存在divergence</font>。</p>
+<p>过程实现（假如在shared memory中实现）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只使用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作（因为是在同一个warp中），但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
+<h1 id="优化后规约（为便于图中展示，假设warp大小为2）"><a href="#优化后规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="优化后规约（为便于图中展示，假设warp大小为2）"></a>优化后规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
+<p>这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程处理相邻位置的数据</font>. </p>
+<p>所以改进如图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
+
+<p>其中：</p>
+<ul>
+<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
+<li>n个元素需要<code>lg(n)</code>次平行。</li>
+<li>当数据元素更多时，橙色虚线框对应的threads与其他threads（很多时候）不属于同个warp，所以threads所用资源较前一个实现提前释放。</li>
+</ul>
+<p><font color="gree">warp大小为2，图中所有次并行计算都不存在divergence</font>。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 4，2，1</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=blockDim.x/<span class="number">2</span>; stride &gt; <span class="number">0</span>; stride /= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对特定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; stride)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为什么此法好？</p>
+<ol>
+<li>每一轮都有一半的 thread不需要工作，资源释放掉。让warp提前完工，释放资源。</li>
+<li>block中的warp，没有了<font color="red" size="4">分支发散</font>，或者说是最小化了分支发散。回忆<font clolor="red">warp</font>：<ul>
+<li><font color="gree" size="4">在一个block中，连续的32个threads一组构成一个warp; </font></li>
+<li>warp 是最基本的调度单元</li>
+<li>warp中的threads在同步执行相同的指令（SIMT）</li>
+<li>warp中threads需要执行不同 的路径时（分支发散），warp中每个threads都要执行所有的分支，因为是同步的。比如一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</li>
+<li>warp之间时没有关系的。</li>
+<li>warp间的切换时没有代价的。多warp工作可以隐藏延时</li>
+<li>warp的分割，连续32个threadIdx.x 为一组（一个warp）0到31，32到63，…</li>
+<li>warp中的分支发散不总是问题，但是如有很多分支语句的话，每个thread就需要执行所有的分支。</li>
+<li>在设计程序时，不应个这样：<code>if (threadIdx.x &gt; 15){...}</code> 而应该这样<code>if (threadIdx.x &gt; 32-1) {...}</code>。后者，表示说，第一个warp干他的事，第二个warp执行这个分支。</li>
+</ul>
+</li>
+</ol>
+<p>就这个优化，当元素的个数小于32（warp的大小）时，<font color="red">不可避免</font>的会产生分支发散。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" data-id="ckatsrgrc0012xqfz3i0l2wo3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-例-向量相乘" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" class="article-date">
@@ -779,183 +948,6 @@
 
 
   
-    <article id="post-Computer-Composition" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/13/Computer-Composition/" class="article-date">
-  <time datetime="2020-01-13T07:24:48.000Z" itemprop="datePublished">2020-01-13</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/13/Computer-Composition/">Computer Composition</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>为什么出现计算机。计算机是发展出来的。从电子管到晶体管到集成电路到超大规模集成电路，到未来的生物计算机，量子计算机。</p>
-<p>早期计算机只含有固定用途的程序，这导致了，如果要改变工作内容，即程序，就需要重新设计结构电路。在没有通用计算机的当时，重新设计电路就很低效率。所以有了冯诺依曼的思想：</p>
-<p>把程序存储起来，并且设计通用电路。<font color="green">当需要运行某个程序时，将程序和数据放入存储器中，把程序翻译成电路能理解的语言，让通用电路执行逻辑</font>。这就是冯诺依曼思想的核心 “<font color="green">存储程序指令，设计通用电路</font>”。</p>
-<p>所以可以总结冯诺依曼体系是将<font color="green">程序指令</font>和<font color="green">数据</font>一起放入存储器的计算机设计概念。也就是说，用户只需要输入不同的程序被数据，就可以改变计算机的操作。</p>
-<p>具体说就是，创造通用的指令集结构，将程序转化成一串指令的集合。指令作为一种特殊的静态数据，这使得一台计算机可以改变运行内容，而不用重新设计电路。</p>
-<p>这是冯诺依曼的贡献。</p>
-<p>冯诺依曼体系的基本组件：   </p>
-<ol>
-<li>存储器。存储运行时的程序和数据</li>
-<li>程序计数器PC。执行到哪一步，下一步执行什么。能长期记忆程序数据中间结果以及最终结果</li>
-<li>运算器。具备算术，逻辑运算和数据传送等数据加工处理能力</li>
-<li>I/O设备。能把所需程序和数据，传送至计算机中。能将计算结果传入，输出给用户</li>
-</ol>
-<p>冯诺依曼体系的瓶颈：CPU和存储器速率之间的问题无法调和，CPU运算快，存储器速度慢。</p>
-<p>所以有了现代计算机体系架构。但也是在冯诺依曼体系上改进的。为了解决上述瓶颈，将存储器加入到CPU中组成了现代的CPU。</p>
-<p>所以现代计算机架构的核心，是以存储器。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/13/Computer-Composition/" data-id="ckatsrgrx002kxqfzhn855muo" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Trouble-Shooting" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/13/Trouble-Shooting/" class="article-date">
-  <time datetime="2020-01-12T17:49:49.000Z" itemprop="datePublished">2020-01-13</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/13/Trouble-Shooting/">Trouble-Shooting</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="查看所连接WiFi及psswrd"><a href="#查看所连接WiFi及psswrd" class="headerlink" title="查看所连接WiFi及psswrd"></a>查看所连接WiFi及psswrd</h2><ol>
-<li><p>查看所有链接过的WiFi： </p>
-<p> <code>$ cd /etc/NetworkManager/system-connections</code><br> <code>$ ls</code></p>
-</li>
-<li><p>选择所查看WiFi,显示配置文件：</p>
-<p> <code>$ sudo vim TP-LINK_DBBB</code></p>
-</li>
-<li><p>对应密码在<code>wifi-security</code>字段的<code>psk</code>处</p>
-</li>
-</ol>
-<h2 id="为应用创建快捷方式-如firefox"><a href="#为应用创建快捷方式-如firefox" class="headerlink" title="为应用创建快捷方式 如firefox"></a>为应用创建快捷方式 如firefox</h2><ol>
-<li><p>下载firefox</p>
-</li>
-<li><p><code>$ tar -xvf firefox-70.0.1.tar.bz2</code> 解压</p>
-</li>
-<li><p><code>$ mv firefox /opt</code> 将解压后文件放入opt</p>
-</li>
-<li><p><code>$ cd /usr/share/applications</code></p>
-</li>
-<li><p><code>$ sudo touch firefox.desktop</code> 创建桌面图标文件</p>
-</li>
-<li><p><code>$ sudo vim firefox.desktop</code> 编辑文件</p>
-<pre><code>[Desktop Entry]
-Name=Firefox
-Comment=this is firefox
-Exec=/opt/firefox/firefox
-Icon=/opt/firefox/chrome/default/icons/default128.png
-Terminal=false
-Type=Application
-Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可执行文件的路径；<code>Icon</code>是Firefox应用图标路径</p>
-</li>
-<li><p><code>icon</code>加入了application 列表，便可以快速访问了</p>
-</li>
-</ol>
-<h2 id="apt-install-fail"><a href="#apt-install-fail" class="headerlink" title="apt install fail"></a>apt install fail</h2><p>Linux 中<code>sudo apt install ...</code>时关于<code>could not get lock /var/lib/dpkg/lock -open(11:Resource temorarily unavailable)</code>的解决方案：</p>
-<ul>
-<li><p>第一步：找到所有含有“apt”的进程：</p>
-<p>  <code>$ ps -A | grep apt</code></p>
-</li>
-<li><p>第二步：删除所有你含”apt”的进程：</p>
-<p>  <code>$ sudo kill -9 进程ID</code></p>
-</li>
-</ul>
-<h2 id="更新activation-key-windows"><a href="#更新activation-key-windows" class="headerlink" title="更新activation key(windows)"></a>更新activation key(windows)</h2><ul>
-<li><p>卸载之前的key</p>
-<p>  <code>&gt; slmgr.vbs /upk</code></p>
-</li>
-<li><p>安装新的key</p>
-<p>  <code>&gt; slmgr /ipk XXXXX-XXXXX-XXXXX-XXXXX-XXXXX</code></p>
-</li>
-<li><p>设置计算机秘钥管理地址</p>
-<p>  <code>&gt; slmgr /XXX.XXX.XXX</code></p>
-</li>
-<li><p>激活</p>
-<p>  <code>&gt; slmgr /ato</code></p>
-</li>
-</ul>
-<h2 id="修复U盘（Windows）"><a href="#修复U盘（Windows）" class="headerlink" title="修复U盘（Windows）"></a>修复U盘（Windows）</h2><p>当优盘出现问题时，比如作为系统盘使用后的异常。可以使用一下方法修复。windows中。</p>
-<p>在terminal中依次输入下面命令：</p>
-<ol>
-<li><p><code>diskpart</code>: 进入磁盘交互界面</p>
-</li>
-<li><p><code>list disk</code>: 返回机器中的所有磁盘的列表。比如“磁盘0”，“磁盘1”.</p>
-</li>
-<li><p><code>select disk 1</code>: 选择待处理的盘，比如“磁盘1”，从容量上也可以区分。</p>
-</li>
-<li><p><code>clean</code>: 删除U盘下的所有分区。</p>
-</li>
-<li><p><code>create partition primiry</code>: 在U盘中建立一个主分区。</p>
-</li>
-<li><p><code>active</code>: 激活</p>
-</li>
-<li><p><code>format fs=fat32 quick</code>: 快速格式化磁盘为fat32格式。加<code>quick</code>与没有加<code>quick</code>的区别：</p>
-<ul>
-<li>加<code>quick</code>只是删除磁盘中的文件。</li>
-<li>不加<code>quick</code>是真正地格式化，将磁盘重新分道分簇。</li>
-</ul>
-</li>
-<li><p><code>exit</code>: 推出磁盘交互界面</p>
-</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/13/Trouble-Shooting/" data-id="ckatsrgsj0042xqfzhxrhd5m3" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -971,7 +963,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1000,7 +992,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1013,6 +1005,14 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
       <ul>
         
           <li>
+            <a href="/2020/06/06/caffe-SyncedMemory/">caffe-SyncedMemory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/06/caffe-Blob-2/">caffe-Blob-(2)</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/04/caffe-Blob-1/">caffe-Blob-(1)</a>
           </li>
         
@@ -1022,14 +1022,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
           <li>
             <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
           </li>
         
       </ul>

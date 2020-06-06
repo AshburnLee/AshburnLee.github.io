@@ -64,6 +64,127 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-模型评价-F1度量-F-beta度量" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" class="article-date">
+  <time datetime="2019-08-06T04:46:00.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/">模型评价-F1度量-F_beta度量</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="F1"><a href="#F1" class="headerlink" title="F1"></a>F1</h1><p>F1度量是基于Precision和recall的调和平均定义的：</p>
+<p><font color="red">定义</font></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">f1_score</span><span class="params">(precision, recall)</span>:</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span> * precision * recall/(precision+recall)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br></pre></td></tr></table></figure>
+
+<p>对于一个训练好的模型，用于测试样本上得到测试样本的预测值，和真实值一起，计算出P&amp;R。代入F1定义，得这个模型的F1值：</p>
+<p>代入不同的P&amp;R组合，看看对应F1：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">print(f1_score(<span class="number">0.9</span>, <span class="number">0.8</span>))    <span class="comment"># 0.8470588235294118</span></span><br><span class="line">print(f1_score(<span class="number">0.9</span>, <span class="number">0.1</span>))    <span class="comment"># 0.18000000000000002</span></span><br><span class="line">print(f1_score(<span class="number">0.5</span>, <span class="number">0.5</span>))    <span class="comment"># 0.5</span></span><br><span class="line">print(f1_score(<span class="number">0.1</span>, <span class="number">0.1</span>))    <span class="comment"># 0.10000000000000002</span></span><br></pre></td></tr></table></figure>
+<p>根据这些结果可以看出调和平均值的特点：<font color="red">当P&amp;R值都较大时，对应F1也较大。当P&amp;R一大一小差别很大时，对应F1接近较小值。当P&amp;R值很平均时，F1接近两者的平均值</font>。</p>
+<p>F1是综合考虑了P值和R值，一般地，F1值越大表示模型性能越好。但是，如上一篇笔记所述，<font color="red">不同的实际应用场景对于P和R的重视程度是不同的</font>。如，在推荐系统中，为了尽可能精准推荐，P就相对重要；逃犯系统中，为了不漏掉任何一个罪犯，哪怕一个很可疑但无辜的嫌疑人，先认为他是罪犯，抓起来再说。此时R相对重要。对于冤枉的，进一步审问就好了；而对于实际是罪犯，但被模型漏掉了，此情况代价是很高的。<br>所以<font color="red">对于具体问题，使用F-beta度量</font>。</p>
+<h1 id="F-beta"><a href="#F-beta" class="headerlink" title="F-beta"></a>F-beta</h1><p>F-beta是F1的更一般形式，它表达出对<font color="red">P&amp;R的不同偏好</font>：</p>
+<p>定义</p>
+<p>把训练好的样本用于测试集<code>y_test</code>后，得到的预测值<code>y_predict</code>，代入F-beta定义：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> fbeta_score</span><br><span class="line"></span><br><span class="line">print(f1_score(y_test, y_predict))          <span class="comment"># 0.867469879518</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">1</span>))    <span class="comment"># 0.867469879518   when beta=1,</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">0.2</span>))  <span class="comment"># 0.940703517588   when beta=0.2,</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">0.8</span>))  <span class="comment"># 0.883832335329   when beta=0.8,</span></span><br><span class="line">print(fbeta_score(y_test, y_predict, <span class="number">1.8</span>))  <span class="comment"># 0.830467899891   when beta=1.8,</span></span><br></pre></td></tr></table></figure>
+<p>beta&gt;0为前提条件。beta为1时，退化为F1。beta&lt;1，P影响大，beta&gt;1，R影响大。<br><strong>不同的beta值代表不同的应用场景，一个训练好的模型有它实用的场景</strong>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" data-id="ckatsrgtc005sxqfz5weh4wry" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-模型评价-混淆矩阵-Confusion-Matrix" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" class="article-date">
+  <time datetime="2019-08-06T03:17:11.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/">模型评价-混淆矩阵(Confusion Matrix)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Confusion Matrix。</p>
+<p>当训练好了模型，需要评价它的性能。错误率和准确率是常用的，一般为了测试一个模型的正确性，用这个指标，尤其对于<strong>极度均衡</strong>的数据。但是对于<strong>极度偏斜</strong>的数据，用准确率评价模型很可能得到的结果表示，这个模型还不如随机猜测的准确率高。此时准确率不足以衡量模型性能。所以必要使用其他性能指标。</p>
+<p>由混淆矩阵得到的Precision， Recall 和 F1度量，F-beta度量。</p>
+<p>其定义不赘述，看下图。</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/p-r.png" width="350"></div>
+
+<p>图中，P，R的含义在清楚不过了。</p>
+<p>使用真实数据集算一下。</p>
+<p>引入数据，把它变为极度偏斜的二分类问题：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">digits = datasets.load_digits()</span><br><span class="line">x = digits.data</span><br><span class="line">y = digits.target.copy()</span><br><span class="line"></span><br><span class="line">y[digits.target == <span class="number">9</span>] = <span class="number">1</span></span><br><span class="line">y[digits.target != <span class="number">9</span>] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 分训练样本和测试样本</span></span><br><span class="line">x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=<span class="number">666</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这里使用Logistic Regression对其学习：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line">log_reg = LogisticRegression()</span><br><span class="line">log_reg.fit(x_train, y_train)</span><br><span class="line">acc = log_reg.score(x_test, y_test)</span><br><span class="line">y_log_predict = log_reg.predict(x_test)</span><br><span class="line">print(acc)</span><br></pre></td></tr></table></figure>
+<p>得结果：0.975555555556。注意数据集是很不平衡的，所以这个值不可靠。</p>
+<p>根据混淆矩阵的定义，可得：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FN</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">1</span>) &amp; (y_predict == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FP</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> len(y_true) == len(y_predict)</span><br><span class="line">    <span class="keyword">return</span> np.sum((y_true == <span class="number">0</span>) &amp; (y_predict == <span class="number">1</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">confusion_matrix</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> np.array([[TN(y_true, y_predict), FP(y_true, y_predict)],</span><br><span class="line">                     [FN(y_true, y_predict), TP(y_true, y_predict)]])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印出混淆矩阵：</span></span><br><span class="line">print(confusion_matrix(y_test, y_log_predict))</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[[<span class="number">403</span>   <span class="number">2</span>]</span><br><span class="line"> [  <span class="number">9</span>  <span class="number">36</span>]]</span><br></pre></td></tr></table></figure>
+
+<p>一般来说，最优情况是，其对角线的值最大，斜对角线值为0。详见多分类问题的混淆矩阵。</p>
+<p>Precision=0.947368421053， Recall=0.8。标准是，此而值同时越大模型性能约优。可以说这个模型的性能还不错。</p>
+<p><font color="green" size="5">敲黑板</font>啥是R，“<strong>所有实际为正的样本，我的模型有多少也认为为正</strong>”。啥是P，“<strong>所有我的模型认为为正的样本，有多少确实为正</strong>”。可以体会到，P&amp;R 是不同角度的两个指标。根据信息论观点，<strong>引入相似但不相同的信息有助于减少系统的不确定性</strong>。两个指标同时考虑比单单考虑一个指标更能确定模型的性能。实际上，可能的情况下，对于一个训练好的模型，所有可能的指标都应该看看。<br>另一方面，P&amp;R两者的关注点不同，所以对于不同的实际任务，P&amp;R值的相对大小可以有所不同。举例，对于病例数据，尽可能希望所有实际有病的样本，模型也认为有病。即实际有病的样本模型都可以判断出来，即使没病的模型认为有病，没关系，复查就好了。这就是R值越大模型性能越好。反而P值相对不重要。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-%E6%B7%B7%E6%B7%86%E7%9F%A9%E9%98%B5-Confusion-Matrix/" data-id="ckatsrgtd005wxqfzcov0h8m0" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-文本分类-三-构建模型II-LSTM层结点实现细节" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/05/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%89-%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%9E%8BII-LSTM%E5%B1%82%E7%BB%93%E7%82%B9%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82/" class="article-date">
@@ -852,120 +973,6 @@
 
 
   
-    <article id="post-Google-Inception-Net-分组卷积单元-Inception-Module" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" class="article-date">
-  <time datetime="2019-08-01T08:53:25.000Z" itemprop="datePublished">2019-08-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/">Google Inception Net-分组卷积单元(Inception Module)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录Inception Net的分组卷积操作及Inception Module的作用及实现。</p>
-<p>Google Inception Net V1首次出现在2014年，其有网络结构有22层，比同年出现的VGGNet的19层更深。Inception Net有一下特点：</p>
-<ul>
-<li>同一层上使用多种卷积核</li>
-<li>卷积核大小较小，通常只使用1x1，3x3，5x5的尺寸</li>
-</ul>
-<h2 id="Inception-Module结构"><a href="#Inception-Module结构" class="headerlink" title="Inception Module结构"></a>Inception Module结构</h2><p>其核心是分组卷积，即同一层上使用多种尺寸的卷积核，每一个卷积核得到同一层上<font color="red">不同尺度</font>的特征。不同组之间的特征<font color="red">不交叉</font>计算，如此便减少了计算量。</p>
-<p>多用小尺寸的卷积核，尤其是多次用到1x1的。这是因为<font color="red">1x1的核性价比很高</font>，即<font color="red">消耗很少的计算量就可以增加一层非线性变换</font>。<br>如下图所示，实际会更灵活：</p>
-<div align="center"> <img src="/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/inceptionBlock.png" width="600"> </div>
-<div align="center">分别使用1x1, 3x3, 5x5的卷积核采样。</div>
-
-
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>以下是根据上图的分组卷积结构而实现的python代码：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">inception_block</span><span class="params">(x, output_channel_for_each_path, name)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name): <span class="comment"># avoid name conflict</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(x,</span><br><span class="line">                                   output_channel_for_each_path[<span class="number">0</span>],</span><br><span class="line">                                   (<span class="number">1</span>, <span class="number">1</span>),            <span class="comment"># 1x1 卷积核</span></span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">        conv3_3 = tf.layers.conv2d(x,</span><br><span class="line">                                   output_channel_for_each_path[<span class="number">1</span>],</span><br><span class="line">                                   (<span class="number">3</span>, <span class="number">3</span>),            <span class="comment">#3x3 卷积核</span></span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv3_3'</span>)</span><br><span class="line">        conv5_5 = tf.layers.conv2d(x,</span><br><span class="line">                                   output_channel_for_each_path[<span class="number">2</span>],</span><br><span class="line">                                   (<span class="number">5</span>, <span class="number">5</span>),             <span class="comment"># 5x5 卷积核</span></span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv5_5'</span>)</span><br><span class="line">        max_pooling = tf.layers.max_pooling2d(x,</span><br><span class="line">                                              (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                              (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                              name = <span class="string">'max_pooling'</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># max_pooling: output = 1/2 input, so need to add 0; </span></span><br><span class="line">    max_pooling_shape = max_pooling.get_shape().as_list()[<span class="number">1</span>:]  <span class="comment"># size of the output</span></span><br><span class="line">    input_shape = x.get_shape().as_list()[<span class="number">1</span>:]                  <span class="comment"># size of the input</span></span><br><span class="line">    </span><br><span class="line">    width_padding = (input_shape[<span class="number">0</span>] - max_pooling_shape[<span class="number">0</span>]) // <span class="number">2</span> <span class="comment"># pad to width</span></span><br><span class="line">    height_padding = (input_shape[<span class="number">1</span>] - max_pooling_shape[<span class="number">1</span>]) // <span class="number">2</span> <span class="comment">#pad to height</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    padded_pooling = tf.pad(max_pooling,</span><br><span class="line">                            [[<span class="number">0</span>, <span class="number">0</span>],</span><br><span class="line">                             [width_padding, width_padding],</span><br><span class="line">                             [height_padding, height_padding],</span><br><span class="line">                             [<span class="number">0</span>, <span class="number">0</span>]])</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># put together all pieses</span></span><br><span class="line">    concat_layer = tf.concat(</span><br><span class="line">                            [conv1_1, conv3_3, conv5_5, padded_pooling],</span><br><span class="line">                            axis = <span class="number">3</span>)</span><br><span class="line">    <span class="keyword">return</span> concat_layer</span><br></pre></td></tr></table></figure>
-
-<p>以上代码片段实现的是Inception V1实际会更灵活。到了Inception V2，用两个3x3代替5x5的卷积核。到了V3，将较大的二维卷积拆成一维卷积，比如将7x7的拆成<font color="red">1x7</font>和<font color="red">7x1</font>两个卷积。到了V4 模型结合了ResNet的<a href="https://ashburnlee.github.io/2019/08/01/ResNet-Residual-Unit/" target="_blank" rel="noopener">残差学习块</a>。</p>
-<p>本笔记记录了分组卷积的作用及实现，完整的Inception Net实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/inception_net.ipynb" target="_blank" rel="noopener">这里</a>。</p>
-<hr>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" data-id="ckatsrgs2002xxqfz4ca20tdj" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-ResNet-残差学习单元-Residual-Unit" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" class="article-date">
-  <time datetime="2019-08-01T06:12:00.000Z" itemprop="datePublished">2019-08-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/">ResNet 残差学习单元(Residual Unit)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录残差学习块(Residual Unit)的作用及实现。</p>
-<p>ResNet(Residual Neural Network)是在2015年提出，其对于之前的深层网络对大特点是其结构中的残差学习块。<br><br>在网络不断加深的过程中会出现Degradation的现象，也就是说再持续增加网络的<font color="red">深度导致准确率下降</font>。ResNet的灵感源于：一个比较浅的网络达到饱和准确率后，在其后加上几个<code>y=x</code>全等映射层，<font color="red">至少不会使误差增加</font>。</p>
-<h2 id="Residual-Unit"><a href="#Residual-Unit" class="headerlink" title="Residual Unit"></a>Residual Unit</h2><p>假设有一段网络的输入是<code>x</code>，它回经过若干层非线性变换得到结果<code>y</code>，假设其期望输出为<code>y_</code>，同时<code>x</code>也作为输出的一部分加在<code>y</code>中。那么网络的学习目标是<code>y_-x</code>。ResNet相当于改变了学习的目标，它不再是完整的输出<code>y_</code>， 而是输出与输入的差<code>y_-x</code>，也就是Residual(残差)。如下图：</p>
-<div align="center"> 
-<img src="/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/resnet.png" width="500"> 
-</div>
-<div align="center">图中x为此残差块的输入，y_为期望输出，y为经过两个卷积层的输出。</div>
-
-<p>为什么ResNet回会有效，可以这样理解：传统的卷积层或全连接层在信息传递时，或多或少存在<font color="red">信息丢失</font>的问题，ResNet从一些程度上解决了这个问题，它通过<font color="red">直接</font>将输入加到输出上，保护了信息的完整性。</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">residual_block</span><span class="params">(x, output_channel)</span>:</span></span><br><span class="line">    <span class="string">"""residual connection implementation"""</span></span><br><span class="line">    input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">    <span class="keyword">if</span> input_channel * <span class="number">2</span> == output_channel: <span class="comment">#如果本层的输出通道数是输入通道数的2倍</span></span><br><span class="line">        increase_dim = <span class="literal">True</span></span><br><span class="line">        strides = (<span class="number">2</span>, <span class="number">2</span>)</span><br><span class="line">    <span class="keyword">elif</span> input_channel == output_channel:  <span class="comment">#如果本层的输出通道数与输入通道数相同</span></span><br><span class="line">        increase_dim = <span class="literal">False</span></span><br><span class="line">        strides = (<span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"input channel can't match output channel"</span>)</span><br><span class="line">    conv1 = tf.layers.conv2d(x,</span><br><span class="line">                             output_channel,</span><br><span class="line">                             (<span class="number">3</span>,<span class="number">3</span>),</span><br><span class="line">                             strides = strides,</span><br><span class="line">                             padding = <span class="string">'same'</span>,</span><br><span class="line">                             activation = tf.nn.relu,</span><br><span class="line">                             name = <span class="string">'conv1'</span>)</span><br><span class="line">    conv2 = tf.layers.conv2d(conv1,</span><br><span class="line">                             output_channel,</span><br><span class="line">                             (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                             strides = (<span class="number">1</span>, <span class="number">1</span>),</span><br><span class="line">                             padding = <span class="string">'same'</span>,</span><br><span class="line">                             activation = tf.nn.relu,</span><br><span class="line">                             name = <span class="string">'conv2'</span>)</span><br><span class="line">    <span class="comment"># 如果通道数翻倍了</span></span><br><span class="line">    <span class="keyword">if</span> increase_dim:</span><br><span class="line">        <span class="comment"># [None, image_width, image_height, channel] -&gt; [,,,channel*2]</span></span><br><span class="line">        pooled_x = tf.layers.average_pooling2d(x,</span><br><span class="line">                                               (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                               (<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                                               padding = <span class="string">'valid'</span>)</span><br><span class="line">        <span class="comment"># 使padded_x 与 conv2 大小相同</span></span><br><span class="line">        padded_x = tf.pad(pooled_x,</span><br><span class="line">                          [[<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                           [input_channel // <span class="number">2</span>, input_channel // <span class="number">2</span>]])</span><br><span class="line">    <span class="comment"># 如果通道数未翻倍</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        padded_x = x  <span class="comment"># 全等映射 </span></span><br><span class="line"></span><br><span class="line">    output_x = conv2 + padded_x </span><br><span class="line">    <span class="keyword">return</span> output_x</span><br></pre></td></tr></table></figure>
-
-<p>本笔记只是记录了残差学习块的作用及实现，完整的ResNet实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/resnet.ipynb" target="_blank" rel="noopener">这里</a>。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" data-id="ckatsrgsf003uxqfz42xuc8qp" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -981,7 +988,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1010,7 +1017,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1023,6 +1030,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/06/caffe-SyncedMemory/">caffe-SyncedMemory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/06/caffe-Blob-2/">caffe-Blob-(2)</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/04/caffe-Blob-1/">caffe-Blob-(1)</a>
           </li>
         
@@ -1032,14 +1047,6 @@
         
           <li>
             <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
           </li>
         
       </ul>

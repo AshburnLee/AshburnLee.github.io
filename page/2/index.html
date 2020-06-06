@@ -64,6 +64,186 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-caffe-sigmoid-cross-entropy-loss-layer类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/" class="article-date">
+  <time datetime="2020-06-01T22:46:30.000Z" itemprop="datePublished">2020-06-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/">caffe-sigmoid_cross_entropy_loss_layer类</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="sigmoid-cross-entropy-loss-layer类"><a href="#sigmoid-cross-entropy-loss-layer类" class="headerlink" title="sigmoid_cross_entropy_loss_layer类"></a>sigmoid_cross_entropy_loss_layer类</h1><p>头文件： <code>./include/caffe/layers/sigmoid_cross_entropy_loss_layer.hpp</code><br>CPU实现： <code>./src/caffe/layers/sigmoid_cross_entropy_loss_layer.cpp</code><br>GPU实现： <code>./src/caffe/layers/sigmoid_cross_entropy_loss_layer.cu</code></p>
+<h2 id="所需要基本操作的CPU和GPU实现："><a href="#所需要基本操作的CPU和GPU实现：" class="headerlink" title="所需要基本操作的CPU和GPU实现："></a>所需要基本操作的CPU和GPU实现：</h2><p><code>bottom_diff = sigmoid_output_data - target</code> 的实现如下</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CPU</span></span><br><span class="line">caffe_sub(count, sigmoid_output_data, target, bottom_diff):</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对应的GPU</span></span><br><span class="line">caffe_copy(count, sigmoid_output_data, bottom_diff);</span><br><span class="line">caffe_gpu_axpy(count, Dtype(<span class="number">-1</span>), target, bottom_diff);</span><br></pre></td></tr></table></figure>
+
+<p><code>bottom_diff</code> 中每个元素乘以<code>loss_weight</code>， 共操作<code>count</code>个元素。其实现如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CPU</span></span><br><span class="line">caffe_scal(count, loss_weight, bottom_diff);</span><br><span class="line"><span class="comment">// GPU</span></span><br><span class="line">caffe_gpu_scal(count, loss_weight, bottom_diff);</span><br></pre></td></tr></table></figure>
+
+<p>上述函数分别使用了<code>cBLAS</code> 和<code>cuBlas</code>两个库函数。<code>sigmoid_output_data</code>是前向传播的结果。上述两步其实是反向传播的过程，最终将结果写入<code>bottom_diff</code>中，它是<code>Blob</code>的一部分，会随着数据的走向继续传播下去。</p>
+<h2 id="后向传播"><a href="#后向传播" class="headerlink" title="后向传播"></a>后向传播</h2><ol>
+<li><p>CPU</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Backward_cpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line"><span class="keyword">if</span> (propagate_down[<span class="number">1</span>]) &#123;</span><br><span class="line">	LOG(FATAL) &lt;&lt; <span class="keyword">this</span>-&gt;type()</span><br><span class="line">			&lt;&lt; <span class="string">" Layer cannot backpropagate to label inputs."</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">	<span class="comment">// First, compute the diff</span></span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">	<span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;cpu_data();</span><br><span class="line">	<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line">	Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line">	caffe_sub(count, sigmoid_output_data, target, bottom_diff);</span><br><span class="line">	<span class="comment">// Zero out gradient of ignored targets.</span></span><br><span class="line">	<span class="keyword">if</span> (has_ignore_label_) &#123;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</span><br><span class="line">			<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">			<span class="keyword">if</span> (target_value == ignore_label_) &#123;</span><br><span class="line">				bottom_diff[i] = <span class="number">0</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Scale down gradient</span></span><br><span class="line">	Dtype loss_weight = top[<span class="number">0</span>]-&gt;cpu_diff()[<span class="number">0</span>] / normalizer_;</span><br><span class="line">	caffe_scal(count, loss_weight, bottom_diff);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 因为是在CPU端，与GPU无关，所以上述code中没有<code>gpu_data</code>或<code>gpu_diff</code>。<br> 主要操作，取数据，执行操作：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 取Blob数据</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"><span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;cpu_data();</span><br><span class="line"><span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line">Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line"><span class="comment">// 如上述操作</span></span><br><span class="line">caffe_sub(count, sigmoid_output_data, target, bottom_diff);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>GPU</p>
+<p> 与cpu相似：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Backward_gpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">1</span>]) &#123;</span><br><span class="line">	LOG(FATAL) &lt;&lt; <span class="keyword">this</span>-&gt;type()</span><br><span class="line">				&lt;&lt; <span class="string">" Layer cannot backpropagate to label inputs."</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">		<span class="comment">// First, compute the diff</span></span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">		<span class="keyword">const</span> Dtype* sigmoid_output_data = sigmoid_output_-&gt;gpu_data();</span><br><span class="line">		<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;gpu_data();</span><br><span class="line">		Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">		caffe_copy(count, sigmoid_output_data, bottom_diff);</span><br><span class="line">		caffe_gpu_axpy(count, Dtype(<span class="number">-1</span>), target, bottom_diff);</span><br><span class="line">		<span class="comment">// Zero out gradient of ignored targets.</span></span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_) &#123;</span><br><span class="line">			<span class="comment">// NOLINT_NEXT_LINE(whitespace/operators)</span></span><br><span class="line">			SigmoidCrossEntropyLossIgnoreDiffGPU&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count),</span><br><span class="line">			CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(count, ignore_label_, target, bottom_diff);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// Scale down gradient</span></span><br><span class="line">		Dtype loss_weight = top[<span class="number">0</span>]-&gt;cpu_diff()[<span class="number">0</span>] / normalizer_;</span><br><span class="line">		caffe_gpu_scal(count, loss_weight, bottom_diff);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 加上kernel函数，其作用是将不需要计算梯度的位置设为零，与CPU含义相同：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidCrossEntropyLossIgnoreDiffGPU</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> count,</span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> <span class="keyword">int</span> ignore_label, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">const</span> Dtype* target, </span></span></span><br><span class="line"><span class="function"><span class="params">						Dtype* diff)</span> </span>&#123;</span><br><span class="line">		CUDA_KERNEL_LOOP(i, count) &#123;</span><br><span class="line">			<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">			<span class="keyword">if</span> (target_value == ignore_label) &#123;</span><br><span class="line">				diff[i] = <span class="number">0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="前向传播"><a href="#前向传播" class="headerlink" title="前向传播"></a>前向传播</h2><p>头文件中的成员属性：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 一个SigmoidLayer类对象指针，预测值到概率值的映射</span></span><br><span class="line"><span class="built_in">shared_ptr</span>&lt;SigmoidLayer&lt;Dtype&gt; &gt; sigmoid_layer_;</span><br><span class="line"><span class="comment">/// 接收SigmoidLayer的输出.</span></span><br><span class="line"><span class="built_in">shared_ptr</span>&lt;Blob&lt;Dtype&gt; &gt; sigmoid_output_;</span><br><span class="line"><span class="comment">/// bottom vector holder to call the underlying SigmoidLayer::Forward</span></span><br><span class="line"><span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt; sigmoid_bottom_vec_;</span><br><span class="line"><span class="comment">/// top vector holder to call the underlying SigmoidLayer::Forward</span></span><br><span class="line"><span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt; sigmoid_top_vec_;</span><br><span class="line"><span class="comment">/// Whether to ignore instances with a certain label.</span></span><br><span class="line"><span class="keyword">bool</span> has_ignore_label_;</span><br><span class="line"><span class="comment">/// The label indicating that an instance should be ignored.</span></span><br><span class="line"><span class="keyword">int</span> ignore_label_;</span><br><span class="line"><span class="comment">/// How to normalize the loss.</span></span><br><span class="line">LossParameter_NormalizationMode normalization_;</span><br><span class="line">Dtype normalizer_;</span><br><span class="line"><span class="keyword">int</span> outer_num_, inner_num_;</span><br></pre></td></tr></table></figure>
+
+<p>先执行forward操作：<code>sigmoid_layer_-&gt;Forward(_, _)</code> 。其参数<code>sigmoid_bottom_vec_</code>和<code>sigmoid_top_vec_</code>是两个该类的成员变量，其值随操作的执行而改变，这里要改变的是前者，这个实现在源码中的成员函数<code>LayerSetUp()</code>。</p>
+<p><code>sigmoid_layer_</code>也是成员变量，其定义：<code>shared_ptr&lt;SigmoidLayer&lt;Dtype&gt; &gt; sigmoid_layer_;</code>。CPU和GPU实现见下：</p>
+<ol>
+<li><p>CPU</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Forward_cpu(</span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, </span><br><span class="line">						<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	<span class="comment">// The forward pass computes the sigmoid outputs.</span></span><br><span class="line">	<span class="comment">// 1. Forward计算sigmoid 的输出，并且取数据</span></span><br><span class="line">	sigmoid_bottom_vec_[<span class="number">0</span>] = bottom[<span class="number">0</span>];</span><br><span class="line">	sigmoid_layer_-&gt;Forward(sigmoid_bottom_vec_, sigmoid_top_vec_);</span><br><span class="line">	<span class="comment">// Compute the loss (negative log likelihood)</span></span><br><span class="line">	<span class="comment">// Stable version of loss computation from input data</span></span><br><span class="line">	<span class="keyword">const</span> Dtype* input_data = bottom[<span class="number">0</span>]-&gt;cpu_data();</span><br><span class="line">	<span class="keyword">const</span> Dtype* target = bottom[<span class="number">1</span>]-&gt;cpu_data();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. 计算 对数似然</span></span><br><span class="line">	<span class="keyword">int</span> valid_count = <span class="number">0</span>;</span><br><span class="line">	Dtype loss = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bottom[<span class="number">0</span>]-&gt;count(); ++i) &#123;</span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_ &amp;&amp; target_value == ignore_label_) &#123;</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		loss -= input_data[i] * (target[i] - (input_data[i] &gt;= <span class="number">0</span>)) -</span><br><span class="line">			<span class="built_in">log</span>(<span class="number">1</span> + <span class="built_in">exp</span>(input_data[i] - <span class="number">2</span> * input_data[i] * (input_data[i] &gt;= <span class="number">0</span>)));</span><br><span class="line">		++valid_count;</span><br><span class="line">	&#125;</span><br><span class="line">	normalizer_ = get_normalizer(normalization_, valid_count);</span><br><span class="line">	top[<span class="number">0</span>]-&gt;mutable_cpu_data()[<span class="number">0</span>] = loss / normalizer_;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>再看<code>sigmoid_layer_-&gt;Forward(_, _);</code>，<code>SigmoidLayer</code>类并没有<code>Formard()</code>方法，所以此方法一定是从其父类继承而来。看源码找到继承顺序：<code>SigmoidLayer::NeuronLayer::Layer</code>，所以这里的<code>Forward()</code>是<code>Layer</code>类的方法，祥看<code>Layer.hpp</code>。</p>
+<ol start="2">
+<li><p>GPU</p>
+<p> 与CPU类似，将CPU中的for循环由kernel函数代替：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidCrossEntropyLossForwardGPU</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> nthreads,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">const</span> Dtype* input_data, <span class="keyword">const</span> Dtype* target, Dtype* loss,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">const</span> <span class="keyword">bool</span> has_ignore_label_, <span class="keyword">const</span> <span class="keyword">int</span> ignore_label_,</span></span></span><br><span class="line"><span class="function"><span class="params">		Dtype* counts)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(i, nthreads) &#123;</span><br><span class="line">		<span class="keyword">const</span> <span class="keyword">int</span> target_value = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(target[i]);</span><br><span class="line">		<span class="keyword">if</span> (has_ignore_label_ &amp;&amp; target_value == ignore_label_) &#123;</span><br><span class="line">			loss[i] = <span class="number">0</span>;</span><br><span class="line">			counts[i] = <span class="number">0</span>;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			loss[i] = input_data[i] * (target[i] - (input_data[i] &gt;= <span class="number">0</span>)) -</span><br><span class="line">				<span class="built_in">log</span>(<span class="number">1</span> + <span class="built_in">exp</span>(input_data[i] - <span class="number">2</span> * input_data[i] *</span><br><span class="line">				(input_data[i] &gt;= <span class="number">0</span>)));</span><br><span class="line">			counts[i] = <span class="number">1</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> GPU中的前传播：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidCrossEntropyLossLayer&lt;Dtype&gt;::Forward_gpu()&#123;...&#125;</span><br></pre></td></tr></table></figure>
+<p> 函数体省略，不过在源码中有一点提出：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Since this memory is not used for anything, we use it here to avoid having</span></span><br><span class="line"><span class="comment">// to allocate new GPU memory to accumulate intermediate results.</span></span><br><span class="line">Dtype* loss_data = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">Dtype* count_data = bottom[<span class="number">1</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line"><span class="comment">// Clear scratch memory to prevent interfering with backward (see #6202).</span></span><br><span class="line">caffe_gpu_set(bottom[<span class="number">0</span>]-&gt;count(), Dtype(<span class="number">0</span>), bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff());</span><br><span class="line">caffe_gpu_set(bottom[<span class="number">1</span>]-&gt;count(), Dtype(<span class="number">0</span>), bottom[<span class="number">1</span>]-&gt;mutable_gpu_diff());</span><br></pre></td></tr></table></figure>
+
+<p> 这是CPU版本中没有的，因为kernel函数中需要传入对象数组，但是这部分的地址没有被开辟，所以为了避免在GPU上为中间结果开辟空间，所以使用Blob的暂时没有使用到的部分，作为临时存储空间，只不过，函数结束后要清理这部分空间。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p> 这个类除了上述的方法，还有其他方法详见源文件。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/" data-id="ckax32ye80002lcfz8wrwhkd6" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-caffe-sigmoidLayer类" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/" class="article-date">
+  <time datetime="2020-06-01T22:44:29.000Z" itemprop="datePublished">2020-06-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/">caffe-sigmoidLayer类</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>源码初体验，看一下sigmoid_layer类。</p>
+<h1 id="sigmoid-layers类"><a href="#sigmoid-layers类" class="headerlink" title="sigmoid_layers类"></a>sigmoid_layers类</h1><p>这个类的所有内容</p>
+<p>头文件： <code>./include/caffe/layers/sigmoid_layer.hpp</code><br>CPU实现： <code>./src/caffe/layers/sigmoid_layer.cpp</code><br>GPU实现：<code>./src/caffe/layers/sigmoid_layer.cu</code></p>
+<p>对于这个类的官方文档<a href="http://caffe.berkeleyvision.org/tutorial/net_layer_blob.html" target="_blank" rel="noopener">见此</a></p>
+<h2 id="头文件sigmoid-layer-hpp中包含"><a href="#头文件sigmoid-layer-hpp中包含" class="headerlink" title="头文件sigmoid_layer.hpp中包含"></a>头文件sigmoid_layer.hpp中包含</h2><ol>
+<li>继承自NeuronLayer::Layer类的构造函数：SigmoidLayer()</li>
+<li>返回这个列的名字：type()</li>
+<li>前先计算的CPU声明：Forward_cpu()和GPU声明：Forward_gpu()</li>
+<li>后传计算的CPU声明：Backward_cpu()和GPU声明：Backward_gpu()</li>
+</ol>
+<h2 id="前向传播"><a href="#前向传播" class="headerlink" title="前向传播"></a>前向传播</h2><ol>
+<li><p>CPU</p>
+<p> 前向计算是将bottom数据经过sigmoid函数得到top数据。所以其基本操作是sigmoid()。CPU实现：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Dtype <span class="title">sigmoid</span><span class="params">(Dtype x)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0.5</span> * <span class="built_in">tanh</span>(<span class="number">0.5</span> * x) + <span class="number">0.5</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 有了sigmoid()，前向传播计算如下：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Forward_cpu(<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	Dtype* bottom_data = bottom[<span class="number">0</span>]-&gt;cpu_data();</span><br><span class="line">	Dtype* top_data = top[<span class="number">0</span>]-&gt;mutable_cpu_data();</span><br><span class="line">	<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</span><br><span class="line">		top_data[i] = sigmoid(bottom_data[i]);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> Blob是caffe中最小的数据载体，Blob的定义见Blob的笔记博客。</p>
+</li>
+<li><p>GPU<br> sigmoid()对应的GPU实现：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidForward</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> n, <span class="keyword">const</span> Dtype* in, Dtype* out)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(index, n) &#123;</span><br><span class="line">		out[index] = <span class="number">0.5</span> * <span class="built_in">tanh</span>(<span class="number">0.5</span> * in[index]) + <span class="number">0.5</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 其中<code>CUDA_KERNEL_LOOP(index, n)</code>给定线程id，并且将线程映射到数据上，实现数据并行。其宏定义在这里<code>include/caffe/util/device_alternate.hpp</code>：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CUDA: grid stride looping</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CUDA_KERNEL_LOOP(i, n) \</span></span><br><span class="line"> 	<span class="keyword">for</span> (<span class="keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x; \</span><br><span class="line">      i &lt; (n); \</span><br><span class="line">      i += blockDim.x * gridDim.x)</span><br></pre></td></tr></table></figure>
+<p> 这是个通用的循环，具体细节见关于CUDA的笔记博客。</p>
+<p> 同样的，GPU的前行传播：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Forward_gpu(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom, <span class="keyword">const</span> <span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top) &#123;</span><br><span class="line">	Dtype* bottom_data = bottom[<span class="number">0</span>]-&gt;gpu_data();</span><br><span class="line">	Dtype* top_data = top[<span class="number">0</span>]-&gt;mutable_gpu_data();</span><br><span class="line">	<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"></span><br><span class="line">	SigmoidForward&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(</span><br><span class="line">	count, bottom_data, top_data);</span><br><span class="line">	CUDA_POST_KERNEL_CHECK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 其中指定了当下机器每block可用threads数目，并可计算出使用到的block数。</p>
+<p> 具体地：<code>CAFFE_CUDA_NUM_THREADS</code>=512，每个block启用512个threads，而    <code>CAFFE_GET_BLOCKS(count)</code>：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">CAFFE_GET_BLOCKS</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> N)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> (N + <span class="number">512</span> - <span class="number">1</span>) / <span class="number">512</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 对于像sigmoid简单的算子，直观上看，GPU实现其实就是将CPU实现的最内层的循环去掉，用并行执行的kernel函数替代。</p>
+</li>
+</ol>
+<h2 id="后向传播"><a href="#后向传播" class="headerlink" title="后向传播"></a>后向传播</h2><ol>
+<li><p>CPU</p>
+<p> 根据sigmoid 反向传播公式可以很容易写出如下：{<font color="red" size="4">将code中去掉的const都加上</font>}</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Backward_cpu(</span><br><span class="line">							<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top,</span><br><span class="line">							<span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">							<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">		Dtype* top_data = top[<span class="number">0</span>]-&gt;cpu_data();</span><br><span class="line">		Dtype* top_diff = top[<span class="number">0</span>]-&gt;cpu_diff();</span><br><span class="line">		Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_cpu_diff();</span><br><span class="line">		<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</span><br><span class="line">			<span class="keyword">const</span> Dtype sigmoid_x = top_data[i];</span><br><span class="line">			bottom_diff[i] = top_diff[i] * sigmoid_x * (<span class="number">1.</span> - sigmoid_x);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 其中<code>top_diff[i]</code>是与前行传播的输出有关的数值。</p>
+</li>
+<li><p>GPU</p>
+<p> 对于GPU实现，只需将上述code 中最内层循环用kernel函数代替，所以要实现kernel函数：{<font color="red" size="4">将code中去掉的const都加上</font>}</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">SigmoidBackward</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span> n, </span></span></span><br><span class="line"><span class="function"><span class="params">							Dtype* in_diff,</span></span></span><br><span class="line"><span class="function"><span class="params">							Dtype* out_data, </span></span></span><br><span class="line"><span class="function"><span class="params">							Dtype* out_diff)</span> </span>&#123;</span><br><span class="line">	CUDA_KERNEL_LOOP(index, n) &#123;</span><br><span class="line">	Dtype sigmoid_x = out_data[index];</span><br><span class="line">		out_diff[index] = in_diff[index] * sigmoid_x * (<span class="number">1</span> - sigmoid_x);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 替换循环：{<font color="red" size="4">将code中去掉的const都加上</font>}</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SigmoidLayer&lt;Dtype&gt;::Backward_gpu(<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; top,</span><br><span class="line">							<span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;&amp; propagate_down,</span><br><span class="line">							<span class="built_in">vector</span>&lt;Blob&lt;Dtype&gt;*&gt;&amp; bottom) &#123;</span><br><span class="line">	<span class="keyword">if</span> (propagate_down[<span class="number">0</span>]) &#123;</span><br><span class="line">		Dtype* top_data = top[<span class="number">0</span>]-&gt;gpu_data();</span><br><span class="line">		Dtype* top_diff = top[<span class="number">0</span>]-&gt;gpu_diff();</span><br><span class="line">		Dtype* bottom_diff = bottom[<span class="number">0</span>]-&gt;mutable_gpu_diff();</span><br><span class="line">		<span class="keyword">int</span> count = bottom[<span class="number">0</span>]-&gt;count();</span><br><span class="line"></span><br><span class="line">		SigmoidBackward&lt;Dtype&gt;&lt;&lt;&lt;CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS&gt;&gt;&gt;(</span><br><span class="line">			count, top_diff, top_data, bottom_diff);</span><br><span class="line">		CUDA_POST_KERNEL_CHECK;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 上述很直接。</p>
+</li>
+</ol>
+<p><font color="gree" size="5">敲黑板</font><br><font color="orange" size="4">技巧</font>：在linux中使用<code>grep</code>命令可以在一个项目中查找关键字：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n -H -r <span class="string">"CUDA_KERNEL_LOOP"</span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/02/caffe-sigmoidLayer%E7%B1%BB/" data-id="ckax32ycl0000lcfzhejk7s23" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-anaconda-虚拟环境" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/26/anaconda-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83/" class="article-date">
@@ -216,6 +396,24 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 无explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    foo(<span class="keyword">int</span> n)&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">// 有explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">bar</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">bar</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">foo <span class="title">f1</span><span class="params">(<span class="number">2</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    foo* f2 = <span class="keyword">new</span> foo(<span class="number">2</span>);  <span class="comment">// correct</span></span><br><span class="line">    foo f3 = <span class="number">2</span>;  <span class="comment">// correct </span></span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="function">bar <span class="title">b1</span><span class="params">(<span class="number">3</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    bar* b2 = <span class="keyword">new</span> bar(<span class="number">3</span>); <span class="comment">// correct</span></span><br><span class="line">    bar b3 = <span class="number">3</span>; <span class="comment">// incorrect</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p><code>bar b3 = 3</code>含义是，3的类型int正好是bar单参数构造函数的参数类型int，这时候编译器就自动调用这个构造函数，创建一个bar的对象。这在<code>explicit</code>修饰下是不可行的，只能显式地以3为参数传给构造函数。</p>
+<h1 id="shared-ptr-lt-gt"><a href="#shared-ptr-lt-gt" class="headerlink" title="shared_ptr&lt;&gt;"></a>shared_ptr&lt;&gt;</h1><p>理解shared_ptr可以这样理解：<br>对于<code>std::shared_ptr&lt;string&gt; ptr(new string)</code>，这里有两个对象，“我”和“你”（均为指针）。“我”是<code>ptr</code>，而“你”对应了<code>new string</code>。这时“我”和“你”就有了关系，<font color="red">“我”管理“你”</font>。当<code>new string</code>即“你”不存在时，我不管理任何人，即我管理一个空指针。</p>
+<h2 id="定义并初始化"><a href="#定义并初始化" class="headerlink" title="定义并初始化"></a>定义并初始化</h2><p>定义一个<font color="red">空共享指针</font>，指向类型为int的对象, owns no pointer（“我”没有管理任何指针）, 由于ptr1是空指针，所以为ptr1所指向的对象赋值是违法的：<code>segmentation fault</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr1; </span><br><span class="line"><span class="keyword">if</span> (!ptr1)</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"ptr1==NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"><span class="comment">// 违法，因为ptr1没有指向任何对象，所以给对象赋值是逻辑错误</span></span><br><span class="line">*ptr1 = <span class="string">"string ptr1"</span>;</span><br></pre></td></tr></table></figure>
+
+<p>初始化一个shared_ptr ptr2，<font color="red">非空指针</font>，指向“”。此后，ptr2 就可以像string* 类型的指针一样使用。ptr2 可以管理使用new 关键字分配出来的指针。（<font color="red">new 出来的一定是个指针</font>）</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ptr2 管理一个指向string的指针</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr2(<span class="keyword">new</span> <span class="built_in">string</span>);</span><br><span class="line">*ptr2 = <span class="string">"string ptr2"</span>;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr2&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+
+<p>常用的初始化方法:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 一般的初始化一个shared_ptr方法</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr3(<span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"string ptr3"</span>));</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr3&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 推荐的初始化一个shared_ptr</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr4 = make_shared&lt;<span class="built_in">string</span>&gt;(<span class="string">"string ptr4"</span>);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="成员方法"><a href="#成员方法" class="headerlink" title="成员方法"></a>成员方法</h2><p><code>ptr.get()</code>方法，它返回一个指针，这个指针指向ptr所指向对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span>* p = ptr4.get();</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*p&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<p><code>ptr.reset()</code>方法，改变ptr所指向内容。这里有个好例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="keyword">int</span>&gt; sp;  <span class="comment">// empty </span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 管理一个指针</span></span><br><span class="line">sp.reset (<span class="keyword">new</span> <span class="keyword">int</span>);       </span><br><span class="line">*sp=<span class="number">10</span>;</span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; *sp &lt;&lt; <span class="string">'\n'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 删除所管理的指针, 干礼一个新指针</span></span><br><span class="line">sp.reset (<span class="keyword">new</span> <span class="keyword">int</span>);       </span><br><span class="line">*sp=<span class="number">20</span>;</span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; *sp &lt;&lt; <span class="string">'\n'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 删除所管理的指针</span></span><br><span class="line">sp.reset();</span><br></pre></td></tr></table></figure>
+
+<p>以下情况相同：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ptr4.reset(<span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"string reset ptr4"</span>));</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="built_in">string</span>* pp = <span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"fuck you"</span>);</span><br><span class="line">ptr4.reset(pp);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+
 
       
     </div>
@@ -772,254 +970,6 @@
 
 
   
-    <article id="post-CUDA-并行一维卷积" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" class="article-date">
-  <time datetime="2020-02-28T13:17:08.000Z" itemprop="datePublished">2020-02-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/">CUDA-并行一维卷积</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>卷积操作应用于许多领域，而其特点：计算量大，每个输出元素的计算都是相互独立的。这两个特点是并行计算期望处理的。卷积中对于边界的处理影响着分块算法的效率。</p>
-<h1 id="一维卷积基本形式"><a href="#一维卷积基本形式" class="headerlink" title="一维卷积基本形式"></a>一维卷积基本形式</h1><p>假设一维数组N是被操作对象，一维数组M是卷积核，一维数组P为卷积结果。假如对于边界元素（幽灵元素）的处理是赋值为0，也就是说幽灵元素与对应的M元素的乘积为0.</p>
-<p>每个thread负责P数组中的一个元素，那么一维卷积的基本形式如下图：</p>
-<p>&lt;&gt;pic1&lt;&gt;</p>
-<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
-
-<div align="center">图：一维卷积基本形式 回顾时添加</div>
-
-<p>一个thread得到结果数组P中一个元素。实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">conv1D</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* M, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">						<span class="keyword">int</span> kernelSize, <span class="keyword">int</span> NLength)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">	<span class="keyword">float</span> Pvalue = <span class="number">0.0f</span>;</span><br><span class="line">	<span class="keyword">int</span> start = tid-kernelSize/<span class="number">2</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;kernelSize; j++)&#123;</span><br><span class="line">		<span class="keyword">if</span>(start + j &gt;= <span class="number">0</span> &amp;&amp; start + j &lt;= NLength)&#123;</span><br><span class="line">			Pvalue += N[start + j] * M[j]; 	</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>一般卷积核的长度是奇数，这样计算过程是对称的。</p>
-<p>上述实现的缺点：</p>
-<ul>
-<li>代码中这句 <code>Pvalue += N[start + j] * M[j]</code>包含两次对Global 的访存，和两次算术运算（一个乘法，一个加法）。<font color="red">运算访存比</font>仅为1.0。性能有限。 </li>
-<li>对边界的处理出现Divergence。</li>
-</ul>
-<h1 id="Constant-Memory优化的一维卷积"><a href="#Constant-Memory优化的一维卷积" class="headerlink" title="Constant Memory优化的一维卷积"></a>Constant Memory优化的一维卷积</h1><p>卷积操作有三个特点：</p>
-<ol>
-<li>考虑到卷积计算的过程，以及实际中的卷积操作，比如在Google Inception Net<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net-%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积</a>，MobileNet<a href="https://ashburnlee.github.io/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" target="_blank" rel="noopener">深度可分离卷积</a>，ResNet中的<a href="https://ashburnlee.github.io/2019/08/01/ResNet-%E6%AE%8B%E5%B7%AE%E5%AD%A6%E4%B9%A0%E5%8D%95%E5%85%83-Residual-Unit/" target="_blank" rel="noopener">残差学习单元</a>，中的描述，卷积核大小都是3x3, 1x1, 1x7, 7x1，5x5很小的卷积核。</li>
-<li>卷积核的内容是不变的。</li>
-<li>所有的threads都访问卷积核（假设就一个卷积核），并且访问卷积核中元素的顺序是一样的。</li>
-</ol>
-<p>根据这些特点结合Ray-Tracing这篇笔记中<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" target="_blank" rel="noopener">Constant Memory</a><br>描述的Constant Memory的特性。考虑将卷积核放入Constant Memory。</p>
-<p>这里补充一点，Constant Memory中的内容对于所有Blocks可见。使用<code>.totalConstMem</code>可以查询其大小。</p>
-<p>与Ray-Tracing中的使用一样：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_KERNEL_LENGTH 10;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[MAX_KERNEL_LENGTH];</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在main函数中使用cudaMemcpy的特殊版本函数</span></span><br><span class="line">cudaMemcpyToSymbol(M, h_M, kernel_length*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>kernel函数与基本形式一样，除了参数列表中不需要再传入卷积核数组M。</p>
-<p>虽然Constant Memory在Global中，但是cuda知道Constant Memory中的内容是不变的。所以直接将其放入高速缓存中（L1缓存）。</p>
-<p><font color="gree" size="4">补充</font><br>高速缓存的层次结构。从DRAM中访问一个变量需要数百上千个时钟周期，而且处理器处理数据要比访存快得多。DRAM的长延迟和有限带宽成了现代处理器的性能瓶颈，称为<font color="red" size="4">存储器墙</font>。现在的处理器都会有片内的高速缓存，来减少DRAM的访存次数。</p>
-<p><font color="red" size="4">缓存一致性</font><br>使用高速缓存的一个重要设计问题是缓存一致性，当一个或多个处理器核心试图修改缓存中的数据时，问题出现了。每一个处理器核心有自己的L1缓存，如果这个被修改了，而其他核心的L1缓存不变，缓存中的内容就不一致了。在并行处理器中处理缓存一致性开销很大（就相当于实现全局线程同步开销很大一样）。所以GPU中没有缓存一致性的机制。</p>
-<p>将Constant memory放到L1高速缓存中。WHY</p>
-<ul>
-<li>Constant memory中的内容在kernel执行期间<font color="red">不会被改变</font>，因此没有缓存一致性的问题干扰。所以硬件可以直接将Constant memory放到L1高速缓存中。</li>
-<li>在处理器的缓存设计中通常优化了线程的广播。所以当一个warp中的线程访问同一个Constant memory中的（相同的）变量时，<font color="red">高速缓存能为threads所需要的数据提供巨大的带宽</font>。</li>
-</ul>
-<h1 id="shared-memory优化的分块并行卷积"><a href="#shared-memory优化的分块并行卷积" class="headerlink" title="shared memory优化的分块并行卷积"></a>shared memory优化的分块并行卷积</h1><p>分析卷积过程，以一维卷积为例，假设卷积核的长度是5，N（Global）中有100个元素，其中每一个元素要平均被访问5次，那么就需要500次的Global memory的访存。显然，N中每个元素被<font color="red">重复访问了</font>。所以考虑是用分块Shared memory来降低Global的访存。</p>
-<p>假设N长度为15，M长度为5，block大小为4，Shared memory大小为4，输出到P。过程如下图：</p>
-<p>&lt;&gt;pic2&lt;&gt;</p>
-<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
-
-<div align="center">图：一维分块卷积 回顾时添加</div>
-
-<p>每一个thread处理一个P中元素，对于每一个block，分两步操作：</p>
-<ol>
-<li>将数据从P中写入blocks对应的Shared 中。</li>
-<li>执行卷积计算。</li>
-</ol>
-<p>而读入Shared的操作分为左中右，三部分</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERNEL_LENGTH 5;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[KERNEL_LENGTH]; <span class="comment">// 卷积核</span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">Convolution</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* P, <span class="keyword">int</span> N_size)</span></span>&#123;</span><br><span class="line">    __shared__ <span class="keyword">float</span> N_ds[TILE_SIZE + KERNEL_LENGTH<span class="number">-1</span>];</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> n = KERNEL_LENGTH/<span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 读左</span></span><br><span class="line">    <span class="keyword">int</span> left = (blockIdx.x <span class="number">-1</span>)*blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span>(threadIdx.x &gt;= blockDim.x - n)&#123;</span><br><span class="line">        N_ds[threadIdx - (blockDim.x - n)] = (left&lt;<span class="number">0</span>) ? <span class="number">0</span> : N[left];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 读中</span></span><br><span class="line">    N_ds[n+threadIdx.x] = N[tid];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 读右</span></span><br><span class="line">    <span class="keyword">int</span> right = (blockIdx.x + <span class="number">1</span>)*blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span>(threadIdx.x &lt; n)&#123;</span><br><span class="line">        N_ds[n+blockDim.x+threadIdx.x] = (left&gt;=N_size) ? <span class="number">0</span> : N[right];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="comment">// 卷积操作</span></span><br><span class="line">    <span class="keyword">float</span> Pvalue = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;KERNEL_LENGTH; i++)&#123;</span><br><span class="line">        Pvalue += N_ds[threadIdx.x + i] * M[i];</span><br><span class="line">    &#125;</span><br><span class="line">    P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="L2缓存了的分块并行卷积"><a href="#L2缓存了的分块并行卷积" class="headerlink" title="L2缓存了的分块并行卷积"></a>L2缓存了的分块并行卷积</h1><p><font color="red" size="4">新知</font><br>上个实现的代码复杂度集中在了将左右元素加载到Shared 中，注意，一个block的左右元素，同时又是<font color="red">相邻</font>block的内部元素，因此<font color="orange" size="4">很有可能在<code>block #1</code>需要这些左右元素时，它们已经由于<code>block #2</code>的访问而存储到了L2缓存上</font>。这样对于左右元素的访问从代码上是访问了global，实际上却是转化为对L2缓存的访问。依然达到减少Global访存的目的。看下图：</p>
-<p>&lt;&gt;pic3&lt;&gt; 图8-10</p>
-<div align="center"><img src="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/IMAGE_PATH.png" width="500"></div>
-
-<div align="center">图 回顾时添加</div>
-
-<p>如此一来，shared memory 的大小变成如下，与block的大小一致了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">__shared__ <span class="keyword">float</span> N_ds[TILE_SIZE];</span><br></pre></td></tr></table></figure>
-
-<p>从而Shared memory的加载就更简单了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">N_ds[threadIdx.x] = N[tid];</span><br></pre></td></tr></table></figure>
-
-<p>之后就是对于每一个thread遍历卷积核中元素，乘累加。只是对于中间元素，已经存在于自己的Shared中了，访问自己的Shared；对于左右元素，访问<code>N</code>，实际上是访问L2 缓存。</p>
-<p>实现与基本形式相似：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERNEL_LENGTH 5;</span></span><br><span class="line">__constant__ <span class="keyword">float</span> M[KERNEL_LENGTH]; <span class="comment">// 卷积核</span></span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">Convolution</span><span class="params">(<span class="keyword">float</span>* N, <span class="keyword">float</span>* P, <span class="keyword">int</span> N_size)</span></span>&#123;</span><br><span class="line">    __shared__ <span class="keyword">float</span> N_ds[TILE_SIZE];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    N_ds[threadIdx.x] = N[tid];</span><br><span class="line"></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="keyword">int</span> this_block_start = blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> next_block_start = (blockIdx.x+<span class="number">1</span>) * blockDim.x;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> n_start = tid-(KERNEL_LENGTH/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> Pvalue=<span class="number">0.0f</span>;</span><br><span class="line">    <span class="comment">// 遍历卷积核：</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;KERNEL_LENGTH; j++)&#123;</span><br><span class="line">        <span class="keyword">int</span> index = n_start + j;</span><br><span class="line">        <span class="comment">// 对于有效Index：</span></span><br><span class="line">        <span class="keyword">if</span>(index&gt;=<span class="number">0</span> &amp;&amp; index&lt;=N_size)&#123;</span><br><span class="line">            <span class="comment">// 对于中间元素：</span></span><br><span class="line">            <span class="keyword">if</span>((index &gt;= this_block_start) &amp;&amp; (index &lt; next_block_start))&#123;</span><br><span class="line">                Pvalue += N_ds[threadIdx.x + j-KERNEL_LENGTH/<span class="number">2</span>]*M[j];</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;  <span class="comment">// 对于左右元素：</span></span><br><span class="line">                Pvalue += N[index]*M[j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    P[tid] = Pvalue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><font color="green" size="5">敲黑板</font></p>
-<ul>
-<li>所有这些技术都可以用在二维，三维卷积，只不过是对存储访问的<font color="orange">索引计算</font>更加复杂。</li>
-<li>存在对Global的重复访问，考虑使用Shared。</li>
-<li>shared memory在<code>L1</code>缓存中。</li>
-<li>考虑元素是否被缓存到<code>L2</code>.</li>
-<li>缓存：作为<font color="red">名词</font>是指在芯片内部的高速存储区域；作为<font color="red">动词</font>指将其他存储空间中的内容放入高速缓存空间。[待求证]</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" data-id="ckatsrgu10079xqfzdo8743jg" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-方法论-stack" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" class="article-date">
-  <time datetime="2020-02-25T04:21:48.000Z" itemprop="datePublished">2020-02-25</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>20, 1021, 1019, 155，921，</p>
-<h2 id="20-valid-parenthese"><a href="#20-valid-parenthese" class="headerlink" title="#20 valid parenthese"></a>#20 valid parenthese</h2><ul>
-<li><p>问题描述</p>
-<p>  对于string S，判断是否是合法的括号对儿。</p>
-<p>  如：</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;[()]()&#125;()  合法</span><br><span class="line">&#123;()]       不合法</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  遍历s：</p>
-<ol>
-<li><p>如果<code>s[i]</code>是左括号“(”，“[”, “{”，则入栈<code>stack.push(s[i])</code>。</p>
-</li>
-<li><p>如果是右括号，如果栈为空，表示第一个就不合法，结束。否则，记录栈顶元素<code>curr=stack.top()</code>，后出栈顶元素<code>stack.pop()</code>。</p>
-</li>
-<li><p>根据匹配规则，得到<code>curr</code><font color="red">应该</font>是什么，用<code>match</code>表示。然后匹配：看<code>实际curr</code>是否与<code>应该match</code>相同。若相同，继续遍历，否则不合法，结束。</p>
-<p>关键：判断当前元素<font color="red">应该</font>是什么，与<font color="red">实际</font>是什么，是否一致。</p>
-</li>
-</ol>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">matchParenthese</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">       <span class="built_in">stack</span>&lt;<span class="keyword">char</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">       <span class="comment">// 遍历每一个字符</span></span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="comment">// 如果是'(', 入栈</span></span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span> || S[i] == <span class="string">'['</span> || S[i] == <span class="string">'&#123;'</span> )</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line">           <span class="comment">// 如果是')'：</span></span><br><span class="line">           <span class="keyword">else</span> &#123;</span><br><span class="line">               <span class="comment">// 如果栈开始就为空，则不合法</span></span><br><span class="line">               <span class="keyword">if</span>(<span class="built_in">stack</span>.size() == <span class="number">0</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">               <span class="comment">// 得到栈顶元素 “实际”是啥</span></span><br><span class="line">               <span class="keyword">char</span> curr = <span class="built_in">stack</span>.top();</span><br><span class="line">               <span class="built_in">stack</span>.pop();</span><br><span class="line">               <span class="comment">// 匹配原则 得到“应该”是啥</span></span><br><span class="line">               <span class="keyword">char</span> match;</span><br><span class="line">               <span class="keyword">if</span> (S[i] == <span class="string">')'</span>) match = <span class="string">'('</span>;</span><br><span class="line">               <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">']'</span>) match = <span class="string">'['</span>;</span><br><span class="line">               <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">'&#125;'</span>) match = <span class="string">'&#123;'</span>;</span><br><span class="line">                   </span><br><span class="line">               <span class="comment">// 这时才开始匹配 “实际”与“应该”一致否</span></span><br><span class="line">               <span class="keyword">if</span>(curr != match) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span>(<span class="built_in">stack</span>.size() != <span class="number">0</span>) </span><br><span class="line">           <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">       <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>这个问题是stack 的经典应用。</p>
-<h2 id="1021-remove-outermost-parentheses"><a href="#1021-remove-outermost-parentheses" class="headerlink" title="#1021 remove outermost parentheses"></a>#1021 remove outermost parentheses</h2><ul>
-<li><p>问题描述</p>
-<p>  括号对儿是和法的。对于输入，返回输出：</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Input: <span class="string">"(()())(())"</span></span><br><span class="line">Ouput: <span class="string">"()()()"</span></span><br><span class="line">Explanation: </span><br><span class="line">The input string is <span class="string">"(()())(())"</span>, with primitive decomposition <span class="string">"(()())"</span> + <span class="string">"(())"</span>.</span><br><span class="line">After removing outer parentheses of each part, this is <span class="string">"()()"</span> + <span class="string">"()"</span> = <span class="string">"()()()"</span>.</span><br><span class="line"></span><br><span class="line">Input: <span class="string">"()()"</span></span><br><span class="line">Output: <span class="string">""</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<ol>
-<li><p>第一步，遍历<code>S</code>，将每一对儿最外层的括号的右括号的<code>Index</code>记录在<code>arr</code>中，（初始化的<code>arr</code>中有个-1）。例：</p>
- <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">S:     ( ( (  ) ) )  ( ( ) ( )  )</span><br><span class="line">index: 0 1 2  3 4 5  6 7 8 9 10 11</span><br></pre></td></tr></table></figure>
-<p> 根据描述，返回<code>arr: [-1, 5, 11]</code>。因为<code>0~5</code>是第一对儿最外层括号，<code>6~11</code>是第二对儿最外层括号。</p>
-</li>
-<li><p>第二步，对arr中的前<code>n-1</code>个元素，取<code>arr[i]+2</code>和<code>arr[i+1]-1</code>之间的 所有对应的<code>S</code>中的元素。结束。</p>
-</li>
-</ol>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">removeOutermostParentheses</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">       <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; arr;</span><br><span class="line">       arr.push_back(<span class="number">-1</span>);</span><br><span class="line">       <span class="comment">// the 1st step</span></span><br><span class="line">       <span class="built_in">stack</span>&lt;<span class="keyword">char</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line">           <span class="keyword">else</span>&#123;</span><br><span class="line">               <span class="built_in">stack</span>.pop();</span><br><span class="line">               <span class="comment">// 当stack为空，表示一组匹配结束，记录结束的index</span></span><br><span class="line">               <span class="keyword">if</span>(<span class="built_in">stack</span>.size()==<span class="number">0</span>)</span><br><span class="line">                   arr.push_back(i);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="comment">// the 2nd step</span></span><br><span class="line">       <span class="built_in">string</span> resS;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;arr.size()<span class="number">-1</span>; i++)&#123;</span><br><span class="line">           <span class="keyword">int</span> start = arr[i]+<span class="number">2</span>;</span><br><span class="line">           <span class="keyword">int</span> end = arr[i+<span class="number">1</span>]<span class="number">-1</span>;</span><br><span class="line">           <span class="keyword">if</span>(start&gt;=end) <span class="keyword">continue</span>;</span><br><span class="line">           <span class="comment">// 将outermost括号内的所有内用append到resS中</span></span><br><span class="line">           <span class="keyword">for</span>(<span class="keyword">int</span> j=start; j&lt;=end; j++)&#123;</span><br><span class="line">               resS+=S[j];</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> resS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h2 id="1019-next-greater-nodes-in-linked-list"><a href="#1019-next-greater-nodes-in-linked-list" class="headerlink" title="#1019 next greater nodes in linked list"></a>#1019 next greater nodes in linked list</h2><ul>
-<li><p>问题描述</p>
-<p>  看下面这个例子：</p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [2,7,4,3,5]</span><br><span class="line">Output: [7,0,5,5,0]</span><br><span class="line"></span><br><span class="line">解释：</span><br><span class="line">对于2，其后第一个比他大的是7</span><br><span class="line">对于7，气候第一个比他大的没有，0</span><br><span class="line">对于4，其后第一个比他大的是5</span><br><span class="line">对于3，其后第一个比他大的是5</span><br><span class="line">对于5，为最后一个元素，其后没有比他大的，0</span><br><span class="line">所以返回[7,0,5,5,0]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-</li>
-<li><p>实现</p>
-</li>
-</ul>
-<h2 id="155-Min-Stack"><a href="#155-Min-Stack" class="headerlink" title="#155 Min Stack"></a>#155 Min Stack</h2><ul>
-<li><p>描述 </p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Design a stack that supports push(), pop(), top(), and retrieving the minimum element in constant time: getMin().</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑<br>  在这个类中，使用两个stack。一个<code>mystack</code>正常工作，另一个<code>min</code>记录栈<code>mystack</code>目前的最小值，保证<code>min</code>中的栈顶元素是最小的，而且<code>min</code>从栈顶到栈底元素大小递增。比如<code>min： 底|3|2|1 ...  |顶</code>。并且始终<font color="red">保持min的性质始终不变</font>。</p>
-<p>  特点：<font color="orange">使用两个stack，一个正常工作，引入另一个使得整个stack类有了其他功能</font>。</p>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MinStack</span>&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; mystack;  <span class="comment">// 提供stack正常的功能。</span></span><br><span class="line">    <span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; min;   <span class="comment">// 记录最小值。</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    MinStack()&#123;&#125;;</span><br><span class="line">    ~MinStack()&#123;&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">push</span><span class="params">(<span class="keyword">int</span> x)</span></span>&#123;</span><br><span class="line">        mystack.push(x);</span><br><span class="line">        <span class="comment">// 只要待处理元素小于min的top元素，</span></span><br><span class="line">        <span class="comment">// min也要push进这个元素，</span></span><br><span class="line">        <span class="comment">// 保证min的top为当前mystack的最小值</span></span><br><span class="line">        <span class="keyword">if</span>(min.empty() || x&lt;=min.top())</span><br><span class="line">            min.push(x);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">top</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> mystack.top();   </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getMin</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> min.top();   </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">empty</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> mystack.empty();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 当mystack.top() == min.top()时，两个stack都要pop()</span></span><br><span class="line">    <span class="comment">// 保证min的top为当前mystack的最小值。</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">pop</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(mystack.top() == min.top())</span><br><span class="line">            min.pop();</span><br><span class="line">        mystack.pop();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-<h2 id="921-Minimum-Add-to-Make-Parentheses-Valid"><a href="#921-Minimum-Add-to-Make-Parentheses-Valid" class="headerlink" title="#921 Minimum Add to Make Parentheses Valid"></a>#921 Minimum Add to Make Parentheses Valid</h2><ul>
-<li><p>描述</p>
-<p>  添加最少的括号，使得括号字符串有效，例子：</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: &quot;())&quot;</span><br><span class="line">Output: 1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Input: &quot;(((&quot;</span><br><span class="line">Output: 3</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Input: &quot;()&quot;</span><br><span class="line">Output: 0</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  使用栈：</p>
-<p>  遍历S，遇到<code>&#39;(&#39;</code>入站，遇到<code>&#39;)&#39;</code>出站，表示有一对是匹配的，并将记录匹配对数的count+1。遍历完后，只需要：<code>S.length()-2*count</code>。的结果。</p>
-<p>  还可以不使用栈。其实栈的作用只是记录<code>&#39;(&#39;</code>，所以可以只是用一个int变量来记录。如此空间复杂度从<code>O(N)</code>变为<code>O(1)</code>。</p>
-<p>  <font color="orange">所有思路中一定有一个是适用于所有情况的，所以如果一个思路中有很多情况不能满足，思路不对</font>。</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">// use stack</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">minAddToMakeValid</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">	<span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">	<span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line"></span><br><span class="line">           <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">')'</span>)&#123;</span><br><span class="line">               <span class="keyword">if</span>(!<span class="built_in">stack</span>.empty())&#123;</span><br><span class="line">                   <span class="built_in">stack</span>.pop();</span><br><span class="line">				count++;</span><br><span class="line">               &#125;   </span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> S.length()<span class="number">-2</span>*count;</span><br><span class="line">&#125;</span><br><span class="line">   <span class="comment">// No stack</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">minAddToMakeValid</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> left_p=<span class="number">0</span>;</span><br><span class="line">	<span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               left_p++;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">')'</span>)&#123;</span><br><span class="line">               <span class="keyword">if</span>(left_p!=<span class="number">0</span>)&#123;</span><br><span class="line">                   left_p--;;</span><br><span class="line">				count++;</span><br><span class="line">               &#125;   </span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> S.length()<span class="number">-2</span>*count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" data-id="ckatsrgs50036xqfz9kmkg6m4" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1035,7 +985,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">8</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">10</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1064,7 +1014,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1077,6 +1027,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/06/caffe-SyncedMemory/">caffe-SyncedMemory</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/06/caffe-Blob-2/">caffe-Blob-(2)</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/04/caffe-Blob-1/">caffe-Blob-(1)</a>
           </li>
         
@@ -1086,14 +1044,6 @@
         
           <li>
             <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/">pip下载加速</a>
           </li>
         
       </ul>
