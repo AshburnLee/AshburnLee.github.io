@@ -64,6 +64,127 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-回顾cpp-多态-一-虚函数" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/" class="article-date">
+  <time datetime="2019-08-28T04:38:51.000Z" itemprop="datePublished">2019-08-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/">回顾cpp-多态-虚函数</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>封装-&gt;继承-&gt;多态</p>
+<ul>
+<li>普通虚函数 </li>
+<li>虚析构函数  check</li>
+<li>纯虚函数</li>
+<li>抽象类</li>
+<li>接口类</li>
+<li>RTTI</li>
+<li>异常处理 </li>
+<li>隐藏 覆盖 </li>
+<li>早绑定 晚绑定 check</li>
+<li>虚函数表 </li>
+</ul>
+<h1 id="静态多态（早绑定）"><a href="#静态多态（早绑定）" class="headerlink" title="静态多态（早绑定）"></a>静态多态（早绑定）</h1><p>函数重构</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">calcArea</span><span class="params">(<span class="keyword">int</span> width)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">calcAera</span><span class="params">(<span class="keyword">int</span> width, <span class="keyword">int</span> height)</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Rect rect;</span><br><span class="line">    rect.calcAera(<span class="number">10</span>);</span><br><span class="line">    rect.calcAera(<span class="number">10</span>, <span class="number">20</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序在运行之前，在编译阶段就已经确定下来要使用哪个<code>calsAera()</code>函数了。很早地就将函数编译进去了。此情况叫做<font color="green">早绑定</font>，即<font color="green">静态多态</font>。</p>
+<h1 id="动态多态（晚绑定）"><a href="#动态多态（晚绑定）" class="headerlink" title="动态多态（晚绑定）"></a>动态多态（晚绑定）</h1><p>不同的对象下达相同的指令，做着不同的操作，为动态多态。有前提的：它必须以封装，继承为基础。</p>
+<p>也就是说，有了封装继承之后，才能谈动态多态。动态多态至少由两个类，父子类，三个类时动态多态才表现的更加明显。</p>
+<p>注意只有当一个类需要有多态的的性质时，才体现多态。此时的<code>base classes</code>需要将其析构函数声明为<code>virtual</code>。当没有声明<code>virtual</code>时，看下例：</p>
+<p>父类：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Shape()&#123;&#125;</span><br><span class="line">    ~Shape()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Shape()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;                  <span class="comment">// 不是虚函数</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"Shape-&gt;calc area"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>子类Circle：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r)&#123;</span><br><span class="line">        m_dR = r;</span><br><span class="line">    &#125;</span><br><span class="line">    ~Circle()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Circle()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;                 <span class="comment">// 不是虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">3.14</span>*m_dR*m_dR;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>子类Rect：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Rect(<span class="keyword">double</span> width, <span class="keyword">double</span> height)&#123;</span><br><span class="line">        m_dWidth = width;</span><br><span class="line">        m_dHeight = height;</span><br><span class="line">    &#125;</span><br><span class="line">    ~Rect()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Rect()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>&#123;                  <span class="comment">// 不是虚函数</span></span><br><span class="line">        <span class="keyword">return</span> m_dHeight*m_dWidth;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dWidth;</span><br><span class="line">    <span class="keyword">double</span> m_dHeight;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>含有多态性质的<code>base class</code>的设计目的是为了通过<code>base class</code>的接口来使用<code>derived class</code>，所以，如果用两个<font color="red" size="4">base class指针</font>分别指向<font color="red" size="4">两个不同derived class</font>，后分别调用两个<code>derived class</code>的计算面积方法：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Shape *shape1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);     <span class="comment">// 父类指针指向子类对象</span></span><br><span class="line">Shape *shape2 = <span class="keyword">new</span> Rect(<span class="number">3.0</span>, <span class="number">5.0</span>);  <span class="comment">// 父类指针指向子类对象</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;shape1-&gt;calcArea()&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;shape2-&gt;calcArea()&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">delete</span> shape1;</span><br><span class="line">shape1 = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">delete</span> shape2;</span><br><span class="line">shape2 = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+<p>结果并不是我们想要的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Shape-&gt;calc area    <span class="comment">//  调用父类方法</span></span><br><span class="line"><span class="number">0</span></span><br><span class="line">Shape-&gt;calc area    <span class="comment">// 调用父类方法</span></span><br><span class="line"><span class="number">0</span></span><br><span class="line">~Shape()     <span class="comment">// 调用父类析构函数</span></span><br><span class="line">~Shape()     <span class="comment">// 调用父类析构函数</span></span><br></pre></td></tr></table></figure>
+<p>都调用了父类的<code>calcArea()</code>方法。且都调用了父类的析构函数。此现象称为<font color="green">隐藏</font>.</p>
+<p><font color="red">WHY</font>：我们不希望这样，我们希望通过父类指针可以调用子类的方法。如何解决？使用<code>virtual</code> 关键字。</p>
+<hr>
+<p>解决方法：在父类中想要实现多态的函数前加virtual，同时在子类的相同函数前也加上<code>virtual</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;         <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"calc area..."</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;         <span class="comment">//  虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">3.14</span>*m_dR*m_dR;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;       <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="keyword">return</span> m_dHeight*m_dWidth;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>此时的结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3.14</span>     <span class="comment">// 调用Circle 的方法</span></span><br><span class="line"><span class="number">15</span>       <span class="comment">// 调用Rect 的方法</span></span><br><span class="line">~Shape()    <span class="comment">// 只调用父类析构函数</span></span><br><span class="line">~Shape()</span><br></pre></td></tr></table></figure>
+
+<p>只有base class的同名函数被声明为virtual。</p>
+<p>很自然的情况是：当使用<font color="red" size="4">derived class指针</font>指向<font color="red" size="4">derived class对象</font>时，不管是不是<code>virtual</code>，都会由正确执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">Circle *circle1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);</span><br><span class="line">Rect *rect1 = <span class="keyword">new</span> Rect(<span class="number">3.0</span>, <span class="number">5.0</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">delete</span> circle1;</span><br><span class="line">circle1 = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">delete</span> rect1;</span><br><span class="line">rect1 = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3.14</span></span><br><span class="line"><span class="number">15</span></span><br><span class="line">~Circle()    <span class="comment">// 既调用子类析构函数</span></span><br><span class="line">~Shape()     <span class="comment">// 又调用父类析构函数</span></span><br><span class="line">~Rect()</span><br><span class="line">~Shape()</span><br></pre></td></tr></table></figure>
+
+<p><font color="grenn" size="6">敲黑板</font></p>
+<ul>
+<li>父类子类要实现多态的方法前，父类要声明为<code>virtual</code>。</li>
+<li>当父类的析构函数不是虚函数时，类指针指向子类对象时，只调用父类析构函数。</li>
+<li>当父类的析构函数不是虚函数时，<code>delete</code> 后跟父类指针，只执行父类析构函数，如果<code>delete</code> 后跟子类指针，执行父类和子类析构函数。</li>
+<li>只将要作为父类的类的析构函数声明为<code>virtual</code>。</li>
+</ul>
+<h1 id="虚析构函数"><a href="#虚析构函数" class="headerlink" title="虚析构函数"></a>虚析构函数</h1><p>为啥要有虚析构函数？如果要将这个class作为基类而且是有多态性质的基类，应该把其析构函数定义成<code>virtual</code>！看以下例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r, <span class="keyword">int</span> x, <span class="keyword">int</span> y)&#123;</span><br><span class="line">        m_pCenter = <span class="keyword">new</span> Coordinate(x, y)   <span class="comment">// 2.实例化一个坐标对象</span></span><br><span class="line">        m_dR = r;</span><br><span class="line">    &#125;</span><br><span class="line">    ~Circle()&#123;</span><br><span class="line">        <span class="keyword">delete</span> m_pCenter;                 <span class="comment">// 3.释放坐标对象</span></span><br><span class="line">        m_pCenter = <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">3.14</span>*m_dR*m_dR;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">    Coordinate* m_pCenter;      <span class="comment">// 1.多一个坐标类属性</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>在析构函数中释放了坐标对象，不会内存泄露。可是！<br>在多态时：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Shape *shape1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);    </span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;shape1-&gt;calcArea()&lt;&lt;<span class="built_in">endl</span>;    </span><br><span class="line"></span><br><span class="line"><span class="keyword">delete</span> shape1;      <span class="comment">// 使用父类指针销毁子类对象</span></span><br><span class="line">shape1 = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+
+<p>使用父类指针销毁子类对象时，<strong>只调用了父类析构函数<code>~Shape()</code>，而子类<code>~Circle()</code>未被调用。坐标对象不会被释放，此时</strong>内存泄漏。<strong>这就不合理了，虚构函数设计就是要被执行的</strong></p>
+<p>如何解决？<br>虚析构函数！在父类的析构函数前加<code>virtual</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">virtual</span> ~Shape()&#123;            <span class="comment">// 虚析构</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">~Circle()&#123;           </span><br><span class="line">    <span class="keyword">delete</span> m_pCenter;                 <span class="comment">// 释放坐标对象</span></span><br><span class="line">    m_pCenter = <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此时，使用父类指针销毁子类对象时，<strong>既调用了父类析构函数<code>~Shape()</code>，又调用子类<code>~Circle()</code></strong>。父类子类的析构函数都被执行。情理上就对了。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~Shape()&#123;   <span class="comment">//  虚</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Shape()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ~Circle()&#123; </span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Circle()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rect</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:     </span><br><span class="line">    ~Rect()&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"~Rect()"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>父类子类的析构函数都被执行：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">    Shape *shape1 = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);</span><br><span class="line">    Shape *shape2 = <span class="keyword">new</span> Rect(<span class="number">3.0</span>, <span class="number">5.0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">delete</span> shape1;</span><br><span class="line">    shape1 = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">delete</span> shape2;</span><br><span class="line">    shape2 = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">OUTPUT：</span><br><span class="line"><span class="number">3.14</span></span><br><span class="line"><span class="number">15</span></span><br><span class="line">~Circle()</span><br><span class="line">~Shape()</span><br><span class="line">~Rect()</span><br><span class="line">~Shape()</span><br></pre></td></tr></table></figure>
+
+<p><strong>执行完子类虚析构函数，再执行父类虚析构函数。</strong></p>
+<h2 id="virtual使用限制"><a href="#virtual使用限制" class="headerlink" title="virtual使用限制"></a>virtual使用限制</h2><ul>
+<li><p>普通函数不能是虚函数</p>
+</li>
+<li><p>不能修饰静态成员函数</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Animal</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">func</span><span class="params">()</span></span>; </span><br><span class="line">&#125;；</span><br></pre></td></tr></table></figure></li>
+<li><p>不能修饰<code>inline</code>函数，如果这么做了，计算机会忽略<code>inline</code>关键字，使之成为虚函数。</p>
+</li>
+<li><p>不能修饰构造函数。</p>
+</li>
+</ul>
+<p><font color="grenn" size="6">敲黑板</font><br>任何时候都应该为含有多态性质的基类（父类）声明<code>virtual</code>析构函数。如果一个class含有任何<code>virual</code>函数，就一定要有一个<code>virtual</code>析构函数。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/28/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%B8%80-%E8%99%9A%E5%87%BD%E6%95%B0/" data-id="ckatsrgsx004txqfzb6d14v9o" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-方法论-数组相关-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/" class="article-date">
@@ -966,85 +1087,11 @@
 
 
   
-    <article id="post-回看SVM-二" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/" class="article-date">
-  <time datetime="2019-08-18T13:18:45.000Z" itemprop="datePublished">2019-08-18</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/">回看SVM-(二)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>对于线性不可分而非线性可分的数据，也可以使用线性SVM。只需要<font color="red">将数据转换为高维的含有多项式项的数据</font>。</p>
-<h1 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h1><p>先找一个，分线性可分数据集：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">x, y = datasets.make_moons(noise=<span class="number">0.15</span>, random_state=<span class="number">11</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绘制出结果：</span></span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-
-<p>结果：</p>
-<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon.png" width="500"></div>
-<div align="center">图 待处理数据</div>
-
-
-<h1 id="含多项式特征的LinearSVM"><a href="#含多项式特征的LinearSVM" class="headerlink" title="含多项式特征的LinearSVM"></a>含多项式特征的LinearSVM</h1><p><font color="red">指定多形式的阶数</font>，将数据转化成高维的含有多项式项数据，后传入<code>LinearSVM</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">PolynomialSVC</span><span class="params">(degree, C=<span class="number">0.1</span>)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([</span><br><span class="line">        (<span class="string">"Poly"</span>, PolynomialFeatures(degree=degree)),</span><br><span class="line">        (<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">        (<span class="string">"LinearSVC"</span>, LinearSVC(C=C))</span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
-
-<p>使用<code>Pipline</code>可以顺序执行各部分。实例化模型，并查看模型信息：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">poly_svc = PolynomialSVC(<span class="number">3</span>)</span><br><span class="line">poly_svc.fit(x, y)</span><br><span class="line">print(poly_svc)</span><br></pre></td></tr></table></figure>
-
-<p>模型信息：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Pipeline(memory=<span class="literal">None</span>,</span><br><span class="line">     steps=[(<span class="string">'Poly'</span>, PolynomialFeatures(degree=<span class="number">3</span>, include_bias=<span class="literal">True</span>, interaction_only=<span class="literal">False</span>)), (<span class="string">'standard'</span>, StandardScaler(copy=<span class="literal">True</span>, with_mean=<span class="literal">True</span>, with_std=<span class="literal">True</span>)), (<span class="string">'LinearSVC'</span>, LinearSVC(C=<span class="number">0.1</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, fit_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>))])</span><br></pre></td></tr></table></figure>
-
-<p>绘出分类边界：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_decision_boundary(poly_svc, axis=[<span class="number">-1.5</span>, <span class="number">2.5</span>, <span class="number">-1.0</span>, <span class="number">1.5</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-
-<p>结果为分线性边界：</p>
-<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-2.png" width="500"></div>
-<div align="center">图 分类边界</div>
-
-<h1 id="多项式核函数"><a href="#多项式核函数" class="headerlink" title="多项式核函数"></a>多项式核函数</h1><p>SVM可以<font color="red">直接使用数据的多项式特征，即多项式核函数</font>，所以使用SVC而非LinearSVC。此时Pipline中不需先得到多项式特征：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVC</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">Polynomial_KernelSVC</span><span class="params">(degree, C=<span class="number">0.1</span>)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([</span><br><span class="line">        (<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">        (<span class="string">"kernelSVC"</span>, SVC(kernel=<span class="string">"poly"</span>, degree=degree, C=C))  </span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
-
-<p>传入kernel参数，指定使用什么样的核函数。实例化模型，绘制分类边界：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">poly_kernel_svc = Polynomial_KernelSVC(degree=<span class="number">5</span>)</span><br><span class="line">poly_kernel_svc.fit(x, y)</span><br><span class="line"></span><br><span class="line">plot_decision_boundary(poly_kernel_svc, axis=[<span class="number">-1.5</span>, <span class="number">2.5</span>, <span class="number">-1.0</span>, <span class="number">1.5</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p>边界：</p>
-<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-3.png" width="500"></div>
-<div align="center">图 使用多项式核函数的分类边界</div>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/" data-id="ckatsrgsv004pxqfzfw1xbm2m" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/8/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><span class="page-number current">9</span><a class="page-number" href="/page/10/">10</a><a class="page-number" href="/page/11/">11</a><a class="page-number" href="/page/12/">12</a><a class="extend next" rel="next" href="/page/10/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/8/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><span class="page-number current">9</span><a class="page-number" href="/page/10/">10</a><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><a class="extend next" rel="next" href="/page/10/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -1055,7 +1102,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1084,7 +1131,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">14</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1095,6 +1142,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/08/cpp-void%E5%9E%8B%E6%8C%87%E9%92%88/">cpp-void型指针</a>
+          </li>
         
           <li>
             <a href="/2020/06/07/caffe-Layer%E4%B8%AD%E6%9C%89%E4%BB%80%E4%B9%88/">caffe-Layer中有什么</a>
@@ -1110,10 +1161,6 @@
         
           <li>
             <a href="/2020/06/06/caffe-Blob-2/">caffe-Blob-(2)</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/04/caffe-Blob-1/">caffe-Blob-(1)</a>
           </li>
         
       </ul>
