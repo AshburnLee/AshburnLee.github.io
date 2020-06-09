@@ -64,6 +64,165 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-ComputeCapacity-SM-version6-1的参数值" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" class="article-date">
+  <time datetime="2020-02-20T02:15:23.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>Compute Capability</p>
+<p> 对于CPU，不同架构的CPU有者不同的功能和指令集（MMX，SSE，SSE2）。而对于GPU，不同的功能由不同的<code>Compute Capability</code>表示。</p>
+<p> NVIDIA GPU支持的Compute Capability有<code>1.0，1.0，... 2.0，... 6.0，6.1，7.5</code>。高版本的<code>Compute Capability</code>是低版本<code>Compute Capability</code>的超集，就是俄罗斯套娃式的嵌套结构。比如6.1版本支持1.0版本的所有功能。</p>
+<p> 比如，原子操作时硬件在内存上执行的。而只有<code>1.1和1.1之后</code>的版本才支持global memory上的原子操作，而只有<code>1.2和1.2之后</code>的版本才支持shared memory上的原子操作</p>
+<p> 在应用中，通常会指定最低<code>Compute Capability</code>版本，如2.3，告诉编译器，如果硬件支持的<code>Compute Capability</code>版本低于2.3，那么将无法执行这个和函数。做法是使用nvcc时增加一个选项<code>nvcc -arch=sm_23</code>，所以<code>Compute Capability</code>有称作<code>SM版本</code>。</p>
+<p> <code>SM版本</code>的形式是<code>X.Y</code>，X表示核心的架构，7表示Volta，6表示Pascal。Y表示硬件的特性版本。</p>
+<p> 不同的SM版本所支持的特性，和技术参数，间这个页面的table14和table15：<br>  <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities" target="_blank" rel="noopener">https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities</a></p>
+</li>
+<li><p>SM version=6.1 的关键参数</p>
+<table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Maximum dimensionality of grid of thread blocks</td>
+<td align="left">3</td>
+</tr>
+<tr>
+<td align="left">Maximum x- or y-dimension of a block</td>
+<td align="left">1024</td>
+</tr>
+<tr>
+<td align="left">Maximum z-dimension of a block</td>
+<td align="left">64</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Maximum number of threads per block</td>
+<td align="left">1024</td>
+</tr>
+<tr>
+<td align="left">Warp size</td>
+<td align="left">32</td>
+</tr>
+<tr>
+<td align="left">Maximum number of resident <strong>grids</strong> per device</td>
+<td align="left">32</td>
+</tr>
+<tr>
+<td align="left">Maximum number of resident <strong>blocks</strong> per multiprocessor</td>
+<td align="left">32</td>
+</tr>
+<tr>
+<td align="left">Maximum number of resident <strong>warps</strong> per multiprocessor</td>
+<td align="left">64</td>
+</tr>
+<tr>
+<td align="left">Maximum number of resident <strong>threads</strong> per multiprocessor</td>
+<td align="left">2048</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Number of 32-bit registers <strong>per multiprocessor</strong></td>
+<td align="left">64 K</td>
+</tr>
+<tr>
+<td align="left">Maximum number of 32-bit registers <strong>per thread block</strong></td>
+<td align="left">64 KB</td>
+</tr>
+<tr>
+<td align="left">Maximum number of 32-bit registers <strong>per thread</strong></td>
+<td align="left">255</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Maximum amount of shared memory per multiprocessor</td>
+<td align="left">96 KB</td>
+</tr>
+<tr>
+<td align="left">Maximum amount of shared memory per thread block</td>
+<td align="left">48 KB</td>
+</tr>
+<tr>
+<td align="left">Number of shared memory banks</td>
+<td align="left">32</td>
+</tr>
+<tr>
+<td align="left">Amount of local memory per thread</td>
+<td align="left">512 KB</td>
+</tr>
+<tr>
+<td align="left">Constant memory size</td>
+<td align="left">64 KB</td>
+</tr>
+<tr>
+<td align="left">Maximum number of instructions per kernel</td>
+<td align="left">512 million</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+<p>这些指标要心里有数</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" data-id="ckatsrgqr0002xqfzhfh17e89" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-原子操作-例-直方图" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/" class="article-date">
@@ -871,129 +1030,6 @@
 
 
   
-    <article id="post-CUDA-优化优先级" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/" class="article-date">
-  <time datetime="2020-01-17T12:49:36.000Z" itemprop="datePublished">2020-01-17</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/">CUDA-优化优先级</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="高优先级："><a href="#高优先级：" class="headerlink" title="高优先级："></a>高优先级：</h2><ul>
-<li><p>为最大化开发者的效率，使用程序分析工具来找到程序最耗时的部分，找到效率瓶颈。</p>
-</li>
-<li><p>最大化地利用CUDA， 首先想办法把原程序中的串行代码并行化。</p>
-</li>
-<li><p>使用程序使用的有效带宽最为测量性能和优化效果的指标。</p>
-<ul>
-<li><p>理论带宽</p>
-<p>  理论带宽可以从硬件的商品指标计算得到。比如NVIDIA Tesla V100 使用 HBM2 (double data rate) RAM 时钟频率是 877 MHz。存储器位宽为 4096-bit-wide。</p>
-<p>  通过上述指标可以计算这个显卡的理论带宽：</p>
-<p>  <code>( 0.877 × 10^9 × ( 4096 / 8 ) × 2 ) ÷ 10^9 = 898 ⁢ GB/s ⁡</code></p>
-<p>  <code>(0.877 × 10^9)</code>表示把时钟频率转化成Hz。 <code>(4096 / 8) × 2)</code>将位宽单位转化成字节， 后乘以2，由于RAM是double data rate。最后除以 <code>10^9</code> 将最终单位转化为<code>GB/s</code>。</p>
-</li>
-<li><p>实际带宽</p>
-<p>  实际带宽通过程序的实际执行，通过下面的公式得到：</p>
-<p>  <code>实际带宽 = ( ( Br + Bw ) ÷ 10^9 ) ÷ time</code> </p>
-<p>  结果的单位是<code>GB/s</code>。<code>Br</code>表示每个kernel读取的字节数，<code>Bw</code>表示每个kernel写入的字节数。</p>
-<p>  比如，一个程序要计算一个2048*2048的矩阵拷贝，整个过程的带宽：</p>
-<p>  <code>实际带宽 = ( (  2048^2 × 4 × 2 ) ÷ 10^9 ) ÷ time</code> </p>
-<p>  其中乘以4 表示矩阵每个元素的类型是float（4字节）， 乘以2是因为由读写两个过程。最后除以 <code>10^9</code> 将最终单位转化为<code>GB/s</code>。</p>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>尽可能不使用PCIe，步进行Device和Host间的数据传输。数据传输很可能抵消掉并行带来的 性能提升。 </p>
-<p>  中间数据应在Device内存中创建，销毁，由设备操作。此外，由于与每个传输相关联的开销，将许多小的传输批处理为一个较大的传输要比分别进行每个传输好得多。</p>
-<p>  此外，当使用<code>pinned memory</code>时，Device和Host间的带宽更高。</p>
-</li>
-<li><p>尽可能确保Global memory的访问时，地址是连续的。记住，<font color="orange">连续的threads访问连续的地址，效率是最高的</font>。</p>
-</li>
-<li><p>尽量少用Global memory，尽量多的使用Shared memory。</p>
-<p>  内存指令（Memory instructions）包括读取或写入shared，local或Global内存的任何指令。当访问未缓存的local或Global内存时，内存延迟有数百个时钟周期。 </p>
-<p>  下边这个例子，的赋值运算符，由很高的吞吐量，但是从Global的读操作，会有上百个时钟周期的延迟。</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">__shared__ <span class="keyword">float</span> shared[<span class="number">32</span>];</span><br><span class="line">__device__ <span class="keyword">float</span> device[<span class="number">32</span>]; </span><br><span class="line">shared[threadIdx.x] = device[threadIdx.x];</span><br></pre></td></tr></table></figure>
-
-<p>  如果在等待Global内存访问完成的同时，可以发出足够的独立算术指令，则线程调度程序（thread scheduler）可以隐藏大部分全局内存延迟。但是，最好尽可能避免访问全局内存。这种操作称为<code>Overlap</code></p>
-<p>  总之，能不用Global memory就尽量不使用。</p>
-</li>
-<li><p>在一个warp中，避免出现分支，就是说，避免Divergence。 </p>
-</li>
-</ul>
-<h2 id="中优先级"><a href="#中优先级" class="headerlink" title="中优先级"></a>中优先级</h2><ul>
-<li><p>使用Shared内存以避免从Global内存进行冗余传输。见使用Shared memory对矩阵相乘进行的优化。</p>
-</li>
-<li><p>为每个线程保持足够的寄存器占用率。CUDA有个工具来计算资源占用率：<code>CUDA Occupancy Calculator</code></p>
-</li>
-<li><p>对于kernel的配置，每个block中的线程数应该是32 的倍数，CUDA中32是个特别的数字，一个warp由32 个线程，Shared memory被划分成32个banks。</p>
-</li>
-<li><p>在loop中，对于循环计数器，由于循环计数器的值通常都是正的，因此可能会尝试将其声明为无符号的。但是，为了获得更好的性能，应该将它们声明为signed。 </p>
-</li>
-<li><p>当速度超过精度时，使用快速的数学库。</p>
-<p>  CUDA支持两种数学库，两种数学库通过名字区分：<code>__functionName()</code>和<code>functionName()</code>。</p>
-<ul>
-<li><code>__functionName()</code>运算时，直接映射到硬件层。快，但是精度低。</li>
-<li><code>functionName()</code>慢，但是精度高。</li>
-</ul>
-</li>
-<li><p>尽可能的使用更快，更专的数学库，而不是更慢，更通用的数学库。 <a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#math-libraries" target="_blank" rel="noopener">这里</a></p>
-</li>
-</ul>
-<h2 id="低优先级"><a href="#低优先级" class="headerlink" title="低优先级"></a>低优先级</h2><ul>
-<li><p>Use zero-copy operations on integrated GPUs for CUDA Toolkit version 2.2 and later. </p>
-</li>
-<li><p>使用移位运算来避免昂贵的出发和取模运算。 </p>
-<p>  Integer division and modulo operations are particularly costly and should be avoided or replaced with bitwise operations whenever possible: If n is a power of 2, ( i / n ) is equivalent to ( i ≫ log2 n ) and ( i % n ) is equivalent to ( i &amp; n - 1 ). </p>
-</li>
-<li><p>避免将双精度数自动转换为浮点数。</p>
-<p>  The compiler must on occasion insert conversion instructions, introducing additional execution cycles. This is the case for:</p>
-<ul>
-<li><p>Functions operating on <code>char</code> or <code>short</code> whose operands generally need to be converted to an <code>int</code></p>
-</li>
-<li><p>Double-precision floating-point constants (defined without any type suffix) used as input to single-precision floating-point computations</p>
-<p>The latter case can be avoided by using single-precision floating-point constants, defined with an <code>f</code> suffix such as <code>3.141592653589793f</code>, <code>1.0f</code>, <code>0.5f</code>.</p>
-<p>For single-precision code, use of the float type and the single-precision math functions are highly recommended.</p>
-<p>It should also be noted that the CUDA math library’s complementary error function, <code>erfcf()</code>, is particularly fast with full single-precision accuracy. </p>
-</li>
-</ul>
-</li>
-<li><p>让编译器很容易使用分支预测代替（in lieu of）循环或控制语句。</p>
-<p>  Sometimes, the compiler may 循环展开 unroll loops or optimize out <code>if</code> or <code>switch</code> statements by using branch predication instead. In these cases, no warp can ever diverge. The programmer can also control loop unrolling using <code>#pragma unroll</code>.</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/" data-id="ckatsrgre0015xqfz88rm9e1b" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1009,7 +1045,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1038,7 +1074,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">16</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1049,6 +1085,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/08/caffe-Net-hpp/">caffe-Net.hpp</a>
+          </li>
         
           <li>
             <a href="/2020/06/08/cpp-void%E5%9E%8B%E6%8C%87%E9%92%88/">cpp-void型指针</a>
@@ -1064,10 +1104,6 @@
         
           <li>
             <a href="/2020/06/06/caffe-SyncedMemory/">caffe-SyncedMemory</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/06/caffe-Blob-2/">caffe-Blob-(2)</a>
           </li>
         
       </ul>
