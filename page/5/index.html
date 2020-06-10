@@ -64,6 +64,108 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-线程同步-线程调度" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" class="article-date">
+  <time datetime="2020-02-20T01:44:16.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/">CUDA-线程同步-线程调度</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>线程同步（一个block内的同步）</p>
+<p> 一个block内的所有threads有时候是需要同步的（如使用shared memory优化的矩阵相乘中），方法是在kernel函数中的适当位置加上<code>__syncthreads()</code>。</p>
+<p> 当一个thread执行到<code>__syncthreadas()</code>时，这个thread会看它所在的block内的其他<font color="orange">所有</font>threads情况，如果发现还有其他threads没有执行到这个位置，则这个thread等待其他threads。直到block中<font color="orange">所有</font>active的threads都执行到此，接着向下执行。</p>
+<p> 注意这个同步只是这个block内的threads同步。而非是全局同步，CUDA中没有全局通过不的原因是，全局同步的系统开销会很大。     </p>
+<p> 并行系统中<font color="red" size="4">负载均衡</font>：要求线程的执行时间尽量接近。如果不均衡，在需要线程同步时，所有线程会等待最慢的那个thread，此时整体的速度就时最慢的那个thread的速度，其他速度快的threads 的优势完全没有了。</p>
+<p> <font color="orange">block与block之间是异步的，不存在相互等待。而同一个warp内的threads天然同步</font>。</p>
+<p> 注意线程同步，可能导致<font color="red">死锁</font>，比如下情况：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (func())&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span>&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 产生死锁，执行不同分支的threads相互等待，谁也等不到谁。</p>
+</li>
+<li><p>线程调度</p>
+<ol>
+<li><p>SP和threads</p>
+<p> 为什么GPU的threads数量远远多于物理执行单元（SP）。因为每个SM中与CPU一样也含有<font color="red" size="4">上下文空间</font>，用于执行上下文切换，从而实现多线程。</p>
+<p> 这里有个<code>SP</code>和<code>threads</code>的关系。以GPU G80为例：</p>
+<p> G80 的硬件信息：<code>16</code>个SM，每个SM含有<code>8</code>个SP，（共有<code>16x8=128</code>个SP），每个SM最多驻扎<code>768</code>个threads，总共同时执行<code>12288</code>个threads。（所以可以通过每个SM中最多可以驻扎的threads数，除以每个SM中的SP数，就得到了）</p>
+<p> 解释：</p>
+<ul>
+<li><p>16，表是芯片实际含有16个SM</p>
+</li>
+<li><p>8， 表示每个SM含有8个SP（Streaming Processors），真正执行指令的工人。</p>
+</li>
+<li><p>12288，表示这个芯片上可以同时有12288个threads进行调度。调度不意味着一定要实际执行。</p>
+</li>
+<li><p>128个SP，表示每个时钟周期内实际并行执行的指令流为128个。但总共有12288个指令流间不停的切换。切换的目的是达到<font color="orange" size="4">延时隐藏</font>效果。</p>
+<p>warp的调度是<font color="red">零开销</font>的。因为<font color="orange">warp的上下文是存在与物理空间中的，需要了这个warp干活时，程序切换到这个warp上去即可</font>。 </p>
+<p>warp中的所有threads执行相同的指令。当有分支时，由于warp内threads天然的同步，所以含有分支时的执行会有性能下降。</p>
+</li>
+</ul>
+</li>
+<li><p>warp和SP</p>
+<p> 每个warp含有<code>32</code>个threads，假如每个SM只有<code>8</code>个SP，此时一个SM如何调度一个warp?</p>
+<ul>
+<li><p>第一个周期内，有8个threads进入SP</p>
+</li>
+<li><p>第二，三，四个周期SP各进入8个threads</p>
+</li>
+<li><p>如此循环，直到所有指令执行完毕</p>
+</li>
+<li><p>所以此情况一个SM调度一个warp，需要4个周期（4个周期只是调度完成，指令执行完成需要4的倍数个周期）</p>
+<p>现代GPU的SP数已经远远大于32了。所以不存在上述问题了。</p>
+</li>
+</ul>
+</li>
+<li><p>调度warp实现延时隐藏</p>
+<p> 一个实例：有一个kernel含有</p>
+<ul>
+<li><p>一个对global memory的读操作，这个操作耗时200个时钟周期。</p>
+</li>
+<li><p>4个独立的乘或加操作，一个乘或加操作耗时4个时钟周期。</p>
+<p>那么需要多少个warp才可以将对global memory访问的延迟隐藏掉?</p>
+<p>首先每个warp需要执行4个独立的乘或加操作，共耗时4x4=16个始终周期。要覆盖200个时钟周期，就需要200/16=12.5，即13个warp<font color="red">串行</font>，才能有效隐藏对global memory的访问延时。</p>
+<p>回忆：<font color="orange" size="4">每个SM一次只能执行一个warp</font>。待确认。。。。</p>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" data-id="ckatsrgrt0028xqfzegecfmln" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-资源分配" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" class="article-date">
@@ -790,98 +892,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-LeetCode-对大数的操作" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" class="article-date">
-  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/">LeetCode-对大数的操作</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>当所处理的对象数值很大时，如<code>(int)32634573563452724846734573</code>，使用整型长整型，都会溢出，这种情况就要使用字符串代替数字。此方法处理大数问题。</p>
-<p>两个知识点：</p>
-<ol>
-<li><p>字符型的数字与其对应的ASCII值：</p>
-<table>
-<thead>
-<tr>
-<th align="left">char</th>
-<th align="left">‘0’</th>
-<th align="left">‘1’</th>
-<th align="left">‘2’</th>
-<th align="left">‘3’</th>
-<th align="left">…</th>
-<th align="left">‘9’</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">int</td>
-<td align="left">48</td>
-<td align="left">49</td>
-<td align="left">50</td>
-<td align="left">51</td>
-<td align="left">…</td>
-<td align="left">57</td>
-</tr>
-</tbody></table>
-</li>
-<li><p>char与对应int转换</p>
-<p> char-&gt;int: <code>&#39;3&#39;-&#39;0&#39; = 3</code><br><br> int-&gt;char: <code>3 +&#39;0&#39; = &#39;3&#39;</code></p>
-</li>
-</ol>
-<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>给一个n位数，打印从1到最大的n位数。比如n=3，则打印<code>1,2,3，...，998,999</code>.</p>
-<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>当n为20，其对应的数值已经远远超过了计算机可以表示的范围，所以用字符串表示一个大数，并且实现中不能出现<code>for</code>循环，因为循环变量<code>i</code>随循环次数也会超出表示范围的。所以用while循环避免使用循环变量。</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>下面的实现是有冗余的，只用<code>addOne()</code>或<code>subtractOne()</code>其一即可。当使用<code>addOne()</code>时，只要加一后的string不等于最大的n位数，就打印，后循环；当使用<code>subtractOne()</code>，初始string设为最大的n位数，while循环减一，只要这个string不是空，就打印，后循环。</p>
-<p>当然两个函数可以配合使用，不过就多余了，但就当练习大数操作了。</p>
-<p>一个string表示的大数加一操作如下。先在string首位插入一个’0‘占位，可能加一后要进位：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 初始化为“0”，循环中加到最大值</span></span><br><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">addOne</span><span class="params">(<span class="built_in">string</span> num)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (num.size() == <span class="number">0</span>) <span class="keyword">return</span> <span class="string">" "</span>;</span><br><span class="line">    num.insert(<span class="number">0</span>, <span class="number">1</span>, <span class="string">'0'</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> carry = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> i = num.size() - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (carry != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> sum = (num[i] - <span class="string">'0'</span>) + carry;</span><br><span class="line">        carry = sum / <span class="number">10</span>;</span><br><span class="line">        <span class="keyword">int</span> remainder = sum % <span class="number">10</span>;</span><br><span class="line">        num[i] = remainder + <span class="string">'0'</span>;</span><br><span class="line">        i--;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> num[<span class="number">0</span>]==<span class="string">'0'</span> ? num.substr(<span class="number">1</span>) : num;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>一个string表示的大数减一的实现如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 初始化为最大值，循环中减到空</span></span><br><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">subtractOne</span><span class="params">(<span class="built_in">string</span> Nine)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">bool</span> borrow = <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">int</span> length = Nine.size();</span><br><span class="line">    <span class="keyword">int</span> iter = length - <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    <span class="keyword">if</span> (Nine[length - <span class="number">1</span>] == <span class="string">'0'</span>) &#123;</span><br><span class="line">        borrow = <span class="literal">true</span>;</span><br><span class="line">        val = <span class="number">10</span> + (Nine[length - <span class="number">1</span>] - <span class="string">'0'</span>) - <span class="number">1</span>;</span><br><span class="line">        Nine[length - <span class="number">1</span>] = val + <span class="string">'0'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> Nine[length - <span class="number">1</span>] = Nine[length - <span class="number">1</span>] - <span class="string">'0'</span> - <span class="number">1</span> + <span class="string">'0'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( borrow &amp;&amp; iter &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (Nine[iter] == <span class="string">'0'</span>) </span><br><span class="line">            val = <span class="number">10</span> + (Nine[iter] - <span class="string">'0'</span>) - <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            borrow = <span class="literal">false</span>;</span><br><span class="line">            val = (Nine[iter] - <span class="string">'0'</span>) - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Nine[iter] = val + <span class="string">'0'</span>;</span><br><span class="line">        iter--;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> Nine[<span class="number">0</span>]==<span class="string">'0'</span> ? Nine.substr(<span class="number">1</span>) : Nine;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>主函数，仔细分析，上述两个操作，使用一个就可以达到目的。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">solution</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n &lt;= <span class="number">0</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 最大的n位数 str</span></span><br><span class="line">    <span class="built_in">string</span> str;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        str += <span class="string">'9'</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; str &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">string</span> preNum = addOne(<span class="string">"0"</span>); <span class="comment">// 初始化为“0”，循环中加到最大值</span></span><br><span class="line">    <span class="built_in">string</span> isZero = subtractOne(str); <span class="comment">// 初始化为最大值，循环中减到空</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (isZero != <span class="string">""</span>) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; preNum &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">        preNum = addOne(preNum);</span><br><span class="line">        isZero = subtractOne(isZero);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt;str&lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><font color="gree" size="6">敲黑板</font></p>
-<ol>
-<li>体会<code>subtractOne</code>中的<code>bool borrow = false;</code>，表示向前借位否，</li>
-<li>实现中总会用到知识点2.</li>
-</ol>
-<h1 id="415大数相加"><a href="#415大数相加" class="headerlink" title="415大数相加"></a>415大数相加</h1><p>依然使用到上述知识点2，思路直接，实现如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">addStrings</span><span class="params">(<span class="built_in">string</span> num1, <span class="built_in">string</span> num2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> length1 = num1.size();</span><br><span class="line">    <span class="keyword">int</span> length2 = num2.size();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(length1 != length2)&#123;</span><br><span class="line">        <span class="keyword">int</span> diff = <span class="built_in">abs</span>(length1-length2);</span><br><span class="line">        length2 &gt; length1 ? </span><br><span class="line">            num1.insert(<span class="number">0</span>, diff, <span class="string">'0'</span>) :</span><br><span class="line">            num2.insert(<span class="number">0</span>, diff, <span class="string">'0'</span>);</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">int</span> length = num1.size() + <span class="number">1</span>;</span><br><span class="line">    <span class="function"><span class="built_in">string</span> <span class="title">res</span><span class="params">(length,<span class="string">'0'</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> carry=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=length<span class="number">-2</span>; i&gt;=<span class="number">0</span>; i--)&#123;</span><br><span class="line">        <span class="keyword">int</span> sum = (num1[i]-<span class="string">'0'</span>) + (num2[i]-<span class="string">'0'</span>) + carry;</span><br><span class="line">        carry = sum/<span class="number">10</span>;</span><br><span class="line">        <span class="keyword">int</span> remainder = sum%<span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">        res[i+<span class="number">1</span>] = remainder + <span class="string">'0'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (carry) res[<span class="number">0</span>] = carry + <span class="string">'0'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res[<span class="number">0</span>]==<span class="string">'0'</span> ? res.substr(<span class="number">1</span>) : res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" data-id="ckay1n2y900014afz92sqaa7u" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -897,7 +907,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -907,7 +917,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">43</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">43</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">16</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -926,7 +936,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">18</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">19</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -937,6 +947,10 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/">caffe-阅读Log运行日志</a>
+          </li>
         
           <li>
             <a href="/2020/06/10/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BAlog/">caffe-数据&amp;模型-模型输出log</a>
@@ -952,10 +966,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
           <li>
             <a href="/2020/06/08/cpp-void%E5%9E%8B%E6%8C%87%E9%92%88/">cpp-void型指针</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/07/caffe-Layer%E4%B8%AD%E6%9C%89%E4%BB%80%E4%B9%88/">caffe-Layer中有什么</a>
           </li>
         
       </ul>
