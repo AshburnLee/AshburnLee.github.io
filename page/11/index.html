@@ -64,6 +64,210 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-回看SVM-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-07T20:23:21.000Z" itemprop="datePublished">2019-08-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/">回看SVM-(一)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><ul>
+<li>支持向量：两类别距离决策边界最近且相等的点。</li>
+<li>SVM目的：使得两个类别的SV间的距离最小。即最大化Margin间的距离。</li>
+<li>SVM考虑当前样本同时，又考虑到未来可能出现的样本，即使找到的决策边界尽量有强的泛化能力。</li>
+<li>经过数学推到，可以将问题转化为最优化问题。如同其他参数学习算法。</li>
+<li>其他机器学习算法一般是全局最优化问题，而SVM是<font color="red">有条件的最优化问题</font>。</li>
+<li>有条件的最优化问题使用拉格朗日算子求解。</li>
+<li>KKT条件</li>
+<li>Hard Margin要严格满足两个Margin见没有没有任何样本点。这由该最优化问题的条件决定。</li>
+<li>Soft Margin允许两个Margin之间存在样本点，即有<font color="red">容错的能力</font>。相应的模型条件与目标都会体现该容错能力。</li>
+<li>L1正则；L2正则</li>
+<li>Hinge损失函数，Exponential Loss，Logistic Loss，是常用的损失函数，由好的数学性质。</li>
+<li>惩罚项表达了<font color="red">容错空间</font>，不能太大。</li>
+<li>目标表达式中的<code>C</code>，目的是平衡前后两部分的比例。</li>
+<li>此处C（正则化惩罚系数）与其他ML算法C含义不同，但是可以相同地解读。且C越大，越接近Hard Margin。</li>
+<li>SVM中涉及距离，所以要对数据进行标准化处理。否则当不同维数的特征尺度不同时，影响模型性能。</li>
+</ul>
+<h1 id="1-数据"><a href="#1-数据" class="headerlink" title="1. 数据"></a>1. 数据</h1><p>有二分类样本：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">iris = datasets.load_iris()</span><br><span class="line"></span><br><span class="line">x = iris.data    <span class="comment"># 150 x 4</span></span><br><span class="line">y = iris.target  <span class="comment"># 150</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 二分类模型</span></span><br><span class="line">x = x[y &lt; <span class="number">2</span>, :<span class="number">2</span>]  <span class="comment"># 100 x 2</span></span><br><span class="line">y = y[y &lt; <span class="number">2</span>]     <span class="comment"># 100</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="2-首先标准化处理："><a href="#2-首先标准化处理：" class="headerlink" title="2. 首先标准化处理："></a>2. 首先标准化处理：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler</span><br><span class="line"></span><br><span class="line">stand = StandardScaler()</span><br><span class="line">stand.fit(x)</span><br><span class="line">x_standard = stand.transform(x)</span><br></pre></td></tr></table></figure>
+<p>得到标准化后的<code>x_standard</code>。</p>
+<p>为了说明问题，使用所有数据fit，使用原来数据predict。</p>
+<h1 id="3-当C取很大值时，如C-1e9："><a href="#3-当C取很大值时，如C-1e9：" class="headerlink" title="3. 当C取很大值时，如C=1e9："></a>3. 当C取很大值时，如C=1e9：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc = LinearSVC(C=<span class="number">1e9</span>)</span><br><span class="line">svc.fit(x_standard, y)</span><br><span class="line">y_predict = svc.predict(x_standard)</span><br></pre></td></tr></table></figure>
+
+<p>查看模型所学，<code>w和b</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc.coef_)       <span class="comment"># w [[ 4.03242779 -2.49296705]] </span></span><br><span class="line">print(svc.intercept_)  <span class="comment"># b [ 0.95365901]</span></span><br></pre></td></tr></table></figure>
+
+<p>绘出决策边界， 及两个Margin：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>如图：</p>
+<div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/hard.png" width="600"></div>
+<div align="center">图 C=1e9的分类边界</div>
+
+
+
+<h1 id="4-当C取很小值时，如C-0-05："><a href="#4-当C取很小值时，如C-0-05：" class="headerlink" title="4. 当C取很小值时，如C=0.05："></a>4. 当C取很小值时，如C=0.05：</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">svc2 = LinearSVC(C=<span class="number">0.005</span>)</span><br><span class="line">svc2.fit(x_standard, y)</span><br><span class="line">y_y_predict = svc2.predict(x_standard)</span><br></pre></td></tr></table></figure>
+
+<p>查看模型所学，w&amp;b：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(svc2.coef_)       <span class="comment"># w [[ 0.33360588 -0.30904355]]</span></span><br><span class="line">print(svc2.intercept_)  <span class="comment"># b [  3.81794231e-08]</span></span><br></pre></td></tr></table></figure>
+
+<p>绘出决策边界，及两个Margin：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_svc_decision_boundary(svc2, axis=[<span class="number">-3</span>, <span class="number">3</span>, <span class="number">-3</span>, <span class="number">3</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">0</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x_standard[y_predict==<span class="number">1</span>,<span class="number">0</span>], x_standard[y_predict==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>如图：</p>
+<div align="center"><img src="/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/soft.png" width="600"></div>
+<div align="center">图 C=0.005的分类边界</div>
+
+<p>当C太小时，容错空间太大，以至于大量明显分错的点也被模型认为是允许的。</p>
+<p>这是当只指明C后，模型的参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">LinearSVC(C=<span class="number">1000000000.0</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, f   it_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+<p>可以看出，使用的是hinge损失函数，L2正则化，ovr…等其他设置。</p>
+<hr>
+<h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>绘出决策边界，及两个Margin的函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># show margins and boundary:</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">plot_svc_decision_boundary</span><span class="params">(model, axis)</span>:</span></span><br><span class="line">    x0, x1 = np.meshgrid(</span><br><span class="line">        np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], int((axis[<span class="number">1</span>] - axis[<span class="number">0</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">        np.linspace(axis[<span class="number">2</span>], axis[<span class="number">3</span>], int((axis[<span class="number">3</span>] - axis[<span class="number">2</span>]) * <span class="number">100</span>)).reshape(<span class="number">-1</span>, <span class="number">1</span>),</span><br><span class="line">    )</span><br><span class="line">    X_new = np.c_[x0.ravel(), x1.ravel()]</span><br><span class="line"></span><br><span class="line">    y_predict = model.predict(X_new)</span><br><span class="line">    zz = y_predict.reshape(x0.shape)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">from</span> matplotlib.colors <span class="keyword">import</span> ListedColormap</span><br><span class="line">    custom_cmap = ListedColormap([<span class="string">'#EF9A9A'</span>, <span class="string">'#FFF59D'</span>, <span class="string">'#90CAF9'</span>])</span><br><span class="line"></span><br><span class="line">    plt.contourf(x0, x1, zz, linewidth=<span class="number">5</span>, cmap=custom_cmap)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># margin lines:</span></span><br><span class="line">    w = model.coef_[<span class="number">0</span>]</span><br><span class="line">    b = model.intercept_[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># w0*x0 + w1*x1 + b = 0</span></span><br><span class="line">    <span class="comment"># =&gt; x1 = -w0/w1 * x0 - b/w1</span></span><br><span class="line">    plot_x = np.linspace(axis[<span class="number">0</span>], axis[<span class="number">1</span>], <span class="number">200</span>)</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = 1</span></span><br><span class="line">    above_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] + (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line">    <span class="comment"># # w0*x0 + w1*x1 + b = -1</span></span><br><span class="line">    below_y = -w[<span class="number">0</span>] / w[<span class="number">1</span>] * plot_x - b / w[<span class="number">1</span>] - (<span class="number">1</span> / w[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># two boolean vectors: set the length of lines</span></span><br><span class="line">    above_index = (above_y &gt;= axis[<span class="number">2</span>]) &amp; (above_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    below_index = (below_y &gt;= axis[<span class="number">2</span>]) &amp; (below_y &lt;= axis[<span class="number">3</span>])</span><br><span class="line">    plt.plot(plot_x[above_index], above_y[above_index], color=<span class="string">'black'</span>)</span><br><span class="line">    plt.plot(plot_x[below_index], below_y[below_index], color=<span class="string">'black'</span>)</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/08/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%80/" data-id="ckatsrgss004jxqfz8pvs72qs" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-二叉树与递归" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" class="article-date">
+  <time datetime="2019-08-07T10:28:54.000Z" itemprop="datePublished">2019-08-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/">LeetCode-方法论-二叉树与递归</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="写在前面："><a href="#写在前面：" class="headerlink" title="写在前面："></a>写在前面：</h1><ul>
+<li>别忘了递归终止条件。</li>
+<li>明确递归函数的定义，并确保实现中函数保持定义不变。</li>
+<li>理解问题。分析出递归结构。</li>
+<li>大脑不适应递归，像盗梦空间，你需要跳进跳出。一层一层跳入，到底，再一层一层跳出。令人恍惚的是每一层的变量都长一样！</li>
+<li>用彩色笔画递归树，不同颜色表示不同层，你就不懵了。</li>
+<li>除了多见类似的问题，训练大脑。目前找不出其他方法让大脑适应递归。</li>
+<li>深度优先遍历，回朔，都是递归。</li>
+<li>递归函数占用额外空间，调用递归函数需要额外开销。</li>
+<li>由于二叉树天然具有递归性，解决问题时可以从树中拿出一个合适大小的子树，来构建出初步代码。</li>
+<li>大多问题与二叉树的4种常见的<font color="red" size="4">遍历</font>方法有关。</li>
+<li>一个模式：<font color="red" size="4">移动控制+结点操作</font></li>
+</ul>
+<hr>
+<h1 id="226-Invert-Binary-Tree"><a href="#226-Invert-Binary-Tree" class="headerlink" title="#226 Invert Binary Tree"></a>#226 Invert Binary Tree</h1><ul>
+<li><p>描述：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line"></span><br><span class="line">    <span class="number">4</span></span><br><span class="line">/   \</span><br><span class="line"><span class="number">2</span>     <span class="number">7</span></span><br><span class="line">/ \   / \</span><br><span class="line"><span class="number">1</span>   <span class="number">3</span> <span class="number">6</span>   <span class="number">9</span></span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line"></span><br><span class="line">    <span class="number">4</span></span><br><span class="line">/   \</span><br><span class="line"><span class="number">7</span>     <span class="number">2</span></span><br><span class="line">/ \   / \</span><br><span class="line"><span class="number">9</span>   <span class="number">6</span> <span class="number">3</span>   <span class="number">1</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  递归树：</p>
+  <div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/bt-1.png" width="600"></div>
+
+<p>  要想实现问题描述的Invert，就需要从下往上Swap。具体说：<br>先执行灰三角A，swap(空，空)；执行灰三角B，swap(空，空)；执行绿三角，swap(9子树, 6子树)；<br>先执行灰三角C，swap(空，空)；执行灰三角D，swap(空，空)；执行红三角，swap(3子树, 1子树)；<br>最后执行黄三角，swap(2子树, 7子树)<br>结束。</p>
+</li>
+</ul>
+<ul>
+<li><p>代码实现：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义：交换以root为跟的左右子树，返回交换后的root。</span></span><br><span class="line"><span class="function">TreeNode* <span class="title">invertTree</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    invertTree(root-&gt;left);</span><br><span class="line">    invertTree(root-&gt;right);</span><br><span class="line">    swap(root-&gt;left, root-&gt;right);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> root;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  这个过程其实是Binary Tree的后续遍历：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义：打印输出root的值。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">postOrder</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    postOrder(root-&gt;left);</span><br><span class="line">    postOrder(root-&gt;right);</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;root-&gt;val&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  除了返回值，唯一的不同是<strong>前者执行交换root的左右子树，后者执行打印root-&gt;val。本质一样：后续遍历</strong>。</p>
+</li>
+</ul>
+<p>相似问题：#337 #508</p>
+<h1 id="112-Path-Sum"><a href="#112-Path-Sum" class="headerlink" title="#112 Path Sum"></a>#112 Path Sum</h1><p>描述：</p>
+<pre><code><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Given the below binary tree and sum = 26,</span><br><span class="line"></span><br><span class="line">    5</span><br><span class="line">    / \</span><br><span class="line">    4   8</span><br><span class="line">/   / \</span><br><span class="line">11  13  4</span><br><span class="line"><span class="built_in">return</span> <span class="literal">true</span>,</span><br><span class="line">as there exist a root-to-leaf path 5-&gt;8-&gt;13 <span class="built_in">which</span> sum is 26.</span><br></pre></td></tr></table></figure></code></pre><ul>
+<li><p>思路</p>
+<p>  两种思路，先序遍历，保存所有root-to-leaf的路径值，后搜索。见<a href="https://github.com/AshburnLee/LeetCode/blob/master/_112SumPath/Solution.h" target="_blank" rel="noopener">这里</a>，效率低。</p>
+<p>  另一种思路，递归树：</p>
+  <div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/bt-2.png" width="600"></div>
+
+<p>  执行过程，即是<strong>先序遍历</strong>，每“跳进”一个新的子树，就更新sum值。最终可以找到<code>sum:13==13</code>，</p>
+</li>
+<li><p>实现：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义： 以root为根的数中是否含有和为sum的路径</span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasPathSum</span><span class="params">(TreeNode* root, <span class="keyword">int</span> sum)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// if root is NULL</span></span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if this root is a leaf</span></span><br><span class="line">    <span class="keyword">if</span> (root-&gt;left == <span class="literal">nullptr</span> &amp;&amp; root-&gt;right == <span class="literal">nullptr</span>)</span><br><span class="line">        <span class="keyword">return</span> root-&gt;val == sum;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if root has the left child</span></span><br><span class="line">    <span class="keyword">if</span> (hasPathSum(root-&gt;left, sum-root-&gt;val))</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if root has the right child</span></span><br><span class="line">    <span class="keyword">if</span> (hasPathSum(root-&gt;right, sum-root-&gt;val))</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  本质上还是先序遍历。<font color="green" size="5">敲黑板</font>sum值在“跳进”后，变小，<strong>“跳出”后，又变回原来值</strong>。<strong>“跳进”表示，递归调用自己，“跳出”表示，这次递归调用执行到return语句</strong>。就本问题而言，但遍历到结点13时，满足<code>sum 13==13</code>，所以在此返回<code>true</code>。遍历不再执行，所以右下角结点4从未被遍历到。</p>
+</li>
+</ul>
+<h1 id="589-N-ary-Tree-Preorder-Traversal"><a href="#589-N-ary-Tree-Preorder-Traversal" class="headerlink" title="#589 N-ary Tree Preorder Traversal"></a>#589 N-ary Tree Preorder Traversal</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Given an n-ary tree, return the preorder traversal of its nodes&#39; values.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  多叉树的先序遍历，思路很直接：先遍历root，后对于这个root的所有子节点，以子节点为新的root做同样的操作。<br>  这里的<font color="red" size="4">操作</font>具体说是将节点值放入vector。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">travel</span><span class="params">(Node* root, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; res)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    res.push_back(root-&gt;val);  <span class="comment">// root</span></span><br><span class="line">    <span class="keyword">for</span> (Node* chld : root-&gt;children) <span class="comment">// all children of root</span></span><br><span class="line">        travel(chld, res);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; preorder(Node* root)&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; res;</span><br><span class="line">    travel(root, res);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// The definition of Node</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    <span class="built_in">vector</span>&lt;Node*&gt; children;</span><br><span class="line"></span><br><span class="line">    Node() &#123;&#125;</span><br><span class="line"></span><br><span class="line">    Node(<span class="keyword">int</span> _val, <span class="built_in">vector</span>&lt;Node*&gt; _children) &#123;</span><br><span class="line">        val = _val;</span><br><span class="line">        children = _children;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p><font color="green" size="6">敲黑板</font>这里有个模式：对于几乎所有树的问题，本质上都是树的遍历。遍历本质上是结点的<font color="red" size="5">移动控制</font>。而对于当前节点来说，它的value是可得到的，对这个value的操作称之为<font color="red" size="5">结点操作</font>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E4%BA%8C%E5%8F%89%E6%A0%91%E4%B8%8E%E9%80%92%E5%BD%92/" data-id="ckatsrgs7003axqfzfml90mb2" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-方法论-DP-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" class="article-date">
@@ -940,197 +1144,6 @@
 
 
   
-    <article id="post-文本分类-二-文本预处理II-词编码" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" class="article-date">
-  <time datetime="2019-08-03T15:12:59.000Z" itemprop="datePublished">2019-08-03</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/">文本分类(二)-文本预处理II-词编码</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>接文本预处理(一)，这篇笔记记录把分词后的记录编码为计算机可识别的数值型序列，如将<code>[你好 呀 ， 参加 比赛 了 吗]</code>编码为<code>[91, 57, 1, 31, 14, 6, 5]</code>。同时编码类别。</p>
-<h1 id="词编码"><a href="#词编码" class="headerlink" title="词编码"></a>词编码</h1><p>在上<a href="https://ashburnlee.github.io/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86/" target="_blank" rel="noopener">一篇笔记</a>中得到的<code>vocab_file</code>，再看一下其内容：</p>
-<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
-
-<p>每个词与其编号一一对应，可以<font color="red">用词的标号来对词进行编码</font>。这就是下面主要做的事。</p>
-<h2 id="1-一一对应"><a href="#1-一一对应" class="headerlink" title="1. 一一对应"></a>1. 一一对应</h2><p>首先读取<code>vocab_file</code>，得到每个词，其编号，其频数，以<code>{词：编号}</code>为元素存入一个字典。同时指定一个整数<code>threshold</code>，当一个词的词频小于<code>threshold</code>，不再考虑该词，原因是频数太低的词没有统计意义。对每一条数据执行此操作，实现过程如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_read_dict</span><span class="params">(self, filename)</span>:</span></span><br><span class="line">    <span class="string">""" read filename and generate &#123;word: id&#125; dict """</span></span><br><span class="line">    <span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># 读词与词频</span></span><br><span class="line">        word, frequency = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        frequency = int(frequency)</span><br><span class="line">        <span class="keyword">if</span> frequency &lt; self._num_word_threshold:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        idx = len(self._word_to_id)  <span class="comment"># idx随_word_to_id大小递增</span></span><br><span class="line">        <span class="keyword">if</span> word == <span class="string">'&lt;UNK&gt;'</span>:   <span class="comment"># 特殊处理UNK</span></span><br><span class="line">            self._unk = idx</span><br><span class="line">        self._word_to_id[word] = idx  <span class="comment"># 构建处字典：&#123;词： idx&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>最终得到目标dict：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'&lt;UNK&gt;'</span>: 0, <span class="string">'，'</span>: 1, <span class="string">'的'</span>: 2, <span class="string">'。'</span>: 3, <span class="string">'在'</span>: 4, <span class="string">'、'</span>: 5, <span class="string">'了'</span>: 6, <span class="string">'是'</span>: 7,...,<span class="string">'铭记'</span>: 20350, <span class="string">'多时'</span>: 20351, <span class="string">'轩然大波'</span>: 20352,...,<span class="string">'孵化器'</span>: 39545, <span class="string">'党史'</span>: 39546, <span class="string">'纸飞机'</span>: 39547,...&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="2-编码"><a href="#2-编码" class="headerlink" title="2. 编码"></a>2. 编码</h2><p>第二步，对于一个清洗后样本<code>[你好 呀 ， 参加 比赛 了 吗]</code>，从上一步得到的<code>dict</code>中找每一个<code>key</code>对应的<code>value</code>，从而生成<code>[91, 57, 1, 31, 14, 6, 5]</code>。实现过程：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sentence_to_id</span><span class="params">(self, sentence)</span>:</span></span><br><span class="line">    <span class="string">""" 用词的idx编码每个句子 """</span></span><br><span class="line">    <span class="comment"># 切分句子后的每个词，找它的idx，</span></span><br><span class="line">    word_ids = [self.word_to_id(cur_word) <span class="keyword">for</span> cur_word <span class="keyword">in</span> sentence.split()]</span><br><span class="line">    <span class="keyword">return</span> word_ids</span><br></pre></td></tr></table></figure>
-
-<p>现在用一个样本做测试：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">test_word = <span class="string">'你好 呀 ， 参加 比赛 了 吗'</span></span><br></pre></td></tr></table></figure>
-
-<p>返回实际结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[9901, 5667, 1, 381, 124, 6, 445]</span><br></pre></td></tr></table></figure>
-
-<p>同样的方法，处理<code>label</code>，如：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">科技的id： 8</span><br></pre></td></tr></table></figure>
-
-<p>上述完整过程在<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/encodeWords.py" target="_blank" rel="noopener">这里</a></p>
-<hr>
-<p>到此到此为止，所有的样本都已用数字编码。下一步为模型提供数据，batch by batch</p>
-<h1 id="3-生成batch"><a href="#3-生成batch" class="headerlink" title="3. 生成batch"></a>3. 生成batch</h1><p>首先读取清洗后的样本文件，对于每一条记录中的类别和内容按照上述方式编码，并分别存储与两个<code>list</code>。编码完一条记录，加入到<code>list</code>中。最终的到的内容list和类别list。</p>
-<p>实现如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(filename, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> lines:    <span class="comment"># for each line,</span></span><br><span class="line">    label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">    <span class="comment"># convert label and content to sequence of ids</span></span><br><span class="line">    id_label = self._catego_dict.category_to_id(label)</span><br><span class="line">    id_words = self._vocab_dict.sentence_to_id(content)</span><br><span class="line">    id_words = id_words[<span class="number">0</span>: self._encoded_length]           <span class="comment"># cut</span></span><br><span class="line">    padding_length = self._encoded_length - len(id_words)  <span class="comment"># pad</span></span><br><span class="line">    id_words = id_words + [self._vocab_dict.unk <span class="keyword">for</span> _ <span class="keyword">in</span> range(padding_length)]</span><br><span class="line"></span><br><span class="line">    self._input.append(id_words)</span><br><span class="line">    self._output.append(id_label)</span><br><span class="line"><span class="comment"># convert to numpy array</span></span><br><span class="line">self._input = np.asarray(self._input, dtype=np.int32)</span><br><span class="line">self._output = np.asarray(self._output, dtype=np.int32)</span><br></pre></td></tr></table></figure>
-
-<p><code>self._input</code>中存储编码后的每一条内容，<code>self._output</code>中存储编码后的每一条对应的类别。特别说明，因为实际每条编码后的记录长度都不同，有的长，有的短。所以在代码中<code>self._encoded_length</code>表示每条记录保留多少个词。长的切去，短的用<code>-1</code>补全。</p>
-<p>额外地对<code>self._input</code>和<code>self._output</code>做一个随机洗牌操作：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">p = np.random.permutation(len(self._input))</span><br><span class="line">self._input = self._input[p]</span><br><span class="line">self._output = self._output[p]</span><br></pre></td></tr></table></figure>
-
-<p>这个操作使每个<code>batch</code>中数据<strong>分布尽可能一致</strong>，尽可能可以<strong>代表整个数据集的分布</strong>。</p>
-<p>第二步，生成<code>batch</code>。其过程如下图：</p>
-<div align="center"><img src="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/batch.png" width="600"></div>
-<div align="center">洗牌后继续取下一个batch</div>
-
-<p>当图中最后的数据<code>#*</code>不足一个<code>batch</code>时，所有数据随机洗牌，这样就可以再得到一个<code>batch</code>。当然最后一个batch中有部分重复使用，这没关系。 代码实现如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">next_batch</span><span class="params">(self, batch_size)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    get next batch data</span></span><br><span class="line"><span class="string">    :param batch_size:</span></span><br><span class="line"><span class="string">    :return: the next batch of input and output</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    end_indicator = self._indicator + batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        self._random_shuffle()</span><br><span class="line">        self._indicator = <span class="number">0</span></span><br><span class="line">        end_indicator = batch_size</span><br><span class="line">    <span class="keyword">if</span> end_indicator &gt; len(self._input):</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"batch size : %d is too large"</span> % batch_size)</span><br><span class="line"></span><br><span class="line">    batch_input = self._input[self._indicator: end_indicator]</span><br><span class="line">    batch_ouput = self._output[self._indicator: end_indicator]</span><br><span class="line">    self._indicator = end_indicator</span><br><span class="line">    <span class="comment"># return what we require</span></span><br><span class="line">    <span class="keyword">return</span> batch_input, batch_ouput</span><br></pre></td></tr></table></figure>
-
-<p>测试：当<code>_encoded_length</code>为50，<code>batch_size</code>为2时，可能输出如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(array([[ 5639,  5529, 28692, 14277,   108,     0,   825,    87,  7763,</span><br><span class="line">        22153, 17930,    17,   250,    16,   156,   481,   456,    45,</span><br><span class="line">            6,   102,    45,     1,  5639, 20799,    30, 39057,   949,</span><br><span class="line">         3640, 22153,    92,    15,  5639,    30, 20562, 21187,    14,</span><br><span class="line">         3193, 18589,    30,  5529,    17, 24157,     0,    16,   831,</span><br><span class="line">         3810,     4,  4406,  2849,  3092],</span><br><span class="line">       [24102, 11066,  1375,    52,  7379,   224,  1027,   956,  2962,</span><br><span class="line">        17510,    17,   250,    16,     4,   138, 13230,     2, 10477,</span><br><span class="line">         1375,    21,     1,    13,   119,   406,  3380,    41,     1,</span><br><span class="line">        13230,    17,  1647,    16, 32614,     2,     0,   147,   216,</span><br><span class="line">            6,  5447,     5,     0,   136,     5,  8616,     5, 41351,</span><br><span class="line">        25425,   136,     5, 12401,    45]], dtype=int32), array([1, 4], dtype=int32))</span><br></pre></td></tr></table></figure>
-<p>两条记录，第一条记录的类别为1，另一条的类别为4。</p>
-<p>整个过程完整代码看<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/createEncodedDataset.py" target="_blank" rel="noopener">这里</a>。数据准备完成，便可以用于训练模型了。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86II-%E8%AF%8D%E7%BC%96%E7%A0%81/" data-id="ckatsrgt8005kxqfzda0fguyk" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-文本分类-二-文本预处理I-词频统计" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" class="article-date">
-  <time datetime="2019-08-03T07:22:37.000Z" itemprop="datePublished">2019-08-03</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/">文本分类(二)-文本预处理I-词频统计</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>文本数据与图像数据本质一样，图像本身的每个通道，像素点值就是数据本身。而文本数据要被计算机理解，首先要被处理成数值型，也就是说需要给文本编码，如embedding。这篇笔记记录将<strong>文本数值化</strong>。</p>
-<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><p>一个样本文件有5000条记录，存在于txt中。如下为样本文本中的索引为204的记录：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(train_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines()</span><br><span class="line">print(len(lines))</span><br><span class="line">print(lines[<span class="number">204</span>])</span><br></pre></td></tr></table></figure>
-
-<p>输出：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">5000</span><br><span class="line">体育	绿衫军vs热火首发：新老三巨头对抗 小奥单挑大Z新浪体育讯北京时间5月4日，热火和凯尔特人迎来第二回合巅峰对决，本场比赛双方主帅均未对首发名单做出任何更改。而凯尔特人主帅道格-里弗斯赛前也向媒体表示，本场比赛“大鲨鱼”沙奎尔-奥尼尔将继续作壁上观，以下为双方首发名单——凯尔特人：隆多、雷-阿伦、皮尔斯、加内特、杰梅因-奥尼尔热火：毕比、韦德、詹姆斯、波什、伊尔戈斯卡斯(小林)</span><br></pre></td></tr></table></figure>
-
-<p>格式是：类别+样本描述。</p>
-<p>分成label和content：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br></pre></td></tr></table></figure>
-
-<h2 id="分词"><a href="#分词" class="headerlink" title="分词"></a>分词</h2><p>使用<a href="https://github.com/fxsjy/jieba" target="_blank" rel="noopener">jieba</a>对content进行分词：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">word_iter = jieba.cut(content)</span><br><span class="line"></span><br><span class="line">word_content = <span class="string">''</span>         <span class="comment"># 保存每一个词</span></span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> word_iter:     <span class="comment"># 对切分结果中每个词作如下操作</span></span><br><span class="line">    word = word.strip(<span class="string">' '</span>)</span><br><span class="line">    <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">        word_content += word + <span class="string">' '</span></span><br><span class="line">out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))</span><br><span class="line">print(out_line)</span><br></pre></td></tr></table></figure>
-
-<p>写入文件的每一条数据格式：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">体育	vs 热火 首发 ： 新 老三 巨头 对抗 小奥 单挑 大 Z 新浪 体育讯 北京 时间 5 月 4 日 ， 热火 和 凯尔特人 迎来 第二 回合 巅峰 对决 ， 本场 比赛 双方 主帅 均 未 对 首发 名单 做出 任何 更改 。 而 凯尔特人 主帅 道 格 - 里 弗斯 赛前 也 向 媒体 表示 ， 本场 比赛 “ 大 鲨鱼 ” 沙奎尔 - 奥尼尔 将 继续 作壁上观 ， 以下 为 双方 首发 名单 — — 凯尔特人 ： 隆多 、 雷 - 阿伦 、 皮尔斯 、 加内特 、 杰 梅因 - 奥尼尔 热火 ： 毕比 、 韦德 、 詹姆斯 、 波什 、 伊尔 戈斯卡 斯 ( 小林 )</span><br></pre></td></tr></table></figure>
-
-<p>如上述过程将源文件中每一条记录执行此操作后写入目标文件。整理成函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_seg_file</span><span class="params">(input_file, output_seg_file)</span>:</span></span><br><span class="line">    <span class="string">"""对input_file内容分词"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:    <span class="comment"># 读文件</span></span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    <span class="keyword">with</span> open(output_seg_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:                   <span class="comment"># 写的方式打开写文件</span></span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> lines:                                   <span class="comment"># 对于每一行</span></span><br><span class="line">            label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)  <span class="comment"># 分出lenbel和content</span></span><br><span class="line">            word_iter = jieba.cut(content)                   <span class="comment"># 对content切分成词</span></span><br><span class="line">            word_content = <span class="string">''</span>                                    <span class="comment"># 保存每个次</span></span><br><span class="line">            <span class="keyword">for</span> word <span class="keyword">in</span> word_iter:                               <span class="comment"># 对切分结果中每个词作如下操作：</span></span><br><span class="line">                word = word.strip(<span class="string">' '</span>)</span><br><span class="line">                <span class="keyword">if</span> word != <span class="string">''</span>:</span><br><span class="line">                    word_content += word + <span class="string">' '</span></span><br><span class="line">            out_line = <span class="string">'%s\t%s\n'</span> % (label, word_content.strip(<span class="string">' '</span>))  <span class="comment"># 输入文件每一行的格式</span></span><br><span class="line">            </span><br><span class="line">            f.write(out_line)     <span class="comment"># 写入文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 对三个数据集作同样操作</span></span><br><span class="line">generate_seg_file(train_file, seg_train_file)</span><br><span class="line">generate_seg_file(val_file, seg_val_file)</span><br><span class="line">generate_seg_file(test_file, seg_test_file)</span><br></pre></td></tr></table></figure>
-
-<p>此时三个样本集各自的分词结果。</p>
-<h2 id="统计词频"><a href="#统计词频" class="headerlink" title="统计词频"></a>统计词频</h2><p>对上一步得到的分词后的文件进行词频统计。如对索引为204的记录统计：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> open(output_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">        </span><br><span class="line">word_dict = &#123;&#125;</span><br><span class="line">label, content = lines[<span class="number">204</span>].strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line"><span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">        word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">        word_dict[word] += <span class="number">1</span></span><br><span class="line">print(word_dict)</span><br></pre></td></tr></table></figure>
-
-<p>结果为：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'绿衫'</span>: 1, <span class="string">'军'</span>: 1, <span class="string">'vs'</span>: 1, <span class="string">'热火'</span>: 3, <span class="string">'首发'</span>: 3, <span class="string">'：'</span>: 3, <span class="string">'新'</span>: 1, <span class="string">'老三'</span>: 1, <span class="string">'巨头'</span>: 1, <span class="string">'对抗'</span>: 1, <span class="string">'小奥'</span>: 1, <span class="string">'单挑'</span>: 1, <span class="string">'大'</span>: 2, <span class="string">'Z'</span>: 1, <span class="string">'新浪'</span>: 1, <span class="string">'体育讯'</span>: 1, <span class="string">'北京'</span>: 1, <span class="string">'时间'</span>: 1, <span class="string">'5'</span>: 1, <span class="string">'月'</span>: 1, <span class="string">'4'</span>: 1, <span class="string">'日'</span>: 1, <span class="string">'，'</span>: 4, <span class="string">'和'</span>: 1, <span class="string">'凯尔特人'</span>: 3, <span class="string">'迎来'</span>: 1, <span class="string">'第二'</span>: 1, <span class="string">'回合'</span>: 1, <span class="string">'巅峰'</span>: 1, <span class="string">'对决'</span>: 1, <span class="string">'本场'</span>: 2, <span class="string">'比赛'</span>: 2, <span class="string">'双方'</span>: 2, <span class="string">'主帅'</span>: 2, <span class="string">'均'</span>: 1, <span class="string">'未'</span>: 1, <span class="string">'对'</span>: 1, <span class="string">'名单'</span>: 2, <span class="string">'做出'</span>: 1, <span class="string">'任何'</span>: 1, <span class="string">'更改'</span>: 1, <span class="string">'。'</span>: 1, <span class="string">'而'</span>: 1, <span class="string">'道'</span>: 1, <span class="string">'格'</span>: 1, <span class="string">'-'</span>: 4, <span class="string">'里'</span>: 1, <span class="string">'弗斯'</span>: 1, <span class="string">'赛前'</span>: 1, <span class="string">'也'</span>: 1, <span class="string">'向'</span>: 1, <span class="string">'媒体'</span>: 1, <span class="string">'表示'</span>: 1, <span class="string">'“'</span>: 1, <span class="string">'鲨鱼'</span>: 1, <span class="string">'”'</span>: 1, <span class="string">'沙奎尔'</span>: 1, <span class="string">'奥尼尔'</span>: 2, <span class="string">'将'</span>: 1, <span class="string">'继续'</span>: 1, <span class="string">'作壁上观'</span>: 1, <span class="string">'以下'</span>: 1, <span class="string">'为'</span>: 1, <span class="string">'—'</span>: 2, <span class="string">'隆多'</span>: 1, <span class="string">'、'</span>: 8, <span class="string">'雷'</span>: 1, <span class="string">'阿伦'</span>: 1, <span class="string">'皮尔斯'</span>: 1, <span class="string">'加内特'</span>: 1, <span class="string">'杰'</span>: 1, <span class="string">'梅因'</span>: 1, <span class="string">'毕比'</span>: 1, <span class="string">'韦德'</span>: 1, <span class="string">'詹姆斯'</span>: 1, <span class="string">'波什'</span>: 1, <span class="string">'伊尔'</span>: 1, <span class="string">'戈斯卡'</span>: 1, <span class="string">'斯'</span>: 1, <span class="string">'('</span>: 1, <span class="string">'小林'</span>: 1, <span class="string">')'</span>: 1&#125;</span><br></pre></td></tr></table></figure>
-
-<p>此字典中键为词语，值为键出现的频数。当然这只是对一条记录的统计，对所有记录统计才有意义。</p>
-<p>按词语频数排序，方便之后输入模型的<strong>截取操作</strong>。****</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sorted_word_dict = sorted(</span><br><span class="line">    word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">print(sorted_word_dict)</span><br></pre></td></tr></table></figure>
-
-<p>结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[(<span class="string">'、'</span>, 8), (<span class="string">'，'</span>, 4), (<span class="string">'-'</span>, 4), (<span class="string">'热火'</span>, 3), (<span class="string">'首发'</span>, 3), (<span class="string">'：'</span>, 3), (<span class="string">'凯尔特人'</span>, 3), (<span class="string">'大'</span>, 2), (<span class="string">'本场'</span>, 2), (<span class="string">'比赛'</span>, 2), (<span class="string">'双方'</span>, 2), (<span class="string">'主帅'</span>, 2), (<span class="string">'名单'</span>, 2), (<span class="string">'奥尼尔'</span>, 2), (<span class="string">'—'</span>, 2), (<span class="string">'绿衫'</span>, 1), (<span class="string">'军'</span>, 1), (<span class="string">'vs'</span>, 1), (<span class="string">'新'</span>, 1), (<span class="string">'老三'</span>, 1), (<span class="string">'巨头'</span>, 1), (<span class="string">'对抗'</span>, 1), (<span class="string">'小奥'</span>, 1), (<span class="string">'单挑'</span>, 1), (<span class="string">'Z'</span>, 1), (<span class="string">'新浪'</span>, 1), (<span class="string">'体育讯'</span>, 1), (<span class="string">'北京'</span>, 1), (<span class="string">'时间'</span>, 1), (<span class="string">'5'</span>, 1), (<span class="string">'月'</span>, 1), (<span class="string">'4'</span>, 1), (<span class="string">'日'</span>, 1), (<span class="string">'和'</span>, 1), (<span class="string">'迎来'</span>, 1), (<span class="string">'第二'</span>, 1), (<span class="string">'回合'</span>, 1), (<span class="string">'巅峰'</span>, 1), (<span class="string">'对决'</span>, 1), (<span class="string">'均'</span>, 1), (<span class="string">'未'</span>, 1), (<span class="string">'对'</span>, 1), (<span class="string">'做出'</span>, 1), (<span class="string">'任何'</span>, 1), (<span class="string">'更改'</span>, 1), (<span class="string">'。'</span>, 1), (<span class="string">'而'</span>, 1), (<span class="string">'道'</span>, 1), (<span class="string">'格'</span>, 1), (<span class="string">'里'</span>, 1), (<span class="string">'弗斯'</span>, 1), (<span class="string">'赛前'</span>, 1), (<span class="string">'也'</span>, 1), (<span class="string">'向'</span>, 1), (<span class="string">'媒体'</span>, 1), (<span class="string">'表示'</span>, 1), (<span class="string">'“'</span>, 1), (<span class="string">'鲨鱼'</span>, 1), (<span class="string">'”'</span>, 1), (<span class="string">'沙奎尔'</span>, 1), (<span class="string">'将'</span>, 1), (<span class="string">'继续'</span>, 1), (<span class="string">'作壁上观'</span>, 1), (<span class="string">'以下'</span>, 1), (<span class="string">'为'</span>, 1), (<span class="string">'隆多'</span>, 1), (<span class="string">'雷'</span>, 1), (<span class="string">'阿伦'</span>, 1), (<span class="string">'皮尔斯'</span>, 1), (<span class="string">'加内特'</span>, 1), (<span class="string">'杰'</span>, 1), (<span class="string">'梅因'</span>, 1), (<span class="string">'毕比'</span>, 1), (<span class="string">'韦德'</span>, 1), (<span class="string">'詹姆斯'</span>, 1), (<span class="string">'波什'</span>, 1), (<span class="string">'伊尔'</span>, 1), (<span class="string">'戈斯卡'</span>, 1), (<span class="string">'斯'</span>, 1), (<span class="string">'('</span>, 1), (<span class="string">'小林'</span>, 1), (<span class="string">')'</span>, 1)]</span><br></pre></td></tr></table></figure>
-
-<p>整理成函数，对所有记录统计。注意该操作<strong>只针对训练集</strong>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_vocab_file</span><span class="params">(input_seg_file, output_vocab_file)</span>:</span></span><br><span class="line">    <span class="string">"""将input_seg_file中做词频统计，输出到out_put_file中"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_seg_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    word_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        <span class="keyword">for</span> word <span class="keyword">in</span> content.split():</span><br><span class="line">            word_dict.setdefault(word, <span class="number">0</span>)</span><br><span class="line">            word_dict[word] += <span class="number">1</span></span><br><span class="line">    <span class="comment"># [(word, frequency), ..., ()]</span></span><br><span class="line">    sorted_word_dict = sorted(</span><br><span class="line">        word_dict.items(), key = <span class="keyword">lambda</span> d:d[<span class="number">1</span>], reverse=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">with</span> open(output_vocab_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">'&lt;UNK&gt;\t10000000\n'</span>)      <span class="comment"># 当在测试集中找不到一个词时，用&lt;UNK&gt; 代替</span></span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> sorted_word_dict:</span><br><span class="line">            f.write(<span class="string">'%s\t%d\n'</span> % (item[<span class="number">0</span>], item[<span class="number">1</span>]))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 只对已知的训练集执行此操作</span></span><br><span class="line">generate_vocab_file(seg_train_file, vocab_file)</span><br></pre></td></tr></table></figure>
-<p>打开结果文件<code>vocab_file</code>查看：</p>
-<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="symbol">&lt;UNK&gt;</span>   <span class="number">10000000</span></span><br><span class="line"><span class="number">2</span> ，  <span class="number">1871208</span></span><br><span class="line"><span class="number">3</span> 的  <span class="number">1390830</span></span><br><span class="line"><span class="number">4</span> 。  <span class="number">822140</span></span><br><span class="line"><span class="number">5</span> 在  <span class="number">303879</span></span><br><span class="line"><span class="number">6</span> 、  <span class="number">258508</span></span><br><span class="line"><span class="number">7</span> 了  <span class="number">248160</span></span><br><span class="line"><span class="number">8</span> 是  <span class="number">240938</span></span><br><span class="line">...   </span><br><span class="line"><span class="number">508</span> 同样    <span class="number">5874</span></span><br><span class="line"><span class="number">509</span> 正式    <span class="number">5868</span></span><br><span class="line"><span class="number">510</span> 故事    <span class="number">5867</span></span><br><span class="line"><span class="number">511</span> <span class="number">13</span>  <span class="number">5855</span></span><br><span class="line"><span class="number">512</span> 建筑    <span class="number">5854</span></span><br><span class="line"><span class="number">513</span> 代表    <span class="number">5850</span></span><br><span class="line"><span class="number">514</span> 主持人  <span class="number">5843</span></span><br><span class="line"><span class="number">515</span> 水平    <span class="number">5833</span></span><br><span class="line">...</span><br><span class="line"><span class="number">359234</span> 各偏    <span class="number">1</span></span><br><span class="line"><span class="number">359235</span> <span class="number">1.8782</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359236</span> <span class="number">1.0307</span>  <span class="number">1</span></span><br><span class="line"><span class="number">359237</span> <span class="number">0.763</span>   <span class="number">1</span></span><br><span class="line"><span class="number">359238</span> <span class="number">87.82</span>%  <span class="number">1</span></span><br><span class="line"><span class="number">359239</span> <span class="number">0.5376</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
-
-<p>第一列为序号，表示第几个词，第二列为词（出现的数组和百分比都是文本中的实际数字），第三列为该词出现的频数。两点说明：</p>
-<ul>
-<li>频数太小的词无意义，因为神经网络为<font color="red">概率模型，只出现一次没有统计意义</font>。</li>
-<li>而<font color="red">频数很高但通用的词（停用词）同样无意义</font>，因为通用的词在分类问题中不能提供有用信息，从信息论角度看，使用通用词训练模型不能减少模型的不确定性。这两点之后会处理。</li>
-</ul>
-<p>对label统计：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_category_dict</span><span class="params">(input_file, category_file)</span>:</span></span><br><span class="line">    <span class="string">"""统计类别"""</span></span><br><span class="line">    <span class="keyword">with</span> open(input_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        lines = f.readlines()</span><br><span class="line">    category_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        label, content = line.strip(<span class="string">'\r\n'</span>).split(<span class="string">'\t'</span>)</span><br><span class="line">        category_dict.setdefault(label, <span class="number">0</span>)</span><br><span class="line">        category_dict[label] += <span class="number">1</span></span><br><span class="line">    category_number = len(category_dict)</span><br><span class="line">    <span class="keyword">with</span> open(category_file, <span class="string">'w'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">for</span> category <span class="keyword">in</span> category_dict:</span><br><span class="line">            line = <span class="string">'%s\n'</span> % category</span><br><span class="line">            print(<span class="string">'%s\t%d'</span> % (category, category_dict[category]))</span><br><span class="line">            f.write(line)</span><br><span class="line">            </span><br><span class="line">generate_category_dict(train_file, category_file)</span><br></pre></td></tr></table></figure>
-<p>结果写入<code>catecory_file</code>, 并且控制台输出：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">体育	5000</span><br><span class="line">娱乐	5000</span><br><span class="line">家居	5000</span><br><span class="line">房产	5000</span><br><span class="line">教育	5000</span><br><span class="line">时尚	5000</span><br><span class="line">时政	5000</span><br><span class="line">游戏	5000</span><br><span class="line">科技	5000</span><br><span class="line">财经	5000</span><br></pre></td></tr></table></figure>
-
-<p>类别频数相同，表示这是一个<font color="orange">极度均匀数据集</font>。这是理想的！</p>
-<p>统计词的频率，是为了截取，每个词的数值化，可用其序号代替。</p>
-<p>整个过程生产5个文件：</p>
-<ul>
-<li>seg_train_file： 分词后的训练集</li>
-<li>seg_val_file： 分词后的验证集</li>
-<li>seg_test_file： 分词后的测试集</li>
-<li>vocab_file： 训练集的词频统计</li>
-<li>category_file： 训练集的类别统计</li>
-</ul>
-<p>完整程序与数据文件<a href="https://github.com/AshburnLee/text-classification-revise/blob/master/dataPreProcess/preProcess.py" target="_blank" rel="noopener">这里</a>。</p>
-<p><font color="green" size="5">敲黑板</font>对于如本笔记所处理的极度均匀的数据集，评价模型时可以使用准确率。但是对于<font color="red">极度偏斜(Skewed Data)的数据</font>，如在数据集中某类病症的发病样本数与未发病样本书之比远小于1，只使用准确率评价模型是远远不够的。这时就需要使用其他模型评估方法如混淆矩阵(Confusion Matrix)等。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/03/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%BA%8C-%E6%96%87%E6%9C%AC%E9%A2%84%E5%A4%84%E7%90%86I-%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" data-id="ckatsrgvc008bxqfz5hsu77mp" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1146,7 +1159,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1156,7 +1169,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">43</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">43</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1166,7 +1179,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 15px;">CUDA</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 13.33px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
     </div>
   </div>
 
@@ -1175,7 +1188,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">16</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">2</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">18</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1188,6 +1201,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/10/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BAlog/">caffe-数据&amp;模型-模型输出log</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/09/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B/">caffe-数据&amp;模型-模型</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/08/caffe-Net-hpp/">caffe-Net.hpp</a>
           </li>
         
@@ -1197,14 +1218,6 @@
         
           <li>
             <a href="/2020/06/07/caffe-Layer%E4%B8%AD%E6%9C%89%E4%BB%80%E4%B9%88/">caffe-Layer中有什么</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/06/caffe-blob-cpp%E6%96%87%E4%BB%B6/">caffe-blob.cpp文件</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/06/caffe-SyncedMemory/">caffe-SyncedMemory</a>
           </li>
         
       </ul>
