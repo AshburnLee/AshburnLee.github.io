@@ -15,7 +15,7 @@
 <meta property="og:description" content="模型三部分参数模型是caffe学习系统包含数据与模型两个核心组件之一。一个caffe模型含有三部分参数：  要学习的参数：即权值，通过 初始化和反向传播得到更新。随着训练的结束，要学习的参数就此确定，也意味着确定了一个具体的模型。这个模型或者说是最终的学习参数会保存在.caffemodel文件中。我们可以直接使用这个模型，或者是在这个模型的基础上继续学习。 网络结构超参数：就是Net的蓝图，即如何">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2020-06-09T09:30:40.000Z">
-<meta property="article:modified_time" content="2020-06-10T09:41:02.422Z">
+<meta property="article:modified_time" content="2020-06-10T17:23:34.671Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="Caffe">
 <meta name="twitter:card" content="summary">
@@ -108,7 +108,7 @@
 <p>其中<code>source</code>提供LMDB数据的路径，提供绝对路径用担心出错。</p>
 <p>按照上述蓝图构建用于训练的网络和用于测试的网络。之后编辑训练超参数文件<code>lr_solver.prototxt</code>：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 结构文件的路径，告诉caffe，构建蓝图在哪</span></span><br><span class="line">net: <span class="string">"PATH/lr.prototxt"</span></span><br><span class="line">test_iter: 100</span><br><span class="line"><span class="comment"># 每500次做一次测试</span></span><br><span class="line">test_interval: 500</span><br><span class="line">base_lr: 0.01</span><br><span class="line">momentum: 0.9</span><br><span class="line">weight_delay: 0.0005</span><br><span class="line">lr_policy: <span class="string">"inv"</span></span><br><span class="line">gamma: 0.0001</span><br><span class="line">power: 0.75</span><br><span class="line">max_iter: 10000</span><br><span class="line"><span class="comment"># 每迭代5000次拍个快照</span></span><br><span class="line">snapshot: 5000</span><br><span class="line">snapshot_prefix: <span class="string">"PATH/mnist/lrNet"</span></span><br><span class="line">solver_mode: GPU</span><br></pre></td></tr></table></figure>
-<p>note: 想上添加<code>type</code>关键字，用来指定所使用的优化方法，如<code>type: &quot;Nesterov&quot;</code>，<code>type: &quot;AdaGrad&quot;</code>，<code>type: &quot;AdaDelta&quot;</code>等。<br>有了数据有了模型就可以训练了：</p>
+<p>note: 想上添加<code>type</code>关键字，用来指定所使用的优化方法，如<code>type: &quot;Nesterov&quot;</code>，<code>type: &quot;AdaGrad&quot;</code>，<code>type: &quot;AdaDelta&quot;</code>等。默认使用<code>SGD</code>。<br>有了数据有了模型就可以训练了：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CAFFE train \</span><br><span class="line">--solver=PATH/lr_solver.prototxt</span><br></pre></td></tr></table></figure>
 
 <p>其中<code>CAFFE</code>，表示caffe_master提前编译好的caffe工具，就像在caffe_master中的命令<code>./build/tools/caffe</code>。运行结束后会有如下tree：</p>
@@ -127,7 +127,7 @@
 <p>当训练并测试完毕，会有模型文件和快照文件保存于当前目录：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── lr_solver.prototxt</span><br><span class="line">├── mnist_test_lmdb</span><br><span class="line">│   ├── data.mdb</span><br><span class="line">│   └── lock.mdb</span><br><span class="line">├── mnist_train_lmdb</span><br><span class="line">│   ├── data.mdb</span><br><span class="line">│   └── lock.mdb</span><br><span class="line">├── my_lr_iter_10000.caffemodel</span><br><span class="line">├── my_lr_iter_10000.solverstate</span><br><span class="line">├── my_lr_iter_5000.caffemodel</span><br><span class="line">├── my_lr_iter_5000.solverstate</span><br><span class="line">└── mylr.prototxt</span><br></pre></td></tr></table></figure>
 
-<p>问题：<br>这些关键字是在哪了与Layer的实现对应起来的呢？<font color="red">当将自己实现的Layer或其他组件键入到caffe源码中时，就需要在某处添加对应关键字。</font></p>
+<p><font color="gree" size="5">问题</font>：<br>这些关键字是在哪了与Layer的实现对应起来的呢？<font color="red">当将自己实现的Layer或其他组件键入到caffe源码中时，就需要在某处添加对应关键字。</font></p>
 
       
     </div>
