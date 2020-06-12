@@ -64,6 +64,142 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-例-向量相乘" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" class="article-date">
+  <time datetime="2020-02-20T01:46:34.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/">CUDA-例-向量相乘</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="矩阵相乘CPU版本"><a href="#矩阵相乘CPU版本" class="headerlink" title="矩阵相乘CPU版本"></a>矩阵相乘CPU版本</h1><p>思路：三重循环，</p>
+<ul>
+<li>外层：遍历<font color="red">结果矩阵</font>所有行，</li>
+<li>中层：对结果矩阵每一行，遍历所有列，</li>
+<li>内层：结果矩阵某一行某一列元素的得到，需要A矩阵对应行，B矩阵对应列，的元素相乘后累加，这需要一个循环。内层循环结束后，就得到结果矩阵中的一个元素。</li>
+</ul>
+<p>看图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic11.png" width="700"></div>
+
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">matrixMultiplicationCPU</span><span class="params">(<span class="keyword">float</span>* M, <span class="keyword">float</span>* N, <span class="keyword">float</span>* P, </span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> A_height, <span class="keyword">int</span> Awidth_Bheight, <span class="keyword">int</span> B_width)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i &lt; A_height; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j &lt; B_width; j++)&#123;</span><br><span class="line">            <span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k=<span class="number">0</span>; k &lt; Awidth_Bheight; k++)&#123;</span><br><span class="line">                <span class="keyword">float</span> a = M[i * Awidth_Bheight + k];</span><br><span class="line">                <span class="keyword">float</span> b = N[k * B_width + j];</span><br><span class="line">                sum += a * b;</span><br><span class="line">            &#125;</span><br><span class="line">            P[i * B_width + j] = sum;  </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，M的大小为<code>（A_height x Awidth_Bheight）</code>，N的大小为<code>（Awidth_Bheight x B_width）</code>. 注意中括号内，索引的计算。</p>
+<h1 id="未优化的矩阵相乘kernel"><a href="#未优化的矩阵相乘kernel" class="headerlink" title="未优化的矩阵相乘kernel"></a>未优化的矩阵相乘kernel</h1><p>参数：</p>
+<ul>
+<li>AColBRow：AxB中A的列数，也是B的行数</li>
+<li>BCol：B的列数</li>
+<li>a，b矩阵的元素索引按行标注索引</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">simpleMultiply2</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">float</span>* b, <span class="keyword">float</span> *c)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> row = threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = threadIdx.x;</span><br><span class="line">    <span class="keyword">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; AColBRow; i++) &#123;</span><br><span class="line">        sum += a[row * AColBRow + i] * b[i * BCol + col];</span><br><span class="line">    &#125;</span><br><span class="line">    c[row * BCol + col] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这种方法中<code>每一个线程</code>负责乘累加<code>结果的一个元素</code>，这个元素的得到是通过循环读取a矩阵的一行，b矩阵的一列，后乘累加得到。<font color="orange" size="4">这个过程其实就是把CPU版本中的外循环和中层循环去掉，替代这两个循环的是<code>threadIdx.x</code>和<code>threadIdx.y</code>，这两个值自加。对于a和b的访存索引的计算是不变的</font>。因为不涉及到结果间的依赖，所以不需要同步机制。</p>
+<p>缺点：</p>
+<ul>
+<li>观察<code>row</code>和<code>col</code>的定义，发现这个实现只使用了<font color="red">一个block</font>。对于大的矩阵相乘，一个block不足以覆盖所有元素。</li>
+<li>矩阵相乘的过程中，同一个Global memory地址的访存是很频繁的，所以速度慢。</li>
+</ul>
+<h1 id="多blocks分块处理矩阵相乘"><a href="#多blocks分块处理矩阵相乘" class="headerlink" title="多blocks分块处理矩阵相乘"></a>多blocks分块处理矩阵相乘</h1><p>参数：</p>
+<ul>
+<li>AColBRow：AxB中A的列数，也是B的行数</li>
+<li>BCol：B的列数</li>
+<li>a，b矩阵的元素索引按行标注索引</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">simpleMultiply2</span><span class="params">(<span class="keyword">float</span> *a, <span class="keyword">float</span>* b, <span class="keyword">float</span> *c)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> row = blockIdx.y * blockDim.y + threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">float</span> sum = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; AColBRow; i++) &#123;</span><br><span class="line">        sum += a[row * AColBRow + i] * b[i * BCol + col];</span><br><span class="line">    &#125;</span><br><span class="line">    c[row * BCol + col] = sum;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此情况的线程结构是<code>2D block，2D thread</code>，注意线程组织的index，事实上是这样的：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/org.png" width="700"></div>
+
+<p>注意：<font color="orange">横向，index的第一个分量递增；纵向，index的第二个分量递增</font>。</p>
+<p>与上一种方法相比，优势是，使用多个blocks，每个block负责结果矩阵中的一个矩形块中的元素。<br>每个thread的操作细节看下图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic1.png" width="700"></div>
+
+<p>注意，C/C++中矩阵元素是按行排列的。假设线程组织是<code>2D thread 2D block</code>，假设<code>tile</code>大小是<code>2x2</code>的，假设使用4个blocks。那么跟踪上述code可得到结果矩阵中的第14个元素：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">row = 3;</span><br><span class="line">col = 2;</span><br><span class="line">i=0: a[row * 3 + i] * b[i * 4 + col] = a[9] *b[2];</span><br><span class="line">i=1: a[row * 3 + i] * b[i * 4 + col] = a[10]*b[6];</span><br><span class="line">i=2: a[row * 3 + i] * b[i * 4 + col] = a[11]*b[10];</span><br><span class="line">GET sum;</span><br><span class="line">WRITE sum INTO c[row * 4 + col] = c[14];</span><br></pre></td></tr></table></figure>
+
+<p>看出逻辑及结果是正确的。</p>
+<p>有了kernel，如何调用kernel：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// block的个数</span></span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">((A的行数+<span class="number">1</span>)/tile的行数，(B的列数+<span class="number">1</span>)/tile的列数)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 每个block中的线程数</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(tile的行数，tile的列数)</span></span></span><br><span class="line">simpleMultiply2&lt;&lt;&lt;grid, block&gt;&gt;&gt;(a, b, c)</span><br></pre></td></tr></table></figure>
+
+<p>比如图中</p>
+<ul>
+<li>定义tileRow=2，tileCol=2.</li>
+<li>A的行数为ARow=4，列数ACol=3；</li>
+<li>B的行数为BRow=3，列数BCol=4；</li>
+</ul>
+<p>那么，有如下对kernel的配置，自然地每个<code>tile</code>的大小为<code>2x2</code>，每个block大的大小也是<code>2x2</code>. <font color="red">block与block之间相互不影响，所以所有blocks并行执行</font>。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// block的个数，共有4个</span></span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">(<span class="number">2</span>，<span class="number">2</span>)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 每个block中的线程数，有4个</span></span></span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">2</span>，<span class="number">2</span>)</span></span></span><br><span class="line">simpleMultiply2&lt;&lt;&lt;grid, block&gt;&gt;&gt;(a, b, c)</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>tile</code>是一个block处理区域的大小，也就是一个block的大小，比如2x2，3x4. 是开发者根据问题情况自己定义的（通常是32 的倍数）。通过结果矩阵的行列数和<code>tile</code>的行列数，可以计算出，所需block数量个blocks阵大小。</p>
+<p>总结：这个优化算然可以处理任何大小的矩阵相乘，但是对global memory的读写并没有做优化。</p>
+<h1 id="global-memory慢"><a href="#global-memory慢" class="headerlink" title="global memory慢"></a>global memory慢</h1><p>假如一个GPU的性能峰值时346.5 Gflops。所以需要<code>346.5x4bit=1386 GB/s</code>的带宽才能达到峰值。但是这个GPU的存储实际带宽可能只有86.4GB/s，也就是<code>86.4GB/s / 4bit=21.6 Gflops</code>的性能。而实际上代码运行的速度可能只有15 Gflops。只有峰值的1/20. 所以要尽量减少对global memory的访存。</p>
+<p>对于矩阵相乘，可以使用shared memory来减少对global memory的访存。<font color="orange" size="4">始终要有这个意识</font>。</p>
+<h1 id="优化实列：使用shared-memory优化矩阵相乘"><a href="#优化实列：使用shared-memory优化矩阵相乘" class="headerlink" title="优化实列：使用shared memory优化矩阵相乘"></a>优化实列：使用shared memory优化矩阵相乘</h1><p><font color="orange" size="4">Shared memory这么使用：</font></p>
+<p>思路：</p>
+<p>因为使用了若干个block来分块结果矩阵，每一个block有自己单独的shared memory，这个存储空间由这个block内的所有threads共享，而且就矩阵相乘这个问题，A矩阵的每一行，和B矩阵的每一列在计算这个块时会不止一次被使用。所以：</p>
+<ul>
+<li>将结果阵中这一块对应的A中行和B中列存入这个block对应的shared memory中，如此避免了对global memory的频繁访问。如下图：</li>
+<li>进一步，由于A和B会很大，存入shared memory中的A行，和B列也是分段的，避免了shared memory不够用。如下图：</li>
+</ul>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/pic2.png" width="900"></div>
+
+<p>其中橘色是这个block的Shared memory空间，循环所有的<code>Asub</code>和<code>Bsub</code>，将每次的元素放入Shared memory，求得结果累加到<code>Cvalue</code>。循环结束后将最终的Cvalue写入最终位置，见图中箭头，</p>
+<p>kernel函数包含二重循环：</p>
+<ul>
+<li>外层，循环所有的Asub和Bsub，并将其放入Shared memory中。</li>
+<li>内层，循环求<font color="orange">Asub每部分行</font>和<font color="orange">Bsub每部分列</font>的<font color="orange">部分乘累加和Cvalue</font>。</li>
+</ul>
+<p>Bare in mind，每一个thread处理一个结果阵中的一个元素，也就是说，kernel函数是一个thread得到一个结果矩阵中的一个元素。</p>
+<p><a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#shared-memory" target="_blank" rel="noopener">官方文档</a>中有官方的解释，可以参考。</p>
+<p>注意，整个过程中有<font color="orange">两处同步</font>操作，因为涉及到线程间的同步。</p>
+<p>程序如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">MatMulKernel</span><span class="params">(Matrix A, Matrix B, Matrix C)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// block的行ID和列ID</span></span><br><span class="line">    <span class="keyword">int</span> blockRow = blockIdx.y;</span><br><span class="line">    <span class="keyword">int</span> blockCol = blockIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个block计算结果矩阵中的一块</span></span><br><span class="line">    Matrix Csub = GetSubMatrix(C, blockRow, blockCol);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个thread计算结果矩阵中的一个元素，</span></span><br><span class="line">    <span class="comment">// 这个结果通过累加存入Cvalue</span></span><br><span class="line">    <span class="keyword">float</span> Cvalue = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// thread的行ID和列ID</span></span><br><span class="line">    <span class="keyword">int</span> row = threadIdx.y;</span><br><span class="line">    <span class="keyword">int</span> col = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Loop over all the sub-matrices of A and B that are</span></span><br><span class="line">    <span class="comment">// required to compute Csub</span></span><br><span class="line">    <span class="comment">// Multiply each pair of sub-matrices together</span></span><br><span class="line">    <span class="comment">// and accumulate the results to Cvalue</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> m = <span class="number">0</span>; m &lt; (A.width / BLOCK_SIZE); ++m) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 得到这个block在这次循环中的A的子矩阵</span></span><br><span class="line">        Matrix Asub = GetSubMatrix(A, blockRow, m);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 得到这个block在这次循环中的B的子矩阵</span></span><br><span class="line">        Matrix Bsub = GetSubMatrix(B, m, blockCol);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 保存A的子矩阵和B的子矩阵</span></span><br><span class="line">        __shared__ <span class="keyword">float</span> As[BLOCK_SIZE][BLOCK_SIZE];</span><br><span class="line">        __shared__ <span class="keyword">float</span> Bs[BLOCK_SIZE][BLOCK_SIZE];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Load Asub and Bsub from device memory to shared memory</span></span><br><span class="line">        <span class="comment">// 每个thread加载A的子矩阵中一个元素，和B的子矩阵中的一个元素</span></span><br><span class="line">        As[row][col] = GetElement(Asub, row, col);</span><br><span class="line">        Bs[row][col] = GetElement(Bsub, row, col);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将A中这部分所有的元素，和B中元素都写入到shared memory中后，</span></span><br><span class="line">        <span class="comment">// 才能开始下面的操作。</span></span><br><span class="line">        __syncthreads();  </span><br><span class="line"></span><br><span class="line">        <span class="comment">// 计算当前A的子矩阵与B的子矩阵，相乘后累加结果。</span></span><br><span class="line">        <span class="comment">// 当外层循环结束，表示累加每一块累加的结果完成，</span></span><br><span class="line">        <span class="comment">// 得到最后的C中这个位置的结果。</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> e = <span class="number">0</span>; e &lt; BLOCK_SIZE; ++e)</span><br><span class="line">            Cvalue += As[row][e] * Bs[e][col];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Synchronize to make sure that the preceding</span></span><br><span class="line">        <span class="comment">// computation is done before loading two new</span></span><br><span class="line">        <span class="comment">// sub-matrices of A and B in the next iteration</span></span><br><span class="line">        <span class="comment">// 等待这一阶段的 加类乘完成后，才能够进行下一次循环，更新shared memory中的内容。</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Write Csub to device memory</span></span><br><span class="line">    <span class="comment">// Each thread writes one element</span></span><br><span class="line">    SetElement(Csub, row, col, Cvalue);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>那么对global memory 的访问减少了多少倍呢?</p>
+<ul>
+<li>假如一个block计算<code>2x2</code>的结果C的子矩阵，那么未优化的实现要访问Global memory <code>(2*2*2)8次行/列</code>（定义1次行/列：访问A的完整一行或B的完整一列）。优化后只访问<code>4次行/列</code>。<code>8/4=2</code>，就是tile的宽。</li>
+<li>假如一个block计算<code>3x3</code>的结果C的子矩阵，那么未优化的实现要访问Global memory <code>(2*3*3)18次行/列</code>。优化后只访问<code>6次行/列</code>。<code>18/6=3</code>，就是tile的宽。</li>
+<li>假如一个block计算<code>100x100</code>的结果C的子矩阵，那么未优化的实现要访问Global memory <code>(2*100*100)20,000次行/列</code>。优化后只访问<code>200次行/列</code>。<code>20,000/200=100</code>，就是tile的宽。</li>
+</ul>
+<p>所以对于很大的矩阵，优化前后的性能差别是巨大的。相差tile宽，这么多倍。</p>
+<p>相差tile宽，这么多倍。极限情况下，如果shared memory有足够的空间，可以把A，B都放入每个block的shared memory中。此情况下对global memory的访问最少。</p>
+<p>上述优化方法中确定块<code>tile</code>的宽度要考虑shared memory的大小：</p>
+<p><font color="red" size="4">尽量最大化tile，block的大小</font></p>
+<p>假如一个GPU每个SM有<code>16kB</code>的shared memory，并且每个SM有<code>8</code>个blocks。可以算出每个block可以使用<code>2kB</code>的shared memory。</p>
+<p>其中<code>1kB</code>存矩阵A的相关元素，<code>1kB</code>存B的相关元素。假设数据类型是float，占<code>4B</code>。所以可以计算出<code>1kB=16x16x4</code>。block的大小为<code>16x16</code>. 也就是一个block有<code>16x16</code>个threads。</p>
+<p>这种情况充分使用了SM的threads和shared memory资源，最大化<font color="orange">资源占用率</font>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" data-id="ckatsrgty0074xqfzam0pgs4k" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-线程同步-线程调度" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5-%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6/" class="article-date">
@@ -429,6 +565,8 @@
       <a data-url="http://yoursite.com/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/" data-id="ckatsrgre0015xqfz88rm9e1b" class="article-share-link">Share</a>
       
       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
     </footer>
   </div>
   
@@ -478,6 +616,8 @@
       <a data-url="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Local-Memory/" data-id="ckatsrgqx0007xqfzdoszc8s9" class="article-share-link">Share</a>
       
       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
     </footer>
   </div>
   
@@ -820,78 +960,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-Linear-Algebra-看待矩阵的视角" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/" class="article-date">
-  <time datetime="2020-01-03T06:58:28.000Z" itemprop="datePublished">2020-01-03</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linear-Algebra/">Linear Algebra</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/">Linear Algebra-看待矩阵的视角</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>记录两种看待矩阵的重要视角，对于推理, 证明和理解线性代数其他概念都十分重要。</p>
-<ul>
-<li>列向量 坐标系或空间</li>
-<li>行向量 函数或线性方程组</li>
-</ul>
-<h2 id="列视角"><a href="#列视角" class="headerlink" title="列视角"></a>列视角</h2><p>两矩阵相乘，将左边的方阵<code>A</code>看做是<font color="red">坐标系或空间</font>，右边的矩阵<code>B</code>是一个列向量的集合，每一个列向量表示在空间A的表式，而相乘的结果是在这个维度的空间中的标准正交基下的同一个列向量的表示。如</p>
-<p>看个例子：</p>
-<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/col.jpg" width="700"></div>
-
-
-<p>把矩阵<code>A</code>看做是由列向量构成的，<code>a</code>，<code>b</code> 是两个列向量经过A变换得到的结果。<code>c</code> 是将两个列向量放在一起，构成了矩阵<code>B</code>，矩阵<code>B</code>中每个列向量经过<code>A</code>变换的结果。</p>
-<p>结果是相同的。向量trans([2,3]) 是向量trans([7,7])在空间A中的表达，</p>
-<h2 id="行视角"><a href="#行视角" class="headerlink" title="行视角"></a>行视角</h2><p>还可以将A看作是一个<font color="red">函数或线性方程组</font>. 右边的向量或矩阵是操作对象。 </p>
-<p>看个例子：</p>
-<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/row.jpg" width="700"></div>
-
-<p>把矩阵<code>A</code>看做是由行向量构成，<code>e</code>，<code>f</code> 是分别操作两个列向量。<code>g</code> 是将两个列向量放到一起，一起处理。</p>
-<p>结果相同，可以看出<code>B</code>中的列向量彼此间是无关的，都经过<code>A</code>相同的变换。</p>
-<h2 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h2><p>证明矩阵对角化中一个结论：</p>
-<p>如果可以将<code>A</code>分解成<code>P*D*(P逆)</code>. 那么有<code>D</code>和<code>P</code>可以分别为：</p>
-<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/PD.jpg" width="700"></div>
-
-<p>其中<code>lambda</code>为<code>A</code>所对应的所有特征值，<code>u</code>是对应<code>lambda</code>的特征向量。(<code>P</code> 中的<code>u</code>向量竖着写)。</p>
-<p>现在问题是，如何证明：如果<code>D</code>，<code>P</code>为上述矩阵，<code>A</code>有<code>n</code>个线性无关的特征向量，那么有：</p>
-<center>A=P*D*(P逆)</center>
-
-<p>证明<code>A=P*D*(P逆)</code>， 就是证明<code>AP=PD</code>，观察等号左右：</p>
-<div align="center"><img src="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/APPD.jpg" width="700"></div>
-
-<p>左右相等，证毕。</p>
-<p>表达式<code>i</code>中<code>A</code>为一个函数，操作与右边每一个列向量。但并没有展开，因为根据特征值特征向量的定义，可以将<code>A</code>用<code>lambda</code>替换。</p>
-<p>而表达式<code>ii</code>的过程，就是将左边矩阵每一列当成一个列向量考虑，实际上，这个矩阵就是由列向量构成，所以自然而然的将这个矩阵用类向量的视角看待。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/" data-id="ckatsrgs9003hxqfz509h3hyo" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -907,7 +975,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">16</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -917,7 +985,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">43</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">31</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">16</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">45</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -927,7 +995,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 13.33px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 17.5px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 15px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 12.5px;">Test Analysis</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
     </div>
   </div>
 
@@ -936,7 +1004,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">19</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">20</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -947,6 +1015,10 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
+          </li>
         
           <li>
             <a href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/">caffe-阅读Log运行日志</a>
@@ -962,10 +1034,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
           <li>
             <a href="/2020/06/08/caffe-Net-hpp/">caffe-Net.hpp</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/08/cpp-void%E5%9E%8B%E6%8C%87%E9%92%88/">cpp-void型指针</a>
           </li>
         
       </ul>
