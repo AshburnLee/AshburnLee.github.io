@@ -64,6 +64,164 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-Memory-Optimization-Shared-Memory" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" class="article-date">
+  <time datetime="2020-01-14T17:24:41.000Z" itemprop="datePublished">2020-01-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/">CUDA-Memory Optimization-Shared Memory</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Shared-Memory"><a href="#Shared-Memory" class="headerlink" title="Shared Memory"></a>Shared Memory</h1><p>Shared Memory 的特点：</p>
+<ul>
+<li>on-chip</li>
+<li>高带宽，低延时，相较于local 和 global memory</li>
+<li>在线程间没有bank冲突</li>
+<li>线程可通过shared memory 来进行协作。</li>
+</ul>
+<p>Shared Memory 的快速访问。通常将<font color="green">经常要访问的数据</font>放入shared memory，来减少访存的次数Shared Memory。</p>
+<p>为了在并发访问中，实现高的内存带宽，shared memory被分成大小相等的块，<font color="green" size="4">banks</font>，这些banks可以被同时访问。所以任何对n个不同banks进行访存，这些访存是同时的。这就实现了高带宽。</p>
+<p>再深入一点，shared memory 被划分为banks，一个bank对外有一个<font color="green">接口</font>，使得每个周期只相应这个bank中的一个地址。所以对于同一个bank的不同地址的并发访问将导致bank conflict。如下图中的<code>threads a</code>和<code>threads b</code>，同时访问<code>bank 1</code>，冲突了。冲突了怎么办，冲突的访存会被排队串行执行。</p>
+<div align="center"><img src="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/bank.png" width="800"></div>
+
+<p>这就是shared memory 架构的设计特点。看更详细的bank，<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" target="_blank" rel="noopener">看这里</a>。</p>
+<p>关于bank conflict：</p>
+<ul>
+<li><p>一个Warp中的所有（多个）threads访问不同的banks，无冲突。如图中<code>thread c</code>与<code>thread a</code>不冲突，<code>thread c</code>与<code>thread b</code>也不冲突。</p>
+</li>
+<li><p>一个Warp中所有（多个）的threads访问同一个地址，这是<font color="green">广播</font>，无冲突。这个地址所在的bank只相应这个地址，所以可以同时访问。[In this case, multiple broadcasts from different banks are coalesced into a single multicast from the requested shared memory locations to the threads. ]</p>
+</li>
+<li><p>关于bank conflict，一个Warp有32个threads，一个bank中的地址也是32，所以bank conflicts 可能发生在同一个warp中的任何线程。</p>
+</li>
+</ul>
+<p><font color="green"></font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" data-id="ckatsrgr1000cxqfzdny78v9m" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-APOD-Strong-Scaling-Weak-Scaling" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" class="article-date">
+  <time datetime="2020-01-14T11:52:36.000Z" itemprop="datePublished">2020-01-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>读书笔记来自<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/" target="_blank" rel="noopener">这里</a></p>
+<h1 id="APOD"><a href="#APOD" class="headerlink" title="APOD"></a>APOD</h1><ul>
+<li><p><code>APOD</code> 表示Assess，Parallelize, Optimize, Deploy。是Nvidia官方提出的CUDA应用程序的周期性设计模式，目的很明确，让开发者快速找到程序中可以并行的部分，尽可能地加速计算。</p>
+<ol>
+<li><p>Assess 作为循环设计的入口，评估程序中最耗时的代码部分。</p>
+</li>
+<li><p>Parallelize 根据原始代码，调用现有的GPU优化库（如<code>cuBLAS</code>，<code>cuFFT</code>或<code>Thrust</code>），也可以简单地添加一些预处理器指令作为并行化编译器的提示。</p>
+</li>
+<li><p>Optimize 有很多方法，可以从很多角度，比如 overlapping data transfers， fine-tuning floating-point operation sequences 等等。这一步一定要用可用的优化工具。</p>
+</li>
+<li><p>Deploy 经过初步优化后，保证正确性，在有限时间内得到一个较好的结果。而不是将所有可能优化都实现。</p>
+<p>根据具体任务和产品，迭代4步骤。尽可能的得到好的性能提升。</p>
+</li>
+</ol>
+</li>
+<li><p>建立优化优先级</p>
+<p>  在执行优化前要建立优化优先级。</p>
+<p>  高优化优先级是一些优化，这些优化对于大部分CUDA程序而言可以显著提升性能。低优化优先级是一些小的优化，这些优化可能只适用于某些特定的情况下。</p>
+<p>  先处理高优先级的优化，后解决低优先级的优化。这保证了在有限时间内提供足有的结果，并且避免了过早优化（premature optimization）。 </p>
+<p>  常见高优先级：</p>
+<ol>
+<li>用profiler工具找到最耗时的部分</li>
+<li>并行处理可以并行的串行部分</li>
+</ol>
+</li>
+</ul>
+<h1 id="Host-和-Device的不同"><a href="#Host-和-Device的不同" class="headerlink" title="Host 和 Device的不同"></a>Host 和 Device的不同</h1><p>同时含有CPU和GPU的计算系统称作是异构计算系统（Heterogeneous Computing）。为了有效是哟个CUDA，有必要知道Host和Device 的不同。</p>
+<ul>
+<li><p>线程资源<br>  Host上的流水线可以支持有限数量的并发线程。比如，具有2个32核芯处理器的服务器只能同时运行64个线程（如果CPU支持同时多线程，那么可同时运行的线程数为64的倍数，如128，192）。</p>
+<p>  相比之下，CUDA设备上最基本的并行执行单元包含32个线程（一个warp）。现代NVIDIA GPU可以在多处理器上同时支持最多2048个活动线程。如果一个GPU上有80个多处理器（SM），这表示可以有超过160000个并发活动线程。</p>
+</li>
+<li><p>线程本身<br>  CPU上的线程通常是重量级实体。操作系统必须用其他线程交换CPU执行通道上的线程，以提供多线程功能。因此，上下文切换（当两个线程被交换时）是缓慢而昂贵的。</p>
+<p>  相比之下，GPU上的线程是轻量级。在一个典型的系统中，数千个线程排队等待工作。如果GPU要等待一个warp，它只需在另一个warp上开始执行工作。因为单独的<font color="green">寄存器</font>被分配给所有活动线程，所以在GPU线程之间切换时<font color="green">不需要交换寄存器或其他状态</font>。资源一直分配给每个线程，直到它完成执行。</p>
+<p>  简而言之，CPU内核目的是最小化每次一小部分线程的等待时间，而GPU则被设计成处理大量并发、轻量级线程以最大化吞吐量。</p>
+</li>
+<li><p>RAM<br>  Host由CPU和系统内存构成，Device由GPU和显卡上的存储器构成。所以说，Host和Device有各自的RAM。</p>
+</li>
+</ul>
+<p>这些是硬件层面就并行角度看的不同。总之在这样的异构系统中Host做串行工作，Device做并行工作。</p>
+<h1 id="Profiling"><a href="#Profiling" class="headerlink" title="Profiling"></a>Profiling</h1><p>目的是找到程序中最耗时函数。有很多Profiler工具，比如<code>gprof</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -O2 -g -pg myprog.c</span><br><span class="line">$ gprof .&#x2F;a.out &gt; profile.txt</span><br><span class="line">Each sample counts as 0.01 seconds.</span><br><span class="line">  %   cumulative   self              self     total           </span><br><span class="line"> time   seconds   seconds    calls  ms&#x2F;call  ms&#x2F;call  name    </span><br><span class="line"> 33.34      0.02     0.02     7208     0.00     0.00  genTimeStep</span><br><span class="line"> 16.67      0.03     0.01      240     0.04     0.12  calcStats</span><br><span class="line"> 16.67      0.04     0.01        8     1.25     1.25  calcSummaryData</span><br><span class="line"> 16.67      0.05     0.01        7     1.43     1.43  write</span><br><span class="line"> 16.67      0.06     0.01                             mcount</span><br><span class="line">  0.00      0.06     0.00      236     0.00     0.00  tzset</span><br><span class="line">  0.00      0.06     0.00      192     0.00     0.00  tolower</span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+<p>其中<code>genTimeStep</code>函数是最耗时的。所以是我们优化对象</p>
+<h1 id="Strong-Scaling-amp-Weak-Scaling"><a href="#Strong-Scaling-amp-Weak-Scaling" class="headerlink" title="Strong Scaling &amp; Weak Scaling"></a>Strong Scaling &amp; Weak Scaling</h1><p>这是两类不同的问题，还有两者的混合问题。</p>
+<p>了解这里的目的是啥，是为我们的加速设置一个期望值，并且计划一个增强并行化的策略。</p>
+<ol>
+<li><p>Strong scaling 表示待解决的<font color="green">问题总体大小</font>是固定的，当使用更多的处理单元时，解决该问题的时间会相应地减少。</p>
+<p> 对应的测量加速公式是<code>Amdahl&#39;s Law</code>。</p>
+</li>
+<li><p>Weak scaling 表示<font color="green">每个处理单元（处理器）内所解决的问题大小</font>是固定的，随着处理器数量的增加，问题的总量也会变大。</p>
+<p> 对应测量加速的公式是<code>Gustafson&#39;s Law</code>。</p>
+</li>
+</ol>
+<p>公式理解看<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#understanding-scaling" target="_blank" rel="noopener">这里</a></p>
+<h1 id="得到正确结果是所有计算的目的"><a href="#得到正确结果是所有计算的目的" class="headerlink" title="得到正确结果是所有计算的目的"></a>得到正确结果是所有计算的目的</h1><p>一个并行系统可能遇到的关于结果正确性的问题，这些问题在一个串行系统中是不存在的：线程问题，浮点计算带来的问题，CPU和GPU的不同计算方式带来的问题。</p>
+<p><font color="green"></font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" data-id="ckatsrgqj0000xqfz55m0ckls" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Computer-Composition" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/13/Computer-Composition/" class="article-date">
@@ -461,6 +619,10 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <time datetime="2020-01-02T13:39:51.000Z" itemprop="datePublished">2020-01-02</time>
 </a>
     
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
   </div>
   <div class="article-inner">
     
@@ -469,7 +631,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/">LeetCode-从链表删除插入节点</a>
+      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/">LeetCode-链表操作注意事项</a>
     </h1>
   
 
@@ -477,8 +639,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h1 id="从链表中删除，插入结点"><a href="#从链表中删除，插入结点" class="headerlink" title="从链表中删除，插入结点"></a>从链表中删除，插入结点</h1><ul>
-<li><p>注意</p>
+        <p><font color="red">注意.</font></p>
 <ul>
 <li><p>这句话什么意思：</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ListNode* d_head = <span class="keyword">new</span> ListNode(<span class="number">-1</span>);</span><br></pre></td></tr></table></figure>
@@ -491,16 +652,28 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 <li><p>这句又是什么意思</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ListNode node = head;</span><br></pre></td></tr></table></figure>
 <p>  实例化一个ListNode，用head的<code>val</code>和<code>next</code>初始化ListNode的<code>val</code>和<code>next</code>。这个<code>operator=</code>是C++帮我们写好的。</p>
+</li>
+</ul>
 <p>所以为了不用单独处理链表的头结点，通常新建一个d_head：<code>ListNode* d_head = new ListNode(-1);</code>，操作过程中，<font color="red">d_head不应给被移动，最后就可以将他delete掉，就像上述code中的伤处操作</font>。</p>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span>&#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode* next;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x):val(x), next(<span class="literal">NULL</span>)&#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 向链表head的pre_val节点后插入val的结点。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insertNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> val, <span class="keyword">int</span> pre_val)</span></span>&#123;</span><br><span class="line">    ListNode* d_head = <span class="keyword">new</span> ListNode(<span class="number">-1</span>);</span><br><span class="line">    d_head-&gt;next = head;</span><br><span class="line">    <span class="keyword">while</span>(d_head-&gt;val != pre_val)&#123;</span><br><span class="line">        d_head = d_head-&gt;next;	<span class="comment">// dhead 移动了，所以最后不能删</span></span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* insertNode = <span class="keyword">new</span> ListNode(val);</span><br><span class="line">    insertNode-&gt;next = d_head-&gt;next;</span><br><span class="line">    d_head-&gt;next = insertNode;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从链表head中删除delete_val的结点</span></span><br><span class="line"><span class="function">ListNode* <span class="title">deleteNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> delete_val)</span></span>&#123;</span><br><span class="line">    ListNode* dhead = <span class="keyword">new</span> ListNode(<span class="number">-1</span>); <span class="comment">// 新建结点</span></span><br><span class="line">    dhead-&gt;next = head;</span><br><span class="line"></span><br><span class="line">    ListNode* curr = dhead;  <span class="comment">//新建ptr，指向head</span></span><br><span class="line">    <span class="keyword">while</span>(curr-&gt;next)&#123;</span><br><span class="line">        <span class="keyword">if</span>(curr-&gt;next-&gt;val == delete_val)&#123;</span><br><span class="line">            ListNode* dNode = curr-&gt;next; <span class="comment">//新建ptr，指向curr-&gt;next</span></span><br><span class="line">            curr-&gt;next = dNode-&gt;next;</span><br><span class="line">            <span class="keyword">delete</span> dNode;</span><br><span class="line">        &#125;<span class="keyword">else</span></span><br><span class="line">            curr=curr-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* resHead = dhead-&gt;next;  <span class="comment">//新建ptr，指向dhead-&gt;next</span></span><br><span class="line">    <span class="keyword">delete</span> dhead;    <span class="comment">// 整个过程dhead没有移动，所以可以delete </span></span><br><span class="line">    <span class="keyword">return</span> resHead;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 打印当前链表</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">printLinkedList</span><span class="params">(ListNode* head)</span></span>&#123;	</span><br><span class="line">    ListNode* node = head;</span><br><span class="line">    <span class="keyword">while</span>(node)&#123;</span><br><span class="line">        <span class="built_in">cout</span>&lt;&lt;node-&gt;val&lt;&lt;<span class="string">"-&gt;"</span>;</span><br><span class="line">        node = node-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line">    <span class="comment">// create a linkedlist</span></span><br><span class="line">    <span class="keyword">int</span> length, nodeVal, headVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;length;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;headVal;</span><br><span class="line">    <span class="keyword">int</span> count=length;</span><br><span class="line">    ListNode* head = <span class="keyword">new</span> ListNode(headVal);</span><br><span class="line">    count--;</span><br><span class="line">    ListNode* dhead = head;</span><br><span class="line">    <span class="keyword">while</span>(count!=<span class="number">0</span>)&#123;</span><br><span class="line">        <span class="built_in">cin</span>&gt;&gt;nodeVal;</span><br><span class="line">        ListNode* node = <span class="keyword">new</span> ListNode(nodeVal);</span><br><span class="line">        dhead-&gt;next = node;</span><br><span class="line">        dhead = dhead-&gt;next;</span><br><span class="line">        count--;</span><br><span class="line">    &#125;</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="comment">//operations</span></span><br><span class="line">    <span class="keyword">int</span> insertVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;insertVal;</span><br><span class="line">    insertNode(head, insertVal, <span class="number">2</span>);</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="keyword">int</span> dln;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;dln;</span><br><span class="line">    ListNode* nhead = deleteNode(head, dln);</span><br><span class="line">    printLinkedList(nhead);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
+<p><font color="red">注意2.</font>删除某一个结点</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ListNode* dNode = curr-&gt;next; <span class="comment">//新建ptr，指向curr-&gt;next</span></span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line"><span class="keyword">delete</span> dNode; <span class="comment">// 删除指针所指向地址的内容，指针所指向地址不变。</span></span><br><span class="line">dNode = <span class="literal">nullptr</span>; <span class="comment">// 间指针设为空指针。</span></span><br></pre></td></tr></table></figure>
+
+
+<h1 id="从链表中删除，插入结点"><a href="#从链表中删除，插入结点" class="headerlink" title="从链表中删除，插入结点"></a>从链表中删除，插入结点</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span>&#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode* next;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x):val(x), next(<span class="literal">NULL</span>)&#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 向链表head的pre_val节点后插入val的结点。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insertNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> val, <span class="keyword">int</span> pre_val)</span></span>&#123;</span><br><span class="line">    ListNode* d_head = <span class="keyword">new</span> ListNode(<span class="number">-1</span>);</span><br><span class="line">    d_head-&gt;next = head;</span><br><span class="line">    <span class="keyword">while</span>(d_head-&gt;val != pre_val)&#123;</span><br><span class="line">        d_head = d_head-&gt;next;	<span class="comment">// dhead 移动了，所以最后不能删</span></span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* insertNode = <span class="keyword">new</span> ListNode(val);</span><br><span class="line">    insertNode-&gt;next = d_head-&gt;next;</span><br><span class="line">    d_head-&gt;next = insertNode;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从链表head中删除delete_val的结点</span></span><br><span class="line"><span class="function">ListNode* <span class="title">deleteNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> delete_val)</span></span>&#123;</span><br><span class="line">    ListNode* dhead = <span class="keyword">new</span> ListNode(<span class="number">-1</span>); <span class="comment">// 新建结点</span></span><br><span class="line">    dhead-&gt;next = head;</span><br><span class="line"></span><br><span class="line">    ListNode* curr = dhead;  <span class="comment">//新建ptr，指向head</span></span><br><span class="line">    <span class="keyword">while</span>(curr-&gt;next)&#123;</span><br><span class="line">        <span class="keyword">if</span>(curr-&gt;next-&gt;val == delete_val)&#123;</span><br><span class="line">            ListNode* dNode = curr-&gt;next; <span class="comment">//新建ptr，指向curr-&gt;next</span></span><br><span class="line">            curr-&gt;next = dNode-&gt;next;</span><br><span class="line">            <span class="comment">// 删处结点</span></span><br><span class="line">            <span class="keyword">delete</span> dNode;</span><br><span class="line">            dNode = <span class="literal">nullptr</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span></span><br><span class="line">            curr=curr-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* resHead = dhead-&gt;next;  <span class="comment">//新建ptr，指向dhead-&gt;next</span></span><br><span class="line">    <span class="keyword">delete</span> dhead;    <span class="comment">// 整个过程dhead没有移动，所以可以delete </span></span><br><span class="line">    dhead = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> resHead;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 打印当前链表</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">printLinkedList</span><span class="params">(ListNode* head)</span></span>&#123;	</span><br><span class="line">    ListNode* node = head;</span><br><span class="line">    <span class="keyword">while</span>(node)&#123;</span><br><span class="line">        <span class="built_in">cout</span>&lt;&lt;node-&gt;val&lt;&lt;<span class="string">"-&gt;"</span>;</span><br><span class="line">        node = node-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line">    <span class="comment">// create a linkedlist</span></span><br><span class="line">    <span class="keyword">int</span> length, nodeVal, headVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;length;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;headVal;</span><br><span class="line">    <span class="keyword">int</span> count=length;</span><br><span class="line">    ListNode* head = <span class="keyword">new</span> ListNode(headVal);</span><br><span class="line">    count--;</span><br><span class="line">    ListNode* dhead = head;</span><br><span class="line">    <span class="keyword">while</span>(count!=<span class="number">0</span>)&#123;</span><br><span class="line">        <span class="built_in">cin</span>&gt;&gt;nodeVal;</span><br><span class="line">        ListNode* node = <span class="keyword">new</span> ListNode(nodeVal);</span><br><span class="line">        dhead-&gt;next = node;</span><br><span class="line">        dhead = dhead-&gt;next;</span><br><span class="line">        count--;</span><br><span class="line">    &#125;</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="comment">//operations</span></span><br><span class="line">    <span class="keyword">int</span> insertVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;insertVal;</span><br><span class="line">    insertNode(head, insertVal, <span class="number">2</span>);</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="keyword">int</span> dln;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;dln;</span><br><span class="line">    ListNode* nhead = deleteNode(head, dln);</span><br><span class="line">    printLinkedList(nhead);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="创建链表，打印链表，销毁链表"><a href="#创建链表，打印链表，销毁链表" class="headerlink" title="创建链表，打印链表，销毁链表"></a>创建链表，打印链表，销毁链表</h1><p>作为基本操作，为测试时提供便利。先在ListNode结构体中添加一个构造函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode *next;</span><br><span class="line">    ListNode() : val(<span class="number">0</span>), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x) : val(x), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x, ListNode *next) : val(x), next(next) &#123;&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>传入一个保存结点值的容器，创建链表：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ListNode* <span class="title">createList</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nodeVals)</span></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (nodeVals.size()==<span class="number">0</span>) </span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">	<span class="built_in">vector</span>&lt;ListNode*&gt; nodePtr;</span><br><span class="line">	nodePtr.push_back(<span class="keyword">new</span> ListNode(nodeVals.back()));</span><br><span class="line">	nodeVals.pop_back();</span><br><span class="line">	<span class="keyword">while</span>(!nodeVals.empty())&#123;</span><br><span class="line">		nodePtr.push_back(<span class="keyword">new</span> ListNode(nodeVals.back(), nodePtr.back()));</span><br><span class="line">		nodeVals.pop_back();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> nodePtr.back();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>遍历打印链表：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">showList</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (ListNode* i = head; i!=<span class="literal">NULL</span>; i=i-&gt;next)&#123;</span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;i-&gt;val&lt;&lt;<span class="string">"-&gt;"</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">cout</span>&lt;&lt;<span class="string">"NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">	<span class="keyword">return</span> ;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>销毁链表：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">destroyList</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (head)&#123;</span><br><span class="line">		destroyList(head-&gt;next);</span><br><span class="line">		<span class="keyword">delete</span> head;</span><br><span class="line">        head = <span class="literal">nullptr</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
 
       
     </div>
@@ -508,6 +681,8 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
       <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/" data-id="ckay1n2y500004afz8rk43wbo" class="article-share-link">Share</a>
       
       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
     </footer>
   </div>
   
@@ -682,204 +857,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-LeetCode-方法论-DP-二" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/" class="article-date">
-  <time datetime="2019-12-26T07:24:48.000Z" itemprop="datePublished">2019-12-26</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/">LeetCode-方法论-DP-二</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="213-House-Robber-II"><a href="#213-House-Robber-II" class="headerlink" title="#213 House Robber II"></a>#213 House Robber II</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">与#198不同，这回抢的街是环形，即首位相连，依旧是在不相邻的房子间抢，求可获得的最好收益。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  技巧：选择一个房子作为首：第一条街偷除第一个房子的其他房子，第二次偷除最后一个房子的其他房子。两次偷的结果取较大值。<br>  其中每次偷房子的方式同#198.</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">1</span>) <span class="keyword">return</span> nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">2</span>) <span class="keyword">return</span> max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]); </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 最后一间房子 不强</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo1(nums.size(), <span class="number">0</span>);        </span><br><span class="line">    memo1[<span class="number">0</span>] = nums[<span class="number">0</span>];        </span><br><span class="line">    memo1[<span class="number">1</span>] = max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]);        </span><br><span class="line">            </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;nums.size(); i++)&#123;        </span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;        </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)        </span><br><span class="line">            <span class="keyword">if</span> (memo1[j]&gt;tmp)        </span><br><span class="line">                tmp = memo1[j];        </span><br><span class="line">        memo1[i] = max(memo1[i<span class="number">-1</span>], nums[i]+tmp);        </span><br><span class="line">                </span><br><span class="line">    &#125;        </span><br><span class="line">                                        </span><br><span class="line">    <span class="comment">// 第一间房子 不强</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo2(nums.size(), <span class="number">0</span>);    </span><br><span class="line">    memo2[<span class="number">1</span>] = nums[<span class="number">1</span>];        </span><br><span class="line">    memo2[<span class="number">2</span>] = max(nums[<span class="number">1</span>], nums[<span class="number">2</span>]);        </span><br><span class="line">            </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">3</span>; i&lt;nums.size(); i++)&#123;        </span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;        </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)        </span><br><span class="line">            <span class="keyword">if</span> (memo2[j]&gt;tmp)        </span><br><span class="line">                tmp = memo2[j];        </span><br><span class="line">        memo2[i] = max(memo2[i<span class="number">-1</span>], nums[i]+tmp);        </span><br><span class="line">                </span><br><span class="line">    &#125;    </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>  max( memo1[nums.size()<span class="number">-2</span>], memo2[nums.size()<span class="number">-1</span>]);     </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="96Unique-BST"><a href="#96Unique-BST" class="headerlink" title="#96Unique BST"></a>#96Unique BST</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">给出一个正整数n，返回从1～n可以构成不同BST 的个数。</span><br><span class="line"></span><br><span class="line">如n&#x3D;3时，可以构成的BST数量为5.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<ul>
-<li><p>动手找几个n值画画图，从中找规律。</p>
-</li>
-<li><p>状态的定义：<code>memo[i]</code> 表示以<code>1～i</code>为节点的 BST的个数。定义<code>memo[0]=1</code>.</p>
-</li>
-<li><p>状态转移方程：看下示意图，以n=3为例：</p>
-<div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/96.png" width="600"></div>
-
-<p>图中<code>memo[3]=memo[0]*memo[2] + memo[1]*memo[1] + memo[2]*memo[0]</code> 就是n=3时的状态转移方程。</p>
-<p>这其中<code>memo[2]=memo[0]*memo[1] + memo[1]*memo[0]=2</code> 是n=2时的状态转移方程。</p>
-</li>
-<li><p>当n=4：</p>
-<p>  <code>memo[0]=1</code>;<br>  <code>memo[1]=memo[0]*memo[0]=1</code>;<br>  <code>memo[2]=memo[0]*memo[1] + memo[1]*memo[0]=2</code>;<br>  <code>memo[3]=memo[0]*memo[2] + memo[1]*memo[1] + memo[2]*memo[0]=5</code>;<br>  <code>memo[4]=memo[0]*memo[3] + memo[1]*memo[2] + memo[2]*memo[1] + memo[3]*memo[0]=14</code>;</p>
-<p>可以观察出，要想求出<code>memo[1]</code>,需要求出<code>memo[0]</code>，要想求出<code>memo[2]</code>,需要求出<code>memo[1]</code>和<code>memo[0]...</code>。</p>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numTree</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123;</span><br><span class="line">	<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(n+<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">	memo[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;=n ;i++)&#123;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> k=<span class="number">1</span>; k&lt;=i; k++)&#123;</span><br><span class="line">			memo[i] += memo[k<span class="number">-1</span>] * memo[i<span class="number">-1</span>-(k<span class="number">-1</span>)];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> memo[n];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">找规律</font>，</p>
-<h1 id="304-Sum-of-Region"><a href="#304-Sum-of-Region" class="headerlink" title="#304 Sum of Region"></a>#304 Sum of Region</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">给定一个矩阵，和两个点, 左上角(r1,c1)和右下角(r2,c2)。</span><br><span class="line">求出由这两个点围成的矩阵所有元素之和。</span><br><span class="line"></span><br><span class="line">NOTE，对于同一个矩阵，需要大量的上述query操作。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<ul>
-<li><p>第一步：构建memo</p>
-<ul>
-<li><p>状态定义：<code>memo[i][j]</code>表示从matrix最左上角到<code>matrix[i][j]</code>处的元素之和。</p>
-</li>
-<li><p>状态转移方程 看下图示，假如matrix如作图所示：</p>
-<div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/304-1.png" width="600"></div>
-
-<p>memo中的红圈重点值如何得到? 红圈中的值按照定义，等于matrix最左上角到红圈的元素和，从作图中看就是6，怎么算的？ <code>6=绿+紫-粉+自身</code>。在右图中就等于<code>绿+紫-粉+1=6</code>。</p>
-<p>所以状态转移方程是：<br><code>当前memo值=左边memo值+上边memo值+当前matrix值-左上memo值</code>。</p>
-<p>在实现中， 由于要对memo第一行和memo第一列做同样的操作，所以memo大小较matrix多了一行一列。</p>
-</li>
-</ul>
-</li>
-<li><p>第二步：query 从memo中取所需值。</p>
-<p>  过程如下图：注意根据memo的定义，在matrix中的矩形，一定是从matrix最左上角开始。</p>
-  <div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/304-2.png" width="600"></div>
-
-<p>  如上图所示，假如要得到matrix中<code>(1,1)</code>到<code>(2,2)</code>元素和，在左边matrix矩阵中，就等于<code>蓝-粉-绿+紫</code>，对应于有图memo中就是<code>红-粉-绿+紫</code>。就是最终返回值。</p>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NumMatrix</span>&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// 构建memo数组</span></span><br><span class="line">    NumMatrix(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; matrix) &#123;</span><br><span class="line">        <span class="keyword">if</span> (matrix.size()==<span class="number">0</span> || matrix[<span class="number">0</span>].size()==<span class="number">0</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 在原先matrix大小基础上增加一行一列，并且初始化为0</span></span><br><span class="line">        memo = <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;(matrix.size()+<span class="number">1</span>, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(matrix[<span class="number">0</span>].size()+<span class="number">1</span>, <span class="number">0</span>));</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> r=<span class="number">0</span>; r&lt;matrix.size(); r++)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> c=<span class="number">0</span>; c&lt;matrix[<span class="number">0</span>].size(); c++)&#123;</span><br><span class="line">                <span class="comment">// 状态转移方程：</span></span><br><span class="line">                memo[r+<span class="number">1</span>][c+<span class="number">1</span>] = memo[r][c+<span class="number">1</span>] + memo[r+<span class="number">1</span>][c] + matrix[r][c]-memo[r][c];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用memo求出制定区域的元素之和。</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">sumRegion</span><span class="params">(<span class="keyword">int</span> row1, <span class="keyword">int</span> col1, <span class="keyword">int</span> row2, <span class="keyword">int</span> col2)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> memo[row2+<span class="number">1</span>][col2+<span class="number">1</span>]-memo[row1][col2+<span class="number">1</span>]-memo[row2+<span class="number">1</span>][col1]+memo[row1][col1];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">找规律</font></p>
-<h1 id="70-Climb-Staires"><a href="#70-Climb-Staires" class="headerlink" title="#70 Climb Staires"></a>#70 Climb Staires</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">你爬楼梯，每次只能爬1阶或2阶，那么要爬到n阶，由多少种走法</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  逻辑与斐波那契数列相同。以n=5为例。</p>
-<ul>
-<li><p>状态定义：memo[i]表示爬i阶台阶由多少中爬法。其中定义memo[0]=1, memo[1]=1。</p>
-</li>
-<li><p>状态转移方程：见下图：</p>
-<div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/70.png" width="800"></div>
-
-<p>DP的特点是从已知计算求下一步结果，进而再求下下步结果。计算是由一个特定方向的。所以按照图中箭头方向分析：</p>
-<p><code>爬2阶的爬法 = 爬1阶的爬法(爬了1阶，再爬1阶) + 爬0阶的爬法(爬了0阶，再爬2阶)</code>;<br><code>爬3阶的爬法 = 爬2阶的爬法(爬了2阶，再爬1阶) + 爬1阶的爬法(爬了1阶，再爬2阶)</code>;<br><code>爬4阶的爬法 = 爬3阶的爬法(爬了3阶，再爬1阶) + 爬2阶的爬法(爬了2阶，再爬2阶)</code>;<br><code>...</code></p>
-<p>这一类问题有重复计算的子问题。所以DP的记忆化机制保存了中间的结果，从而避免了重复的计算。</p>
-</li>
-</ul>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">climbStairs</span> <span class="params">(<span class="keyword">int</span> numStairs)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(numStairs + <span class="number">1</span>, <span class="number">-1</span>);</span><br><span class="line">    memo[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">    memo[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i =<span class="number">2</span>; i &lt;= numStairs; i++) &#123;</span><br><span class="line">        memo[i] = memo[i<span class="number">-1</span>] + memo[i<span class="number">-2</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> memo[numStairs];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/" data-id="ckatsrgs3002zxqfzer0ha6ks" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-方法论-map-set-二" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/" class="article-date">
-  <time datetime="2019-12-24T12:54:50.000Z" itemprop="datePublished">2019-12-24</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/">LeetCode-方法论-map&amp;set-二</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>454, </p>
-<h1 id="454-4Sum-II"><a href="#454-4Sum-II" class="headerlink" title="#454 4Sum II"></a>#454 4Sum II</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">A &#x3D; [ 1, 2]</span><br><span class="line">B &#x3D; [-2,-1]</span><br><span class="line">C &#x3D; [-1, 2]</span><br><span class="line">D &#x3D; [ 0, 2]</span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line">2</span><br><span class="line"></span><br><span class="line">Explanation:</span><br><span class="line">The two tuples are:</span><br><span class="line">1. (0, 0, 0, 1) -&gt; A[0] + B[0] + C[0] + D[1] &#x3D; 1 + (-2) + (-1) + 2 &#x3D; 0</span><br><span class="line">2. (1, 1, 0, 0) -&gt; A[1] + B[1] + C[0] + D[0] &#x3D; 2 + (-1) + (-1) + 0 &#x3D; 0</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<pre><code>第一步：将A和B中元素的可能和作为key放入map1，value为这个和出现的频数。
-第二步：将C和D中元素的可能和作为key放入map2，value为这个和出现的频数。
-第三步：对于map1中的每个元素，在map2中查找这个元素对应的负数，如果找到，则结果中加上(这个元素的频数)×(map2中这个元素负数的频数)  DONE。</code></pre></li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fourSumCount</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; A, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; B, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; C, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; D)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp1;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> a:A)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> b:B)</span><br><span class="line">            mp1[a+b]++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp2;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> c: C)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> d: D)</span><br><span class="line">            mp2[c+d]++;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 第三步</span></span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> &amp; itr : mp1)&#123;</span><br><span class="line">        <span class="keyword">if</span> (mp2.find(-(itr.first)) != mp2.end())</span><br><span class="line">            res += (itr.second) * (mp2[-(itr.first)]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><font color="green" size="5">敲黑板</font>理清楚逻辑后再实现。</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/" data-id="ckatsrgs8003dxqfz2rvl8avr" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -895,7 +872,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">20</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -905,7 +882,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">47</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -924,7 +901,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">22</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -937,6 +914,14 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
       <ul>
         
           <li>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
           </li>
         
@@ -946,14 +931,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
           <li>
             <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/">caffe-阅读Log运行日志</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/10/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BAlog/">caffe-数据&amp;模型-模型输出log</a>
           </li>
         
       </ul>

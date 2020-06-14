@@ -64,6 +64,160 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-常量内存提升性能-例-RayTracing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" class="article-date">
+  <time datetime="2020-02-20T02:09:40.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ol>
+<li><p>constants 常量必须在函数外声明</p>
+</li>
+<li><p><code>cudaMemcpyToSymbol()</code></p>
+<p> 这个函数是特殊版本的<code>cudaMemcpy()</code>, 唯一的不同是，<code>cudaMemcpyToSymbol()</code>将数据复制到<font color="red">常量内存constant memory</font>，而<code>cudaMemcpy()</code>将数据复制到global memory。</p>
+</li>
+<li><p>常量内存为什么能提升性能-Ray tracing</p>
+<p> <code>__constant__</code> 把变量的访问限制为<code>read-only</code>，有了这个限制，必然获得某种回报。这个回报是：<font>与从global memory中读取数据相比，从constant memory中读取相同的数据可以节约内存带宽</font>，有两个原因：</p>
+<ul>
+<li><p>对constant memory的<font color="red">单次读</font>操作可以广播到其他<font>临近</font>的threads。 </p>
+</li>
+<li><p>constant memory的数据将会缓存起来，因此<font color="red">相同地址的连续读操作</font>不会产生额外的内存通信。</p>
+<p>half-warp的 广播是一把双刃剑。当16 个threads都读取constant memory<font color="red">相同</font>的地址的时，性能极大地提升。但是当16个threads分别读取从constant memory<font color="red">不同</font>的地址时，读操作会被串行化，性能会下降，这种情况就不如从global中读取。</p>
+<p>从<code>Ray-Tracing</code>实例中体会：</p>
+<p>要使用到的数据结构：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INF 2e10f</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Sphere</span> &#123;</span></span><br><span class="line">    <span class="keyword">float</span> r,b,g;</span><br><span class="line">    <span class="keyword">float</span> radius;</span><br><span class="line">    <span class="keyword">float</span> x,y,z;</span><br><span class="line">    <span class="comment">// 假设有一个观察平面，那么（ox，oy）是这个观察平面中一个像素的坐标，</span></span><br><span class="line">    <span class="comment">// 这个方法将计算从这个像素中发射出的光线是否与这个球面相交。</span></span><br><span class="line">    <span class="comment">// 如果相交，则计算从这个像素点到这个球面的距离。当光线命中多个球时，</span></span><br><span class="line">    <span class="comment">// 只有最近的球面才会被看到。</span></span><br><span class="line">    __<span class="function">device__ <span class="keyword">float</span> <span class="title">hit</span><span class="params">( <span class="keyword">float</span> ox, <span class="keyword">float</span> oy, <span class="keyword">float</span> *n )</span> </span>&#123;</span><br><span class="line">        <span class="keyword">float</span> dx = ox - x;</span><br><span class="line">        <span class="keyword">float</span> dy = oy - y;</span><br><span class="line">        <span class="keyword">if</span> (dx*dx + dy*dy &lt; radius*radius) &#123;</span><br><span class="line">            <span class="keyword">float</span> dz = sqrtf( radius*radius - dx*dx - dy*dy );</span><br><span class="line">            *n = dz / sqrtf( radius * radius );</span><br><span class="line">            <span class="keyword">return</span> dz + z;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> -INF;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>kernel函数输入一个bitmap：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> *ptr )</span> </span>&#123;</span><br><span class="line">    <span class="comment">// map from threadIdx/BlockIdx to pixel position</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> y = threadIdx.y + blockIdx.y * blockDim.y;</span><br><span class="line">    <span class="keyword">int</span> offset = x + y * blockDim.x * gridDim.x;</span><br><span class="line">    <span class="keyword">float</span> ox = (x - DIM/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> oy = (y - DIM/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> r=<span class="number">0</span>, g=<span class="number">0</span>, b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> maxz = -INF;</span><br><span class="line">    <span class="comment">// 每个线程考察所有的球，得到每个距离每个像素最近的球面。</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SPHERES; i++) &#123;</span><br><span class="line">        <span class="keyword">float</span> n;</span><br><span class="line">        <span class="keyword">float</span> t = s[i].hit( ox, oy, &amp;n );</span><br><span class="line">        <span class="keyword">if</span> (t &gt; maxz) &#123;</span><br><span class="line">            <span class="keyword">float</span> fscale = n;</span><br><span class="line">            r = s[i].r * fscale;</span><br><span class="line">            g = s[i].g * fscale;</span><br><span class="line">            b = s[i].b * fscale;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">0</span>] = (<span class="keyword">int</span>)(r * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">1</span>] = (<span class="keyword">int</span>)(g * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">2</span>] = (<span class="keyword">int</span>)(b * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">3</span>] = <span class="number">255</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>for循环中，每一个thread循环球集合<code>Sphere *s</code>中的所有球<code>s[i]</code>，得到每个像素的一个颜色值。这里的模式是：<font color="red">所有threads都会只读相同的存储地址</font>。考虑上述的关于constant的特点，使用constant memory 进行优化。</p>
+<p>优化前的main函数如下：其中<code>s</code>是声明在global memory中的。用constant memory优化只需要将下面code中的<code>&lt;1&gt;&lt;2&gt;</code>分别修改为</p>
+</li>
+<li><p>&lt;1&gt; <code>__constant__ Sphere s[SPHERES]</code>;</p>
+</li>
+<li><p>&lt;2&gt; <code>HANDLE_ERROR( cudaMemcpyToSymbol( s, temp_s, sizeof(Sphere) * SPHERES) );</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cpu_bitmap.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> rnd( x ) (x * rand() / RAND_MAX)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPHERES 20</span></span><br><span class="line">Sphere *s; <span class="comment">// &lt;1&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="function">CPUBitmap <span class="title">bitmap</span><span class="params">( DIM, DIM )</span></span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> *dev_bitmap;</span><br><span class="line">    <span class="comment">// allocate memory on the GPU for the output bitmap</span></span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;dev_bitmap, bitmap.image_size() ) );</span><br><span class="line">    <span class="comment">// allocate memory for the Sphere dataset</span></span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;s, <span class="keyword">sizeof</span>(Sphere) * SPHERES ) ); <span class="comment">// &lt;2&gt;</span></span><br><span class="line"></span><br><span class="line">    Sphere *temp_s = (Sphere*)<span class="built_in">malloc</span>( <span class="keyword">sizeof</span>(Sphere) * SPHERES );</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SPHERES; i++) &#123;</span><br><span class="line">        temp_s[i].r = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].g = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].b = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].x = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].y = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].z = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].radius = rnd( <span class="number">100.0f</span> ) + <span class="number">20</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( s, temp_s, <span class="keyword">sizeof</span>(Sphere) * SPHERES,</span><br><span class="line">                                cudaMemcpyHostToDevice ) );</span><br><span class="line">    <span class="built_in">free</span>( temp_s );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// generate a bitmap from our sphere data</span></span><br><span class="line">    <span class="function">dim3 <span class="title">grids</span><span class="params">(DIM/<span class="number">16</span>,DIM/<span class="number">16</span>)</span></span>;</span><br><span class="line">    <span class="function">dim3 <span class="title">threads</span><span class="params">(<span class="number">16</span>,<span class="number">16</span>)</span></span>;</span><br><span class="line">    kernel&lt;&lt;&lt;grids,threads&gt;&gt;&gt;( dev_bitmap );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// copy our bitmap back from the GPU for display</span></span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( bitmap.get_ptr(), dev_bitmap, bitmap.image_size(),</span><br><span class="line">                                cudaMemcpyDeviceToHost ) );</span><br><span class="line">    bitmap.display_and_exit();</span><br><span class="line">    <span class="comment">// free our memory</span></span><br><span class="line">    cudaFree( dev_bitmap );</span><br><span class="line">    cudaFree( s );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述过程使用constant memory保存只读对象。感受这个模式：<font color="red">每个threads都访问相同的只读数据时，将获得额外的性能提升</font>. 前面说了的两个原因：第一，这种模式将读取操作在半个warp中广播，第二，芯片上包含了常量内存缓存。</p>
+<p>在许多算法中，内存带宽都是瓶颈，因此要时刻想着改善这种情况，</p>
+</li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" data-id="ckatsrgrl001qxqfze0r861xe" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-死锁-例-点积" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/" class="article-date">
+  <time datetime="2020-02-20T02:06:51.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/">CUDA-死锁-例-点积</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="好好体会-Dot-product"><a href="#好好体会-Dot-product" class="headerlink" title="好好体会-Dot product"></a>好好体会-Dot product</h1><p>（CUDA by example 55页）</p>
+<p><font color="orange" size="3">这个例子值得好好感悟</font></p>
+<p>点积：两个长度相同的向量A和B，对应元素相乘后相加。</p>
+<p>CUDA实现思路：每个线程分别读取A和B中对应位置的元素，紧接着执行相乘操作，最后将相乘结果存入shared memory的对应位置。</p>
+<p>注意，当向量元素个数远远超过一个block中的threads数量时的处理。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> N = <span class="number">33</span>*<span class="number">1025</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> threadsPerBlock = <span class="number">256</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> blocksPerGrid = (N+threadsPerBlock<span class="number">-1</span>)/threadsPerBlock;</span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">dotProduction</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">/// 第一步：thread计算得到a和b对应元素的乘积，</span></span><br><span class="line">    <span class="comment">// 存入这个thread对应的shared memory中的位置</span></span><br><span class="line">    <span class="comment">// 每个block对应的shared memory的大小为这个block中的threads数量</span></span><br><span class="line">    __shared__ <span class="keyword">float</span> cache[threadsPerBlock];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x*blocIdx.x;</span><br><span class="line">    <span class="comment">// 每个block的shared memory的索引就是threadIdx.x，与blockIdx.x 无关,</span></span><br><span class="line">    <span class="comment">// 这个block和那个block中的thread的ID是一摸一样的。</span></span><br><span class="line">    <span class="keyword">int</span> cacheIndex = threadsIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行乘法操作，更新threads ID，</span></span><br><span class="line">    <span class="comment">// 同stride-loop</span></span><br><span class="line">    <span class="comment">// 看图一的过程</span></span><br><span class="line">    <span class="keyword">float</span> tmp = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">while</span> (tid&lt;N)&#123;</span><br><span class="line">        tmp += a[tid]*b[tid];</span><br><span class="line">        tid += blockDim.x*gridDim.x;</span><br><span class="line">    &#125;</span><br><span class="line">    cache[cacheIndex] = tmp;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 同步这个block中的所有threads</span></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="comment">// 确保所有threads完成工作之后，执行后续指令</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/// 第二步：对于每个block对应的shared memory中的元素，进行规约求和。</span></span><br><span class="line">    <span class="comment">// 其中threadPerBlock必须是2的指数。</span></span><br><span class="line">    <span class="comment">// 同for-loop</span></span><br><span class="line">    <span class="keyword">int</span> i = blockDim.x/<span class="number">2</span>;</span><br><span class="line">    <span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (cacheIndex &lt;i )</span><br><span class="line">            cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">        <span class="comment">// 确保上一轮所有和得到，所以要同步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">        i /= <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 把每个shared memory中的第一个元素，也就是这个shared memory中</span></span><br><span class="line">    <span class="comment">// 所有元素之和，写入c中对应的位置。</span></span><br><span class="line">    <span class="keyword">if</span>(cacheIndex == <span class="number">0</span>)</span><br><span class="line">        c[blockIdx.x] = cache[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="comment">// 在主函数中，把c从device拷贝到host，以及之后：</span></span><br><span class="line">cudaMemcpy(h_c, c, cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在CPU上将h_c中的结果求和，于此同时GPU上可以后其他任务执行。</span></span><br><span class="line"><span class="comment">// CPU和GPU并行执行。隐藏延时</span></span><br><span class="line"><span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i &lt; blocksPerGrid; i++)&#123;</span><br><span class="line">    sum += h_c[i];</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// sum即是最终点积结果。</span></span><br></pre></td></tr></table></figure>
+
+<p>其中这一部分：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> tmp = <span class="number">0.0f</span>;</span><br><span class="line"><span class="keyword">while</span> (tid&lt;N)&#123;</span><br><span class="line">    tmp += a[tid]*b[tid];</span><br><span class="line">    tid += blockDim.x*gridDim.x; <span class="comment">// 更新tid，自加不是1，而是所有threads数量。</span></span><br><span class="line">&#125;</span><br><span class="line">cache[cacheIndex] = tmp;</span><br></pre></td></tr></table></figure>
+
+<p>当所有threads的数目小于a或b中的元素个数时（不论有多少个blocks），上述保证正确，与<font color="red">stride更新</font>效果相同。当threads个数等于元素个数时，也正确。所以这样写，分析见下图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/dot0.png" width="600"></div>
+
+<p>上图中只使用了<font color="orange">一个block</font>，所以在第二步归约计算时，就可以在第0个位置上得到最终结果。当使用多个blocks时，第二步得到<font color="orange">每个block的第0个元素</font>，而这些若干个第0个元素保存于c（Global）中，最终还要将c中元素求和。</p>
+<p>而下面这种实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (tid&lt;N)&#123;</span><br><span class="line">    cache[threadIdx.x] = a[tid]*b[tid];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>只适用于thread个数等于元素个数时。但通常元素个数会远大于threads数。所以不适用此法。</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/dot1.png" width="600"></div>
+
+<ul>
+<li><p>技能：<font color="orange" size="4">多个blocks中的各个shared memory 缓存同时被s操作</font>。</p>
+</li>
+<li><p>为什么要将最后的结果传回host计算？</p>
+<p>  因为，事实证明，<font color="orange">想GPU这种大规模并行机器在执行最后的规约步骤时，通常会浪费计算资源，因为此时的数据集非常小。比如，当使用480 个threads将32 个数相加时，将难以充分使用每一个threads</font>。</p>
+</li>
+</ul>
+<p>总结一下，使用shared memory优化dot-production为什么有效，因为减少了写入global memory的次数，并且复制回host的数据量减少。性能增加。</p>
+<p><font color="gree" size="4">敲黑板</font>注意threadIdx.x 与threads ID的区别，前者相对ID后者绝对ID。<font color="red" size="4">访存Shared memory时，一定使用threadIdx.x</font>。</p>
+<h1 id="syncthreads-放错位置会导致死锁"><a href="#syncthreads-放错位置会导致死锁" class="headerlink" title="__syncthreads() 放错位置会导致死锁"></a>__syncthreads() 放错位置会导致死锁</h1><p>规约程序中：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i=blockDim.x/<span class="number">2</span>;</span><br><span class="line"><span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">    <span class="keyword">if</span> (cacheIndex &lt;i )</span><br><span class="line">        cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">    __syncthreads();</span><br><span class="line">    i /= <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果将<code>__syncthreads()</code>放入if语句，会产生死锁：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i=blockDim.x/<span class="number">2</span>;</span><br><span class="line"><span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">    <span class="keyword">if</span> (cacheIndex &lt;i )&#123;</span><br><span class="line">        cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    i /= <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解释一下，当出现线程发散时，发散的分支会使得某些threads处于空闲状态，而其他threads将执行分支中的代码。而对于<code>__syncthreads()</code>而言，<font color="orange" size="4">CUDA架构确保，一个block中的所有threads都执行到<code>__syncthreads()</code>，才能执行<code>__syncthreads()</code>之后的语句</font>。这样一来，上述代码块，只要有一个threads没有执行if语句，也就不能够执行<code>__syncthreads()</code>，其他执行了if语句的threads会等待哪一个thread，一直等下去，造成死锁。</p>
+<p>所以，对于<code>__syncthreads()</code>要谨慎使用。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/" data-id="ckatsrgro001zxqfz8ve10gze" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-存储优化-例-矩阵转置" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" class="article-date">
@@ -794,164 +948,6 @@
 
 
   
-    <article id="post-CUDA-Memory-Optimization-Shared-Memory" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" class="article-date">
-  <time datetime="2020-01-14T17:24:41.000Z" itemprop="datePublished">2020-01-15</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/">CUDA-Memory Optimization-Shared Memory</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="Shared-Memory"><a href="#Shared-Memory" class="headerlink" title="Shared Memory"></a>Shared Memory</h1><p>Shared Memory 的特点：</p>
-<ul>
-<li>on-chip</li>
-<li>高带宽，低延时，相较于local 和 global memory</li>
-<li>在线程间没有bank冲突</li>
-<li>线程可通过shared memory 来进行协作。</li>
-</ul>
-<p>Shared Memory 的快速访问。通常将<font color="green">经常要访问的数据</font>放入shared memory，来减少访存的次数Shared Memory。</p>
-<p>为了在并发访问中，实现高的内存带宽，shared memory被分成大小相等的块，<font color="green" size="4">banks</font>，这些banks可以被同时访问。所以任何对n个不同banks进行访存，这些访存是同时的。这就实现了高带宽。</p>
-<p>再深入一点，shared memory 被划分为banks，一个bank对外有一个<font color="green">接口</font>，使得每个周期只相应这个bank中的一个地址。所以对于同一个bank的不同地址的并发访问将导致bank conflict。如下图中的<code>threads a</code>和<code>threads b</code>，同时访问<code>bank 1</code>，冲突了。冲突了怎么办，冲突的访存会被排队串行执行。</p>
-<div align="center"><img src="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/bank.png" width="800"></div>
-
-<p>这就是shared memory 架构的设计特点。看更详细的bank，<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" target="_blank" rel="noopener">看这里</a>。</p>
-<p>关于bank conflict：</p>
-<ul>
-<li><p>一个Warp中的所有（多个）threads访问不同的banks，无冲突。如图中<code>thread c</code>与<code>thread a</code>不冲突，<code>thread c</code>与<code>thread b</code>也不冲突。</p>
-</li>
-<li><p>一个Warp中所有（多个）的threads访问同一个地址，这是<font color="green">广播</font>，无冲突。这个地址所在的bank只相应这个地址，所以可以同时访问。[In this case, multiple broadcasts from different banks are coalesced into a single multicast from the requested shared memory locations to the threads. ]</p>
-</li>
-<li><p>关于bank conflict，一个Warp有32个threads，一个bank中的地址也是32，所以bank conflicts 可能发生在同一个warp中的任何线程。</p>
-</li>
-</ul>
-<p><font color="green"></font></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" data-id="ckatsrgr1000cxqfzdny78v9m" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-APOD-Strong-Scaling-Weak-Scaling" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" class="article-date">
-  <time datetime="2020-01-14T11:52:36.000Z" itemprop="datePublished">2020-01-14</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/">CUDA-APOD Strong-Scaling Weak-Scaling</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>读书笔记来自<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/" target="_blank" rel="noopener">这里</a></p>
-<h1 id="APOD"><a href="#APOD" class="headerlink" title="APOD"></a>APOD</h1><ul>
-<li><p><code>APOD</code> 表示Assess，Parallelize, Optimize, Deploy。是Nvidia官方提出的CUDA应用程序的周期性设计模式，目的很明确，让开发者快速找到程序中可以并行的部分，尽可能地加速计算。</p>
-<ol>
-<li><p>Assess 作为循环设计的入口，评估程序中最耗时的代码部分。</p>
-</li>
-<li><p>Parallelize 根据原始代码，调用现有的GPU优化库（如<code>cuBLAS</code>，<code>cuFFT</code>或<code>Thrust</code>），也可以简单地添加一些预处理器指令作为并行化编译器的提示。</p>
-</li>
-<li><p>Optimize 有很多方法，可以从很多角度，比如 overlapping data transfers， fine-tuning floating-point operation sequences 等等。这一步一定要用可用的优化工具。</p>
-</li>
-<li><p>Deploy 经过初步优化后，保证正确性，在有限时间内得到一个较好的结果。而不是将所有可能优化都实现。</p>
-<p>根据具体任务和产品，迭代4步骤。尽可能的得到好的性能提升。</p>
-</li>
-</ol>
-</li>
-<li><p>建立优化优先级</p>
-<p>  在执行优化前要建立优化优先级。</p>
-<p>  高优化优先级是一些优化，这些优化对于大部分CUDA程序而言可以显著提升性能。低优化优先级是一些小的优化，这些优化可能只适用于某些特定的情况下。</p>
-<p>  先处理高优先级的优化，后解决低优先级的优化。这保证了在有限时间内提供足有的结果，并且避免了过早优化（premature optimization）。 </p>
-<p>  常见高优先级：</p>
-<ol>
-<li>用profiler工具找到最耗时的部分</li>
-<li>并行处理可以并行的串行部分</li>
-</ol>
-</li>
-</ul>
-<h1 id="Host-和-Device的不同"><a href="#Host-和-Device的不同" class="headerlink" title="Host 和 Device的不同"></a>Host 和 Device的不同</h1><p>同时含有CPU和GPU的计算系统称作是异构计算系统（Heterogeneous Computing）。为了有效是哟个CUDA，有必要知道Host和Device 的不同。</p>
-<ul>
-<li><p>线程资源<br>  Host上的流水线可以支持有限数量的并发线程。比如，具有2个32核芯处理器的服务器只能同时运行64个线程（如果CPU支持同时多线程，那么可同时运行的线程数为64的倍数，如128，192）。</p>
-<p>  相比之下，CUDA设备上最基本的并行执行单元包含32个线程（一个warp）。现代NVIDIA GPU可以在多处理器上同时支持最多2048个活动线程。如果一个GPU上有80个多处理器（SM），这表示可以有超过160000个并发活动线程。</p>
-</li>
-<li><p>线程本身<br>  CPU上的线程通常是重量级实体。操作系统必须用其他线程交换CPU执行通道上的线程，以提供多线程功能。因此，上下文切换（当两个线程被交换时）是缓慢而昂贵的。</p>
-<p>  相比之下，GPU上的线程是轻量级。在一个典型的系统中，数千个线程排队等待工作。如果GPU要等待一个warp，它只需在另一个warp上开始执行工作。因为单独的<font color="green">寄存器</font>被分配给所有活动线程，所以在GPU线程之间切换时<font color="green">不需要交换寄存器或其他状态</font>。资源一直分配给每个线程，直到它完成执行。</p>
-<p>  简而言之，CPU内核目的是最小化每次一小部分线程的等待时间，而GPU则被设计成处理大量并发、轻量级线程以最大化吞吐量。</p>
-</li>
-<li><p>RAM<br>  Host由CPU和系统内存构成，Device由GPU和显卡上的存储器构成。所以说，Host和Device有各自的RAM。</p>
-</li>
-</ul>
-<p>这些是硬件层面就并行角度看的不同。总之在这样的异构系统中Host做串行工作，Device做并行工作。</p>
-<h1 id="Profiling"><a href="#Profiling" class="headerlink" title="Profiling"></a>Profiling</h1><p>目的是找到程序中最耗时函数。有很多Profiler工具，比如<code>gprof</code>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -O2 -g -pg myprog.c</span><br><span class="line">$ gprof .&#x2F;a.out &gt; profile.txt</span><br><span class="line">Each sample counts as 0.01 seconds.</span><br><span class="line">  %   cumulative   self              self     total           </span><br><span class="line"> time   seconds   seconds    calls  ms&#x2F;call  ms&#x2F;call  name    </span><br><span class="line"> 33.34      0.02     0.02     7208     0.00     0.00  genTimeStep</span><br><span class="line"> 16.67      0.03     0.01      240     0.04     0.12  calcStats</span><br><span class="line"> 16.67      0.04     0.01        8     1.25     1.25  calcSummaryData</span><br><span class="line"> 16.67      0.05     0.01        7     1.43     1.43  write</span><br><span class="line"> 16.67      0.06     0.01                             mcount</span><br><span class="line">  0.00      0.06     0.00      236     0.00     0.00  tzset</span><br><span class="line">  0.00      0.06     0.00      192     0.00     0.00  tolower</span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
-<p>其中<code>genTimeStep</code>函数是最耗时的。所以是我们优化对象</p>
-<h1 id="Strong-Scaling-amp-Weak-Scaling"><a href="#Strong-Scaling-amp-Weak-Scaling" class="headerlink" title="Strong Scaling &amp; Weak Scaling"></a>Strong Scaling &amp; Weak Scaling</h1><p>这是两类不同的问题，还有两者的混合问题。</p>
-<p>了解这里的目的是啥，是为我们的加速设置一个期望值，并且计划一个增强并行化的策略。</p>
-<ol>
-<li><p>Strong scaling 表示待解决的<font color="green">问题总体大小</font>是固定的，当使用更多的处理单元时，解决该问题的时间会相应地减少。</p>
-<p> 对应的测量加速公式是<code>Amdahl&#39;s Law</code>。</p>
-</li>
-<li><p>Weak scaling 表示<font color="green">每个处理单元（处理器）内所解决的问题大小</font>是固定的，随着处理器数量的增加，问题的总量也会变大。</p>
-<p> 对应测量加速的公式是<code>Gustafson&#39;s Law</code>。</p>
-</li>
-</ol>
-<p>公式理解看<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#understanding-scaling" target="_blank" rel="noopener">这里</a></p>
-<h1 id="得到正确结果是所有计算的目的"><a href="#得到正确结果是所有计算的目的" class="headerlink" title="得到正确结果是所有计算的目的"></a>得到正确结果是所有计算的目的</h1><p>一个并行系统可能遇到的关于结果正确性的问题，这些问题在一个串行系统中是不存在的：线程问题，浮点计算带来的问题，CPU和GPU的不同计算方式带来的问题。</p>
-<p><font color="green"></font></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" data-id="ckatsrgqj0000xqfz55m0ckls" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -967,7 +963,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">20</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -977,7 +973,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">47</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -996,7 +992,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">22</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1009,6 +1005,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
           </li>
         
@@ -1018,14 +1022,6 @@
         
           <li>
             <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/">caffe-阅读Log运行日志</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/10/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BAlog/">caffe-数据&amp;模型-模型输出log</a>
           </li>
         
       </ul>

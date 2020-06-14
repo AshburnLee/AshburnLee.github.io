@@ -64,6 +64,183 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-模型评价-ROC曲线" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/" class="article-date">
+  <time datetime="2019-08-06T12:25:23.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/">模型评价-ROC曲线</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>ROC曲线是由TPR和FPR为横纵轴，</p>
+<ul>
+<li>TPR表示：所有实际为<strong>正</strong>，我的模型有多少也预测为<strong>正</strong>；</li>
+<li>FPR表示：所有实际为<strong>反</strong>，我的模型由多少预测为<strong>正</strong>。</li>
+</ul>
+<p>二者实现如下，其中你已经知道TP，FN，FP，TN的含义：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TPR</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    tp = TP(y_true, y_predict)</span><br><span class="line">    fn = FN(y_true, y_predict)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> tp / (tp + fn)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FPR</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    fp = FP(y_true, y_predict)</span><br><span class="line">    tn = TN(y_true, y_predict)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> fp / (fp + tn)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.</span></span><br></pre></td></tr></table></figure>
+
+<p>TPR和FPR是和P&amp;R相似的概念，计算所用到的值都在Confusion Matrix中。所以<font color="red">绘制ROC图过程同PR曲线</font>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">fprs = []</span><br><span class="line">tprs = []</span><br><span class="line">thresholds = np.arange(np.min(decision_scores), np.max(decision_scores), <span class="number">0.1</span>)</span><br><span class="line"><span class="keyword">for</span> threshold <span class="keyword">in</span> thresholds:</span><br><span class="line">    y_predict = np.array(decision_scores &gt;= threshold, dtype=<span class="string">'int'</span>)</span><br><span class="line">    fprs.append(FPR(y_test, y_predict))</span><br><span class="line">    tprs.append(TPR(y_test, y_predict))</span><br></pre></td></tr></table></figure>
+
+<p>得到不同的threshold值，每一个值对应一个模型，计算每一个模型的TPR和FPR，分别放入空列表中。就可以绘图了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(fprs, tprs, label=<span class="string">'ROC'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower right'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'FPR'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'TPR'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/roc.png" width="600"></div>
+<div align="center">图 ROC曲线</div>
+
+<p>使用sklearn中自带实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> roc_curve</span><br><span class="line"></span><br><span class="line">fprs, tprs, thresholds = roc_curve(y_test, decision_scores)</span><br><span class="line"></span><br><span class="line">plt.plot(fprs, tprs, label=<span class="string">'ROC'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower right'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'FPR'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'TPR'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>如图：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/roc2.png" width="600"></div>
+<div align="center">图 ROC曲线 built-in</div>
+
+<p><strong>ROC的作用</strong>是为了计算AUC(Area Under Curve)。而比较模型的相对性能，只要得到两个模型各自的ROC，分别计算各自的AUC，谁大，谁的相对性能好。</p>
+<p>sklearn提供AUC的计算：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> roc_auc_score</span><br><span class="line"></span><br><span class="line">print(roc_auc_score(y_test, decision_scores))     <span class="comment">#  0.98304526749</span></span><br></pre></td></tr></table></figure>
+
+<p>传入y_test和decision_scores即可得到。</p>
+<p><font color="green" size="5">敲黑板</font>ROC的两个指标，与PR指标相似又不同，是另一个角度的对模型性能的量化。引入相似但不同的信息有助于减少系统的不确定性，这里是模型选择的不确定性。衡量一个模型的性能，通常要尽可能把所有指标都找到，综合衡量。<br>给出<a href="https://coding.imooc.com/learn/questiondetail/42693.html" target="_blank" rel="noopener">liuyubobobo老师的话</a>：<br><font color="grey" size="3">我们的目的不是“找到”单一的“最好”的指标；而是了解所有的指标背后在反映什么，在看到这个指标出现问题的时候，能够判断问题可能出现在哪里，进而改进我们的模型。虽然我们的改进方向可能是单一的。<br><br>具体到PR曲线和ROC曲线，他们的核心区别在TN。可以看出来，PR曲线其实不反应TN。所以，如果你的应用场景中，如果TN并不重要，那么PR曲线是一个很好的指标（事实上，Precision和Recall就是通过抹去TN，来去除极度的偏斜数据带来的影响，进而放大FP, FN和TP三者的关系的）。<br><br>而ROC曲线则综合了TN, FP, FN和TP。虽然它对TN极度多的情况下，FP，FN和TP的变化不敏感。所以在TN没有那么多（数据没有那么偏斜），或者TN是一种很重要的需要考虑的情况下，ROC能反映出PR不能反映的问题。</font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/" data-id="ckatsrgta005oxqfz3w3t8kr1" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-模型评价-PR曲线" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/" class="article-date">
+  <time datetime="2019-08-06T06:17:48.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/">模型评价-PR曲线</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Precision和Recall是两个矛盾的度量，一个变大时，另一个就变小。怎样格式化P-R的关系呢。P-R曲线。</p>
+<h1 id="绘制P-R曲线"><a href="#绘制P-R曲线" class="headerlink" title="绘制P-R曲线"></a>绘制P-R曲线</h1><p>根据每一个样本得到不同的分类平面，即许多个不同的模型。对每一个模型计算P&amp;R值，最后以P，R为横纵轴绘图。</p>
+<h2 id="1-如何得到不同模型"><a href="#1-如何得到不同模型" class="headerlink" title="1. 如何得到不同模型"></a>1. 如何得到不同模型</h2><p><font color="red">图示</font></p>
+<p>假设已经使用训练样本训练出一个Logistic Regression模型<code>log_reg</code>，测试集<code>x_test</code>，<code>y_test</code>。调用训练好模型的<code>decision_function()</code>，返回<font color="red">所有分类平面</font>。其实Logistic Regression的<font color="red">默认分类平面是y=0，即threshold=0</font>。</p>
+<p>decision_scores记录所有分类平面：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">decision_scores = log_reg.decision_function(x_test)  </span><br><span class="line">print(len(decision_scores))         <span class="comment">#  450</span></span><br><span class="line">print(np.min(decision_scores))      <span class="comment">#  -85.6861241675</span></span><br><span class="line">print(np.max(decision_scores))      <span class="comment">#  19.8896068857</span></span><br></pre></td></tr></table></figure>
+
+<p>当threshold = 0时，即默认分类平面对应的模型各指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">y_predict = log_reg.predict(x_test)            </span><br><span class="line">print(confusion_matrix(y_test, y_predict))    <span class="comment">#  [[403   2]</span></span><br><span class="line">                                              <span class="comment">#   [  9  36]]</span></span><br><span class="line">print(precision_score(y_test, y_predict))     <span class="comment">#  0.947368421053</span></span><br><span class="line">print(recall_score(y_test, y_predict))        <span class="comment">#  0.8</span></span><br></pre></td></tr></table></figure>
+
+<p>当使用threshold = -5为分类平面时，三指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到-5得到不同的模型：</span></span><br><span class="line">y_predict_m5 = np.asarray(decision_scores &gt;= <span class="number">-5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_m5))   <span class="comment">#  [[390  15]</span></span><br><span class="line">                                                <span class="comment">#   [  5  40]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_m5))    <span class="comment">#  0.727272727273</span></span><br><span class="line">print(recall_score(y_test, y_predict_m5))       <span class="comment">#  0.888888888889</span></span><br></pre></td></tr></table></figure>
+
+<p>相较threshold = 0的模型，P下降，R上升。</p>
+<p>当使用threshold = 5为分类平面时，三指标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 移动threshold到5得到不同的模型：</span></span><br><span class="line">y_predict_5 = np.asarray(decision_scores &gt;= <span class="number">5</span>, dtype=<span class="string">'int'</span>)</span><br><span class="line">print(confusion_matrix(y_test, y_predict_5))    <span class="comment">#  [[404   1]</span></span><br><span class="line">                                                <span class="comment">#   [ 21  24]]</span></span><br><span class="line">print(precision_score(y_test, y_predict_5))     <span class="comment">#  0.96</span></span><br><span class="line">print(recall_score(y_test, y_predict_5))        <span class="comment">#  0.533333333333</span></span><br></pre></td></tr></table></figure>
+
+<p>相较threshold = 0的模型，P上升，R下降。</p>
+<h2 id="2-绘制曲线"><a href="#2-绘制曲线" class="headerlink" title="2. 绘制曲线"></a>2. 绘制曲线</h2><p>得到每一个threshold对应的P，R值，绘制P-R曲线。</p>
+<p>有了对某一个threshold的理解，现在相隔0.1取一个threshold，获得所有P，所有R：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">precisions = []                           <span class="comment"># 记录所有P</span></span><br><span class="line">recalls = []                              <span class="comment"># 记录所有R</span></span><br><span class="line"><span class="comment"># 相隔0.1取一个threshold值保存：</span></span><br><span class="line">thresholds = np.arange(np.min(decision_scores), np.max(decision_scores), <span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 记录每一个threshold对应模型的P&amp;R:</span></span><br><span class="line"><span class="keyword">for</span> threshold <span class="keyword">in</span> thresholds:</span><br><span class="line">    y_predict = np.array(decision_scores &gt;= threshold, dtype=<span class="string">'int'</span>)</span><br><span class="line">    precisions.append(precision_score(y_test, y_predict))</span><br><span class="line">    recalls.append(recall_score(y_test, y_predict))</span><br></pre></td></tr></table></figure>
+<p>绘图<code>thresholds vs precisions</code>和<code>thresholds vs recalls</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(thresholds, precisions, label=<span class="string">'P'</span>)</span><br><span class="line">plt.plot(thresholds, recalls, label=<span class="string">'R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 </div>
+
+<p>绘制<code>precision vs recall</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(precisions, recalls, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r.png" width="600"></div>
+<div align="center">图 P/R曲线 </div>
+
+<p><font color="green" size="5">敲黑板</font>经过实验得出：</p>
+<ol>
+<li>最优threshold基本都在0附近，因此可以说，<font color="red">若没有对某一指标有具体的定量要求，只用判别<code>threshold=0</code>时的指标就可以对整个模型的性能进行评估了</font>。</li>
+<li>第二点，一个二分类模型尝试移动分类平面，可以<strong>得到对于P&amp;R不同重视程度的模型</strong>。</li>
+</ol>
+<p>对于P-R曲线的几点补充：</p>
+<ul>
+<li>实际中，对P-R曲线进行平滑操作</li>
+<li>如果由若干个模型的P-R曲线在同一个图中，如何判断哪个最优。<ol>
+<li>看哪一个曲线把其他的“包住”</li>
+<li>比较每条曲线与坐标轴围成的面积</li>
+</ol>
+</li>
+</ul>
+<h1 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h1><p>sklearn package中的绘制P-R曲线的方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> precision_recall_curve</span><br><span class="line"></span><br><span class="line">pres, recs, thrs = precision_recall_curve(y_test, decision_scores)</span><br><span class="line"></span><br><span class="line">plt.plot(thrs, pres[:<span class="number">-1</span>], label=<span class="string">'thr-P'</span>)</span><br><span class="line">plt.plot(thrs, recs[:<span class="number">-1</span>], label=<span class="string">'thr-R'</span>, )</span><br><span class="line">plt.legend(loc=<span class="string">'center left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'threshold'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'P/R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>不同threshold的P/R值:</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/t-p-t-r-2.png" width="600"></div>
+<div align="center">图 不同threshold的P/R值 built-in方法</div>
+
+<p>与上述实现不同在于，上述实现的threashold值从<code>decision_scores</code>的最小值到最大值，而package中函数把threshold值小于-18的值忽略未记，因为图一中这部分对于用户是没有决策贡献的。抓住要矛盾。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(pres, recs, label=<span class="string">'P-R'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower left'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'P'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'R'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>P/R曲线</p>
+<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/p-r-2.png" width="600"></div>
+<div align="center">图 P/R曲线 built-in方法</div>
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-PR%E6%9B%B2%E7%BA%BF/" data-id="ckatsrgt7005hxqfzaog57c2e" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-模型评价-F1度量-F-beta度量" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-F1%E5%BA%A6%E9%87%8F-F-beta%E5%BA%A6%E9%87%8F/" class="article-date">
@@ -866,113 +1043,6 @@
 
 
   
-    <article id="post-组成原理缓存置换算法" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" class="article-date">
-  <time datetime="2019-08-02T01:26:37.000Z" itemprop="datePublished">2019-08-02</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/">组成原理-缓存置换算法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录了4种缓存置换算法</p>
-<ul>
-<li>随机置换算法</li>
-<li>FIFO</li>
-<li>LRU</li>
-<li>LFU</li>
-</ul>
-<h2 id="FIFO-先进先出算法"><a href="#FIFO-先进先出算法" class="headerlink" title="FIFO(先进先出算法)"></a>FIFO(先进先出算法)</h2><p><strong>原理</strong>：置换缓存时，从硬件角度：当缓存不满时，直接添加所需内容，否则，将最先进入缓存的内容删除，并把需使用的内容添加到缓存。对应的逻辑角度：当缓存不满时，直接添加新节点到链表尾。若缓存满，先将链表头节点删除，并且把新的节点连接到链表尾部。</p>
-<p><strong>实现</strong>：缓存使用双向链表实现<em>DoubleLinkedList</em>，其中节点由<em>Node</em>实现。 </p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> DoubleLinkedList <span class="keyword">import</span> Node, DoubleLinkedList</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FIFO</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, capacity)</span>:</span></span><br><span class="line">        self.capacity = capacity</span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line">        self.map = &#123;&#125;   <span class="comment"># &#123;key: node&#125; as search table</span></span><br><span class="line">        self.dlist = DoubleLinkedList(self.capacity)  <span class="comment"># as the cache</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span><span class="params">(self, key)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> self.map:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node = self.map.get(key)</span><br><span class="line">            <span class="keyword">return</span> node.value</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">put</span><span class="params">(self, key, value)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> self.capacity == <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">in</span> self.map:   <span class="comment"># if this key exist in map</span></span><br><span class="line">            node = self.map.get(key)  <span class="comment"># get this key</span></span><br><span class="line">            self.dlist.remove(node)   <span class="comment"># remove the node with this key</span></span><br><span class="line">            node.value = value     <span class="comment"># update the value of that node</span></span><br><span class="line">            self.dlist.append(node)  <span class="comment"># add node to the tail</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">if</span> self.size == self.capacity:   <span class="comment"># if cache is full</span></span><br><span class="line">                node = self.dlist.pop()</span><br><span class="line">                <span class="keyword">del</span> self.map[node.key]   <span class="comment"># delete the node at the head</span></span><br><span class="line">                self.size -= <span class="number">1</span></span><br><span class="line">            node = Node(key, value)</span><br><span class="line">            self.dlist.append(node)   <span class="comment"># add new node to the tail</span></span><br><span class="line">            self.map[key] = node</span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.dlist.print()</span><br></pre></td></tr></table></figure>
-<p>测试：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    cache = FIFO(<span class="number">4</span>)</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">10</span>)</span><br><span class="line">    cache.put(<span class="number">2</span>, <span class="number">20</span>)</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">12</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(<span class="string">"------"</span>)</span><br><span class="line">    cache.put(<span class="number">4</span>, <span class="number">40</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">5</span>, <span class="number">50</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">11</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(cache.get(<span class="number">1</span>))</span><br><span class="line">    print(cache.get(<span class="number">2</span>))</span><br></pre></td></tr></table></figure>
-<p>结果如下，注释体现了FIFO<strong>算法过程</strong>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;1: 10&#125;-&gt;&#123;2: 20&#125;-&gt;&#123;3: 30&#125;            &#x2F;&#x2F; 该时刻的缓存内容</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;            &#x2F;&#x2F; 缓存未满，key&#x3D;1的接点在缓存中，删除头部key&#x3D;1的&#123;1: 10&#125;，尾部加入&#123;1: 12&#125;</span><br><span class="line">------</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;   &#x2F;&#x2F; 缓存未满，key&#x3D;4的节点不存在，所以在尾部加&#123;4: 40&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;5的节点不存在，删除头部&#123;2: 20&#125;，尾部加&#123;5: 50&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;1的节点在缓存中，删除key&#x3D;1的&#123;1: 12&#125;，尾部加&#123;1: 11&#125;</span><br><span class="line">&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;-&gt;&#123;3: 30&#125;   &#x2F;&#x2F; 同理</span><br><span class="line">11                                   &#x2F;&#x2F; 查找key&#x3D;1的value，存在</span><br><span class="line">-1                                   &#x2F;&#x2F; 查找key&#x3D;2的value，不存在</span><br></pre></td></tr></table></figure>
-<h2 id="LRU-最不经常使用算法"><a href="#LRU-最不经常使用算法" class="headerlink" title="LRU(最不经常使用算法)"></a>LRU(最不经常使用算法)</h2><p>待填坑</p>
-<h2 id="LFU-最近最少使用算法"><a href="#LFU-最近最少使用算法" class="headerlink" title="LFU(最近最少使用算法)"></a>LFU(最近最少使用算法)</h2><p>待填坑</p>
-<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><h3 id="Node定义"><a href="#Node定义" class="headerlink" title="Node定义"></a>Node定义</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, key, val)</span>:</span></span><br><span class="line">        self.key = key</span><br><span class="line">        self.value = val</span><br><span class="line">        self.prev = <span class="literal">None</span></span><br><span class="line">        self.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__repr__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br></pre></td></tr></table></figure>
-<h3 id="双向链表DoubleLinkedList定义"><a href="#双向链表DoubleLinkedList定义" class="headerlink" title="双向链表DoubleLinkedList定义"></a>双向链表DoubleLinkedList定义</h3><p>对于<strong>成员函数为什么返回看似无用的node节点</strong>，经验上讲这样做是最优的。在FIFO的实现过程中会发现，如果成员函数返回其他内容，或无返回值，最终的应用回出现逻辑错误。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DoubleLinkedList</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, cap=<span class="number">0xffff</span>)</span>:</span></span><br><span class="line">        self.capacity = cap</span><br><span class="line">        self.head = <span class="literal">None</span></span><br><span class="line">        self.tail = <span class="literal">None</span></span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.head.next = <span class="literal">None</span></span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.head.prev = node</span><br><span class="line">            node.next = self.head</span><br><span class="line">            self.head = node</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># append node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_tail</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            self.tail.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail.next = node</span><br><span class="line">            node.prev = self.tail</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_tail</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node.prev:</span><br><span class="line">            self.tail = node.prev</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            node.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail = self.head = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_head</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:  <span class="comment"># if empty list</span></span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.head  <span class="comment"># assign self.head to a new node</span></span><br><span class="line">        <span class="keyword">if</span> node.next:</span><br><span class="line">            self.head = node.next</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">            node.next = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:  <span class="comment"># only a head exist</span></span><br><span class="line">            self.head = self.tail = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove node in any position</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__remove</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="comment"># if node==None, remove tail by default</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> node:</span><br><span class="line">            node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node == self.tail:</span><br><span class="line">            self.__del_tail()</span><br><span class="line">        <span class="keyword">elif</span> node == self.head:</span><br><span class="line">            self.__del_head()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node.prev.next = node.next</span><br><span class="line">            node.next.prev = node.prev</span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># APIs</span></span><br><span class="line">    <span class="comment"># pop node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pop</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__del_head()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_tail(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_head(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">remove</span><span class="params">(self, node=None)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__remove(node)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        p = self.head</span><br><span class="line">        line = <span class="string">''</span></span><br><span class="line">        <span class="keyword">while</span> p:</span><br><span class="line">            line += <span class="string">'%s'</span> % p</span><br><span class="line">            p = p.next</span><br><span class="line">            <span class="keyword">if</span> p:</span><br><span class="line">                line += <span class="string">'-&gt;'</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> line:</span><br><span class="line">            print(<span class="string">"empty double linked list"</span>)</span><br><span class="line">        print(line)</span><br></pre></td></tr></table></figure>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" data-id="ckatsrgtj006gxqfzcuh7bb0o" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Mobile-Net-深度可分离卷积" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" class="article-date">
-  <time datetime="2019-08-01T11:37:36.000Z" itemprop="datePublished">2019-08-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/">MobileNet深度可分离卷积</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记记录MobileNet的深度可分离卷积操作的特点及实现。</p>
-<p>深度可分离卷积是将输入的<font color="red">每个通道展开</font>，在单个通道上做卷积，最后将结果合并。换句话说，通常的卷积层每个核要扫描输入的所有通道，而深度可分离卷积每个核只读输入的一个通道。与Inception 的<a href="https://ashburnlee.github.io/2019/08/01/Google-Inception-Net%E5%88%86%E7%BB%84%E5%8D%B7%E7%A7%AF%E5%8D%95%E5%85%83-Inception-Module/" target="_blank" rel="noopener">分组卷积单元</a>相似，不同的是每个卷积核只对输入的一个通道操作。</p>
-<h2 id="深度可分离卷积结构"><a href="#深度可分离卷积结构" class="headerlink" title="深度可分离卷积结构"></a>深度可分离卷积结构</h2><p>假设深度可分离层的输入有3个通道，如图表示了该模块的过程：</p>
-<div align="center"><img src="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/seperable_conv_block.png" width="500"></div>
-<div align="center">对每个通道进行卷及操作</div>
-
-<p>下面是就上图结构实现的模块：</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">separable_conv_block</span><span class="params">(x, output_channel_number, name)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    x: input </span></span><br><span class="line"><span class="string">    output_channel_number: the output channel of the entire block, </span></span><br><span class="line"><span class="string">                            又是1x1卷据层的卷积核个数(卷积核个数==输出通道数)</span></span><br><span class="line"><span class="string">    name: namespace</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(name):</span><br><span class="line">        <span class="comment"># get channel number:</span></span><br><span class="line">        input_channel = x.get_shape().as_list()[<span class="number">-1</span>]</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># split channels to a channel list:</span></span><br><span class="line">        <span class="comment"># channel_wise_x: [channel1, channel2, ...]</span></span><br><span class="line">        channel_wise_x = tf.split(x, input_channel, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 对每一个通道分别执行3x3的卷积操作</span></span><br><span class="line">        output_channels = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len(channel_wise_x)):      </span><br><span class="line">            output_channel = tf.layers.conv2d(channel_wise_x[i],</span><br><span class="line">                                              <span class="number">1</span>,</span><br><span class="line">                                              (<span class="number">3</span>, <span class="number">3</span>),</span><br><span class="line">                                              strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                              padding = <span class="string">'same'</span>,</span><br><span class="line">                                              activation = tf.nn.relu,</span><br><span class="line">                                              name = <span class="string">'conv_%d'</span> % i)</span><br><span class="line">            output_channels.append(output_channel)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># concat along channel(index=3)</span></span><br><span class="line">        concat_layer = tf.concat(output_channels, axis = <span class="number">3</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 经过一个1x1的卷积操作</span></span><br><span class="line">        conv1_1 = tf.layers.conv2d(concat_layer,</span><br><span class="line">                                   output_channel_number,</span><br><span class="line">                                   (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   strides = (<span class="number">1</span>,<span class="number">1</span>),</span><br><span class="line">                                   padding = <span class="string">'same'</span>,</span><br><span class="line">                                   activation = tf.nn.relu,</span><br><span class="line">                                   name = <span class="string">'conv1_1'</span>)</span><br><span class="line">    <span class="keyword">return</span> conv1_1</span><br></pre></td></tr></table></figure>
-
-<p>将上述模块放入MobileNet的网络结构就可以搭建完整的MobileNet。实例实现看<a href="https://github.com/AshburnLee/CNN_Revise/blob/master/adv_cnn/mobile_net.ipynb" target="_blank" rel="noopener">这里</a></p>
-<hr>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" data-id="ckatsrgsg003wxqfzbh7jg6q2" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -988,7 +1058,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">20</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -998,7 +1068,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">47</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1017,7 +1087,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">22</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1030,6 +1100,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
           </li>
         
@@ -1039,14 +1117,6 @@
         
           <li>
             <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/">caffe-阅读Log运行日志</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/10/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BAlog/">caffe-数据&amp;模型-模型输出log</a>
           </li>
         
       </ul>

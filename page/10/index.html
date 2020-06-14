@@ -64,6 +64,312 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-数组相关-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-24T18:28:14.000Z" itemprop="datePublished">2019-08-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/">LeetCode-方法论-数组相关-一</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>与数组相关的问题是最常出现的问题。<br>这篇笔记记录问题编号：<br>283, 167, 209, 75, 11, 125, 3</p>
+<p><font color="gree" size="5">敲黑板</font><br>常用技术：</p>
+<ul>
+<li>计数排序，当元素种类较小时使用</li>
+<li>对撞指针，当数据元素有序时使用</li>
+<li>滑动串口，注意此窗口大小不一定固定</li>
+<li>图示简化实现，有些情况下，画好了中间过程的图示，实现起来就像看图说话</li>
+<li>循环不变量，保证程序正确性，并且使图示简化实现成为可能</li>
+<li>更新记录，更新循环中的每一步结果</li>
+<li>跳过，</li>
+<li>频数记录，技巧 记录频数</li>
+<li>大条件先满足，在if语句中，大小条件一定要在小条件之前</li>
+</ul>
+<p>实现时的注意：</p>
+<ul>
+<li>对边界的正确处理，明确循环不变量的定义且需要始终维护。</li>
+<li>使用小数据集调试，先保证算法的正确性。</li>
+<li>应尽量减少代码量，合并可以合并的，删掉无用的。经验上讲，同一个算法，代码量越多越容易出错。</li>
+<li>先由算法过程，后实现，不要上来就实现。</li>
+</ul>
+<h1 id="283-Move-Zeros"><a href="#283-Move-Zeros" class="headerlink" title="#283 Move Zeros"></a>#283 Move Zeros</h1><ul>
+<li><p>描述：给出一个序列，将所有0元素移动到序列尾部，并且其他元素相对位置不变。</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: [0,1,0,3,12]</span><br><span class="line">Output: [1,3,12,0,0]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路一：</p>
+  <div align="center"><img src="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/array1.png"></div>
+
+<p>  如图，整个过程保持[0,..,k)中元素非零。遍历结束后，将k及其以后的元素值设为0。就得到最后值。</p>
+<p>  时间复杂度：O(N)<br>  空间复杂度：O(1)</p>
+</li>
+<li><p>思路二：</p>
+  <div align="center"><img src="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/array3.png" width="800"></div>
+
+<p>  将思路一中，当<code>nums[i]!=0</code>时，的执行改为 <code>swap(nums[i], nums[k++])</code>。如此不需要思路一的最后一步。</p>
+<p>  时间复杂度：O(N)<br>  空间复杂度：O(1)</p>
+</li>
+<li><p>实现见<a href="https://github.com/AshburnLee/LeetCode" target="_blank" rel="noopener">这里</a>，的对应文件。</p>
+</li>
+</ul>
+<p>关键：<font color="red" size="4">协调两指针</font></p>
+<h1 id="167-Two-Sum-II-对撞指针"><a href="#167-Two-Sum-II-对撞指针" class="headerlink" title="#167 Two Sum II 对撞指针"></a>#167 Two Sum II 对撞指针</h1><ul>
+<li><p>问题描述：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: numbers = [2,7,11,15], target = 9</span><br><span class="line">Output: [1,2]</span><br></pre></td></tr></table></figure>
+<p>  当数组有序时使用对撞指针。<br>  <code>number[0+1] + number[1+1] = target</code>.</p>
+</li>
+<li><p>思路：</p>
+<pre><code>一个指针`i`从左端向右，另一个指针`j`从右端向左。
+如果`number[i] + mumber[j] = target` 时，返回对应的`i+1, j+1`。
+如果`number[i] + number[j] &lt; target`, 说明`number[i]`小，所以`i++`；
+如果`number[i] + number[j] &gt; taregt`, 说明`number[j]`大，所以`j--`；</code></pre></li>
+<li><p>实现见<a href="https://github.com/AshburnLee/LeetCode" target="_blank" rel="noopener">这里</a>，的对应文件。</p>
+</li>
+<li><p>同类问题：<br>345</p>
+</li>
+</ul>
+<h1 id="209-Minimum-Size-Subarray-Sum-滑动窗口"><a href="#209-Minimum-Size-Subarray-Sum-滑动窗口" class="headerlink" title="#209 Minimum Size Subarray Sum  滑动窗口"></a>#209 Minimum Size Subarray Sum  滑动窗口</h1><ul>
+<li><p>问题描述：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: s = 7, nums = [2,3,1,2,4,3]</span><br><span class="line">Output: 2</span><br><span class="line">Explanation: the subarray [4,3] has the minimal length under the problem constraint.</span><br></pre></td></tr></table></figure></li>
+<li><p>思路</p>
+<p>  设置窗口左右端，并且初始化：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span>  l=<span class="number">0</span>, r=<span class="number">-1</span>  <span class="comment">//始终保证nums[l,...,r]为滑动窗口，初始化为空</span></span><br><span class="line"><span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">int</span> res = nums.size()<span class="number">-1</span>  <span class="comment">// 结果设置为可能的最大值</span></span><br></pre></td></tr></table></figure>
+
+<p>  然后窗口向右移动，移动过程中要判断两次：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(l &lt; nums.size())&#123;</span><br><span class="line">    <span class="comment">// 第一次判断</span></span><br><span class="line">    <span class="keyword">if</span> (r+<span class="number">1</span> &lt; nums.size() &amp;&amp; sum &lt; s)</span><br><span class="line">        sum += nums[++r];</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        sum -= nums[l++];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二次判断</span></span><br><span class="line">    <span class="keyword">if</span> (sum&gt;s)</span><br><span class="line">        res = min(res, r-l+<span class="number">1</span>);  <span class="comment">// 更新结果</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  循环中:</p>
+<pre><code>第一次判断:
+    如果r没有到头，且sum小于s：则r右移，sum加上此时的nums[r]。
+    如果r到最右边，或sum大于等于s：则Sum减去nums[l]，且l右移。
+第二次判断:
+    如果sum大于等于s，
+    结果res取这次res和上次res的最小值。
+
+最后一步，判断，如果res扔等于初始值，即没有发生变化，则表示sum中所有元素和都小于s。返回0.</code></pre><p>  第一次判断的两种情况：</p>
+  <div align="center"><img src="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/win.png" width="700"></div>
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">图示简化实现</font>，<font color="red" size="4">循环不变量</font>，<font color="red" size="4">更新记录</font>，<font color="red" size="4">滑动窗口</font>，<font color="red" size="4">大条件先满足</font></p>
+<h1 id="75-Sort-Colors-三路快排"><a href="#75-Sort-Colors-三路快排" class="headerlink" title="#75 Sort Colors 三路快排"></a>#75 Sort Colors 三路快排</h1><ul>
+<li><p>问题描述：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一个数组由n个元素，元素只有0,1,2三种数值，为这个数组排序</span><br></pre></td></tr></table></figure></li>
+<li><p>思路</p>
+<ol>
+<li><p>思路一： 计数排序</p>
+<p> 先统计每个数值出现过多少次，之后从小到大将对应的值放入元素组，放入多少个呢，放入对应数值出现的次数个。实现：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sortColor</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count[<span class="number">3</span>] = &#123;<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>&#125;;   </span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 记录每个数值出现的频数</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        count[nums[i]]++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 挨个儿放入元素组</span></span><br><span class="line">    <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;count[<span class="number">0</span>]; i++)</span><br><span class="line">        nums[index++] = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;count[<span class="number">1</span>]; i++)</span><br><span class="line">        nums[index++] = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;count[<span class="number">2</span>]; i++)</span><br><span class="line">        nums[index++] = <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 很容易理解。</p>
+</li>
+<li><p>思路二： 三路快排</p>
+<p> 初始化函数操作，</p>
+ <div align="center"><img src="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/xxx.png" , width="700"></div>
+
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sortColors</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> zero = <span class="number">-1</span>;         <span class="comment">// 定义[0,...,zero] 的元素为0</span></span><br><span class="line">    <span class="keyword">int</span> two = nums.size();   <span class="comment">// 定义[two,...,n-1] 的元素为 3</span></span><br></pre></td></tr></table></figure>
+
+<p> 明确循环不变量的定义 <code>zero：数组中元素为0的最后一个index</code>，<code>two：数组中元素为2的第一个index</code>。</p>
+<p> 之后执行如下图的操作：</p>
+ <div align="center"><img src="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/xxx.png" , width="700"></div>
+
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;two; )&#123;</span><br><span class="line">        <span class="keyword">if</span>(nums[i] == <span class="number">1</span>)</span><br><span class="line">            i++;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(nums[i] == <span class="number">2</span>)</span><br><span class="line">            swap(nums[--two], nums[i] );</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            assert( nums[i] == <span class="number">0</span> );</span><br><span class="line">            swap(nums[++zero], nums[i++]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+</li>
+</ul>
+<p>关键：<font color="red" size="4">图示简化实现</font>，<font color="red" size="4">循环不变量</font></p>
+<h1 id="11-Container-With-Most-Water-对撞指针"><a href="#11-Container-With-Most-Water-对撞指针" class="headerlink" title="#11 Container With Most Water 对撞指针"></a>#11 Container With Most Water 对撞指针</h1><ul>
+<li><p>问题描述：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">The above vertical lines are represented by array [1,8,6,2,5,4,8,3,7]. In this case, the max area of water (blue section) the container can contain is 49. </span><br><span class="line"></span><br><span class="line">Input: [1,8,6,2,5,4,8,3,7]</span><br><span class="line">Output: 49</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路(无序数组求最值)：</p>
+<p>  两指针分别从数组首位处开始，两个指针向中间移动，两指针的距离为<code>宽</code>，两指针对应的数值的较小值为<code>高度</code>，要最大化<code>宽度</code>x<code>高度</code>。注意两指针相互靠近，所以<code>宽度</code>是单调减小的，所以，要想记录最大值，就要跳过高度减小的值，即<code>i++</code>和<code>j++</code>。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">maxArea</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; height)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 初始化时，宽度是最大的</span></span><br><span class="line">    <span class="keyword">int</span> maxWater = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> j=height.size()<span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 开始对撞</span></span><br><span class="line">    <span class="keyword">while</span>(i&lt;j)&#123;</span><br><span class="line">        <span class="keyword">int</span> h = min(height[i], height[j]);</span><br><span class="line">        maxWater = max(maxWater, h*(j-i));  <span class="comment">// 每次循环，更新最大值</span></span><br><span class="line">        <span class="keyword">while</span>(height[i]&lt;=h &amp;&amp; i&lt;j) i++;   <span class="comment">// h减小了，所以跳过</span></span><br><span class="line">        <span class="keyword">while</span>(height[j]&lt;=h &amp;&amp; i&lt;j) j--;   <span class="comment">// 跳过</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> maxWater;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关键：<font color="red" size="4">两指针对撞</font>，<font color="red" size="4">跳过</font>，<font color="red" size="4">更新记录</font></p>
+</li>
+</ul>
+<h1 id="125-PalineDrome-判断是否是回文"><a href="#125-PalineDrome-判断是否是回文" class="headerlink" title="#125 PalineDrome 判断是否是回文"></a>#125 PalineDrome 判断是否是回文</h1><ul>
+<li><p>问题描述：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: &quot;A man, a plan, a canal: Panama&quot;</span><br><span class="line">Output: true</span><br><span class="line">Note: For the purpose of this problem, we define empty string as valid palindrome.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>实现：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isPalindrome</span><span class="params">(<span class="built_in">string</span> s)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> l = <span class="number">0</span>,r=s.length()<span class="number">-1</span>;l&lt;r; l++,r-- )&#123;</span><br><span class="line">        <span class="keyword">while</span>(<span class="built_in">isalnum</span>(s[l])==<span class="literal">false</span> &amp;&amp; l&lt;r) l++;  <span class="comment">//跳过 non alnum</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="built_in">isalnum</span>(s[r])==<span class="literal">false</span> &amp;&amp; l&lt;r) r--;  <span class="comment">//跳过 non alnum</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="built_in">tolower</span>(s[l]) != <span class="built_in">tolower</span>(s[r])) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">两指针对撞</font>，<font color="red" size="4">跳过</font>，<font color="red" size="4">常用字符串函数</font></p>
+<h1 id="3-Longest-Substring-Without-Repeating-Charactors-最长无重复子串"><a href="#3-Longest-Substring-Without-Repeating-Charactors-最长无重复子串" class="headerlink" title="#3 Longest Substring Without Repeating Charactors 最长无重复子串"></a>#3 Longest Substring Without Repeating Charactors 最长无重复子串</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Input: &quot;pwwkew&quot;</span><br><span class="line">Output: 3</span><br><span class="line">Explanation: The answer is &quot;wke&quot;, with the length of 3. </span><br><span class="line">            Note that the answer must be a substring, &quot;pwke&quot; is a subsequence and not a substring.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路见图示：</p>
+  <div align="center"><img src="/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/leetcode_array_3.png" , width="400"></div>
+</li>
+<li><p>看图说话：</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lengthOfLongestSubstring</span><span class="params">(<span class="built_in">string</span> s)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> freq[<span class="number">256</span>] = &#123;<span class="number">0</span>&#125;;   <span class="comment">// 记录频数</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> l = <span class="number">0</span>;    <span class="comment">// 滑动窗口保证s[l,...,r]始终无重复字符，初始化为空 </span></span><br><span class="line">    <span class="keyword">int</span> r = <span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (l &lt; s.size())&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (r+<span class="number">1</span>&lt;s.size() &amp;&amp; freq[s[r+<span class="number">1</span>]] == <span class="number">0</span>)&#123;</span><br><span class="line">            r++;</span><br><span class="line">            freq[s[r]] ++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;   <span class="comment">// r is out of bound || freq[r+1] == 1</span></span><br><span class="line">            freq[s[l]] --;</span><br><span class="line">            l++;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        res = max(res, r-l+<span class="number">1</span>);   <span class="comment">// 更新结果</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键：<font color="red" size="4">图示简化实现</font>，<font color="red" size="4">循环不变量</font>，<font color="red" size="4">更新记录</font>，<font color="red" size="4">记录频数</font>，<font color="red" size="4">滑动窗口</font>，<font color="red" size="4">大条件先满足</font></p>
+<hr>
+<p><span style="font-family:Papyrus; font-size:2em">敲黑板</span>想要思维升级，就需要见足够多的问题类型，每种类型见过并解决不止一遍。只见过一遍就像完全掌握，是不实际的。见得多了，自然大脑就接受了，思维就升级了。另外一点，“回头看”会把之前不明白或者不能接受的问题“回锅”，可以增强大脑对这个问题的接纳程度。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%80/" data-id="ckatsrgu4007ixqfzha512x3r" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-方法论-回溯法" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/" class="article-date">
+  <time datetime="2019-08-22T14:15:58.000Z" itemprop="datePublished">2019-08-22</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/">LeetCode-方法论-回溯法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>46, 77, 40, 515, </p>
+<ul>
+<li>回溯法解决一类问题，排列与组合。</li>
+<li>属于树型问题，所以通常需要画递归树。</li>
+<li>通常需要有个容器来保存状态。</li>
+<li>实现方法：理解问题，画递归树。</li>
+<li>递归实现，需要“跳进跳出”的思维</li>
+<li><font color="red" size="4">分清楚操作部分和结点移动部分</font></li>
+<li>一个模式：<font color="red" size="4">移动控制+结点操作</font> 对上一条的强调</li>
+</ul>
+<h1 id="46"><a href="#46" class="headerlink" title="#46"></a>#46</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">给出一组不重复的整数，返回所有排列。如：</span><br><span class="line">Input: [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>]</span><br><span class="line">Output:</span><br><span class="line">[</span><br><span class="line">[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>],</span><br><span class="line">[<span class="number">1</span>,<span class="number">3</span>,<span class="number">2</span>],</span><br><span class="line">[<span class="number">2</span>,<span class="number">1</span>,<span class="number">3</span>],</span><br><span class="line">[<span class="number">2</span>,<span class="number">3</span>,<span class="number">1</span>],</span><br><span class="line">[<span class="number">3</span>,<span class="number">1</span>,<span class="number">2</span>],</span><br><span class="line">[<span class="number">3</span>,<span class="number">2</span>,<span class="number">1</span>]</span><br><span class="line">]</span><br></pre></td></tr></table></figure></li>
+<li><p>逻辑</p>
+<p>  每一种排列包含3个元素，思路很直接：构建一棵树，树的结点表示形成的一个组合，叶节点表示一个完整的组合。过程中需要一个容器来记录每一个叶节点，即一个排列。还需要一个布尔型容器来记录已经处理过的元素。最后还需要一个容器记录所有找到的排列，即最终返回的结果。过程可以用一棵树的先序遍历完成：</p>
+  <div align="center"><img src="/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/tree.png" width></div>
+
+<p>  图中橘红色箭头表示程序执行过程。<font color="green" size="4">体会递归“跳进跳出”的执行方式，每到“触底反弹”，便体现了回溯的“回”，所有变量值均回到上一层</font>。递归算法很”整齐”，所有结点执行<strong>相同</strong>的操作。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// res 记录所有排列，最终返回res</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; res;</span><br><span class="line"><span class="comment">// used 记录检查过的元素</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt; used;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个函数找到一个排列, num是输入，index表示当前考察元素的Index，p表示逐渐形成的一个排列</span></span><br><span class="line"><span class="comment">// 向这个排列的末尾添加第index个元素，获得一个有Index个元素的排列。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">getPermutaion</span><span class="params">(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> index, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; p)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 递归到底的情况，所有元素都考察过之后。</span></span><br><span class="line">    <span class="keyword">if</span> (index == nums.size())&#123;</span><br><span class="line">        res.push_back(p);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 以每一个元素作为这棵树的根：</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="comment">// 只有当元素没有考察过，才执行以下</span></span><br><span class="line">        <span class="keyword">if</span> (used[i] == <span class="literal">false</span>)&#123;</span><br><span class="line">            used[i] = <span class="literal">true</span>;        <span class="comment">//</span></span><br><span class="line">            p.push_back(nums[i]);   <span class="comment">// 把这个元素放入p中</span></span><br><span class="line">            getPermutaion(nums, index+<span class="number">1</span>, p);   <span class="comment">// 形成这棵树的子树</span></span><br><span class="line">            p.pop_back();    <span class="comment">// 这里体现了回溯的“回”，回到上一步</span></span><br><span class="line">            used[i]=<span class="literal">false</span>;   <span class="comment">// 回到上一步</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 入口函数</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; permute(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums) &#123;</span><br><span class="line">    used = <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt;(nums.size(), <span class="literal">false</span>);</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; p;</span><br><span class="line">    getPermutaion(nums, <span class="number">0</span>, p);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><font color="gree" size="5">敲黑板</font></p>
+</li>
+</ul>
+<ol>
+<li>思维：跳进跳出</li>
+<li>实现：跳进跳“回”</li>
+<li>明确(写出)结点函数的定义，并且保持整个过程定义不变。</li>
+</ol>
+<h2 id="组合问题"><a href="#组合问题" class="headerlink" title="组合问题"></a>组合问题</h2><h1 id="77"><a href="#77" class="headerlink" title="#77"></a>#77</h1><ul>
+<li><p>描述：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">从n个数中取k个数，一共有哪些组合：</span><br><span class="line">Input: n &#x3D; 4, k &#x3D; 2</span><br><span class="line">Output:</span><br><span class="line">[</span><br><span class="line">[2,4],</span><br><span class="line">[3,4],</span><br><span class="line">[2,3],</span><br><span class="line">[1,2],</span><br><span class="line">[1,3],</span><br><span class="line">[1,4],</span><br><span class="line">]</span><br></pre></td></tr></table></figure></li>
+<li><p>逻辑</p>
+<p>  分析问题：<br>  开始，根节点中不存在任何值，它的子节点从1开始遍历，形成组合中的第一个值<code>[1], [2], [3], [4]</code>。<br>  当结点第一个值为<code>1</code>时，它的子节点从<code>2</code>开始向后遍历。形成的组合有<code>[1,2], [1,3], [1,4]</code>。<br>  当结点第一个值为<code>2</code>时，其子节点从<code>3</code>开始遍历。得到组合<code>[2,3], [2,4]</code>。<br>  当结点第一个值为<code>3</code>时，其子节点从<code>4</code>开始遍历。得到组合<code>[3,4]</code>。<br>  当结点第一个值为<code>4</code>时，<code>4</code>超过了索引<code>0~3</code>，返回到根节点。</p>
+<p>  给出递归树：</p>
+  <div align="center"><img src="/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/tree2.png"></div>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// res保存所有的组合</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; res;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义：从n个数中取k个数，把当前的数值放入c中，从Index开始向后查找：</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">generatCombination</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> k, <span class="keyword">int</span> index, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; c)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 当c的大小为2时，表示找到一个组合</span></span><br><span class="line">    <span class="keyword">if</span> (c.size()==k)&#123;</span><br><span class="line">        res.push_back(c);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// </span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=index; i&lt;n; i++)&#123;</span><br><span class="line">        c.push_back(i);</span><br><span class="line">        <span class="comment">// 以当前结点为根，从index+1开始向后找：</span></span><br><span class="line">        generatCombination(n, k, index+<span class="number">1</span>, c);</span><br><span class="line">        c.pop_back();   <span class="comment">// 回溯的“回”，跳回上一层。</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; combination(<span class="keyword">int</span> n, <span class="keyword">int</span> k)&#123;</span><br><span class="line">    <span class="keyword">if</span> (n&lt;k || n&lt;=<span class="number">0</span>||k&lt;=<span class="number">0</span> )</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; c;</span><br><span class="line">    <span class="comment">// 从根节点开始，</span></span><br><span class="line">    generatCombination(n, k, <span class="number">1</span>, c);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  这个问题的实现中，在递归函数里的for循环，循环变量i与index有关，表示从Index后查找，这保证了，组合中元素无重复，且组合无重复。这也是与上一个问题不同之处。可以回过去看排列问题，其递归函数中for循环i与Index无关，表示，i每次从0开始查找，使得每个排列中元素不必只是递增，就是说像<code>[3,2,1]</code>，也是一个排列。</p>
+</li>
+</ul>
+<p><font color="gree" size="5">敲黑板</font>体会递归函数中for循环循环变量与index有关，无关的不同。</p>
+<h1 id="40-Combination-Sum-II"><a href="#40-Combination-Sum-II" class="headerlink" title="#40. Combination Sum II"></a>#40. Combination Sum II</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Input: candidates &#x3D; [2,5,2,1,2], target &#x3D; 5,</span><br><span class="line">A solution set is:</span><br><span class="line">[</span><br><span class="line">[1,2,2],</span><br><span class="line">[5]</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  感觉上，需要回溯，所以先画出递归树：</p>
+<p>  假设<code>candidate=[1,2,3,4,5]</code>, <code>target=5</code>。</p>
+  <div align="center"><img src="/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/40.png"></div>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; combinationSum2(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; candidates, <span class="keyword">int</span> target)&#123;</span><br><span class="line">    <span class="built_in">set</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; res;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; tmp;   <span class="comment">// res中的每个元素</span></span><br><span class="line">    sort(candidates.begin(), candidates.end());</span><br><span class="line">    DFS(candidates, target, res, tmp ,<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> &#123;res.begin(), res.end()&#125;;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 每一个结点的操作</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DFS</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; candidates, <span class="keyword">int</span> target, <span class="built_in">set</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; res, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; tmp, <span class="keyword">int</span> index)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (target==<span class="number">0</span>)&#123;   <span class="comment">// 如果最后剩下为0，则表示找到一个sum为target</span></span><br><span class="line">        res.insert(tmp);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=index; i&lt;candidates.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (candidates[i]&lt;=target)&#123;</span><br><span class="line">            tmp.push_back(candidates[i]);</span><br><span class="line">            DFS(candidates, target-candidates[i], res, tmp, i+<span class="number">1</span>);</span><br><span class="line">            tmp.pop_back();</span><br><span class="line">        &#125;<span class="keyword">else</span> <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><font color="gree" size="5">敲黑板</font>一定要<strong>先</strong>画递归树，<strong>后</strong>写code，试图从别人的code中画递归树，是很容易懵掉的。</p>
+</li>
+</ul>
+<h1 id="515-Find-Largest-Value-in-Each-Tree-Row"><a href="#515-Find-Largest-Value-in-Each-Tree-Row" class="headerlink" title="#515 Find Largest Value in Each Tree Row"></a>#515 Find Largest Value in Each Tree Row</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">You need to find the largest value in each row of a binary tree.</span><br><span class="line">Example:</span><br><span class="line"></span><br><span class="line">Input: </span><br><span class="line"></span><br><span class="line">        1</span><br><span class="line">        &#x2F; \</span><br><span class="line">        3   2</span><br><span class="line">    &#x2F; \   \</span><br><span class="line">    5   3   9 </span><br><span class="line"></span><br><span class="line">Output: [1, 3, 9]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  先画二叉树，见下图。</p>
+<p>  本质是二叉树的遍历，先序遍历，顺序为下图中<font color="pink" size="4">粉色</font>箭头。而对于每个结点的操作是下图中<font color="orange" size="4">橙色</font>箭头。每个操作改变的是res数组，根据res的长度与row的索引决定。</p>
+  <div align="center"><img src="/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/515.png"></div>
+
+
+
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; largestValues(TreeNode* root)&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; res;</span><br><span class="line">    DFS(root, <span class="number">0</span>, res);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DFS</span><span class="params">(TreeNode* root, <span class="keyword">int</span> row, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; res)</span></span>&#123;</span><br><span class="line">    <span class="comment">// operation ORANGE</span></span><br><span class="line">    <span class="keyword">if</span> (!root) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (row &gt;= res.size())</span><br><span class="line">        res.push_back(root-&gt;val);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        res[row] = max(res[row], root-&gt;val);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// move PINK</span></span><br><span class="line">    DFS(root-&gt;left, row+<span class="number">1</span>, res);</span><br><span class="line">    DFS(root-&gt;right, row+<span class="number">1</span>, res);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>关键： <font color="red" size="4">变量row的跳进跳出</font>,<font color="red" size="4">分清楚操作部分和结点移动部分</font></p>
+<h1 id="17-Letter-Combinations-of-a-phone-number"><a href="#17-Letter-Combinations-of-a-phone-number" class="headerlink" title="#17 Letter Combinations of a phone number"></a>#17 Letter Combinations of a phone number</h1><h1 id="491-All-increasing-Sub-sequences"><a href="#491-All-increasing-Sub-sequences" class="headerlink" title="#491 All increasing Sub-sequences"></a>#491 All increasing Sub-sequences</h1>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/22/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E5%9B%9E%E6%BA%AF%E6%B3%95/" data-id="ckatsrgu5007lxqfz96ry69tn" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-线性模型-一" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/22/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%B8%80/" class="article-date">
@@ -734,125 +1040,6 @@
 
 
   
-    <article id="post-信息论-信息量与二叉树" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/" class="article-date">
-  <time datetime="2019-08-18T09:46:24.000Z" itemprop="datePublished">2019-08-18</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/">信息论-信息量与二叉树</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>香浓认为，对于一条信息，重要的是找出这条信息中含有多少信息量，要搞清楚信息量，就要找到一个量化度量信息的单位。香浓的最大贡献就是找到了这个单位“比特(bit)”。<br>比特是度量信息量的基本单位。它可以被这样定义：<em>如果一个黑盒子里由A和B两种可能，而且这两种可能出现的概率相同。那么要搞清楚黑盒子中到底是A还是B，所需要的信息量就是一个比特(bit)</em>。<br>当A和B的出现的概率不相同时，确定他们谁出现所需的信息量就不到一个比特。</p>
-<p>比如，设抛一枚两面质地均匀的硬币为一个系统，状态A和B分别是正面朝上和反面朝上。则确定一次投掷所需要的信息量为一个比特。<br>可以这样计算：</p>
-<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-1.png" width="400"></div>
-
-<p>又比如，做一道4(有A,B,C,D4中状态)选一个的选择题，需要多少信息量才能找到正确答案。2bits。先使用1bit信息确定比如是否在A或B中，若是，再使用1bit信息量确定是否是A，若否，则最终答案是B。(这只是一种判断出结果的方法，但每种方法所需的信息量都是2bits)：</p>
-<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-2.png" width="400"></div>
-
-<p>所以，如果由32个足球队参加世界杯，最终需要5bits的信息量确定最终哪支球队为冠军。</p>
-<p>可以看出的规律：一棵树，以所有可能情况为根，<strong>平均</strong>分所有情况给左子右子，如此递归，直到每个叶节点只有一种情况。此时得到树的深度即为确定做种是哪种情况所需的信息量。以选择题为例：</p>
-<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-3.png" width="400"></div>
-
-<p>树的深度为2，从树根到树叶需要2步走，即需要2bits信息确定究竟是哪一个。</p>
-<p>我们把充满不确定性的盒子称作“信息源”，它里面的不确定性称作“信息熵”，“信息”是用来消除这些不确定性的(信息熵)。所以要消除黑盒子里的不确定性，需要的“信息量”等于“信息熵”。“熵”是热力学的概念，它表示混乱程度，同样的，信息论中的信息熵表示一个系统中的不确定性。</p>
-<p>一个系统中的状态数量也叫做<strong>可能性数量，越多，系统不确定性越大；当状态数量确定时，各个状态的可能性相同，熵达到最大；相反，如果只要概率有不相同，系统不确定性就会减小，极限情况下，当状态A发生的概率为99.9%，而其他所有状态发生的概率和为0.01%时，系统的不确定性很小：很大的概率上A是会发生的</strong>。香浓用以下公式可以计算出系统信息熵：</p>
-<img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-4.png">
-
-<p>以二分类为例，下图体现了一个状态的概率与系统的信息熵的关系：</p>
-<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-5.png" width="500"></div>
-
-<p>当状态概率为0.5时，系统信息熵，即不确定性达最大值。实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 根据上述信息熵计算公式</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">entropy</span><span class="params">(p)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> -p * np.log2(p)-(<span class="number">1</span>-p)*np.log2(<span class="number">1</span>-p)</span><br><span class="line"></span><br><span class="line">x = np.linspace(<span class="number">0.01</span>, <span class="number">0.99</span>, <span class="number">200</span>)</span><br><span class="line"></span><br><span class="line">plt.plot(x, entropy(x))</span><br><span class="line"><span class="comment"># 绘出一个点</span></span><br><span class="line">plt.scatter([<span class="number">0.5</span>], [<span class="number">1</span>], marker=<span class="string">'o'</span>, edgecolors=<span class="string">'r'</span>)   </span><br><span class="line"><span class="comment"># 添加注释 </span></span><br><span class="line">plt.text(<span class="number">0.5</span>, <span class="number">1</span>, (<span class="number">0.5</span>, <span class="number">1</span>), ha=<span class="string">'center'</span>, va=<span class="string">'bottom'</span>, fontsize=<span class="number">10</span>)   </span><br><span class="line">plt.xlabel(<span class="string">'Pr(x)'</span>, fontsize=<span class="number">10</span>)</span><br><span class="line">plt.ylabel(<span class="string">'Entropy'</span>, fontsize=<span class="number">10</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p>在构建ID3决策树时，就是根据信息熵公式，得到各种划分后的信息熵，选取信息熵最小的划分。即这个划分使得系统不确定性变得最小！</p>
-<p>如四选一选择题，假如，每种选项的概率均为0.25，根据公式，消除选择题的不确定性所需信息量为2bits。<br>如果4中选项的概率不相同，不论哪种情况，信息熵均小于2bits。</p>
-<p>通过平衡二叉树来理解信息量单位比特。如果一个分类模型在一个数据集上的正确率为0.5，那么可以说，这个模型是最糟糕的模型，它对减少系统信息熵没有贡献。</p>
-<h1 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h1><p>热力学熵和信息熵的物理意义，数学形式，完全一样，不存在本质区别，只是应用领域不同。克劳修斯形式(熵的宏观形式)用于内燃机研究，进入量子时代后主要使用玻尔兹曼形式(熵的微观形式)。<br>玻尔兹曼熵与信息熵的唯一不同只是前者计算对数用e为底数得到单位为nats，后者计算使用2为底数得到单位为bit。<br><br>另外，取10为底，得到单位是bans。其实，在决策树的计算中，求信息熵的对数底可以使任意的，因为具体在划分的时候，不管底取多少，H这个函数的性质是不会变的。模型其实在意熵的相对值，而非绝对值。</p>
-<p>熵增原理：任何孤立的系统，总熵不会减少。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/" data-id="ckatsrgsp004ixqfzh24x56h2" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Style-Transfer" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/13/Style-Transfer/" class="article-date">
-  <time datetime="2019-08-12T17:47:38.000Z" itemprop="datePublished">2019-08-13</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/13/Style-Transfer/">Style-Transfer</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>本笔记是风格转换应用的概述。</p>
-<p>本应用需要使用使用已训练好的VGG16网络的结构及参数。VGG16.npy文件中保存了网络的结构和参数，这些参数可以通过解析网络得到，之后便可以重构整个网络，包括每一个conv layer，每一个pooling layer，每一个fully connected layer和flatten layer，以及每一层所需的w，b。如下图：</p>
-<div align="center"><img src></div>
-
-<p>有了每一层的参数，可以构建若干conv layer 和 pooling layer。 由于本应用不使用flatten layer 和 fc layer 的输出结果，而且VGG16 大部分的参数集中在fc layer，所以不用构建此二层。</p>
-<p>当含有训练好参数的网络构建好后，或者说函数<code>y=f(x)</code>及所有参数都定义好了。此时当输入<code>f(x)</code>一个<code>x</code>，便可以得到一个对应的<code>y</code>。</p>
-<p>本应用需要使用三个一模一样网络y=f(x)，一个传入content_img，可以得到f(p)每一层的输出；第二个网络传入style_img，可以得到f(a)的每一层输出；第三个网络传入自变量x，f(x)。x是一个2D向量，其初始值为一个随机初始化的向量。本应用就是使随机化的x通过学习逐渐变成一个混合content_img和style_img的图像。</p>
-<p>这个应用实际上也是个学习的过程，此过程需要3个Loss值：<code>Lcontent</code>，<code>Lstyle</code>，<code>Ltotal</code>。其中Lcontent是p传入f在M层的输出与x传入f在同一层的输出做平方差；Lstyle是a传入f在N层的输出的Gram矩阵与x传入同一层的输出的Gram矩阵的平方差；最后得到整个学习过程的Loss函数Ltotal：<code>Ltotal=alpha*Lcontent+beta*Lstyle</code>。Ltotal是一个以x为参数的函数，通过不断更新x的值来最小化Ltotal。同样是学习过程，不同于CNN应用在分类问题，Loss是以x为学习参数，w和b是定值，每次学习都是更新x。</p>
-<p><font color="Blue">迭代数学公式</font></p>
-<p>实验通过改变alpha 和 beta的值来改变风格转化的程度。特别的，当alpha！=0，beta=0时，Ltotal只与Lcontent有关，这种情况下，学习过程变成了：x通过学习逐渐变成p(content img)；当alpha=0，beta！=0时，x通过学习逐渐变成a(style img)。</p>
-<p>有趣的是，要想使x学习成p，需要使用f(p)在浅层的输出值；而要想是x学习成a，需要使用f(a)早深层的输出值。所以最终为了使混合图像的效果好，f(p)使用浅层输出，f(a)使用深层输出。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/13/Style-Transfer/" data-id="ckatsrgsh0040xqfz7mnj39zr" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -868,7 +1055,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">20</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -878,7 +1065,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">47</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -897,7 +1084,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">22</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -910,6 +1097,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
           </li>
         
@@ -919,14 +1114,6 @@
         
           <li>
             <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/">caffe-阅读Log运行日志</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/10/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BAlog/">caffe-数据&amp;模型-模型输出log</a>
           </li>
         
       </ul>
