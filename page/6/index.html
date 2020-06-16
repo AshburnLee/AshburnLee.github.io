@@ -64,6 +64,57 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-Memory-Optimization-Local-Memory" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/" class="article-date">
+  <time datetime="2020-01-14T18:08:56.000Z" itemprop="datePublished">2020-01-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/">CUDA-Memory Optimization-Local Memory</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Local-Memory"><a href="#Local-Memory" class="headerlink" title="Local Memory"></a>Local Memory</h2><p>Local memory 的命周期是一个thread，它存在与Global memory中，所以对Local memory的访存是低效的。</p>
+<p>Local memory 是存储自动变量的。通常自动变量是较复杂的structures 或者数组，这些对象都会消耗太多的这个线程的寄存器。当nvcc编译器发现没有足够的寄存器空间来保存变量时，就会将变量放进Local memory中。</p>
+<p>有个技巧，如果一个kernel函数中需要使用数组，而且数组的长度是固定的，为了避免使用Local memory，将这个数组拆成单个的变量，这些变量会被存储到Registers中（当然是当Registers的个数足够时）。</p>
+<h2 id="Constant-Memory"><a href="#Constant-Memory" class="headerlink" title="Constant Memory"></a>Constant Memory</h2><p>在Device中共有64KB大小的Constant memory。</p>
+<p><font color="orange">如果一个warp中的所有threads访问同一个Constant memory地址时，此时的访存可以和Registers一样快</font>。所以对于只读的全局数据，选择放在Constant memory中。</p>
+<h2 id="Registers"><a href="#Registers" class="headerlink" title="Registers"></a>Registers</h2><p>通常，访问寄存器每一条指令都不会消耗额外的时钟周期，但由于寄存器的读写依赖关系和寄存器内存bank冲突，可能会出现延迟。</p>
+<p>编译器和硬件线程调度程序将尽可能优化调度指令，以避免寄存器bank冲突。应用程序无法直接控制这些银行冲突。这些开发者不受控制。</p>
+<p>当没有足够的寄存器可用分配给指定任务时，就会出现寄存器压力。尽管每个多处理器都包含数千个32位寄存器但它们都是在并发线程之间分配的。为了防止编译器分配太多寄存器，使用<code>-maxrregcount=N</code>编译器命令行选项（nvcc）或启动边界内核定义限定符来控制每个线程分配的寄存器的最大数量。</p>
+<h2 id="Allocation"><a href="#Allocation" class="headerlink" title="Allocation"></a>Allocation</h2><p>使用cudaMallo() 和cudaFree()在Device上申请, 和回收空间是很耗时的操作，所以程序应该尽可能<font color="red" size="4">重复利用</font>已分配好的空间。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Local-Memory/" data-id="ckatsrgqx0007xqfzdoszc8s9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-Memory-Optimization-Shared-Memory" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" class="article-date">
@@ -179,16 +230,19 @@
 </ol>
 </li>
 </ul>
-<h1 id="Host-和-Device的不同"><a href="#Host-和-Device的不同" class="headerlink" title="Host 和 Device的不同"></a>Host 和 Device的不同</h1><p>同时含有CPU和GPU的计算系统称作是异构计算系统（Heterogeneous Computing）。为了有效是哟个CUDA，有必要知道Host和Device 的不同。</p>
+<h1 id="Host-和-Device-的不同"><a href="#Host-和-Device-的不同" class="headerlink" title="Host 和 Device 的不同"></a>Host 和 Device 的不同</h1><p>同时含有CPU和GPU的计算系统称作是异构计算系统（Heterogeneous Computing）。为了有效是哟个CUDA，有必要知道Host和Device 的不同。</p>
 <ul>
-<li><p>线程资源<br>  Host上的流水线可以支持有限数量的并发线程。比如，具有2个32核芯处理器的服务器只能同时运行64个线程（如果CPU支持同时多线程，那么可同时运行的线程数为64的倍数，如128，192）。</p>
+<li><p>线程资源</p>
+<p>  Host上的流水线可以支持有限数量的并发线程。比如，具有2个32核芯处理器的服务器只能同时运行64个线程（如果CPU支持同时多线程，那么可同时运行的线程数为64的倍数，如128，192）。</p>
 <p>  相比之下，CUDA设备上最基本的并行执行单元包含32个线程（一个warp）。现代NVIDIA GPU可以在多处理器上同时支持最多2048个活动线程。如果一个GPU上有80个多处理器（SM），这表示可以有超过160000个并发活动线程。</p>
 </li>
-<li><p>线程本身<br>  CPU上的线程通常是重量级实体。操作系统必须用其他线程交换CPU执行通道上的线程，以提供多线程功能。因此，上下文切换（当两个线程被交换时）是缓慢而昂贵的。</p>
+<li><p>线程本身</p>
+<p>  CPU上的线程通常是重量级实体。操作系统必须用其他线程交换CPU执行通道上的线程，以提供多线程功能。因此，上下文切换（当两个线程被交换时）是缓慢而昂贵的。</p>
 <p>  相比之下，GPU上的线程是轻量级。在一个典型的系统中，数千个线程排队等待工作。如果GPU要等待一个warp，它只需在另一个warp上开始执行工作。因为单独的<font color="green">寄存器</font>被分配给所有活动线程，所以在GPU线程之间切换时<font color="green">不需要交换寄存器或其他状态</font>。资源一直分配给每个线程，直到它完成执行。</p>
 <p>  简而言之，CPU内核目的是最小化每次一小部分线程的等待时间，而GPU则被设计成处理大量并发、轻量级线程以最大化吞吐量。</p>
 </li>
-<li><p>RAM<br>  Host由CPU和系统内存构成，Device由GPU和显卡上的存储器构成。所以说，Host和Device有各自的RAM。</p>
+<li><p>RAM</p>
+<p>  Host由CPU和系统内存构成，Device由GPU和显卡上的存储器构成。所以说，Host和Device有各自的RAM。</p>
 </li>
 </ul>
 <p>这些是硬件层面就并行角度看的不同。总之在这样的异构系统中Host做串行工作，Device做并行工作。</p>
@@ -471,6 +525,56 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
+    <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
+  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">LeetCode-二进制中1的个数</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>知识点</p>
+<ol>
+<li>一个整数除以2，与将这个整数右移1位等价，但是移位运算效率更高。</li>
+<li>一个整数减一，后与原整数做‘与’运算，这个操作会把这个整数最右边的1变成零。</li>
+</ol>
+<p>有了上述两点，思路就有了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numberOfOne</span><span class="params">(<span class="keyword">int</span> num)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    whiel(num)&#123;</span><br><span class="line">        count++;</span><br><span class="line">        n = n &amp; (n - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此方法对正负整数均使用。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" data-id="ckayvgezt0003lufz5yw5azs3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-对大数的操作" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" class="article-date">
@@ -563,56 +667,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
-  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">LeetCode-二进制中1的个数</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>知识点</p>
-<ol>
-<li>一个整数除以2，与将这个整数右移1位等价，但是移位运算效率更高。</li>
-<li>一个整数减一，后与原整数做‘与’运算，这个操作会把这个整数最右边的1变成零。</li>
-</ol>
-<p>有了上述两点，思路就有了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numberOfOne</span><span class="params">(<span class="keyword">int</span> num)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    whiel(num)&#123;</span><br><span class="line">        count++;</span><br><span class="line">        n = n &amp; (n - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>此方法对正负整数均使用。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" data-id="ckayvgezt0003lufz5yw5azs3" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
     <article id="post-LeetCode-从链表删除节点" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/" class="article-date">
@@ -639,7 +693,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p><font color="red">注意.</font></p>
+        <p><font color="red">注意1.</font></p>
 <ul>
 <li><p>这句话什么意思：</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ListNode* d_head = <span class="keyword">new</span> ListNode(<span class="number">-1</span>);</span><br></pre></td></tr></table></figure>
@@ -661,7 +715,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 <h1 id="从链表中删除，插入结点"><a href="#从链表中删除，插入结点" class="headerlink" title="从链表中删除，插入结点"></a>从链表中删除，插入结点</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span>&#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode* next;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x):val(x), next(<span class="literal">NULL</span>)&#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 向链表head的pre_val节点后插入val的结点。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insertNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> val, <span class="keyword">int</span> pre_val)</span></span>&#123;</span><br><span class="line">    ListNode* d_head = <span class="keyword">new</span> ListNode(<span class="number">-1</span>);</span><br><span class="line">    d_head-&gt;next = head;</span><br><span class="line">    <span class="keyword">while</span>(d_head-&gt;val != pre_val)&#123;</span><br><span class="line">        d_head = d_head-&gt;next;	<span class="comment">// dhead 移动了，所以最后不能删</span></span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* insertNode = <span class="keyword">new</span> ListNode(val);</span><br><span class="line">    insertNode-&gt;next = d_head-&gt;next;</span><br><span class="line">    d_head-&gt;next = insertNode;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从链表head中删除delete_val的结点</span></span><br><span class="line"><span class="function">ListNode* <span class="title">deleteNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> delete_val)</span></span>&#123;</span><br><span class="line">    ListNode* dhead = <span class="keyword">new</span> ListNode(<span class="number">-1</span>); <span class="comment">// 新建结点</span></span><br><span class="line">    dhead-&gt;next = head;</span><br><span class="line"></span><br><span class="line">    ListNode* curr = dhead;  <span class="comment">//新建ptr，指向head</span></span><br><span class="line">    <span class="keyword">while</span>(curr-&gt;next)&#123;</span><br><span class="line">        <span class="keyword">if</span>(curr-&gt;next-&gt;val == delete_val)&#123;</span><br><span class="line">            ListNode* dNode = curr-&gt;next; <span class="comment">//新建ptr，指向curr-&gt;next</span></span><br><span class="line">            curr-&gt;next = dNode-&gt;next;</span><br><span class="line">            <span class="comment">// 删处结点</span></span><br><span class="line">            <span class="keyword">delete</span> dNode;</span><br><span class="line">            dNode = <span class="literal">nullptr</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span></span><br><span class="line">            curr=curr-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* resHead = dhead-&gt;next;  <span class="comment">//新建ptr，指向dhead-&gt;next</span></span><br><span class="line">    <span class="keyword">delete</span> dhead;    <span class="comment">// 整个过程dhead没有移动，所以可以delete </span></span><br><span class="line">    dhead = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> resHead;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 打印当前链表</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">printLinkedList</span><span class="params">(ListNode* head)</span></span>&#123;	</span><br><span class="line">    ListNode* node = head;</span><br><span class="line">    <span class="keyword">while</span>(node)&#123;</span><br><span class="line">        <span class="built_in">cout</span>&lt;&lt;node-&gt;val&lt;&lt;<span class="string">"-&gt;"</span>;</span><br><span class="line">        node = node-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line">    <span class="comment">// create a linkedlist</span></span><br><span class="line">    <span class="keyword">int</span> length, nodeVal, headVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;length;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;headVal;</span><br><span class="line">    <span class="keyword">int</span> count=length;</span><br><span class="line">    ListNode* head = <span class="keyword">new</span> ListNode(headVal);</span><br><span class="line">    count--;</span><br><span class="line">    ListNode* dhead = head;</span><br><span class="line">    <span class="keyword">while</span>(count!=<span class="number">0</span>)&#123;</span><br><span class="line">        <span class="built_in">cin</span>&gt;&gt;nodeVal;</span><br><span class="line">        ListNode* node = <span class="keyword">new</span> ListNode(nodeVal);</span><br><span class="line">        dhead-&gt;next = node;</span><br><span class="line">        dhead = dhead-&gt;next;</span><br><span class="line">        count--;</span><br><span class="line">    &#125;</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="comment">//operations</span></span><br><span class="line">    <span class="keyword">int</span> insertVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;insertVal;</span><br><span class="line">    insertNode(head, insertVal, <span class="number">2</span>);</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="keyword">int</span> dln;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;dln;</span><br><span class="line">    ListNode* nhead = deleteNode(head, dln);</span><br><span class="line">    printLinkedList(nhead);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h1 id="创建链表，打印链表，销毁链表"><a href="#创建链表，打印链表，销毁链表" class="headerlink" title="创建链表，打印链表，销毁链表"></a>创建链表，打印链表，销毁链表</h1><p>作为基本操作，为测试时提供便利。先在ListNode结构体中添加一个构造函数：</p>
+<h1 id="创建链表，打印链表，销毁链表"><a href="#创建链表，打印链表，销毁链表" class="headerlink" title="创建链表，打印链表，销毁链表"></a>创建链表，打印链表，销毁链表</h1><p>作为基本操作，为测试时提供便利。先在ListNode定义中中添加一个构造函数：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode *next;</span><br><span class="line">    ListNode() : val(<span class="number">0</span>), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x) : val(x), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x, ListNode *next) : val(x), next(next) &#123;&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 
 <p>传入一个保存结点值的容器，创建链表：</p>
@@ -765,103 +819,11 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-Linux安装cuDNN" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/" class="article-date">
-  <time datetime="2019-12-31T08:15:54.000Z" itemprop="datePublished">2019-12-31</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/">Linux安装cuDNN</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li><p>假设CUDA已经成功安装，先确定CUDA的版本</p>
-<p>  <code>cat /usr/local/cuda/version.txt</code> </p>
-</li>
-<li><p>进入cudnn官网，用户登录，在cudnn下载处根据Linux机器上的CUDA版本选择对应的cudnn版本</p>
-<ol>
-<li><p>去<a href="https://developer.nvidia.com/cudnn" target="_blank" rel="noopener">nvidia cuDNN home page</a></p>
-</li>
-<li><p>点击下载</p>
-</li>
-<li><p>用户登录，完成问卷，提交</p>
-</li>
-<li><p>接受条款</p>
-</li>
-<li><p>选择与机器CUDA版本对应的cuDNN版本下载tar文件和Sample Code：</p>
-<p> cuDNN Library for Linux<br> cuDNN Code Samples and User Guide for Ubuntu16.04 (Deb)</p>
-</li>
-</ol>
-</li>
-<li><p>使用tar文件安装</p>
-<ol>
-<li><p>转到tar文件所在目录</p>
-</li>
-<li><p>解压</p>
-<p> <code>$ tar -xzvf cudnn-10.2-linux-x64-v7.6.5.32.tgz</code></p>
-</li>
-<li><p>复制文件到已安装的CUDA Toolkit目录，并且修改权限</p>
-<p> <code>$ sudo cp cuda/include/cudnn.h /usr/local/cuda/include</code><br> <code>$ sudo cp cuda/lib64/libcudnn* /usr/local/cuda/lib64</code><br> <code>$ sudo chmod a+r /usr/local/cuda/include/cudnn.h /usr/local/cuda/lib64/libcudnn*</code></p>
-</li>
-</ol>
-</li>
-<li><p>为了测试安装成功否，安装samples code和用户指南：</p>
-<p>  <code>$ sudo dpkg -i libcudnn7-doc_7.6.5.32-1+cuda10.2_amd64.deb</code></p>
-</li>
-<li><p>测试</p>
-<ol>
-<li><p>把Samples Code 复制到可写的目录下<code>$HOME</code></p>
-</li>
-<li><p>进入这个可写目录</p>
-<p> <code>$ cd  $HOME/cudnn_samples_v7/mnistCUDNN</code></p>
-</li>
-<li><p>编译 mnistCUDNN 实例</p>
-<p> <code>$ make clean &amp;&amp; make</code></p>
-</li>
-<li><p>运行可执行文件</p>
-<p> <code>$ ./mnistCUDNN</code></p>
-<p> 如果可以返回如下，表示安装成功：</p>
-<p> <code>Test passed!</code></p>
-</li>
-</ol>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/" data-id="ckatsrgsa003jxqfz3bb4ecya" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/5/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><a class="extend next" rel="next" href="/page/7/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/5/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/7/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -872,7 +834,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">24</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -882,7 +844,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">51</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -892,7 +854,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
     </div>
   </div>
 
@@ -901,7 +863,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">25</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -912,6 +874,10 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
+          </li>
         
           <li>
             <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
@@ -927,10 +893,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
           <li>
             <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84%E5%B9%B3%E6%96%B9%E6%A0%B9sqrt-x/">LeetCode-求一个数的平方根sqrt(x)</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
           </li>
         
       </ul>

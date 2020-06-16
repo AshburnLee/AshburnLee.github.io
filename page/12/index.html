@@ -64,6 +64,66 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-模拟退火-增强学习任务间的迁移学习" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" class="article-date">
+  <time datetime="2019-08-06T14:20:35.000Z" itemprop="datePublished">2019-08-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/">模拟退火-增强学习任务间的迁移学习</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记为概述，记录使用模拟退火算法(Simulated Anneling)解决，迁移学习(Transfer Learning)应用在增强学习(Reinforcemet Learning)任务间整体效率的问题。实现过程看<a href="https://github.com/AshburnLee/earlyTerminationOfTransferLearningInReinforcementLearning" target="_blank" rel="noopener">这里</a>。</p>
+<h2 id="增强学习"><a href="#增强学习" class="headerlink" title="增强学习"></a>增强学习</h2><p>增强学习是一个agent在与它所处的环境相互作用中学习的过程。比如把一只老鼠放在一个迷宫中，让它自己试错找到出口。agent与环境的相互作用由三个变量体现：状态，动作，奖励。状态指agent当前的位置，动作指agent在当前位置有哪些行动的选择。比如老鼠在迷宫中的当前位置可以向前，后，左，右移动。奖励指agent在每次行动后得到的奖励。比如迷宫中的老鼠每找到一粒花生得+10奖励，若它掉进陷阱里得到-10的奖励，且本次学习结束。为了让老鼠尽快学习，一般设置，如果每次执行一个动作，没有正负效果的话，获得-1奖励。这激励agent用较少的步数达到目标，对于老鼠说，吃到花生。</p>
+<p>增强学习的可视化环境使用开源<a href="http://burlap.cs.brown.edu/index.html" target="_blank" rel="noopener">BURLAP</a>可视化RL环境。其中agent是个像素小人儿，小人儿的目标是执行不同的动作来找到出口。使用Q-learning学习算法后，可以得到关于本阶段相关数据。一个阶段可能要执行多次学习，比如100次学习。这个项目使用3列数据：Episode Index，#Actions，Reward。这些数据在学习过程中生成，并且保存在外部文件中。</p>
+<p>经过一个阶段的学习后，可视化这个阶段学习：<font color="green" size="4">Reward-EpisodesIndex图像</font>。E-R图像表示每一个episode对应的reward。可以观察到小人儿确实学习了的。因为钱若干次的R值较小且波动，但是呈上升趋势，直到上升到一个稳定值。此时可以认为小人儿停止学习了，或者说，小人儿找到了最优路径。开始稳定横坐标暂且称为“完全学习Episode”。</p>
+<p>为了减少噪声对R-E图像的影响，可以尝试让小人儿学习多阶段，比如10阶段，每阶段学习相同次数，后对R&amp;A分别求均值。为了使图像便于观察，对平均操作后的图像加上平滑操作。<font color="green" size="4">平滑后的图像</font>。</p>
+<h2 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h2><p>迁移学习对于相似但又不同的任务(一个成为源任务，另一个成为目标任务)，可以把在源任务中学习到的内容应用于目标任务的学习中，进而可以加速目标学习的速度。这已被实验证实。</p>
+<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>进一步实验发现，其实即使只在源任务学习少于“完全学习Episode”的Episode，在目标任务中的学习也可以提前拟合，相较于从零开始学习目标任务。<font color="green" size="4">目标任务提前拟合</font>。那么小人儿在源中学习具体学习多少次，可以使迁移后的整体步数更少来达到拟合。</p>
+<p>此处对于图像有个改动，横轴不再是Episode Index，而换成每一个Episode对应的Accumulated Actions。即从此往下使用AA-R图像。为什么要如此做，这么做，横轴不单单是Episode，更增加了到达这一Episode为止一共执行了多少Actions。换句话说，之前这个“系统”中的信息只有Episode Index和对应的Reward，两个有用信息。现在这个“系统”中的有用信息包括，Episode Index，当前Episode的Actions数和从开始到现在一共的Actions数。根据信息论观点，<strong>增加有用信息，可以减少系统不确定性</strong>。</p>
+<p>回到问题，具体在源任务中学习多少次。先探索一下。我的做法是，1）分别在源任务中学习1E，2E，3E，… ，nE后迁移到目标任务中，如此得到n个迁移学习过程。对应n个AA-R条曲线，并合并到一幅图中。2）设定一个具体Reward值为R。观察哪条曲线先穿过R。<strong>现在我的目标转化为</strong>，在不需要执行完n个迁移学习过程的前提下，如何确定哪条曲线先穿过R。</p>
+<p>记录第二步中每条曲线穿过R时的对应Episode值，如此便可以得到在源任务中学习次数与其对应的穿过R时的AA值。绘出这条曲线。<font color="green" size="4">E-AA图像</font>。此时的<strong>目标转化为</strong>：在这条曲线中搜索最小值。多次实验发现这条曲线是非凸的，即有局部最小值，且很多。所以在线搜索只能找到第一个局部最优值，不可取。那遍历一遍就可以搜索到最小值。错，如果那样做，整个过程将毫无意义。为了搜索最值，而把所有值求出来。记住求出曲线中一个值，其代价是要完整地执行RL(Surce task)-&gt;TL-&gt;RL(Target task) 阶段数×每阶段的Episode数。比如10阶段，每阶段执行100Episode。得到一个值要执行1000次完整的上述过程。成本太高。</p>
+<p>这个问题类似TSP(Traveling Salesman Problem)问题。同样是求最值，TSP提前得到所有方案是不可能的，就现在的计算机。借鉴TSP的解法，<a href="https://github.com/AshburnLee/GeneticAlgorithmForTSP" target="_blank" rel="noopener">遗传算法</a>或<a href="https://github.com/AshburnLee/simulatedAnnealingForTSP" target="_blank" rel="noopener">模拟退火</a>，分别点击见实现。因为此问题的输入不是序列，所以遗传算法不适用，实验模拟退火，成功。</p>
+<p>模拟退火与遗传算法都属于带有随机性的算法。遗传算法中的交叉，变异操作，模拟退火中的以一定概率接受一个比之前差的结果，都是引入随机性。而随机性给了算法跳出当前局部最有值的能力。</p>
+<p><font color="gree" size="5">敲黑板</font></p>
+<ol>
+<li>这个项目中达到目标进行了至少两次的问题转化。</li>
+<li>借鉴相同性质问题的成熟解法。</li>
+<li>积累不同问题的解法。</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" data-id="ckatsrgte0060xqfz0eayfek8" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-模型评价-ROC曲线" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/" class="article-date">
@@ -940,114 +1000,11 @@
 
 
   
-    <article id="post-文本分类-一-几类模型" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" class="article-date">
-  <time datetime="2019-08-02T11:23:04.000Z" itemprop="datePublished">2019-08-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/">文本分类(一)-几类模型</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>文本分类任务中，输入为一条由词语组成的文本，模型判断这条文本的类别。</p>
-<h2 id="1-基本文本模型"><a href="#1-基本文本模型" class="headerlink" title="1.基本文本模型"></a>1.基本文本模型</h2><p>模型一：使用RNN(LSTM)的最后一个状态判断类别，是最基本的RNN模型。如图：</p>
-<p>&lt;&gt;pic&lt;&gt;</p>
-<div align="center"><img src></div>
-
-<p>LSTM的最后一个状态，或者说是该LSTM结点的最后一个time step 包含了整个句子的信息。将这个信息传入一个普通的全连接的神经网络。最终得到一个分类。比如一个句子传入模型后被判断为威胁类别。如果是二分类，使用sigmoid实现，若是多分类，使用softmax实现。</p>
-<p>这个过程中涉及到embedding，就是用向量来表示一个词语，或者说是对词语的进一步编码。第一次编码是将词语转化为数字，两者一一对应。</p>
-<p>不使用one-hot 编码，深度学习领域使用embedding的方式对词语进行编码。具体如何做，如下：</p>
-<table>
-<thead>
-<tr>
-<th align="right">词语</th>
-<th align="right">id1</th>
-<th align="right">id2</th>
-<th align="right">id3</th>
-<th align="right">id4</th>
-<th align="right">id5</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="right">海洋</td>
-<td align="right">0.11</td>
-<td align="right">0.52</td>
-<td align="right">0.45</td>
-<td align="right">1.27</td>
-<td align="right">0.72</td>
-</tr>
-<tr>
-<td align="right">阳光</td>
-<td align="right">0.63</td>
-<td align="right">0.24</td>
-<td align="right">1.12</td>
-<td align="right">0.27</td>
-<td align="right">1.27</td>
-</tr>
-<tr>
-<td align="right">冲浪</td>
-<td align="right">0.72</td>
-<td align="right">0.22</td>
-<td align="right">0.23</td>
-<td align="right">0.37</td>
-<td align="right">0.46</td>
-</tr>
-</tbody></table>
-<p>我把每一个出现了的词用长度为5的向量表示。并且embedding中的数值是变量，在训练模型时，所有数值是要被学习(更新)的。从而使得每个词语对应的向量与词语意思更相关。</p>
-<p>当把输入编码成一个向量时，过程就更类似对图像的处理了(两者还是很不一样)。输入与输出都是向量。</p>
-<h2 id="2-双向文本模型"><a href="#2-双向文本模型" class="headerlink" title="2.双向文本模型"></a>2.双向文本模型</h2><p>上述基本模型有个问题：虽然LSTM可以选择性地保存信息，但是，随后一个词语还是会与其较近的词语由更大的关系，而弱化较早以前的词语。所以更早些的信息可能不会被保存下来。双向RNN就是用来解决这个问题的，如图：</p>
-<p>&lt;&gt;pic&lt;&gt;</p>
-<div align="center"><img src></div>
-
-<p>特点：</p>
-<ul>
-<li>信息正向传播，并且逆向传播。</li>
-<li>把每一个词语经过这个LSTM的输出，做组合(拼接，pooling等)</li>
-<li>最终将组合结果传入一个全连接层</li>
-</ul>
-<h2 id="3-HAN"><a href="#3-HAN" class="headerlink" title="3.HAN"></a>3.HAN</h2><p>特点：</p>
-<ul>
-<li>分层，第一层词语编码，第二层句编码。</li>
-<li>每一层增加一个类似LSTM内部门的操作，成为Attention 机制</li>
-</ul>
-<h2 id="4-CNN解决文本问题"><a href="#4-CNN解决文本问题" class="headerlink" title="4.CNN解决文本问题"></a>4.CNN解决文本问题</h2>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" data-id="ckatsrgt30058xqfz07z6dfak" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/11/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="page-number" href="/page/11/">11</a><span class="page-number current">12</span><a class="page-number" href="/page/13/">13</a><a class="extend next" rel="next" href="/page/13/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/11/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="page-number" href="/page/11/">11</a><span class="page-number current">12</span><a class="page-number" href="/page/13/">13</a><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/13/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -1058,7 +1015,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">24</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1068,7 +1025,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">51</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1078,7 +1035,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
     </div>
   </div>
 
@@ -1087,7 +1044,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">25</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1098,6 +1055,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
+          </li>
         
           <li>
             <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
@@ -1113,10 +1074,6 @@
         
           <li>
             <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84%E5%B9%B3%E6%96%B9%E6%A0%B9sqrt-x/">LeetCode-求一个数的平方根sqrt(x)</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
           </li>
         
       </ul>

@@ -64,6 +64,98 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Linux安装cuDNN" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/" class="article-date">
+  <time datetime="2019-12-31T08:15:54.000Z" itemprop="datePublished">2019-12-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/">Linux安装cuDNN</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li><p>假设CUDA已经成功安装，先确定CUDA的版本</p>
+<p>  <code>cat /usr/local/cuda/version.txt</code> </p>
+</li>
+<li><p>进入cudnn官网，用户登录，在cudnn下载处根据Linux机器上的CUDA版本选择对应的cudnn版本</p>
+<ol>
+<li><p>去<a href="https://developer.nvidia.com/cudnn" target="_blank" rel="noopener">nvidia cuDNN home page</a></p>
+</li>
+<li><p>点击下载</p>
+</li>
+<li><p>用户登录，完成问卷，提交</p>
+</li>
+<li><p>接受条款</p>
+</li>
+<li><p>选择与机器CUDA版本对应的cuDNN版本下载tar文件和Sample Code：</p>
+<p> cuDNN Library for Linux<br> cuDNN Code Samples and User Guide for Ubuntu16.04 (Deb)</p>
+</li>
+</ol>
+</li>
+<li><p>使用tar文件安装</p>
+<ol>
+<li><p>转到tar文件所在目录</p>
+</li>
+<li><p>解压</p>
+<p> <code>$ tar -xzvf cudnn-10.2-linux-x64-v7.6.5.32.tgz</code></p>
+</li>
+<li><p>复制文件到已安装的CUDA Toolkit目录，并且修改权限</p>
+<p> <code>$ sudo cp cuda/include/cudnn.h /usr/local/cuda/include</code><br> <code>$ sudo cp cuda/lib64/libcudnn* /usr/local/cuda/lib64</code><br> <code>$ sudo chmod a+r /usr/local/cuda/include/cudnn.h /usr/local/cuda/lib64/libcudnn*</code></p>
+</li>
+</ol>
+</li>
+<li><p>为了测试安装成功否，安装samples code和用户指南：</p>
+<p>  <code>$ sudo dpkg -i libcudnn7-doc_7.6.5.32-1+cuda10.2_amd64.deb</code></p>
+</li>
+<li><p>测试</p>
+<ol>
+<li><p>把Samples Code 复制到可写的目录下<code>$HOME</code></p>
+</li>
+<li><p>进入这个可写目录</p>
+<p> <code>$ cd  $HOME/cudnn_samples_v7/mnistCUDNN</code></p>
+</li>
+<li><p>编译 mnistCUDNN 实例</p>
+<p> <code>$ make clean &amp;&amp; make</code></p>
+</li>
+<li><p>运行可执行文件</p>
+<p> <code>$ ./mnistCUDNN</code></p>
+<p> 如果可以返回如下，表示安装成功：</p>
+<p> <code>Test passed!</code></p>
+</li>
+</ol>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/" data-id="ckatsrgsa003jxqfz3bb4ecya" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-方法论-DP-二" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/" class="article-date">
@@ -1447,77 +1539,11 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
 
 
   
-    <article id="post-CUDA-optimize-data-transfer" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/11/28/CUDA-optimize-data-transfer/" class="article-date">
-  <time datetime="2019-11-28T15:06:15.000Z" itemprop="datePublished">2019-11-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/28/CUDA-optimize-data-transfer/">CUDA-optimize data transfer</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="Optimize-Data-Transfers"><a href="#Optimize-Data-Transfers" class="headerlink" title="Optimize Data Transfers"></a>Optimize Data Transfers</h1><p>The peak bandwidth between the device memory and the GPU is much higher (<strong>144 GB/s</strong> on the NVIDIA Tesla C2050, for example) than the peak bandwidth between host memory and device memory (<strong>8 GB/s</strong> on PCIe x16 Gen2). This disparity means that your implementation of data transfers between the host and GPU devices can make or break your overall application performance. <br>Let’s start with a few general guidelines for host-device data transfers.</p>
-<ol>
-<li>Minimize the amount of data transferred between host and device when possible, even if that means running kernels on the GPU that get little or no speed-up compared to running them on the host CPU.</li>
-<li>Higher bandwidth is possible between the host and the device when using page-locked (or “pinned”) memory.</li>
-<li>Batching many small transfers into one larger transfer performs much better because it eliminates most of the per-transfer overhead.</li>
-<li>Data transfers between the host and device can sometimes be overlapped with kernel execution and other data transfers.</li>
-</ol>
-<p>We investigate the first three guidelines above in this post, and we dedicate the next post to <strong>overlapping data transfers</strong>. First I want to talk about how to measure time spent in data transfers without modifying the source code.</p>
-<h2 id="Measuring-Data-Transfer-Times-with-nvprof"><a href="#Measuring-Data-Transfer-Times-with-nvprof" class="headerlink" title="Measuring Data Transfer Times with nvprof"></a>Measuring Data Transfer Times with nvprof</h2><p>To measure the time spent in each data transfer, we could record a CUDA event before and after each transfer and use cudaEventElapsedTime(), as we described in a previous post.  However, we can get the elapsed transfer time without instrumenting the source code with CUDA events by using <strong>nvprof</strong>.<br>推荐使用nvprof，测试间。</p>
-<p>使用实例.假如有一源文件·<code>profile.cu</code>, 编译: </p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ nvcc profile.cu</span><br><span class="line">$ nvprof ./a.out</span><br></pre></td></tr></table></figure>
-
-<p>It returns as follow:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ nvprof ./a.out </span><br><span class="line">======== NVPROF is profiling a.out...</span><br><span class="line">======== Command: a.out</span><br><span class="line">======== Profiling result:</span><br><span class="line">Time(%)     Time  Calls      Avg      Min      Max Name</span><br><span class="line">  <span class="number">50.08</span> <span class="number">718.11u</span>s      <span class="number">1</span> <span class="number">718.11u</span>s <span class="number">718.11u</span>s <span class="number">718.11u</span>s [CUDA <span class="built_in">memcpy</span> DtoH]</span><br><span class="line">  <span class="number">49.92</span> <span class="number">715.94u</span>s      <span class="number">1</span> <span class="number">715.94u</span>s <span class="number">715.94u</span>s <span class="number">715.94u</span>s [CUDA <span class="built_in">memcpy</span> HtoD]</span><br></pre></td></tr></table></figure>
-
-<h2 id="Minimizing-Data-Transfers"><a href="#Minimizing-Data-Transfers" class="headerlink" title="Minimizing Data Transfers"></a>Minimizing Data Transfers</h2><p>如果可以不传输数据，就不要传输。总之，尽量少用PCIe。</p>
-<h2 id="Pinned-Host-Memory"><a href="#Pinned-Host-Memory" class="headerlink" title="Pinned Host Memory"></a>Pinned Host Memory</h2><p>测试使用P106 和 GTX1060，使用pinned memory 并没有显著提高。</p>
-<h2 id="Batching-Small-Transfers"><a href="#Batching-Small-Transfers" class="headerlink" title="Batching Small Transfers"></a>Batching Small Transfers</h2><p>Due to the overhead associated with each transfer, it is preferable to batch many small transfers together into a single transfer. This is easy to do by using a temporary array, preferably pinned, and packing it with the data to be transferred.</p>
-<p>For two-dimensional array transfers, you can use <code>cudaMemcpy2D()</code>.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cudaMemcpy2D(dest, dest_pitch, src, src_pitch, w, h, cudaMemcpyHostToDevice)</span><br></pre></td></tr></table></figure>
-<p>The arguments here are a pointer to the first destination element and the pitch of the destination array, a pointer to the first source element and pitch of the source array, the width and height of the submatrix to transfer, and the memcpy kind. There is also a cudaMemcpy3D() function for transfers of rank three array sections.</p>
-<p>原文作者 Mark Harris<br>原文<a href="https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/" target="_blank" rel="noopener">链接</a></p>
-<hr>
-<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/11/28/CUDA-optimize-data-transfer/" data-id="ckatsrgrb000zxqfz2x5vauh8" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/6/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><a class="extend next" rel="next" href="/page/8/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/6/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/8/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -1528,7 +1554,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">24</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1538,7 +1564,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">51</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1548,7 +1574,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
     </div>
   </div>
 
@@ -1557,7 +1583,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">24</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">25</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1568,6 +1594,10 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
+          </li>
         
           <li>
             <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
@@ -1583,10 +1613,6 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
         
           <li>
             <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84%E5%B9%B3%E6%96%B9%E6%A0%B9sqrt-x/">LeetCode-求一个数的平方根sqrt(x)</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/">LeetCode-求一个数的n次幂</a>
           </li>
         
       </ul>

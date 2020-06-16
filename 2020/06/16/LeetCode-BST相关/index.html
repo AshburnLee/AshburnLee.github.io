@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>LeetCode-BST相关 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="BST与一般二叉树的不同之处是，BST的left-&gt;root-&gt;right遍历结果是递增序列，right-&gt;root-&gt;left 的遍历结果是递减序列。根据BST的这个特点，与BST相关的问题，先执行上述两种遍历，后就是对一个有序数组的操作了。 先给出BST结点的定义： 123456789struct TreeNode &amp;#123;    int val;    TreeN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LeetCode-BST相关">
+<meta property="og:url" content="http://yoursite.com/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="BST与一般二叉树的不同之处是，BST的left-&gt;root-&gt;right遍历结果是递增序列，right-&gt;root-&gt;left 的遍历结果是递减序列。根据BST的这个特点，与BST相关的问题，先执行上述两种遍历，后就是对一个有序数组的操作了。 先给出BST结点的定义： 123456789struct TreeNode &amp;#123;    int val;    TreeN">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-06-16T01:45:54.000Z">
+<meta property="article:modified_time" content="2020-06-16T02:50:48.492Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Algorithms">
+<meta property="article:tag" content="BST">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-LeetCode-BST相关" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/" class="article-date">
+  <time datetime="2020-06-16T01:45:54.000Z" itemprop="datePublished">2020-06-16</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      LeetCode-BST相关
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>BST与一般二叉树的不同之处是，BST的<code>left-&gt;root-&gt;right</code>遍历结果是递增序列，<code>right-&gt;root-&gt;left</code> 的遍历结果是递减序列。根据BST的这个特点，与BST相关的问题，先执行上述两种遍历，后就是对一个有序数组的操作了。</p>
+<p>先给出BST结点的定义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">TreeNode</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    TreeNode *left;</span><br><span class="line">    TreeNode *right;</span><br><span class="line">    TreeNode() : val(<span class="number">0</span>), left(<span class="literal">nullptr</span>), right(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    TreeNode(<span class="keyword">int</span> x) : val(x), left(<span class="literal">nullptr</span>), right(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    TreeNode(<span class="keyword">int</span> x, TreeNode *left, TreeNode *right) </span><br><span class="line">		: val(x), left(left), right(right) &#123;&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="530，783，230"><a href="#530，783，230" class="headerlink" title="530，783，230"></a>530，783，230</h1><p>思路一样，先遍历，后对一个有序数组操作。不细展开了。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// #530 #783 # 230 BST inOrder to get a 递增序列</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol530_783_230</span>&#123;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="comment">// time: O(2*N)</span></span><br><span class="line">	<span class="function"><span class="keyword">int</span> <span class="title">getMinimumDifference</span><span class="params">(TreeNode* root)</span> </span>&#123;</span><br><span class="line">		inOrder(root);</span><br><span class="line">		<span class="keyword">int</span> minAD = INT_MAX;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;vec.size(); i++)&#123;</span><br><span class="line">			minAD = min(minAD, vec[i]-vec[i<span class="number">-1</span>]);</span><br><span class="line">			<span class="built_in">cout</span>&lt;&lt;minAD&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> minAD;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; vec;</span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">inOrder</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root!=<span class="literal">NULL</span>)&#123;</span><br><span class="line">            inOrder(root-&gt;left);</span><br><span class="line">            vec.push_back(root-&gt;val);</span><br><span class="line">            inOrder(root-&gt;right);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="653"><a href="#653" class="headerlink" title="653"></a>653</h1><p>描述：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Given a Binary Search Tree and a target number, <span class="built_in">return</span> <span class="literal">true</span> <span class="keyword">if</span> there exist two elements <span class="keyword">in</span> the BST such that their sum is equal to the given target.</span><br><span class="line"></span><br><span class="line">Example 1:</span><br><span class="line"></span><br><span class="line">Input: </span><br><span class="line">    5</span><br><span class="line">   / \</span><br><span class="line">  3   6</span><br><span class="line"> / \   \</span><br><span class="line">2   4   7</span><br><span class="line"></span><br><span class="line">Target = 9</span><br><span class="line"></span><br><span class="line">Output: True</span><br></pre></td></tr></table></figure>
+
+<p>思路：先序遍历后得到有序数组；后使用对撞指针找到一对值和为target。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol653</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="comment">// time: O(2×N)</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">findTarget</span><span class="params">(TreeNode* root, <span class="keyword">int</span> k)</span> </span>&#123;</span><br><span class="line">        inOrder(root);</span><br><span class="line">        <span class="keyword">int</span> i=<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> j=vec.size()<span class="number">-1</span>;</span><br><span class="line">        <span class="keyword">while</span>(i&lt;j)&#123;</span><br><span class="line">            <span class="keyword">if</span> (vec[i]+vec[j]==k) <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span>(vec[i]+vec[j] &lt; k)</span><br><span class="line">                i++;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                j--;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; vec;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">inOrder</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root!=<span class="literal">NULL</span>)&#123;</span><br><span class="line">            inOrder(root-&gt;left);</span><br><span class="line">            vec.push_back(root-&gt;val);</span><br><span class="line">            inOrder(root-&gt;right);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="938"><a href="#938" class="headerlink" title="938"></a>938</h1><p>描述：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Given the root node of a binary search tree, return the sum of values of all nodes with value between L and R (inclusive).</span><br><span class="line"></span><br><span class="line">The binary search tree is guaranteed to have unique values.</span><br><span class="line"></span><br><span class="line">Example</span><br><span class="line"></span><br><span class="line">Input: root &#x3D; [10,5,15,3,7,null,18], L &#x3D; 7, R &#x3D; 15</span><br><span class="line">Output: 32</span><br></pre></td></tr></table></figure>
+
+<p>思路：</p>
+<p>方法一：中序遍历后得有序序列；后从头和尾设置两个指针对撞，找到两个位置，后将两位置间的元素累加得结果。</p>
+<p>方法二：选择一种树的遍历方法，在遍历的过程中，判断每一个结点值是否在指定区间内，如果是，就累加到一个变量中。</p>
+<p>实现方法二：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol938</span> &#123;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">int</span> sum=<span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">rangeSumBST</span><span class="params">(TreeNode* root, <span class="keyword">const</span> <span class="keyword">int</span> L, cosnt <span class="keyword">int</span> R)</span> </span>&#123;</span><br><span class="line">        dfs(root, L,R);</span><br><span class="line">        <span class="keyword">return</span> sum;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">dfs</span><span class="params">(TreeNode* root, <span class="keyword">int</span> L, <span class="keyword">int</span> R)</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root==<span class="literal">nullptr</span>) <span class="keyword">return</span>;</span><br><span class="line">        <span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (root-&gt;val&gt;=L &amp;&amp; root-&gt;val&lt;=R)</span><br><span class="line">                sum += root-&gt;val;</span><br><span class="line">            <span class="keyword">if</span> (root-&gt;val&gt;L)</span><br><span class="line">                dfs(root-&gt;left, L,R);</span><br><span class="line">            <span class="keyword">if</span> (root-&gt;val&lt;R)</span><br><span class="line">                dfs(root-&gt;right, L,R);</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><font color="gree">注意-有返回值的递归</font>：由于<code>rangeSumBST</code>函数有返回值，若将递归实现在其中，会有问题：<font color="red" size="5">递归函数与其返回值不一致</font>。什么意思？具体说是，函数是递归的，自己会调用自己，而返回值是一个最终结果，一个是过程一个是结果。可能没法处理！所以考虑将递归函数和返回值分离，其中递归函数没有返回值，如上。</p>
+<h1 id="701"><a href="#701" class="headerlink" title="701"></a>701</h1><p>描述：</p>
+<p>将一个结点掺入到BST中（新节点不与原BST中结点重复），要保持BST的性质不变。BST的基本操作</p>
+<p>思路：</p>
+<p>分析题意，一定可以在BST的叶节点找到新节点的位置，将其作为这个叶节点的子节点所以递归地找到带插入结点的位置即可。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// #701 BST insert operation</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol701</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="comment">// 在现有的 BST 的叶节点添加新的结点</span></span><br><span class="line"><span class="comment">// time: O(logN)</span></span><br><span class="line">    <span class="function">TreeNode* <span class="title">insertIntoBST</span><span class="params">(TreeNode* root, <span class="keyword">const</span> <span class="keyword">int</span> val)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 向叶节点添加子结点</span></span><br><span class="line">        <span class="keyword">if</span> (root==<span class="literal">nullptr</span>)&#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">new</span> TreeNode(val);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (root-&gt;val == val)</span><br><span class="line">			<span class="built_in">cout</span>&lt;&lt;<span class="string">"Not going to happen"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span>(root-&gt;val &gt; val)&#123;</span><br><span class="line">			root-&gt;left = insertIntoBST(root-&gt;left, val);</span><br><span class="line">		&#125;<span class="keyword">else</span></span><br><span class="line">			root-&gt;right = insertIntoBST(root-&gt;right, val);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> root;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><font color="gree">注意-有返回值的递归</font>：这个问题的返回值是节点指针<code>TreeNode*</code>，而递归函数每次递归的判断操作对象也是一个<code>TreeNode*</code>。所以这里的返回值不会影响到递归函数。所以是<font color="red" size="5">递归函数与其返回值一致</font>。与上一个问题对比。</p>
+<h1 id="501"><a href="#501" class="headerlink" title="501"></a>501</h1><p>描述：</p>
+<p>找到BST中出现频数最多的节点值。</p>
+<p>思路：</p>
+<p>第一步遍历，过程中将每个节点值放入哈希表。第二步是对哈希表的操作，找到找到频数最多的key值，可能有重复。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// #501 BST</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol501</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; findMode(TreeNode* root) &#123;</span><br><span class="line">        inOrder(root)</span><br><span class="line">		<span class="keyword">int</span> secondMax = <span class="number">0</span>;</span><br><span class="line">		<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; res;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">auto</span> item: mp)&#123;</span><br><span class="line">			<span class="keyword">if</span> (item.second&gt;secondMax)&#123;</span><br><span class="line">				res.clear();</span><br><span class="line">				secondMax = item.second;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (item.second == secondMax)</span><br><span class="line">				res.push_back(item.first);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> res;</span><br><span class="line">            </span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	<span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp;</span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">inOrder</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root!=<span class="literal">NULL</span>)&#123;</span><br><span class="line">            inOrder(root-&gt;left);</span><br><span class="line">            mp[root-&gt;val]++;</span><br><span class="line">            inOrder(root-&gt;right);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="173"><a href="#173" class="headerlink" title="173"></a>173</h1><p>描述：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Implement an iterator over a binary search tree (BST). Your iterator will be initialized with the root node of a BST.</span><br><span class="line"></span><br><span class="line">Calling next() will return the next smallest number in the BST.</span><br><span class="line">hasNext() return whether we have a next smallest number</span><br></pre></td></tr></table></figure>
+
+<p>思路：</p>
+<p>先<code>right-&gt;root-&gt;left</code> 遍历，得到递减序列。<code>next()</code>返回序列最有一个值，后删除最后一个值。<code>hasNext()</code>返回这个序列是否为空。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// # 173</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BSTIterator</span> &#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; nodeVal;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">inOrder</span><span class="params">(TreeNode* root)</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(root!=<span class="literal">nullptr</span>)&#123;</span><br><span class="line">            inOrder(root-&gt;right);</span><br><span class="line">            nodeVal.push_back(root-&gt;val);</span><br><span class="line">            inOrder(root-&gt;left);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="comment">// time: O(N)</span></span><br><span class="line">	<span class="comment">// right-&gt;root-&gt;left </span></span><br><span class="line">    BSTIterator(TreeNode* root) &#123;</span><br><span class="line">        inOrder(root);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/** @return the next smallest number */</span></span><br><span class="line">	<span class="comment">// time: O(1)</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> res = nodeVal[nodeVal.size()<span class="number">-1</span>];</span><br><span class="line">        <span class="keyword">if</span> (nodeVal.size()!=<span class="number">0</span>)</span><br><span class="line">            nodeVal.pop_back();</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/** @return whether we have a next smallest number */</span></span><br><span class="line">	<span class="comment">// time: O(1)</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(nodeVal.size()!=<span class="number">0</span>) <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="538"><a href="#538" class="headerlink" title="538"></a>538</h1><p>描述：</p>
+<p>BST中每个结点的值类加上所有比这个结点大的值。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Input: The root of a Binary Search Tree like this:</span><br><span class="line">              5</span><br><span class="line">            &#x2F;   \</span><br><span class="line">           2     13</span><br><span class="line"></span><br><span class="line">Output: The root of a Greater Tree like this:</span><br><span class="line">             18</span><br><span class="line">            &#x2F;   \</span><br><span class="line">          20     13</span><br></pre></td></tr></table></figure>
+
+<p>思路：</p>
+<p>先定义一个变量value=0，后进行<code>right-&gt;root-&gt;left</code>遍历，每遍历到一个结点，就将这个节点值累加到value，之后更新了的value赋值给这个结点。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// #538</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol538</span> &#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> value=<span class="number">0</span>;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="comment">// time: O(N)</span></span><br><span class="line">    <span class="function">TreeNode* <span class="title">convertBST</span><span class="params">(TreeNode* root)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root!=<span class="literal">nullptr</span>)&#123;</span><br><span class="line">            root-&gt;right = convertBST(root-&gt;right);</span><br><span class="line">            value+=root-&gt;val;</span><br><span class="line">            root-&gt;val = value;</span><br><span class="line">            root-&gt;left = convertBST(root-&gt;left);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> root;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p><font color="red">注意-有返回值的递归</font></p>
+<p><font color="gree" size="5">敲黑板</font> 注意-递归函数的 返回值</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/" data-id="ckbhbxkcv0000ttfzdo5i71i3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/BST/" rel="tag">BST</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/06/15/LeetCode-top-k/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">LeetCode-top-k</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">24</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">51</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">25</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84%E5%B9%B3%E6%96%B9%E6%A0%B9sqrt-x/">LeetCode-求一个数的平方根sqrt(x)</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
