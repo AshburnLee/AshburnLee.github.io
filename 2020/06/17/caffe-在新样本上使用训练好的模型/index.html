@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>caffe-在新样本上使用训练好的模型 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="用训练好的模型给测试样本打分经过训练有了模型：my_lr_iter_10000.caffemodel，将新的样本数据的LMDB文件 mnist_newTEST_lmdb 的路径在TEST网络的DataLayer层中指明，将含有标签的新样本文件dataLayer的source： 1234567891011121314151617layer&amp;#123;    name: &quot;mnist&quot;    type">
+<meta property="og:type" content="article">
+<meta property="og:title" content="caffe-在新样本上使用训练好的模型">
+<meta property="og:url" content="http://yoursite.com/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="用训练好的模型给测试样本打分经过训练有了模型：my_lr_iter_10000.caffemodel，将新的样本数据的LMDB文件 mnist_newTEST_lmdb 的路径在TEST网络的DataLayer层中指明，将含有标签的新样本文件dataLayer的source： 1234567891011121314151617layer&amp;#123;    name: &quot;mnist&quot;    type">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-06-17T05:12:33.000Z">
+<meta property="article:modified_time" content="2020-06-17T12:29:58.605Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Caffe">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-caffe-在新样本上使用训练好的模型" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2020-06-17T05:12:33.000Z" itemprop="datePublished">2020-06-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      caffe-在新样本上使用训练好的模型
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="用训练好的模型给测试样本打分"><a href="#用训练好的模型给测试样本打分" class="headerlink" title="用训练好的模型给测试样本打分"></a>用训练好的模型给测试样本打分</h1><p>经过训练有了模型：<code>my_lr_iter_10000.caffemodel</code>，将新的样本数据的LMDB文件 <code>mnist_newTEST_lmdb</code> 的路径在TEST网络的DataLayer层中指明，将含有标签的新样本文件dataLayer的source：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">layer&#123;</span><br><span class="line">    name: <span class="string">"mnist"</span></span><br><span class="line">    <span class="built_in">type</span>: <span class="string">"Data"</span>  </span><br><span class="line">    top: <span class="string">"data"</span></span><br><span class="line">    top: <span class="string">"label"</span></span><br><span class="line">    include &#123;</span><br><span class="line">        phase: TEST  <span class="comment"># 该层应用与TEST</span></span><br><span class="line">    &#125;</span><br><span class="line">    transform_param&#123;  </span><br><span class="line">        scale: 0.0039063</span><br><span class="line">    &#125;</span><br><span class="line">    data_param&#123;   </span><br><span class="line">        <span class="built_in">source</span>: <span class="string">"/media/junhui/DATA/caffe_workspace/my_linearReggresion/mnist_newTEST_lmdb"</span></span><br><span class="line">        batch_size: 100  <span class="comment"># 每一批 100个样本</span></span><br><span class="line">        backend: LMDB</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用一下命令执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">~/caffe-master/build/tools/caffe <span class="built_in">test</span> \</span><br><span class="line">-model /media/junhui/DATA/caffe_workspace/my_linearReggresion/mylr.prototxt \</span><br><span class="line">-weights /media/junhui/DATA/caffe_workspace/my_linearReggresion/my_lr_iter_10000.caffemodel \</span><br><span class="line">-iterations 2</span><br></pre></td></tr></table></figure>
+
+<p><code>test</code> 表示使用TEST网络【只进行前行传播】打分，<code>-model</code> 指明模型结构参数，<code>-weights</code> 指明训练好的模型权值，<code>-iterations</code> 指明对多少样本进行inference，2*100 个样本。</p>
+<p>其中<code>caffe</code>实际是可执行文件<code>caffe.bin</code>。</p>
+<p>这里是日志文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line">I0617 13:28:09.083691  4697 caffe.cpp:275] Use CPU.</span><br><span class="line">I0617 13:28:09.308647  4697 net.cpp:296] The NetState phase (1) differed from the phase (0) specified by a rule <span class="keyword">in</span> layer mnist</span><br><span class="line">I0617 13:28:09.308768  4697 net.cpp:53] Initializing net from parameters: </span><br><span class="line">name: <span class="string">"lrNet"</span></span><br><span class="line">state &#123;</span><br><span class="line">  phase: TEST</span><br><span class="line">  level: 0</span><br><span class="line">  stage: <span class="string">""</span></span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"mnist"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Data"</span></span><br><span class="line">  top: <span class="string">"data"</span></span><br><span class="line">  top: <span class="string">"label"</span></span><br><span class="line">  include &#123;</span><br><span class="line">    phase: TEST</span><br><span class="line">  &#125;</span><br><span class="line">  transform_param &#123;</span><br><span class="line">    scale: 0.0039063</span><br><span class="line">  &#125;</span><br><span class="line">  data_param &#123;</span><br><span class="line">    <span class="built_in">source</span>: <span class="string">"/media/junhui/DATA/caffe_workspace/my_linearReggresion/mnist_newtest_lmdb"</span></span><br><span class="line">    batch_size: 100</span><br><span class="line">    backend: LMDB</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"ip"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"InnerProduct"</span></span><br><span class="line">  bottom: <span class="string">"data"</span></span><br><span class="line">  top: <span class="string">"ip"</span></span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 1</span><br><span class="line">  &#125;</span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 2</span><br><span class="line">  &#125;</span><br><span class="line">  inner_product_param &#123;</span><br><span class="line">    num_output: 10</span><br><span class="line">    weight_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"xavier"</span></span><br><span class="line">    &#125;</span><br><span class="line">    bias_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"constant"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"accuracy"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Accuracy"</span></span><br><span class="line">  bottom: <span class="string">"ip"</span></span><br><span class="line">  bottom: <span class="string">"label"</span></span><br><span class="line">  top: <span class="string">"accuracy"</span></span><br><span class="line">  include &#123;</span><br><span class="line">    phase: TEST</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"loss"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"SoftmaxWithLoss"</span></span><br><span class="line">  bottom: <span class="string">"ip"</span></span><br><span class="line">  bottom: <span class="string">"label"</span></span><br><span class="line">  top: <span class="string">"loss"</span></span><br><span class="line">&#125;</span><br><span class="line">I0617 13:28:09.308953  4697 layer_factory.hpp:77] Creating layer mnist</span><br><span class="line">I0617 13:28:09.309533  4697 db_lmdb.cpp:35] Opened lmdb /media/junhui/DATA/caffe_workspace/my_linearReggresion/mnist_newtest_lmdb</span><br><span class="line"><span class="comment"># 略</span></span><br><span class="line">I0617 13:14:44.887392  3080 net.cpp:200] loss needs backward computation.</span><br><span class="line">I0617 13:14:44.887401  3080 net.cpp:202] accuracy does not need backward computation.</span><br><span class="line">I0617 13:14:44.887406  3080 net.cpp:200] ip_ip_0_split needs backward computation.</span><br><span class="line">I0617 13:14:44.887411  3080 net.cpp:200] ip needs backward computation.</span><br><span class="line">I0617 13:14:44.887415  3080 net.cpp:202] label_mnist_1_split does not need backward computation.</span><br><span class="line">I0617 13:14:44.887420  3080 net.cpp:202] mnist does not need backward computation.</span><br><span class="line">I0617 13:14:44.887424  3080 net.cpp:244] This network produces output accuracy</span><br><span class="line">I0617 13:14:44.887430  3080 net.cpp:244] This network produces output loss</span><br><span class="line">I0617 13:14:44.887439  3080 net.cpp:257] Network initialization <span class="keyword">done</span>.</span><br><span class="line">I0617 13:14:44.888084  3080 caffe.cpp:281] Running <span class="keyword">for</span> 2 iterations.</span><br><span class="line"><span class="comment"># 结果：</span></span><br><span class="line">I0617 13:14:44.888623  3080 caffe.cpp:304] Batch 0, accuracy = 0.94</span><br><span class="line">I0617 13:14:44.888634  3080 caffe.cpp:304] Batch 0, loss = 0.21204</span><br><span class="line">I0617 13:14:44.889169  3080 caffe.cpp:304] Batch 1, accuracy = 0.96</span><br><span class="line">I0617 13:14:44.889178  3080 caffe.cpp:304] Batch 1, loss = 0.199202</span><br><span class="line">I0617 13:14:44.889200  3080 caffe.cpp:309] Loss: 0.205621</span><br><span class="line">I0617 13:14:44.889210  3080 caffe.cpp:321] accuracy = 0.95</span><br><span class="line">I0617 13:14:44.889219  3080 caffe.cpp:321] loss = 0.205621 (* 1 = 0.205621 loss)</span><br></pre></td></tr></table></figure>
+
+<p>由Log发现，在新样本上使用TEST网络，<font color="red" size="4">依然进行了反向传播？因为在TEST网络中要求loss，与accuracy一样是衡量模型在样本上的性能的指标，accuracy越大，loss越小，新能相对越好。而这层需要反向传播计算获得。从尾反向传播到头，所以Log就理所当然了</font>。</p>
+<h1 id="使用不带标签的新样本"><a href="#使用不带标签的新样本" class="headerlink" title="使用不带标签的新样本"></a>使用不带标签的新样本</h1><p>测试猜想</p>
+<p>猜测这种情况下的TEST网络结构只有数据层和全连接层（因为上述网络只有这两个层与label数据无关），最终结果是全连接层的输出。只有两层，进行前向计算（对一批测试，每一批只有一个元素）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">I0617 13:48:08.206188  5203 caffe.cpp:304] Batch 0, ip = 0.483029</span><br><span class="line">I0617 13:48:08.206202  5203 caffe.cpp:304] Batch 0, ip = -4.20101</span><br><span class="line">I0617 13:48:08.206208  5203 caffe.cpp:304] Batch 0, ip = 0.95857</span><br><span class="line">I0617 13:48:08.206213  5203 caffe.cpp:304] Batch 0, ip = 4.77686</span><br><span class="line">I0617 13:48:08.206219  5203 caffe.cpp:304] Batch 0, ip = -5.86976</span><br><span class="line">I0617 13:48:08.206223  5203 caffe.cpp:304] Batch 0, ip = 5.99296</span><br><span class="line">I0617 13:48:08.206228  5203 caffe.cpp:304] Batch 0, ip = -1.1105</span><br><span class="line">I0617 13:48:08.206233  5203 caffe.cpp:304] Batch 0, ip = 0.394778</span><br><span class="line">I0617 13:48:08.206238  5203 caffe.cpp:304] Batch 0, ip = -0.198426</span><br><span class="line">I0617 13:48:08.206243  5203 caffe.cpp:304] Batch 0, ip = -0.884502</span><br><span class="line">I0617 13:48:08.206248  5203 caffe.cpp:309] Loss: 0</span><br><span class="line">I0617 13:48:08.206256  5203 caffe.cpp:321] ip = 0.483029</span><br><span class="line">I0617 13:48:08.206264  5203 caffe.cpp:321] ip = -4.20101</span><br><span class="line">I0617 13:48:08.206269  5203 caffe.cpp:321] ip = 0.95857</span><br><span class="line">I0617 13:48:08.206272  5203 caffe.cpp:321] ip = 4.77686</span><br><span class="line">I0617 13:48:08.206277  5203 caffe.cpp:321] ip = -5.86976</span><br><span class="line">I0617 13:48:08.206282  5203 caffe.cpp:321] ip = 5.99296</span><br><span class="line">I0617 13:48:08.206287  5203 caffe.cpp:321] ip = -1.1105</span><br><span class="line">I0617 13:48:08.206292  5203 caffe.cpp:321] ip = 0.394778</span><br><span class="line">I0617 13:48:08.206297  5203 caffe.cpp:321] ip = -0.198426</span><br><span class="line">I0617 13:48:08.206301  5203 caffe.cpp:321] ip = -0.884502</span><br></pre></td></tr></table></figure>
+
+<p>发现比没有反向计算，因为不需要求loss，且输出是10个值，与网络结构对应 <code>num_output: 10</code>。</p>
+<h1 id="转化自己的raw数据为LMDB数据"><a href="#转化自己的raw数据为LMDB数据" class="headerlink" title="转化自己的raw数据为LMDB数据"></a>转化自己的raw数据为LMDB数据</h1><p>对于自己的MNIST数据，使用 <code>/home/junhui/caffe-master/build/examples/mnist/convert_mnist_data.bin</code> 命令，用法如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 命令 图片文件 对应标签文件 保存位置</span></span><br><span class="line">convert_mnist_data.bin input_image_file input_label_file output_db_file</span><br></pre></td></tr></table></figure>
+
+<p>那么caffe是如何将所下载的mnist数据集转化为LMDB的，见<code>examples/mnist/create_mnist.sh</code>，分析一下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 只要这个bash脚本中任何一条命令的返回值不是0，</span></span><br><span class="line"><span class="comment"># 就退出整个脚本，因为默认是有错继续执行。</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4个变量，</span></span><br><span class="line">EXAMPLE=examples/mnist</span><br><span class="line">DATA=data/mnist</span><br><span class="line">BUILD=build/examples/mnist</span><br><span class="line"></span><br><span class="line">BACKEND=<span class="string">"lmdb"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印内容：</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"Creating <span class="variable">$&#123;BACKEND&#125;</span>..."</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 将之前的DB文件删除</span></span><br><span class="line">rm -rf <span class="variable">$EXAMPLE</span>/mnist_train_<span class="variable">$&#123;BACKEND&#125;</span></span><br><span class="line">rm -rf <span class="variable">$EXAMPLE</span>/mnist_test_<span class="variable">$&#123;BACKEND&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 convert_mnist_data.bin 命令，</span></span><br><span class="line"><span class="variable">$BUILD</span>/convert_mnist_data.bin <span class="variable">$DATA</span>/train-images-idx3-ubyte \</span><br><span class="line">  <span class="variable">$DATA</span>/train-labels-idx1-ubyte <span class="variable">$EXAMPLE</span>/mnist_train_<span class="variable">$&#123;BACKEND&#125;</span> --backend=<span class="variable">$&#123;BACKEND&#125;</span></span><br><span class="line"><span class="variable">$BUILD</span>/convert_mnist_data.bin <span class="variable">$DATA</span>/t10k-images-idx3-ubyte \</span><br><span class="line">  <span class="variable">$DATA</span>/t10k-labels-idx1-ubyte <span class="variable">$EXAMPLE</span>/mnist_test_<span class="variable">$&#123;BACKEND&#125;</span> --backend=<span class="variable">$&#123;BACKEND&#125;</span></span><br><span class="line"><span class="comment"># 最终在制定的路径中生成 mnist_train_ 和 mnist_test_ 。</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"Done."</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="下一步："><a href="#下一步：" class="headerlink" title="下一步："></a>下一步：</h1><ol>
+<li>如何从LMDB中读取每一条数据？</li>
+<li>将不含标签的数据保存为LMDB？</li>
+<li>写自己的 <code>convert_XXX_data.bin</code> 工具，和bash脚本。</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/" data-id="ckbjc7zxi00008tfzgsqy4x9a" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">LeetCode-BST相关</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">26</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

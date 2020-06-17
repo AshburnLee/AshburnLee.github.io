@@ -64,6 +64,73 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-理解线程ID" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/" class="article-date">
+  <time datetime="2019-10-06T02:51:01.000Z" itemprop="datePublished">2019-10-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/">CUDA-理解线程ID</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="理解线程ID"><a href="#理解线程ID" class="headerlink" title="理解线程ID"></a>理解线程ID</h1><p>从线程逻辑结构上讲，所有线程有三层结构：threads，blocks，grids。每一层有三个维度：x，y，z。下面小例子展示了CUDA是怎样给不同的threads编号的：</p>
+<p>假如我配置的kernel如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> nElem = <span class="number">6</span>;</span><br><span class="line"><span class="function">dim3 <span class="title">block</span><span class="params">(<span class="number">3</span>)</span></span>;</span><br><span class="line"><span class="function">dim3 <span class="title">grid</span><span class="params">((nElem + block.x - <span class="number">1</span>) / block.x)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>grid中结果为2，所以在kernel中：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">checkDeviceIndex &lt;&lt;&lt; grid, block &gt;&gt;&gt;();</span><br></pre></td></tr></table></figure>
+<p>grid处为2，block处为3，即<code>&lt;&lt;&lt;2, 3&gt;&gt;&gt;</code>. 表示<strong>有2个blocks，每个blocks中有3个threads</strong>。其结构如下图：</p>
+<div align="center"><img src="/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/config.png" width="800"></div>
+
+<p>一个蓝色矩形表示一个block，一个曲线箭头表示一个thread，在本例中一个grid由两个blocks 组成。</p>
+<p>解释为：<br>对于grid<br>在x方向为2，表示在x方向由2个blocks。<br>y方向为1，表示在y方向上有1个block。<br>z方向为1，表示在z方向有1个block。</p>
+<p>对于block<br>在x方向为2，表示在x方向上有3个threads。<br>y方向为1，表示在y方向上有1个thread。<br>在方向为1，表示在z方向上有1个thread。</p>
+<p>threads是构成blocks和grids的最小单位，也是执行操作的最小单位。</p>
+<p>从执行结上检验上述：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">"grid.x %d grid.y %d grid.z %d \n"</span>, grid.x, grid.y, grid.z);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">"block.x %d block.y %d block.z %d \n"</span>, block.x, block.y, block.z);</span><br></pre></td></tr></table></figure>
+<p>结果为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">grid.x=<span class="number">2</span> grid.y=<span class="number">1</span> grid.z=<span class="number">1</span> </span><br><span class="line">block.x=<span class="number">3</span> block.y=<span class="number">1</span> block.z=<span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>与上述描述相符。</p>
+<p>那么在kernel中是如何编号的呢！设计kernel：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">checkDeviceIndex</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"threadIdx:(%d, %d, %d)\n"</span>, threadIdx.x, threadIdx.y, threadIdx.z);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"blockIdx:(%d, %d, %d)\n"</span>, blockIdx.x, blockIdx.y, blockIdx.z);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"blockDim:(%d, %d, %d)\n"</span>, blockDim.x, blockDim.y, blockDim.z);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"gridDim:(%d, %d, %d)\n"</span>, gridDim.x, gridDim.y, gridDim.z);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>表示每一个thread都会打印4条信息，共有2*3=6个threads。结果为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">threadIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">threadIdx:(<span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockIdx:(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">blockDim:(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">gridDim:(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p>根据threads ID的计算公式：<code>int tid = threadIdx.x + blockIdx.x * blockDim.x</code><br>可以得到6个threads的ID分别是：<br>0 + 0 × 3 = 0，<br>1 + 0 × 3 = 1，<br>2 + 0 × 3 = 2，<br>0 + 1 × 3 = 3，<br>1 + 1 × 3 = 4，<br>2 + 1 × 3 = 5，</p>
+<p>可以看出，CUDA kernel是根据公式给每一个threads编号的，保证每个threads有唯一的ID。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/10/06/CUDA-%E7%90%86%E8%A7%A3%E7%BA%BF%E7%A8%8BID/" data-id="ckatsrgrs0025xqfzehwc4p61" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-几点要记住-更新ID" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/10/04/CUDA-%E5%87%A0%E7%82%B9%E8%A6%81%E8%AE%B0%E4%BD%8F-%E6%9B%B4%E6%96%B0ID/" class="article-date">
@@ -864,164 +931,6 @@
 
 
   
-    <article id="post-回顾cpp-多态-二-虚函数表" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/" class="article-date">
-  <time datetime="2019-08-29T04:41:49.000Z" itemprop="datePublished">2019-08-29</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/">回顾cpp-多态-虚函数表</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>封装-&gt;继承-&gt;多态</p>
-<ul>
-<li>普通虚函数 check</li>
-<li>虚析构函数 check</li>
-<li>纯虚函数 </li>
-<li>抽象类</li>
-<li>接口类</li>
-<li>RTTI</li>
-<li>异常处理 </li>
-<li>隐藏 覆盖    check</li>
-<li>早绑定 晚绑定  check</li>
-<li>虚函数表     check</li>
-</ul>
-<h1 id="虚函数实现原理"><a href="#虚函数实现原理" class="headerlink" title="虚函数实现原理"></a>虚函数实现原理</h1><p>虚函数实现原理是</p>
-<p>函数指针：</p>
-<ul>
-<li>对象指针—&gt;指针指向对象</li>
-<li>函数指针—&gt;指针指向函数</li>
-</ul>
-<p>函数存在内存中，可以通过指针指向这段代码的开头，那么函数就会从头一直向下执行。如图：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/func-ptr.png" width="600"></div>
-
-<p>比如可以通过<code>Func1_ptr</code> 得到<code>fun3()</code>函数入口，并开始执行。函数指针与普通指针一样，存储着内存的地址，这个地址就是函数的首地址。</p>
-<hr>
-<p>虚函数实现原理是<strong>虚函数表指针</strong>。假如有两个类<code>Shape</code>和<code>Circle</code>类：<br>父类<code>Shape</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~Shape()&#123;&#125;   <span class="comment">// virtual 析构函数</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123;  <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iEdge;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>此时，当<strong>实例化一个<code>Shape</code>对象</strong>时，<strong>此<code>Shape</code>对象中包含如下左侧内容</strong>：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable1.png" width="600"></div>
-
-<p>此<code>Shape对象</code>中，除了<code>m_iEdge</code>外，还有一个成员<strong>vftable_ptr</strong>，<strong>称为虚函数表指针</strong>。</p>
-<ol>
-<li>这个指针指向一个虚函数表，此<font color="red">虚函数表与Shape类的定义同时出现</font>。</li>
-<li>此表占空间，从起始位置<code>0xCCFF</code>处开始，也就是<code>vftable_ptr</code>这里存储内容为<code>0xCCFF</code>。</li>
-<li><font color="red">此表只有一个</font>，通过Shape实例化出的<strong>所有对象</strong>都指向<strong>同一个</strong>虚函数表，即所有通过<code>Shape</code>实例化的对象，其<code>vftable_ptr</code>都存储<code>0xCCFF</code>。也就是说每一个实例的<code>vftable_ptr</code>都指向<strong>Shape类</strong>的虚函数表。言外之意，<font color="red">虚函数表属于类，而非类对象</font>。</li>
-</ol>
-<p>在父类<code>Shape</code>的虚函数表中一定定义了一个函数指针：<code>calcArea_ptr</code>，它是<code>calcArea</code>函数入口地址，即<code>calcArea_ptr</code>中存储<code>0x3355</code>（<code>0x3355</code>是<code>Shape类</code>中<code>calcArea</code>函数地址）。调用<code>calcArea</code>时，先通过<code>vftable_ptr</code> 找到虚函数表，再通过位置偏移找到虚函数的入口地址，从而最终找到<code>calcArea</code>计算面积。</p>
-<hr>
-<p>上述过程实例化Shape父类对象。<br>当定义了子类Circle：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;   <span class="comment">// 共有继承Shape</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r);</span><br><span class="line">    <span class="comment">// 没有自己的calcArea</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>注意Circle中并没有<code>calcArea()</code>函数，也就说，<strong>Circle使用Shape类的<code>calcArea</code>计算面积</strong>。<br>当实例化<code>Circle</code>子类对象后。此<code>Circle</code>对象中存储的内容如下：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-2.png" width="600"></div>
-
-<p>因为<code>Circle</code>中没有定义虚函数，但它从父类中继承了虚函数<code>calcArea</code>，所以在实例化一个<code>Circle</code>对象时，也会产生一个虚函数表（<font color="red">这个虚拟性是从父类继承过来的</font>）。注意<strong>此虚函数表是Circle类自己的虚函数表，起始地址为<code>0x6688</code></strong>，而Shape类的虚函数表起始地址是<code>0xCCFF</code>。但是<code>Circle</code>虚函数表中计算面积的指针<code>calcArea_ptr</code>是一样的，都存储<code>0x3355</code>（因为是继承过来的）。<br><br>这就能够保证在<code>Circle</code>中访问父类Shape的<code>calcArea</code>时，也能够通过虚函数表指针找到自己的虚函数表，从而找到父类Shape的<code>calcArea</code>。</p>
-<hr>
-<p>如果子类Circle定义中定义了自己的<code>calcArea</code>函数，即子类的<code>calcArea</code>有自己的函数地址<code>0x4B2C</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;   <span class="comment">// 共有继承Shape</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r);</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>;   <span class="comment">// 定义了自己的calcArea，覆盖父类calcArea</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>当实例化一个Circle类对象时，Shape类没有任何变化(当然，父类不会因为子类的变化而改变呀！)，但是Circle会有变化：如图：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-3.png" width="600"></div>
-
-<p><code>Circle</code>虚函数表是一样的(即表地址是一样的)，但是因为<code>Circle</code>自己定义了自己的<code>calcArea</code>方法，所以<code>calcArea_ptr</code>所指向的也是Circle自己的<code>calcArea</code>地址<code>0x4B2C</code>，换句话说，原先<code>calcArea_ptr</code>中父类的<code>calcArea</code>地址被Circle自己的<code>calcArea</code>地址<strong>覆盖</strong>。所以，此时如果使用Shape的指针指向Circle的对象，执行子类的虚函数<code>calcArea</code>。这便是virtual的功能</p>
-<p>上述过程就是<font color="red">多态原理</font>。</p>
-<h1 id="函数的覆盖与隐藏"><a href="#函数的覆盖与隐藏" class="headerlink" title="函数的覆盖与隐藏"></a>函数的覆盖与隐藏</h1><ul>
-<li><p><strong>覆盖</strong>即上述过程：</p>
-<p>  当Circle没有自己的<code>calcArea()</code>时，Circle的虚函数表中<code>calcArea_ptr</code>存的是<code>0x3355</code>，即父类<code>calcArea()</code>的地址。</p>
-<p>  当Circle有自己的<code>calcArea()</code>时，Circle的虚函数表中<code>calcArea_ptr</code>存的是<code>0x4B2C</code>，即子类自己的<code>calcArea()</code>的地址。<br>  此时虚函数表中，<strong>子类的虚函数地址覆盖父类虚函数地址</strong>。</p>
-</li>
-<li><p><strong>隐藏</strong>与多态无关：</p>
-<p>  与多态（virtual）无关，即当父类子类中没有<code>virtual</code>虚函数时，也就是说这个类我不希望他有多塔的性质，父类子类出现了同名函数，且<font color="red" size="4">父类指针</font>分别指向<font color="red" size="4">子类对象</font>，父类同名函数隐藏了子类同名函数。（毕竟这个子类对象类型是父类，回顾<a href="https://ashburnlee.github.io/categories/C/" target="_blank" rel="noopener">继承篇</a>）</p>
-</li>
-</ul>
-<p><font color="gree" size="5">敲黑板</font>首先判断需不需要这个父类有多态的性质，如果需要，这个父类中一定要有virtual函数，才会有虚函数表。虚函数表属于类，而非对象。</p>
-<h1 id="虚析构函数原理"><a href="#虚析构函数原理" class="headerlink" title="虚析构函数原理"></a>虚析构函数原理</h1><p>回顾上一篇笔记，当父类中<strong>析构函数</strong>都为<strong>virtual析构函数</strong>时，通过父类指针指向子类对象，最后通过<code>delete</code> 接父类指针就可以，先执行子类析构函数紧接着执行父类析构函数。这个过程与<strong>虚函数表</strong>有关。</p>
-<p>强调一下前提：先执行子类析构函数紧接着执行父类析构函数（也就是说通过父类指针执行到了子类的析构函数，这就是为什么先执行子类析构函数）</p>
-<p>在父类Shape中加上虚虚析构函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>&#123;  <span class="comment">// 虚函数</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Shape()&#123;&#125;        <span class="comment">// 虚析构函数</span></span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iEdge;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-
-<p>定义子类，写上子类虚析构函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;   <span class="comment">// </span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">double</span> r)&#123;&#125;;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcAera</span><span class="params">()</span></span>&#123;&#125;;   </span><br><span class="line">    <span class="keyword">virtual</span> ~Circle()&#123;&#125;;         <span class="comment">// 子类虚析构函数</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">double</span> m_dR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>此时用父类指针指向子类对象，且delete接父类指针：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mian</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Shape* shape = <span class="keyword">new</span> Circle(<span class="number">1.0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">delete</span> shape;</span><br><span class="line">    shape = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>虚函数表如何工作：</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-4.png" width="600"></div>
-
-<p>当在Shape中定义了虚析构函数，Shape类的虚函数表中就会有一个Shape类的虚函数指针<code>～Shape_ptr</code>（指向父类析构函数），</p>
-<div align="center"><img src="/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/vftable-5.png" width="600"></div>
-
-<p>同时在Circle类中也会产生一个子类析构函数的函数指针<code>～Circle_ptr</code>（指向子类析构函数）。注意上述<strong>两个析构函数指针同时出现</strong>。</p>
-<p>如果使用Shape的指针指向Circle的对象，执行子类的虚函数calcArea。<font color="red">当delete接Shape指针时，<strong>通过Shape找到Circle类的vftable_ptr</strong>（Shape类指针指向Circle类对象），进而找到虚函数表，最后找到Circle类的析构函数，从而使得Circle类析构函数得意执行。最后执行Shape类析构函数</font>。</p>
-<p>{有疑惑，父类指针指向子类对象，会执行子类虚函数？（delete父类的指针时，程序会去找父类的指针指向的地址，该地址就是子类头部虚函数表指针的地址，进而找到子类虚函数表，最后执行子类析构函数） delete时，发生了什么？回顾<a href="https://ashburnlee.github.io/categories/C/" target="_blank" rel="noopener">继承篇</a>}  </p>
-<h1 id="现实中的虚函数"><a href="#现实中的虚函数" class="headerlink" title="现实中的虚函数"></a>现实中的虚函数</h1><p>明确概念：</p>
-<ol>
-<li>对象的大小：实例化对象中数据成员所占内存大小，（不包括成员函数）。</li>
-<li>对象的地址：通过类实例化一个对象，这个对象的所占的内存单元的首地址。</li>
-<li>对象成员的地址：一个对象中每一个成员所占据的地址。因为每个成员的数据类型不同，所以占用不同大小的内存。</li>
-<li>虚函数表指针：当实例化一个对象后，这个对象的第一个内存中所存储的指针，这个指针就是虚函数表的指针。就是上述所有的<code>vftable_ptr</code>。可以根据这个特点，通过计算对象的大小来证明虚函数表示的存在。</li>
-</ol>
-<h2 id="当没有virtual时"><a href="#当没有virtual时" class="headerlink" title="当没有virtual时"></a>当没有virtual时</h2><p>假如有两个类：</p>
-<p>父类Shape：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span>   </span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Shape()&#123;&#125;</span><br><span class="line">    ~Shape()&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123; </span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;<span class="string">"Shape-&gt;calc area"</span>&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>子类Circle：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">int</span> r)&#123; m_iR = r; &#125;</span><br><span class="line">    ~Circle()&#123;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iR;   </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>执行1：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Shape shape;                  <span class="comment">// 实例化一个对象</span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;<span class="keyword">sizeof</span>(shape)&lt;&lt;<span class="built_in">endl</span>;    <span class="comment">// 该对象的大小</span></span><br><span class="line"><span class="keyword">int</span>* p = (<span class="keyword">int</span>*)&amp;shape;        <span class="comment">// 该对象的地址</span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;p&lt;&lt;<span class="built_in">endl</span>;                <span class="comment">// 对象起始地址</span></span><br></pre></td></tr></table></figure>
-
-<p>结果1：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1                 // 对于一个数据成员都没有的类对象，c++ 用一个内存单元来标记它。 </span><br><span class="line">0x7fff478ce38f    // 对象起始地址</span><br></pre></td></tr></table></figure>
-
-<p>执行2：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Circle <span class="title">circle</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;<span class="keyword">sizeof</span>(circle)&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"><span class="keyword">int</span>* q= (<span class="keyword">int</span>*)&amp;circle;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;q&lt;&lt;<span class="built_in">endl</span>;         <span class="comment">// 指针q中内容</span></span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*q)&lt;&lt;<span class="built_in">endl</span>;  <span class="comment">// 指针q中内容的内容</span></span><br></pre></td></tr></table></figure>
-
-<p>结果2：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">4                  // int 型数据占4个内存单元</span><br><span class="line">0x7ffdca8b3e20    // 对象起始地址</span><br><span class="line">100               // 起始地址中的内容</span><br></pre></td></tr></table></figure>
-<h2 id="当有virtual时"><a href="#当有virtual时" class="headerlink" title="当有virtual时"></a>当有virtual时</h2><p>父类与子类：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shape</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Shape()&#123;&#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Shape()&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">double</span> <span class="title">calcArea</span><span class="params">()</span></span>&#123; &#125; <span class="comment">// 虚函数</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Circle</span> :</span> <span class="keyword">public</span> Shape&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Circle(<span class="keyword">int</span> r)&#123; m_iR = r; &#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~Circle()&#123;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> m_iR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>执行：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Shape shape;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;<span class="keyword">sizeof</span>(shape)&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"><span class="keyword">int</span>* p = (<span class="keyword">int</span>*)&amp;shape;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*p)&lt;&lt;<span class="built_in">endl</span>;   </span><br><span class="line"></span><br><span class="line"><span class="function">Circle <span class="title">circle</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line"><span class="keyword">int</span>* q= (<span class="keyword">int</span>*)&amp;circle;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*q)&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">q++;   </span><br><span class="line">q++;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;(<span class="keyword">unsigned</span> <span class="keyword">int</span>)(*q)&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
-
-<p>返回：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">8              </span><br><span class="line">4198160</span><br><span class="line">4198120</span><br><span class="line">100</span><br></pre></td></tr></table></figure>
-<p>shape对象大小是<code>8</code>，Shape类对象地址中第一个内容是虚函数表地址<code>4198160</code>；<br>Circle类对象地址中的第一个内容是虚函数表地址<code>4198120</code>，之后移动指针2次，便是存储数据成员100的位置。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/29/%E5%9B%9E%E9%A1%BEcpp-%E5%A4%9A%E6%80%81-%E4%BA%8C-%E8%99%9A%E5%87%BD%E6%95%B0%E8%A1%A8/" data-id="ckatsrguz0080xqfzdwbd4ixm" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1037,7 +946,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">24</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1047,7 +956,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">51</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">15</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1066,7 +975,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">25</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">26</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1077,6 +986,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
+          </li>
         
           <li>
             <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
@@ -1092,10 +1005,6 @@
         
           <li>
             <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84%E5%B9%B3%E6%96%B9%E6%A0%B9sqrt-x/">LeetCode-求一个数的平方根sqrt(x)</a>
           </li>
         
       </ul>
