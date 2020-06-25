@@ -64,6 +64,164 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-再看规约-一段规约" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" class="article-date">
+  <time datetime="2020-02-20T02:27:03.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="一阶段规约"><a href="#一阶段规约" class="headerlink" title="一阶段规约"></a>一阶段规约</h1><p>使用原子操作和shared memory的组合可以避免第二个kernel的调用。使用一个（global还是shared）变量记录哪个block已经做完了自己的工作。一旦所有的block都完成后，使用一个block执行最有的规约。</p>
+<p>【CUDA专家手册 269页】</p>
+<h1 id="更简洁的一段规约"><a href="#更简洁的一段规约" class="headerlink" title="更简洁的一段规约"></a>更简洁的一段规约</h1><p>在之前的二段归约中，每一阶段的第一步是每个block的每个thread得到部分和，由于block间是不能同步的，所以才有了第二阶段。</p>
+<p>现在是使用一个寄存器来存储每个thread对应的自己的部分和，最后使用 原子操作对这些部分和再求和：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个thread得到自己的部分和，</span></span><br><span class="line">    <span class="keyword">int</span> partialSum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        partialSum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用原子操作，求部分和的和</span></span><br><span class="line">    atomicAdd(out, partialSum);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">    cudaMemset(res, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line">    reductionKernel&lt;&lt;&lt;numBlock, threadsPerBlock&gt;&gt;&gt;(answer, in ,N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意一点，要写入<code>out数组</code>，那么<code>out数组</code>的初始值必须设为0；</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" data-id="ckatsrgrf0018xqfz2qubhfs7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-再看规约-循环展开" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/" class="article-date">
+  <time datetime="2020-02-20T02:23:04.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/">CUDA-再看规约-循环展开</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="循环展开"><a href="#循环展开" class="headerlink" title="循环展开"></a>循环展开</h1><p>循环展开减少了循环中的变量的判断，自加等其他操作，是提升性能一个手段。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">1000</span>; i++)&#123;</span><br><span class="line">    a[i] = b[i] + c[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将循环次数减少一半：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">1000</span>; i+=<span class="number">2</span>)&#123;</span><br><span class="line">    a[i] = b[i] + c[i];</span><br><span class="line">    a[i+<span class="number">1</span>] = b[i+<span class="number">1</span>] + c[i+<span class="number">1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面的两段规约法，展示使用完全的循环展开。</p>
+<h1 id="再看规约-两段规约"><a href="#再看规约-两段规约" class="headerlink" title="再看规约-两段规约"></a>再看规约-两段规约</h1><p>类似与<code>点积</code>中的两段法。两段规约同样使用shared memory。</p>
+<p>过程见下图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/pic14.png" width="700"></div>
+
+<p>实现上图过程：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* in: 待读取的数组。out: 待写入的数组。N: in数组的长度</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 此处是一个未分配大小的shared memory</span></span><br><span class="line">    __shared__ <span class="keyword">int</span> buffer[];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第一阶段，</span></span><br><span class="line">    <span class="keyword">int</span> sum=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">    <span class="comment">// 使用stride loop</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">    buffer[threadIdx.x] = sum;</span><br><span class="line">    <span class="comment">// 等待得到所有threads的sum值</span></span><br><span class="line">    <span class="comment">// block与block之间怎样同步呢？这里不需要同步</span></span><br><span class="line">    __syncthreads();   </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二阶段，规约求每个block的最终值</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockDim.x &gt;&gt; <span class="number">1</span>; i!=<span class="number">0</span>; i&gt;&gt;=<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (threadIdx.x &lt; i)&#123;</span><br><span class="line">            buffer[threadIdx.x] += buffer[threadIdx.x + i];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 最后一步，将每个block对应的buffer中的第一个元素放入out数组</span></span><br><span class="line">    <span class="comment">// 此时out数组中存放的是每个block的最终值。</span></span><br><span class="line">    <span class="keyword">if</span> (threadIdx.x == <span class="number">0</span>)</span><br><span class="line">        out[blockIdx.x] = buffer[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分析说明：</p>
+<ul>
+<li>强调：第一阶段的<font color="red" size="4">blockDim.x应该是32的倍数</font>，每个block对应的<font color="red" size="4">Shared memory大小也要是32的倍数</font>。这样才能保证<font color="red" size="4">在第二阶段所处理的数据是整齐的</font>。</li>
+<li>第二阶段结束后block与block间结果怎样同步？kernel函数执行完毕，表示两个block都得到了结果，即同步了。所以一种方式的到最终结果是两次调用这个kernel函数。见下面code。</li>
+<li>对out数组的最终处理，可以考虑将out传回host后在CPU中计算，就像<code>向量点积</code>。也可以使用一个block，第二次调用上述kernel函数，得到最终值。（我感觉不如传回CPU）。</li>
+<li>shared memory 的访问索引是<code>threadIdx.x</code>。</li>
+<li>使用<code>blockDim.x &gt;&gt; 1</code>和<code>i&gt;&gt;=1</code>，这属于指令优化。</li>
+<li>kernel中的Shared memory可以不分配大小，调用kernel函数时再制定大小。</li>
+</ul>
+<p>在Host中调用kernel函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">reduction</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* partial, <span class="keyword">int</span>* in, </span></span></span><br><span class="line"><span class="function"><span class="params">                <span class="keyword">size_t</span> N, <span class="keyword">int</span> numBlocks, <span class="keyword">int</span> numThreads)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sharedSize = numThreads*<span class="keyword">sizeof</span>(<span class="keyword">int</span>);</span><br><span class="line">    <span class="comment">// 第一个kernel得到所有block对应的buffer，</span></span><br><span class="line">    <span class="comment">// 这些block之间没有同步，所以只有所有的block的buffer都得到了</span></span><br><span class="line">    <span class="comment">// 这个kernel才时执行结束，也就是说，为了同步所有的block的buffer，</span></span><br><span class="line">    <span class="comment">// 只能再调用一次这个和函数了。</span></span><br><span class="line">    reductionKernel&lt;&lt;&lt;numBlocks, numThreads, sharedSize&gt;&gt;&gt;</span><br><span class="line">                    (partial, in, N);</span><br><span class="line">    reductionKernel&lt;&lt;&lt;<span class="number">1</span>, numThreads, sharedSize&gt;&gt;&gt;</span><br><span class="line">                    (res, partial, numBlocks);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看到了吧：</p>
+<ul>
+<li>第二次调用kernel只是用一个block。</li>
+<li>注意：此处在<code>&lt;&lt; , , &gt;&gt;&gt;</code>中出现了第三个参数，由于在kernel中，没有指定shared memory的大小，所以在调用kernel函数时要制定大小了。</li>
+<li>这个kernel中的第二个for循环中，循环的之后阶段，当threads数小于等于<code>32</code>时，可以特殊处理，此时的所有活动threads在一个warp中，所以不需要同步。细节间<code>32特殊处理规约</code>。</li>
+<li>补充：<font color="orange">每个block中的warp时按照lockstep的方式执行每条指令</font>。</li>
+</ul>
+<h1 id="再看规约-第二阶段循环展开"><a href="#再看规约-第二阶段循环展开" class="headerlink" title="再看规约-第二阶段循环展开"></a>再看规约-第二阶段循环展开</h1><p><font color="orange" size="4">优化意识</font>：当threads数小于等于<code>32</code>时，也就是<code>threadIdx.x从0到31</code>时，可以特殊处理。这种处理就是循环展开。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* in: 待读取的数组。out: 待写入的数组。N: in数组的长度</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 此处是一个未分配大小的shared memory</span></span><br><span class="line">    __shared__ <span class="keyword">int</span> buffer[];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第一阶段，</span></span><br><span class="line">    <span class="keyword">int</span> sum=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">    <span class="comment">// 使用stride loop</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">    buffer[threadIdx.x] = sum;</span><br><span class="line">    <span class="comment">// 等待得到所有threads的sum值</span></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二阶段，规约求每个block的最终值, 直到i=32.</span></span><br><span class="line">    <span class="comment">// 之后就是特殊处理了</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockDim.x &gt;&gt; <span class="number">1</span>; i&gt;<span class="number">32</span>; i&gt;&gt;=<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (threadIdx.x &lt; i)&#123;</span><br><span class="line">            buffer[threadIdx.x] += buffer[threadIdx.x + i];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第三步，当元素个数小于等于32时：</span></span><br><span class="line">    <span class="comment">// 这个展开避免了循环控制的开销，和thread同步的逻辑</span></span><br><span class="line">    <span class="keyword">if</span>(threadIdx.x &lt; <span class="number">32</span>)&#123;</span><br><span class="line">        <span class="keyword">volatile</span> <span class="keyword">int</span>* wsSum = buffer;</span><br><span class="line">        <span class="keyword">if</span>(blockDim.x &gt; <span class="number">32</span>)</span><br><span class="line">            wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">32</span>];</span><br><span class="line">        <span class="comment">// 一下5条指令，一定都会被执行，不过也可以加上if条件。</span></span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">16</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">8</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">4</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">2</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadIdx.x == <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">volatile</span> <span class="keyword">int</span>* wsSum = buffer;</span><br><span class="line">            out[blockIdx.x] = wsSum[<span class="number">0</span>];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意：当编写warp同步的code时，必须对shared memory 的指针使用<code>volatile</code>关键字。这个关键字告诉编译器必须将<code>wsSum[threadIdx.x]</code>的值存回global中。如果没有<code>volatile</code>，为什么不能得到正确结果？</p>
+<p>第三步为什么正确，看下图之前，看下假设：</p>
+<ul>
+<li>下图将大小为32的warp假设为4，即<code>warp size=4</code>：</li>
+<li>所展示的情况是从上一个图片中的第一阶段的结果开始，即<code>blockDim.x=8</code>.</li>
+</ul>
+<p>对于code中的第三步，见下图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/pic15.png" width="700"></div>
+
+<p>从上述code第二阶段的循环开始：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">blockDim.x=8;</span><br><span class="line"><span class="keyword">for</span>(i=8&gt;&gt;1; i&gt;4; i&gt;&gt;=1)&#123;</span><br><span class="line">    i=4, i!&gt;4, 退出循环;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">对于 threadIdx.x&lt;4，blockDim.x&gt;4，即 0 1 2 3. 执行下面操作：</span><br><span class="line">wsSum[0 1 2 3] += wsSum[(0 1 2 3) + 4];</span><br><span class="line">wsSum[0 1 2 3] += wsSum[(0 1 2 3) + 2];</span><br><span class="line">wsSum[0 1 2 3] += wsSum[(0 1 2 3) + 1];</span><br></pre></td></tr></table></figure>
+
+<p>说明：</p>
+<ul>
+<li>其中执行单元只有这个block 中的第一个warp。</li>
+<li>最终需要的时每个block对应buffer是<font color="orange">第一个值</font>，所以除第一个位置以外的位置，其值是无意义的。但是由于warp中的线程执行相同的指令，所以warp中其他threads也工作了，只不过这些结果我并不需要。</li>
+<li>再强调：第一阶段的<font color="red" size="4">blockDim.x应该是32的倍数</font>，每个block对应的<font color="red" size="4">Shared memory大小也要是32的倍数</font>。这样才能保证<font color="red" size="4">在第二阶段所处理的数据是整齐的</font>。</li>
+</ul>
+<p>再次证明，用<font color="orange">假设小的数值，用小的例子，小的数据</font>有助于理解，</p>
+<h1 id="再看规约-第二阶段进一步循环展开"><a href="#再看规约-第二阶段进一步循环展开" class="headerlink" title="再看规约-第二阶段进一步循环展开"></a>再看规约-第二阶段进一步循环展开</h1><p>使用<code>template</code>把上述实现的第二阶段的for循环，做循环展开，这个展开是完全的展开。思路与上述实现一样，warp同步的优化方案就更近一步了。code如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">int</span> threadsPerBlock&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* in, <span class="keyword">int</span>* out, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    __shared__ <span class="keyword">int</span> buffer[];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第一步，</span></span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> id = tid + threadsPerBlock * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = threadsPerBlock * gridDim.x; </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = id; i&lt; N; i += stride)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">    buffer[tid] = sum;</span><br><span class="line">    __syncthreads();</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 第二步，循环展开, 从1024开始，</span></span><br><span class="line">    <span class="comment">// 每个block最多threads个数是1024（就目前的GPU架构）</span></span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">1024</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">512</span>)   <span class="comment">// tid 小于512 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">512</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">512</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">256</span>)  <span class="comment">// tid 小于256 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">256</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">256</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">128</span>)  <span class="comment">// tid 小于128 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">128</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">128</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">64</span>)  <span class="comment">// tid 小于64 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">64</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 第三步。warp同步操作，不需要__syncthreads()</span></span><br><span class="line">    <span class="keyword">if</span>( tid&lt;<span class="number">32</span> )&#123;     <span class="comment">// tid 小于32 的threads开始工作</span></span><br><span class="line">        <span class="keyword">volatile</span> <span class="keyword">int</span>* wsSum = buffer;</span><br><span class="line">        <span class="comment">// 下面的6条if语句都会被执行，</span></span><br><span class="line">        <span class="comment">// 看第一个if的64与第二步最后的64连接上了。</span></span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">64</span>) wsSum[tid] += wsSum[tid + <span class="number">32</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">32</span>) wsSum[tid] += wsSum[tid + <span class="number">16</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">16</span>) wsSum[tid] += wsSum[tid + <span class="number">8</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">8</span>) wsSum[tid] += wsSum[tid + <span class="number">4</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">4</span>) wsSum[tid] += wsSum[tid + <span class="number">2</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">2</span>) wsSum[tid] += wsSum[tid + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">if</span> (tid == <span class="number">0</span>) out[blockIdx.x] = wsSum[<span class="number">0</span>];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><font color="orange">完全展开， 避免了循环控制的开销，第三步的展开还避免了thread同步的逻辑</font>。</p>
+<p>这里的执行有个特点，看<code>if</code>判断中的数字：<code>1024，512，256，128，64，32，16，8，4，2，1</code>，从逻辑看，一定是从大到小排列的，而且执行的时候，如果有一个<code>if</code>满足，那么这个<code>if</code>及其之后的<code>if</code>语句都会被执行。过程看下图。</p>
+<p>第三次强调：第一阶段的<font color="red" size="4">blockDim.x应该是32的倍数</font>，每个block对应的<font color="red" size="4">Shared memory大小也要是32的倍数</font>。这样才能保证<font color="red" size="4">在第二阶段所处理的数据是整齐的</font>。</p>
+<p>所以设<code>threadPerBLock</code>为<code>512</code>时的示意图如下：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/pic16.png" width="700"></div>
+
+<p>第三步中，不需要<code>__syncthreads()</code>，一个warp中的threads天然同步。</p>
+<p>这个kernel是个模板kernel，在被host函数调用时，要指定<code>threadsPerBlock</code>的值。</p>
+<p>调用kernel的host函数也必须是一个模板函数： </p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">int</span> threadsPerBlock&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">callReduction</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* partial, </span></span></span><br><span class="line"><span class="function"><span class="params">                    <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N, </span></span></span><br><span class="line"><span class="function"><span class="params">                    <span class="keyword">int</span> numBlocks)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 第一阶段，得到所有block对应的shared memory中的值</span></span><br><span class="line">    reductionKernel&lt;numBlocks&gt;&lt;&lt;&lt;numBlocks, </span><br><span class="line">                                threadsPerBlocks, </span><br><span class="line">                                <span class="function">threadsPerBlocks*<span class="title">sizeof</span><span class="params">(<span class="keyword">int</span>)</span></span></span><br><span class="line">                                &gt;&gt;&gt;(partial, in, N);</span><br><span class="line">    <span class="comment">// 两个阶段串行</span></span><br><span class="line">    <span class="comment">// 第二阶段，对上一步中partial中的所有值，执行规约</span></span><br><span class="line">    reductionKernel&lt;numBlocks&gt;&lt;&lt;&lt;<span class="number">1</span>, </span><br><span class="line">                                threadsPerBlocks, </span><br><span class="line">                                <span class="function">threadsPerBlocks*<span class="title">sizeof</span><span class="params">(<span class="keyword">int</span>)</span></span></span><br><span class="line">                                &gt;&gt;&gt;(res, partial, numBlocks);             </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用switch语句，按照不同 block大小出发对应的模板函数。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* partial, </span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N, </span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span> numBlocks, <span class="keyword">int</span> threadsPerBlock)</span></span>&#123;</span><br><span class="line">    <span class="keyword">switch</span>( theadsPerBlock )&#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">1</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">2</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">2</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">4</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">4</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">8</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">8</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">16</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">16</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">32</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">32</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">64</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">64</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">128</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">128</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">256</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">256</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">512</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">512</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1024</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">1024</span> &gt;(...);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>之所以不能再一个kernel中获得最后结果，是因为，<font color="red">block与block之间是没有同步的</font>。而第二阶段的规约需要所有block的buffer中第一个值，集合在一起，作为前提，如第一幅图所示。可不可以只一阶段就完成任务呢。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/" data-id="ckatsrgtz0075xqfzc2thc1ab" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-ComputeCapacity-SM-version6-1的参数值" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" class="article-date">
@@ -883,153 +1041,6 @@
 
 
   
-    <article id="post-CUDA-资源分配" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" class="article-date">
-  <time datetime="2020-02-20T01:27:25.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/">CUDA-资源分配</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>GPU系统中的各种<font color="red" size="4">内存数量</font>约束了整个系统中的<code>block</code>数量个<code>threads</code>数量。每个<code>thread</code>使用各种存储的多少影响着可以使用<code>threads</code>的数量。 </p>
-<p>SM资源分割:</p>
-<p>GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大，所以每个thread不管使用多少global memory，对可调用的threads数量几乎没有影响（本来设计kernel的原则之一就是最少的使用Global memory）。</p>
-<p>增加资源占量后（<code>thread</code>占用<code>Registers</code>的数量或<code>block</code>占用<code>Shared memory</code>的数量）导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降。使用<code>CUDA Occupancy Calculator</code>工具可以修改某一资源的数值，得到其他资源的相应变化。</p>
-<ol>
-<li><p>一个<code>SM</code>中的Registers数量是有限的</p>
-<p> 这些寄存器要被划分给这个SM中的所有threads。所以如果每个thread使用的寄存器过多时，这个SM中实际使用的threads数会减少，使得资源（应用程序对GPU处理单元）占用率下降。</p>
-<p> 比如一个SM中有768个threads，含有8k个registers。要想最大并行化（最大化占用率），即使用所有的threads，那么就要保证每个thread分配最多10个registers，这种情况下共使用<code>10x768=7680</code>个registers，没有超过8k个。</p>
-<p> 但是如果每个threads分配11个registers，此时<code>11x768=8448</code>个registers，此时算数上最多只能使用727个threads（<code>8000/11=727.27</code>），实际情况会比727还要少，因为超出限制后，threads数的减少是以<font color="red" size="4">block为粒度</font>的减少：如果一个block有256个threads，那么可用threads数就不是<code>从768减少到727</code>，而是<code>从768减少到512</code>，只要threads数减少，就以<font color="red">block为单位（粒度）</font>地减少。如果要减少threads超过256（一个block的threads数），如257，那么实际就要减少<code>2个block（256+1，2个blocks）</code>。</p>
-<p> 分析一个资源分配的例子：一个SM有<code>768</code>个threads，<code>8000</code>个registers。如果每个threads使用<code>11</code>个registers，并且每个block含有<code>256</code>个threads。（上面计算过：最大并行化的register的分配是每个thread使用10个registers。）</p>
-<ul>
-<li><p>一个SM驻扎的threads个数有多少</p>
-<p>  可用threads个数：<code>8000/11=727</code>个threads，而且<code>2x256=512</code>，<code>3x256=768</code>超过了<code>727</code>，所以这个SM驻扎<code>2</code>个blocks（512threads，与上述相符合）。</p>
-</li>
-<li><p>一个SM驻扎的warp数量有多少</p>
-<p>  <code>2</code>个blocks共有<code>512</code>个threads，所以<code>512/32=16</code>个warps，这个SM驻扎<code>16</code>个warps。而理论极限是驻扎<code>768/32=24</code>个warps。16远小于24.</p>
-</li>
-<li><p>warp数量减少意味着什么</p>
-<p>  通过上述计算，没有合理分配registers的结果是，存在资源的浪费，不能最大并行化。</p>
-</li>
-</ul>
-</li>
-</ol>
-<ol start="2">
-<li><p>同样的，一个<code>SM</code>中的<code>shared memory</code>的大小也是有限的</p>
-<p> 回忆：在同一个<code>block</code>的<code>threads</code>共享同一块<code>shared memory</code>。</p>
-<p> 一个SM中实际使用的block数量也是与<font color="orange">每个block被分配的shared memory的大小有关</font>。</p>
-<p> 比如：一个SM有<code>8</code>个blocks，可使用shared memory为<code>16kB</code>。所以想要充分使用所有的blocks，每个block被分配shared memory最多为<code>2kB（16kB/8）</code>. 换句话说，为了最大并行化，充分使用SM的计算资源，这个SM中每个block可使用的shared memory最多为<code>2kB</code>。</p>
-<p> 假如，每个block使用了<code>4kB</code>，则实际只是用了<code>4个（16kB/4kB）blocks</code>，相较于上一种中情况只是用了一半的threads。</p>
-<p> 假如，每个block使用<code>5kB</code>，则实际只用了<code>3个（16kB/5kB）blocks</code>，此种情况可使用的threads就更少了。</p>
-</li>
-</ol>
-<p>回忆实战中，有一回，对kernel的配置没有超过硬件极限，但是实际上每个block只能使用256个threads，超过256，程序就不会得到正确结果。当时不清楚为什么，通过这篇笔记，可以解释了。是因为每个threads使用了过多的Registers（当时程序中没有使用Shared memory）的原因。导致可用threads数减少。</p>
-<p><font color="purple" size="5">敲黑板</font>Registers数量和每个block分配到的shared memory的大小，<font color="red">共同约束了</font>整个系统中的block数量个threads数量。实际应用中也要尽量少的使用存储资源，从而最大化并行程度。<font color="red">内存是竞争资源</font></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" data-id="ckatsrgru002bxqfz2lf84eyo" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-安装使用MinGW-Cmake在windows" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/" class="article-date">
-  <time datetime="2020-01-19T07:34:42.000Z" itemprop="datePublished">2020-01-19</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/">安装使用MinGW Cmake在windows</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在Windows中不能直接使用gcc，g++编译器，即使使用CLion，也同样需要配置toolchain。除了使用Virtual Studio 之外，还有相对轻量级的工具，比如MinGW 和 Cygwin。</p>
-<ul>
-<li><p>安装cmake</p>
-<p>  并且把其安装目录的<code>bin</code>目录添加到系统路径中。</p>
-<p>  安装CMake后，CMake Documentation存在于安装目录中。其中，阅读CMake Tutorial，里边有CMake的使用细节。或者阅读<a href="https://cmake.org/cmake/help/latest/guide/tutorial/index.html" target="_blank" rel="noopener">在线文档</a>。 </p>
-</li>
-<li><p>安装MinGW</p>
-<p>  从这里 <a href="https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/" target="_blank" rel="noopener">https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/</a><br>  直接下载，免安装。解压到某个位置，进入<code>bin</code>目录，可以看到<code>gcc.exe</code> 和 <code>g++.exe</code>。等其他组件。</p>
-<p>  将这个<code>bin</code>目录的路径加入到系统环境变量中。</p>
-<p>  额外一步：进入mingw的<code>bin</code>目录，找到<code>mingw32-make.exe</code>，将其复制一份并且重命名为<code>make.exe</code>。如此便可以使用<code>make</code>命令代替<code>mingw32-make</code>了，</p>
-</li>
-<li><p>vim</p>
-<p>  如果习惯使用vim，安装vim后，也要将其<code>bin</code>目录加入到环境变量。</p>
-</li>
-<li><p>重启机器使生效</p>
-</li>
-<li><p>测试</p>
-<p>  在命令行中：</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cmake --version</span><br><span class="line">g++ --version</span><br><span class="line">gcc --version</span><br><span class="line">mingw32-make --version</span><br><span class="line">vim --version</span><br></pre></td></tr></table></figure>
-<p>  应该返回正确内容。</p>
-</li>
-<li><p>使用</p>
-<p>  创建project，编辑CMakeFiles.txt。project结构与在<a href="https://ashburnlee.github.io/2019/07/29/cmake%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E5%8F%8ACMakeLists-txt%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/" target="_blank" rel="noopener">Linux下使用cmake</a>是一样的。</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir test</span><br><span class="line">cd test</span><br><span class="line">vim main.cpp</span><br><span class="line">vim CMakeFiles.txt</span><br></pre></td></tr></table></figure>
-
-<p>  编译执行：</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mkdir build</span><br><span class="line">cd build</span><br><span class="line">cmake -G &quot;MinGW Makefiles&quot; ..</span><br><span class="line">make</span><br><span class="line">.\test.exe</span><br></pre></td></tr></table></figure>
-
-<p>  其中<code>cmake</code>如果报错，将目录下的已存在的CMakeCache.txt删去，从新执行即可。<br>  应该可以返回期望结果。</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/" data-id="ckatsrgt10053xqfzfnrm0hqi" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1045,7 +1056,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">25</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1055,7 +1066,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">52</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1065,7 +1076,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
     </div>
   </div>
 
@@ -1074,7 +1085,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">26</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">28</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1087,6 +1098,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
           </li>
         
@@ -1095,15 +1114,7 @@
           </li>
         
           <li>
-            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k-Kth-lagest</a>
           </li>
         
       </ul>

@@ -64,6 +64,224 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Linux打开文本文件乱码处理" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/28/Linux%E6%89%93%E5%BC%80%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E4%B9%B1%E7%A0%81%E5%A4%84%E7%90%86/" class="article-date">
+  <time datetime="2019-07-28T09:26:59.000Z" itemprop="datePublished">2019-07-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/07/28/Linux%E6%89%93%E5%BC%80%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E4%B9%B1%E7%A0%81%E5%A4%84%E7%90%86/">Linux打开文本文件乱码处理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>本笔记记录了从windows拷贝含中文的文本文件到linux中，中文乱码的处理。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>windows中的中文默认用<code>GBK</code>，<code>GB2312</code>，<code>GB18030</code>或其他本地编码，而这些编码集默认不能在linux中被识别。</p>
+<p>为什么会有中文编码集。字符编码集的发展可以分为三个阶段</p>
+<ul>
+<li>ASCII</li>
+<li>Extended ASCII</li>
+<li>字符编码集的国际化</li>
+</ul>
+<p><code>ASCII</code>码使用7bits编码，<code>2^7=128</code>，包括95个可打印字符和33个不可打印字符。很早期计算机使用并不广泛，所以编码128个字符足够。但随着计算机发展，很多功能性符号(加减乘除)和欧洲非英语国家语言中带声调的字符就无法表示了。所以将使用7 bits编码扩展为使用8 bits编码，这就是第一次对<code>ASCII</code>码的扩充，即<code>Extended ASCII</code>。</p>
+<p><code>Extended ASCII</code>编码个数从128 增加到255，包括数学运算符，带音标的欧洲字符，表格符和其他。但像中日韩字符还是无法编码。中文编码集有<code>GB2312</code>，<code>GBK</code>等，但这些都是本地化的编码，如果国外用户想访问中文网站，而客户端未安装相应的编码集，那么国外用户只会看到乱码。</p>
+<p>国际化的字符编码集即<code>Unicode</code>，兼容全球的字符集。它定义了世界通用符号集，用<code>UTF-8</code>，<code>UTF-16</code>等实现。一般使用<code>UTF-8</code>编码。</p>
+<h2 id="处理方法"><a href="#处理方法" class="headerlink" title="处理方法"></a>处理方法</h2><p>第一种方法从源头修改。在windows中编辑中文文本时更改编码格式为<code>UTF-8</code>。</p>
+<p>第二种方法当不能从源头更改时，比如拷贝的他人的文件。该情况下从接收端即linux系统中更改文件编码格式。<br>假如有一个从windows拷贝来的中文文本文件<code>original.txt</code>，linux中打开乱码，如</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*Ä£·ÂmnistÊýŸÝŒ¯ÖÆ×÷×ÔŒºµÄÊýŸÝŒ¯ŽúÂë*/</span></span><br><span class="line">ŽúÂëÒ»¹²°üº¬ÈýžöÎÄŒþ</span><br><span class="line">	image2BinaryData.h</span><br><span class="line">	image2BinaryData.cpp</span><br><span class="line">	main.cpp</span><br><span class="line"></span><br><span class="line">ÆäÖÐ£ºimage2BinaryData.h ºÍ image2BinaryData.cpp ÀïÃæ¶šÒåÁËÏà¹ØµÄÀàºÍº¯Êý£¬¿ÉžùŸÝ×ÔŒºµÄÊýŸÝŒ¯×ÔÐÐÐÞžÄ</span><br><span class="line"></span><br><span class="line">Ê¹ÓÃ·œ·š£º</span><br><span class="line">	ÔÚMain.hÎÄŒþÖÐÉèÖÃºÃ×ÔŒºµÄÍŒÆ¬ŽóÐ¡ÒÔŒ°ÏÈ¹ØµÄÎÄŒþÂ·Ÿ¶£¬±àÒëÔËÐÐŒŽ¿É¡£</span><br><span class="line"></span><br><span class="line">ËµÃ÷£º</span><br><span class="line">	ŽËŽúÂëÖ»ÊÊºÏËùÓÐÍŒÆ¬ŽóÐ¡Ò»ÖÂµÄ»Ò¶ÈÍŒÏñ£¬²»ÊÊºÏ²ÊÉ«ÍŒÏñ£¬¿É¶ÔÏàÓŠÎ»ÖÃ×ÔÐÐœøÐÐÐÞžÄ¡£</span><br><span class="line">	ÍŒÆ¬ÃüÃû¹æÔò£º<span class="number">0</span>_00001.jpg£º<span class="number">0</span>±íÊŸ¶ÔÓŠÍŒÆ¬µÄÄÚÈÝ£¬ŒŽ±êÇ©£»<span class="number">00001</span>±íÊŸ±êÇ©Îª<span class="number">0</span>µÄÍŒÆ¬ÖÐµÚ<span class="number">1</span>ÕÅÍŒÆ¬£¬<span class="number">00002</span>ÎªµÚ<span class="number">2</span>ÕÅÍŒÆ¬£¬ÒÔŽËÀàÍÆ........</span><br><span class="line">	ŽËŽúÂëÊÊºÏÀà±ðÊýÉÙÓÚµÈÓÚ<span class="number">10</span>µÄÊýŸÝŒ¯£¬Èç¹ûÀà±ðÊý¶àÓÚ<span class="number">10</span>ÖÖ£¬¿É×ÔÐÐÐÞžÄŽúÂëÖÐÏàÓŠ²¿·Ö</span><br><span class="line"></span><br><span class="line">ÔËÐÐ»·Ÿ³£ºwin10 + VS2015 + Opencv3<span class="number">.1</span><span class="number">.0</span></span><br></pre></td></tr></table></figure>
+
+<p>首先判断文件具体是用的那种编码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ chardet3 original.txt</span><br></pre></td></tr></table></figure>
+<p>返回如下，表示有99%的信心认为<code>original.txt</code>是用<code>GB2312</code>编码的。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">original.txt: GB2312 with confidence 0.99</span><br></pre></td></tr></table></figure>
+
+<p>然后用如下命令将编码格式从<code>GB2312</code>变到<code>UTF-8</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ iconv -f GB2312 -t utf-8 original.txt -o file_utf-8.txt</span><br></pre></td></tr></table></figure>
+<p>新的文件<code>file_utf-8.txt</code>会被创建。Linux中打开它</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*模仿mnist数据集制作自己的数据集代码*/</span></span><br><span class="line">代码一共包含三个文件</span><br><span class="line">	image2BinaryData.h</span><br><span class="line">	image2BinaryData.cpp</span><br><span class="line">	main.cpp</span><br><span class="line"></span><br><span class="line">其中：image2BinaryData.h 和 image2BinaryData.cpp 里面定义了相关的类和函数，可根据自己的数据集自行修改</span><br><span class="line"></span><br><span class="line">使用方法：</span><br><span class="line">	在Main.h文件中设置好自己的图片大小以及先关的文件路径，编译运行即可。</span><br><span class="line"></span><br><span class="line">说明：</span><br><span class="line">	此代码只适合所有图片大小一致的灰度图像，不适合彩色图像，可对相应位置自行进行修改。</span><br><span class="line">	图片命名规则：<span class="number">0</span>_00001.jpg：<span class="number">0</span>表示对应图片的内容，即标签；<span class="number">00001</span>表示标签为<span class="number">0</span>的图片中第<span class="number">1</span>张图片，<span class="number">00002</span>为第<span class="number">2</span>张图片，以此类推........</span><br><span class="line">	此代码适合类别数少于等于<span class="number">10</span>的数据集，如果类别数多于<span class="number">10</span>种，可自行修改代码中相应部分</span><br><span class="line"></span><br><span class="line">运行环境：win10 + VS2015 + Opencv3<span class="number">.1</span><span class="number">.0</span></span><br></pre></td></tr></table></figure>
+
+<p>明白背后<strong>原理</strong>就有的放矢了，至少知道如何提问从而找到答案。</p>
+<p>完成<br>Linux打开文本文件乱码处理</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/28/Linux%E6%89%93%E5%BC%80%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E4%B9%B1%E7%A0%81%E5%A4%84%E7%90%86/" data-id="ckatsrgse003qxqfz3fwt5aje" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Linux下使用hexo创建静态博客并部署到github" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" class="article-date">
+  <time datetime="2019-07-28T04:36:32.000Z" itemprop="datePublished">2019-07-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/">Linux下使用hexo创建静态博客并部署到github</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇博客记录了在linux系统下，安装<code>hexo</code>及所需必要工具，并创建local博客，最终部署到远端如github的整个过程。</p>
+<h1 id="1-安装必要工具"><a href="#1-安装必要工具" class="headerlink" title="1. 安装必要工具"></a>1. 安装必要工具</h1><p>使用root权限</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ root -s</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-1-下载node-js-root"><a href="#1-1-下载node-js-root" class="headerlink" title="1.1 下载node.js (root)"></a>1.1 下载node.js (root)</h2><p>下载<a href="https://nodejs.org/en/" target="_blank" rel="noopener">node.js</a>安装包到我的Applications目录，<br>解压并设置软连接</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ tar -xvf node-v10.16.0-linux-x64.tar.xz </span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/npm /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/node /usr/<span class="built_in">local</span>/bin/</span><br></pre></td></tr></table></figure>
+
+<p>检查是否安装好</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ node -v</span><br><span class="line">$ npm -v</span><br></pre></td></tr></table></figure>
+
+<p>若无误，进行下一步。</p>
+<h2 id="1-2-安装hexo-root"><a href="#1-2-安装hexo-root" class="headerlink" title="1.2 安装hexo (root)"></a>1.2 安装hexo (root)</h2><p>使用npm安装<a href="https://hexo.io" target="_blank" rel="noopener">hexo</a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
+
+<p>如果终端提示平台不兼容，忽略它。可以转到<code>nodejs</code>的<code>bin</code>目录下，<code>hexo</code>存在表示<code>hexo</code>已经下载好了。<br>建立软连接，后检查。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ln -s /home/YOURNAME/Applications/node-v10.16.0-linux-x64/bin/hexo /usr/<span class="built_in">local</span>/bin/</span><br><span class="line">$ hexo -v</span><br></pre></td></tr></table></figure>
+<p>当不能正常下载时，用<code>cnpm</code>下载，先下载<code>cnpm</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g cnpm --registry=https://registry.npm.taobao.org</span><br></pre></td></tr></table></figure>
+<p>只需将<code>npm</code>换为<code>cnpm</code><br><br>若无误， 进行下一步。</p>
+<h1 id="2-生成本地静态博客"><a href="#2-生成本地静态博客" class="headerlink" title="2. 生成本地静态博客"></a>2. 生成本地静态博客</h1><h2 id="初始化博客-root"><a href="#初始化博客-root" class="headerlink" title="初始化博客 (root)"></a>初始化博客 (root)</h2><p>在目录中新建一个存放所有blogs的目录, 并进入该目录，之后的所有操作都在其中。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir blogs</span><br><span class="line">$ <span class="built_in">cd</span> blogs</span><br></pre></td></tr></table></figure>
+
+<p>第一次安装使用hexo需要初始化。初始化后该目录中回生成_config.yml, source 等文件。<br>开启本地服务。本地服务是用来显示blog的最终效果，并且可以及时修正。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo init</span><br><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>使用终端给出的端口登录，可以看到hexo为我们创建的默认博客: <code>Hello World</code>。</p>
+<p>当关闭本地端口后，用下面命令清理。尤其在页面显示不正常时</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br></pre></td></tr></table></figure>
+
+<h2 id="建立第一篇本地静态博客-所有用户"><a href="#建立第一篇本地静态博客-所有用户" class="headerlink" title="建立第一篇本地静态博客 (所有用户)"></a>建立第一篇本地静态博客 (所有用户)</h2><p>确保现在仍在blogs/目录中， 使用如下命令新建博客</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My_first_blog"</span></span><br></pre></td></tr></table></figure>
+<p>此时就可以在nvim(或vim)使用markdown写博客了</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nvim <span class="built_in">source</span>/_post/My_first_blog.md</span><br></pre></td></tr></table></figure>
+
+<p>当然可以转到<code>My_first_blog.md</code> 所在目录用其他编辑器写内容，但记得编辑结束后一定退回到blogs/目录。</p>
+<p>确保仍在blogs/目录中，使用如下命令生成静态博客。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>后开启本地服务。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>打开给出端口，可以显示所创建的静态博客。目前会有两篇博客: <code>Hello World</code> 和 <code>My_first_blog</code>。到此为止，本地静态博客已经成功初始化，并创建了自己的第一篇博客。<br><br>静态博客只是便于检查，修改博客。我们的目的是要把博客部署到服务上。</p>
+<h1 id="3-部署到github-root"><a href="#3-部署到github-root" class="headerlink" title="3. 部署到github (root)"></a>3. 部署到github (root)</h1><p>这部分假设你已经有github账户，本地已经安装github，并可以熟练使用github。<br>如果未安装，安装</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get install git-core</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-1-为静态博客新建repository"><a href="#3-1-为静态博客新建repository" class="headerlink" title="3.1. 为静态博客新建repository"></a>3.1. 为静态博客新建repository</h2><p>新建repository并命名。个人博客的repo名是有规定的：<code>OWNER.github.io</code>，<code>OWNER</code> 一定是你的github账户名。点击<code>create repository</code>。此时一个空的repo建好了。不要关闭此页面。</p>
+<h2 id="3-2-本地安装git插件并配置-root"><a href="#3-2-本地安装git插件并配置-root" class="headerlink" title="3.2. 本地安装git插件并配置 (root)"></a>3.2. 本地安装git插件并配置 (root)</h2><p>确保现在仍在blogs/目录中, 如下命令安装插件，并忽略<code>warning</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install --save hexo-deployer-git</span><br></pre></td></tr></table></figure>
+<p>在<code>_config.yml</code>配置文件中添加第3.1步所建立空repo的信息。具体是在<code>_config.yml</code><br>的文件尾的<code># Deplotment</code>下添加<code>repo</code>和<code>branch</code>两行。注意冒号后有一空格。<br>更多细节参考<a href="https://hexo.io/docs/deployment" target="_blank" rel="noopener">官方主页</a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/OWNER/OWNER.github.io.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
+<p>其中<code>https://github.com/OWNER/OWNER.github.io.git</code> 是第3.1步空repo的地址。<code>OWNER</code>是你的github账户名。</p>
+<h2 id="3-3-部署本地静态博客-root"><a href="#3-3-部署本地静态博客-root" class="headerlink" title="3.3. 部署本地静态博客  (root)"></a>3.3. 部署本地静态博客  (root)</h2><p>用下面命令执行部署(blogs/目录中)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>在终端提示处输入<code>github</code>的<code>username</code>和<code>password</code><br>此时刷新第3.1步的页面，repo不再是空的了。</p>
+<h2 id="3-4-访问"><a href="#3-4-访问" class="headerlink" title="3.4. 访问"></a>3.4. 访问</h2><p>在浏览器输入<code>OWNER.github.io</code>即可从远端访问。<br>可能无法马上访问，稍等，刷新页面即可。</p>
+<h1 id="4-部署后对博客的修改或新建-root"><a href="#4-部署后对博客的修改或新建-root" class="headerlink" title="4. 部署后对博客的修改或新建 (root)"></a>4. 部署后对博客的修改或新建 (root)</h1><p>确保仍在blogs/目录中，创建新的博客后生成对应的<code>.md</code>文件。<br>对相应的<code>.md</code>文件添加或修改内容。<br>后在本地检查。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>本地检查无误后生成并部署到github</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>或一条命令完成</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate --deploy</span><br></pre></td></tr></table></figure>
+
+<h1 id="5-插入图片"><a href="#5-插入图片" class="headerlink" title="5. 插入图片"></a>5. 插入图片</h1><ol>
+<li>修改配置文件<code>_config.yml</code>中<code>post_asset_folder:</code>的值设置为<code>true</code>。</li>
+<li>回到blog/目录中，安装插件<code>cnpm install https://github.com/7ym0n/hexo-asset-image --save</code>。这个asset管理插件是没有bug的。</li>
+<li>新建博客<code>hexo new &quot;xxx&quot;</code>。在<code>/source/_posts</code>文件夹内会生成<code>xxx.md</code>和同名的<code>xxx文件夹</code>。</li>
+<li>把在<code>xxx.md</code>中要引用的图片放到<code>xxx文件夹</code>中。</li>
+<li>在写博客过程中引入图片：<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;xxx/resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：在你的md编辑器中图片可以正常显示，但4000端口和github上不能显示。<br><br><code>&lt;div align=center&gt;&lt;img src=&quot;resnet.png&quot; width=500&gt;&lt;/div&gt;</code>：相反的，md编辑器中不能显示，远端可以。<br><br>后者才是正确的引用。</li>
+<li>回到blog/目录中，生成及部署<code>hexo g --d</code>。</li>
+</ol>
+<h1 id="6-更改当前主题属性-root"><a href="#6-更改当前主题属性-root" class="headerlink" title="6. 更改当前主题属性 (root)"></a>6. 更改当前主题属性 (root)</h1><p>以更改背景图片为例，保证当前目录为<code>blog</code>目录，图片存在于blog下的<code>blog/themes/landscape/source/css/images/</code>中，名为<code>banner.jpg</code>，选择自己喜欢的图片命名为<code>banner.jpg</code>并替换原来图片。在blog目录中开启服务<code>hexo server</code>。在localhost就可以看到变化。</p>
+<p>若果要更改主题其他参数，回到上一级目录即<code>blog/themes/landscape/source/css/</code>编辑器打开目录中的<code>_variables.styl</code>文件。内容类似：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">35 // Header</span><br><span class="line">36 logo-size = 50px</span><br><span class="line">37 subtitle-size = 16px</span><br><span class="line">38 banner-height = 400px</span><br><span class="line">39 banner-url = <span class="string">"images/banner.jpg"</span></span><br></pre></td></tr></table></figure>
+<p>修改对应参数值，后刷新localhost，就可以看到及时变化。</p>
+<p>最后，回到blog/目录，执行一下命令保证github远端也得到更新：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hexo clean</span><br><span class="line">$ hexo g --d</span><br></pre></td></tr></table></figure>
+<p>完成！</p>
+<h1 id="7-添加“分类”和“tags”-root"><a href="#7-添加“分类”和“tags”-root" class="headerlink" title="7. 添加“分类”和“tags” (root)"></a>7. 添加“分类”和“tags” (root)</h1><p>进入blog目录</p>
+<ol>
+<li><p>在<code>source</code>中生成<code>categories</code>文件夹：<code>tags</code>是默认就含有的，不用添加。</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new page categories</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编辑 <code>blog/source/categories</code>中<code>index.md</code>。添加<code>type: categories</code>于末行。保存并退出</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: categories</span><br><span class="line">date: 2020-01-11 17:48:47</span><br><span class="line">type: categories</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ol>
+<ol start="3">
+<li><p>给每一篇blog添加<code>categories</code>，如下。注意：hexo一篇文章只能属于一个分类，即如果在“- web前端”下方添加“-xxx”，hexo不会产生两个分类，而是把分类嵌套（即该文章属于 “- web前端”下的 “-xxx ”分类）。</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: Linux(ubuntu)下使用hexo创建静态博客并部署到github</span><br><span class="line">date: 2019-07-28 12:36:32</span><br><span class="line">tags:</span><br><span class="line">    - hahaha</span><br><span class="line">categories: </span><br><span class="line">    - utility</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+<p>最终blog每一页都会出现<code>categories</code>，<code>tags</code>和<code>tag cloud</code>三个标签。</p>
+</li>
+</ol>
+<h1 id="8-修改页面显示博客数-root"><a href="#8-修改页面显示博客数-root" class="headerlink" title="8. 修改页面显示博客数 (root)"></a>8. 修改页面显示博客数 (root)</h1><ol>
+<li><p>获取<code>sudo</code>权限并安装<code>hexo</code>的三个插件，archive的，tag的category的：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo -s</span><br><span class="line">$ cnpm install hexo-generator-archive --save</span><br><span class="line">$ cnpm install hexo-generator-tag --save</span><br><span class="line">$ cnpm install hexo-generator-category --save</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在目录<code>/media/junhui/DATA/blog/</code>下，编辑<code>_config.yml</code>，添加如下内容：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">archive_generator:</span><br><span class="line">  enabled: true</span><br><span class="line">  per_page: 0</span><br><span class="line">  yearly: true</span><br><span class="line">  monthly: true</span><br><span class="line">  daily: false</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">tag_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br><span class="line"></span><br><span class="line">category_generator:</span><br><span class="line">  per_page: 0</span><br><span class="line">  order_by: -date</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>自定义对应的<code>per_page</code>数值。其中<code>0</code>表示显示所有blog，就是说，不分页。</p>
+</li>
+</ol>
+<h1 id="9-Trouble-Shooting"><a href="#9-Trouble-Shooting" class="headerlink" title="9. Trouble Shooting"></a>9. Trouble Shooting</h1><ol>
+<li>如果需要更改blog文件明，直接在源文件中修改即可。</li>
+<li>对于已有的blog文件，只需要将源文件和其图片文件夹复制到<code>blogs</code>目录下。</li>
+<li>当生成及部署完毕后，<strong>远端不会马上生效</strong>，不慌张，稍等。</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/28/Linux%E4%B8%8B%E4%BD%BF%E7%94%A8hexo%E5%88%9B%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github/" data-id="ckatsrgum007xxqfz9p7mfvg6" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Markdown-常用语法" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/" class="article-date">
@@ -193,7 +411,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">25</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -203,7 +421,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">52</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -213,7 +431,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
     </div>
   </div>
 
@@ -222,7 +440,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">26</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">28</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -235,6 +453,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
           </li>
         
@@ -243,15 +469,7 @@
           </li>
         
           <li>
-            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k-Kth-lagest</a>
           </li>
         
       </ul>

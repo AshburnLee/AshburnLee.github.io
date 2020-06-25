@@ -64,6 +64,140 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Cpp-pro-tip-3-尽可能不使用类型转换" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/" class="article-date">
+  <time datetime="2020-03-12T09:35:30.000Z" itemprop="datePublished">2020-03-12</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp pro tip 3 杂记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="explicit-修饰constructor"><a href="#explicit-修饰constructor" class="headerlink" title="explicit 修饰constructor"></a>explicit 修饰constructor</h1><p>比较区别：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 无explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    foo(<span class="keyword">int</span> n)&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">// 有explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">bar</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">bar</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">foo <span class="title">f1</span><span class="params">(<span class="number">2</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    foo* f2 = <span class="keyword">new</span> foo(<span class="number">2</span>);  <span class="comment">// correct</span></span><br><span class="line">    foo f3 = <span class="number">2</span>;  <span class="comment">// correct </span></span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="function">bar <span class="title">b1</span><span class="params">(<span class="number">3</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    bar* b2 = <span class="keyword">new</span> bar(<span class="number">3</span>); <span class="comment">// correct</span></span><br><span class="line">    bar b3 = <span class="number">3</span>; <span class="comment">// incorrect</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>bar b3 = 3</code>含义是，3的类型int正好是bar单参数构造函数的参数类型int，这时候编译器就自动调用这个构造函数，创建一个bar的对象。这在<code>explicit</code>修饰下是不可行的，只能显式地以3为参数传给构造函数。</p>
+<h1 id="shared-ptr-lt-gt"><a href="#shared-ptr-lt-gt" class="headerlink" title="shared_ptr&lt;&gt;"></a>shared_ptr&lt;&gt;</h1><p>理解shared_ptr可以这样理解：<br>对于<code>std::shared_ptr&lt;string&gt; ptr(new string)</code>，这里有两个对象，“我”和“你”（均为指针）。“我”是<code>ptr</code>，而“你”对应了<code>new string</code>。这时“我”和“你”就有了关系，<font color="red">“我”管理“你”</font>。当<code>new string</code>即“你”不存在时，我不管理任何人，即我管理一个空指针。</p>
+<h2 id="定义并初始化"><a href="#定义并初始化" class="headerlink" title="定义并初始化"></a>定义并初始化</h2><p>定义一个<font color="red">空共享指针</font>，指向类型为int的对象, owns no pointer（“我”没有管理任何指针）, 由于ptr1是空指针，所以为ptr1所指向的对象赋值是违法的：<code>segmentation fault</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr1; </span><br><span class="line"><span class="keyword">if</span> (!ptr1)</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"ptr1==NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"><span class="comment">// 违法，因为ptr1没有指向任何对象，所以给对象赋值是逻辑错误</span></span><br><span class="line">*ptr1 = <span class="string">"string ptr1"</span>;</span><br></pre></td></tr></table></figure>
+
+<p>初始化一个shared_ptr ptr2，<font color="red">非空指针</font>，指向“”。此后，ptr2 就可以像string* 类型的指针一样使用。ptr2 可以管理使用new 关键字分配出来的指针。（<font color="red">new 出来的一定是个指针</font>）</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ptr2 管理一个指向string的指针</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr2(<span class="keyword">new</span> <span class="built_in">string</span>);</span><br><span class="line">*ptr2 = <span class="string">"string ptr2"</span>;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr2&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+
+<p>常用的初始化方法:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 一般的初始化一个shared_ptr方法</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr3(<span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"string ptr3"</span>));</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr3&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 推荐的初始化一个shared_ptr</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr4 = make_shared&lt;<span class="built_in">string</span>&gt;(<span class="string">"string ptr4"</span>);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="成员方法"><a href="#成员方法" class="headerlink" title="成员方法"></a>成员方法</h2><p><code>ptr.get()</code>方法，它返回一个指针，这个指针指向ptr所指向对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span>* p = ptr4.get();</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*p&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<p><code>ptr.reset()</code>方法，改变ptr所指向内容。这里有个好例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="keyword">int</span>&gt; sp;  <span class="comment">// empty </span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 管理一个指针</span></span><br><span class="line">sp.reset (<span class="keyword">new</span> <span class="keyword">int</span>);       </span><br><span class="line">*sp=<span class="number">10</span>;</span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; *sp &lt;&lt; <span class="string">'\n'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 删除所管理的指针, 干礼一个新指针</span></span><br><span class="line">sp.reset (<span class="keyword">new</span> <span class="keyword">int</span>);       </span><br><span class="line">*sp=<span class="number">20</span>;</span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; *sp &lt;&lt; <span class="string">'\n'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 删除所管理的指针</span></span><br><span class="line">sp.reset();</span><br></pre></td></tr></table></figure>
+
+<p>以下情况相同：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ptr4.reset(<span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"string reset ptr4"</span>));</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="built_in">string</span>* pp = <span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"fuck you"</span>);</span><br><span class="line">ptr4.reset(pp);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/" data-id="ckatsrgrw002hxqfz00ox1w7j" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Cpp-pro-tip-2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/09/Cpp-pro-tip-2/" class="article-date">
+  <time datetime="2020-03-09T06:29:07.000Z" itemprop="datePublished">2020-03-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 尽可能使用const</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>如果某个值需要保持不变，那么你就应该说出来，这样编译器能确保这写约束不被违反。const可以放于很多位置。</p>
+<h1 id="1-作用于指针"><a href="#1-作用于指针" class="headerlink" title="1. 作用于指针"></a>1. 作用于指针</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> greeting[] = <span class="string">"hello"</span>;</span><br><span class="line"><span class="keyword">char</span>* p = greeting;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* p = greeting;   <span class="comment">// 1</span></span><br><span class="line"><span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;   <span class="comment">// 2</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;  <span class="comment">// 3</span></span><br></pre></td></tr></table></figure>
+
+<p>const的出现位置[左数右针]：</p>
+<ol>
+<li><code>const *</code>，<font color="red">数据是常量</font>，表示被指向的对象是常量，而指针是可以变的。</li>
+<li><code>* const</code>，表示<font color="red">指针是常量</font>。<font color="red">这个指针不能指向不同的东西，但它指向东西的数据可以改变</font>。</li>
+<li><code>const * const</code>，表示指针和被指向的对象都是常量</li>
+</ol>
+<p>对于在*左侧，下面两种表达意义相同，都在左侧：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* greeting;</span><br><span class="line"><span class="keyword">char</span> <span class="keyword">const</span>* greeting;</span><br></pre></td></tr></table></figure>
+
+<h1 id="2-作用于特殊指针，iterator"><a href="#2-作用于特殊指针，iterator" class="headerlink" title="2. 作用于特殊指针，iterator"></a>2. 作用于特殊指针，iterator</h1><p>对于STL中的迭代器，加入我希望迭代器所指向的东西不可被修改（即对数据只读），那么就需要一个<code>const_iterator</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; vec;</span><br><span class="line"><span class="comment">// 数据const</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::const_iterator cItr = vec.begain();</span><br><span class="line">*cItr = <span class="number">10</span>;   <span class="comment">// 错，所指向的东西不能改</span></span><br><span class="line">cItr++；      <span class="comment">// 对，指针可改</span></span><br></pre></td></tr></table></figure>
+
+<p>而另一种情况，指针不能改变其指向，但是可改变其所指向数据：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 指针const</span></span><br><span class="line"><span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::iterator itr = vec.begain();</span><br><span class="line">*itr = <span class="number">10</span>;   <span class="comment">// 对，所指向的东西可改</span></span><br><span class="line">itr++；      <span class="comment">// 错，指针指向不可改</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="3-作用与函数"><a href="#3-作用与函数" class="headerlink" title="3. 作用与函数"></a>3. 作用与函数</h1><ol>
+<li><p>函数返回值为const</p>
+<p> 将函数返回值声明为const，这个返回值不能被修改。降低了因为用户的错误而造成的意外。</p>
+</li>
+<li><p>函数参数为const</p>
+<p> 除非你要改动局部变量（函数参数），否则将参数声明为const。</p>
+</li>
+</ol>
+<h1 id="4-作用与类成员函数"><a href="#4-作用与类成员函数" class="headerlink" title="4. 作用与类成员函数"></a>4. 作用与类成员函数</h1><p>即const位于成员函数()和{}之间，如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">area</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span> y)</span> </span>&#123;</span><br><span class="line">        length_ = x;</span><br><span class="line">        width_ = y;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// length和width，不能被这个函数修改。</span></span><br><span class="line">    <span class="comment">// 限制对象成员函数 改变对象数据成员，保护了程序的健壮性和稳定性</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"area="</span>&lt;&lt;length_ * width_&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> length_;</span><br><span class="line">    <span class="keyword">int</span> width_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>print()成员函数，为const函数，表示这个成员函数不能修改成员变量。所以不能将area()成员函数设为const，因为这个函数的 目的就是为成员变量赋值。</p>
+<p><font color="red">const成员函数，和非const成员函数使得我们知道一个类中哪些函数可以修改成员属性，哪些不可以</font>。</p>
+<p>tip:<br>提升c++程序效率的一个方法是以<code>pass by referrence-to-const</code>的方式或<code>pass by pointer-to-const</code>传递对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 此为以成员函数</span></span><br><span class="line"><span class="function"><span class="keyword">const</span> <span class="keyword">int</span> <span class="title">opt</span><span class="params">( <span class="keyword">const</span> foo&amp; x)</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> x.length_ * x.width_&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/09/Cpp-pro-tip-2/" data-id="ckatsrgry002mxqfz2hz125w4" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-caffe-如何使用" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/" class="article-date">
@@ -955,164 +1089,6 @@
 
 
   
-    <article id="post-CUDA-再看规约-一段规约" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" class="article-date">
-  <time datetime="2020-02-20T02:27:03.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/">CUDA-再看规约-一段规约</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="一阶段规约"><a href="#一阶段规约" class="headerlink" title="一阶段规约"></a>一阶段规约</h1><p>使用原子操作和shared memory的组合可以避免第二个kernel的调用。使用一个（global还是shared）变量记录哪个block已经做完了自己的工作。一旦所有的block都完成后，使用一个block执行最有的规约。</p>
-<p>【CUDA专家手册 269页】</p>
-<h1 id="更简洁的一段规约"><a href="#更简洁的一段规约" class="headerlink" title="更简洁的一段规约"></a>更简洁的一段规约</h1><p>在之前的二段归约中，每一阶段的第一步是每个block的每个thread得到部分和，由于block间是不能同步的，所以才有了第二阶段。</p>
-<p>现在是使用一个寄存器来存储每个thread对应的自己的部分和，最后使用 原子操作对这些部分和再求和：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 每个thread得到自己的部分和，</span></span><br><span class="line">    <span class="keyword">int</span> partialSum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        partialSum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用原子操作，求部分和的和</span></span><br><span class="line">    atomicAdd(out, partialSum);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">    cudaMemset(res, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line">    reductionKernel&lt;&lt;&lt;numBlock, threadsPerBlock&gt;&gt;&gt;(answer, in ,N);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注意一点，要写入<code>out数组</code>，那么<code>out数组</code>的初始值必须设为0；</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E4%B8%80%E6%AE%B5%E8%A7%84%E7%BA%A6/" data-id="ckatsrgrf0018xqfz2qubhfs7" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-再看规约-循环展开" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/" class="article-date">
-  <time datetime="2020-02-20T02:23:04.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/">CUDA-再看规约-循环展开</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="循环展开"><a href="#循环展开" class="headerlink" title="循环展开"></a>循环展开</h1><p>循环展开减少了循环中的变量的判断，自加等其他操作，是提升性能一个手段。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">1000</span>; i++)&#123;</span><br><span class="line">    a[i] = b[i] + c[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>将循环次数减少一半：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">1000</span>; i+=<span class="number">2</span>)&#123;</span><br><span class="line">    a[i] = b[i] + c[i];</span><br><span class="line">    a[i+<span class="number">1</span>] = b[i+<span class="number">1</span>] + c[i+<span class="number">1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>下面的两段规约法，展示使用完全的循环展开。</p>
-<h1 id="再看规约-两段规约"><a href="#再看规约-两段规约" class="headerlink" title="再看规约-两段规约"></a>再看规约-两段规约</h1><p>类似与<code>点积</code>中的两段法。两段规约同样使用shared memory。</p>
-<p>过程见下图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/pic14.png" width="700"></div>
-
-<p>实现上图过程：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* in: 待读取的数组。out: 待写入的数组。N: in数组的长度</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 此处是一个未分配大小的shared memory</span></span><br><span class="line">    __shared__ <span class="keyword">int</span> buffer[];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第一阶段，</span></span><br><span class="line">    <span class="keyword">int</span> sum=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">    <span class="comment">// 使用stride loop</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">    buffer[threadIdx.x] = sum;</span><br><span class="line">    <span class="comment">// 等待得到所有threads的sum值</span></span><br><span class="line">    <span class="comment">// block与block之间怎样同步呢？这里不需要同步</span></span><br><span class="line">    __syncthreads();   </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二阶段，规约求每个block的最终值</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockDim.x &gt;&gt; <span class="number">1</span>; i!=<span class="number">0</span>; i&gt;&gt;=<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (threadIdx.x &lt; i)&#123;</span><br><span class="line">            buffer[threadIdx.x] += buffer[threadIdx.x + i];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 最后一步，将每个block对应的buffer中的第一个元素放入out数组</span></span><br><span class="line">    <span class="comment">// 此时out数组中存放的是每个block的最终值。</span></span><br><span class="line">    <span class="keyword">if</span> (threadIdx.x == <span class="number">0</span>)</span><br><span class="line">        out[blockIdx.x] = buffer[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>分析说明：</p>
-<ul>
-<li>强调：第一阶段的<font color="red" size="4">blockDim.x应该是32的倍数</font>，每个block对应的<font color="red" size="4">Shared memory大小也要是32的倍数</font>。这样才能保证<font color="red" size="4">在第二阶段所处理的数据是整齐的</font>。</li>
-<li>第二阶段结束后block与block间结果怎样同步？kernel函数执行完毕，表示两个block都得到了结果，即同步了。所以一种方式的到最终结果是两次调用这个kernel函数。见下面code。</li>
-<li>对out数组的最终处理，可以考虑将out传回host后在CPU中计算，就像<code>向量点积</code>。也可以使用一个block，第二次调用上述kernel函数，得到最终值。（我感觉不如传回CPU）。</li>
-<li>shared memory 的访问索引是<code>threadIdx.x</code>。</li>
-<li>使用<code>blockDim.x &gt;&gt; 1</code>和<code>i&gt;&gt;=1</code>，这属于指令优化。</li>
-<li>kernel中的Shared memory可以不分配大小，调用kernel函数时再制定大小。</li>
-</ul>
-<p>在Host中调用kernel函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">reduction</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* partial, <span class="keyword">int</span>* in, </span></span></span><br><span class="line"><span class="function"><span class="params">                <span class="keyword">size_t</span> N, <span class="keyword">int</span> numBlocks, <span class="keyword">int</span> numThreads)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sharedSize = numThreads*<span class="keyword">sizeof</span>(<span class="keyword">int</span>);</span><br><span class="line">    <span class="comment">// 第一个kernel得到所有block对应的buffer，</span></span><br><span class="line">    <span class="comment">// 这些block之间没有同步，所以只有所有的block的buffer都得到了</span></span><br><span class="line">    <span class="comment">// 这个kernel才时执行结束，也就是说，为了同步所有的block的buffer，</span></span><br><span class="line">    <span class="comment">// 只能再调用一次这个和函数了。</span></span><br><span class="line">    reductionKernel&lt;&lt;&lt;numBlocks, numThreads, sharedSize&gt;&gt;&gt;</span><br><span class="line">                    (partial, in, N);</span><br><span class="line">    reductionKernel&lt;&lt;&lt;<span class="number">1</span>, numThreads, sharedSize&gt;&gt;&gt;</span><br><span class="line">                    (res, partial, numBlocks);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>看到了吧：</p>
-<ul>
-<li>第二次调用kernel只是用一个block。</li>
-<li>注意：此处在<code>&lt;&lt; , , &gt;&gt;&gt;</code>中出现了第三个参数，由于在kernel中，没有指定shared memory的大小，所以在调用kernel函数时要制定大小了。</li>
-<li>这个kernel中的第二个for循环中，循环的之后阶段，当threads数小于等于<code>32</code>时，可以特殊处理，此时的所有活动threads在一个warp中，所以不需要同步。细节间<code>32特殊处理规约</code>。</li>
-<li>补充：<font color="orange">每个block中的warp时按照lockstep的方式执行每条指令</font>。</li>
-</ul>
-<h1 id="再看规约-第二阶段循环展开"><a href="#再看规约-第二阶段循环展开" class="headerlink" title="再看规约-第二阶段循环展开"></a>再看规约-第二阶段循环展开</h1><p><font color="orange" size="4">优化意识</font>：当threads数小于等于<code>32</code>时，也就是<code>threadIdx.x从0到31</code>时，可以特殊处理。这种处理就是循环展开。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* in: 待读取的数组。out: 待写入的数组。N: in数组的长度</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 此处是一个未分配大小的shared memory</span></span><br><span class="line">    __shared__ <span class="keyword">int</span> buffer[];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第一阶段，</span></span><br><span class="line">    <span class="keyword">int</span> sum=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">    <span class="comment">// 使用stride loop</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = tid; i&lt;N; i+=stride)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">    buffer[threadIdx.x] = sum;</span><br><span class="line">    <span class="comment">// 等待得到所有threads的sum值</span></span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二阶段，规约求每个block的最终值, 直到i=32.</span></span><br><span class="line">    <span class="comment">// 之后就是特殊处理了</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = blockDim.x &gt;&gt; <span class="number">1</span>; i&gt;<span class="number">32</span>; i&gt;&gt;=<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (threadIdx.x &lt; i)&#123;</span><br><span class="line">            buffer[threadIdx.x] += buffer[threadIdx.x + i];</span><br><span class="line">        &#125;</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第三步，当元素个数小于等于32时：</span></span><br><span class="line">    <span class="comment">// 这个展开避免了循环控制的开销，和thread同步的逻辑</span></span><br><span class="line">    <span class="keyword">if</span>(threadIdx.x &lt; <span class="number">32</span>)&#123;</span><br><span class="line">        <span class="keyword">volatile</span> <span class="keyword">int</span>* wsSum = buffer;</span><br><span class="line">        <span class="keyword">if</span>(blockDim.x &gt; <span class="number">32</span>)</span><br><span class="line">            wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">32</span>];</span><br><span class="line">        <span class="comment">// 一下5条指令，一定都会被执行，不过也可以加上if条件。</span></span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">16</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">8</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">4</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">2</span>];</span><br><span class="line">        wsSum[threadIdx.x] += wsSum[threadIdx.x + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadIdx.x == <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">volatile</span> <span class="keyword">int</span>* wsSum = buffer;</span><br><span class="line">            out[blockIdx.x] = wsSum[<span class="number">0</span>];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注意：当编写warp同步的code时，必须对shared memory 的指针使用<code>volatile</code>关键字。这个关键字告诉编译器必须将<code>wsSum[threadIdx.x]</code>的值存回global中。如果没有<code>volatile</code>，为什么不能得到正确结果？</p>
-<p>第三步为什么正确，看下图之前，看下假设：</p>
-<ul>
-<li>下图将大小为32的warp假设为4，即<code>warp size=4</code>：</li>
-<li>所展示的情况是从上一个图片中的第一阶段的结果开始，即<code>blockDim.x=8</code>.</li>
-</ul>
-<p>对于code中的第三步，见下图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/pic15.png" width="700"></div>
-
-<p>从上述code第二阶段的循环开始：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">blockDim.x=8;</span><br><span class="line"><span class="keyword">for</span>(i=8&gt;&gt;1; i&gt;4; i&gt;&gt;=1)&#123;</span><br><span class="line">    i=4, i!&gt;4, 退出循环;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">对于 threadIdx.x&lt;4，blockDim.x&gt;4，即 0 1 2 3. 执行下面操作：</span><br><span class="line">wsSum[0 1 2 3] += wsSum[(0 1 2 3) + 4];</span><br><span class="line">wsSum[0 1 2 3] += wsSum[(0 1 2 3) + 2];</span><br><span class="line">wsSum[0 1 2 3] += wsSum[(0 1 2 3) + 1];</span><br></pre></td></tr></table></figure>
-
-<p>说明：</p>
-<ul>
-<li>其中执行单元只有这个block 中的第一个warp。</li>
-<li>最终需要的时每个block对应buffer是<font color="orange">第一个值</font>，所以除第一个位置以外的位置，其值是无意义的。但是由于warp中的线程执行相同的指令，所以warp中其他threads也工作了，只不过这些结果我并不需要。</li>
-<li>再强调：第一阶段的<font color="red" size="4">blockDim.x应该是32的倍数</font>，每个block对应的<font color="red" size="4">Shared memory大小也要是32的倍数</font>。这样才能保证<font color="red" size="4">在第二阶段所处理的数据是整齐的</font>。</li>
-</ul>
-<p>再次证明，用<font color="orange">假设小的数值，用小的例子，小的数据</font>有助于理解，</p>
-<h1 id="再看规约-第二阶段进一步循环展开"><a href="#再看规约-第二阶段进一步循环展开" class="headerlink" title="再看规约-第二阶段进一步循环展开"></a>再看规约-第二阶段进一步循环展开</h1><p>使用<code>template</code>把上述实现的第二阶段的for循环，做循环展开，这个展开是完全的展开。思路与上述实现一样，warp同步的优化方案就更近一步了。code如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">int</span> threadsPerBlock&gt;</span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">reductionKernel</span><span class="params">(<span class="keyword">int</span>* in, <span class="keyword">int</span>* out, <span class="keyword">size_t</span> N)</span></span>&#123;</span><br><span class="line">    __shared__ <span class="keyword">int</span> buffer[];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第一步，</span></span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> id = tid + threadsPerBlock * blockIdx.x;</span><br><span class="line">    <span class="keyword">int</span> stride = threadsPerBlock * gridDim.x; </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">size_t</span> i = id; i&lt; N; i += stride)&#123;</span><br><span class="line">        sum += in[i];</span><br><span class="line">    &#125;</span><br><span class="line">    buffer[tid] = sum;</span><br><span class="line">    __syncthreads();</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 第二步，循环展开, 从1024开始，</span></span><br><span class="line">    <span class="comment">// 每个block最多threads个数是1024（就目前的GPU架构）</span></span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">1024</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">512</span>)   <span class="comment">// tid 小于512 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">512</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">512</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">256</span>)  <span class="comment">// tid 小于256 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">256</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">256</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">128</span>)  <span class="comment">// tid 小于128 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">128</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(threadsPerBlock &gt;= <span class="number">128</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(tid &lt; <span class="number">64</span>)  <span class="comment">// tid 小于64 的threads开始工作</span></span><br><span class="line">            buffer[tid] += buffer[tid + <span class="number">64</span>];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 第三步。warp同步操作，不需要__syncthreads()</span></span><br><span class="line">    <span class="keyword">if</span>( tid&lt;<span class="number">32</span> )&#123;     <span class="comment">// tid 小于32 的threads开始工作</span></span><br><span class="line">        <span class="keyword">volatile</span> <span class="keyword">int</span>* wsSum = buffer;</span><br><span class="line">        <span class="comment">// 下面的6条if语句都会被执行，</span></span><br><span class="line">        <span class="comment">// 看第一个if的64与第二步最后的64连接上了。</span></span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">64</span>) wsSum[tid] += wsSum[tid + <span class="number">32</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">32</span>) wsSum[tid] += wsSum[tid + <span class="number">16</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">16</span>) wsSum[tid] += wsSum[tid + <span class="number">8</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">8</span>) wsSum[tid] += wsSum[tid + <span class="number">4</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">4</span>) wsSum[tid] += wsSum[tid + <span class="number">2</span>];</span><br><span class="line">        <span class="keyword">if</span> (threadsPerBlock &gt;= <span class="number">2</span>) wsSum[tid] += wsSum[tid + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">if</span> (tid == <span class="number">0</span>) out[blockIdx.x] = wsSum[<span class="number">0</span>];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><font color="orange">完全展开， 避免了循环控制的开销，第三步的展开还避免了thread同步的逻辑</font>。</p>
-<p>这里的执行有个特点，看<code>if</code>判断中的数字：<code>1024，512，256，128，64，32，16，8，4，2，1</code>，从逻辑看，一定是从大到小排列的，而且执行的时候，如果有一个<code>if</code>满足，那么这个<code>if</code>及其之后的<code>if</code>语句都会被执行。过程看下图。</p>
-<p>第三次强调：第一阶段的<font color="red" size="4">blockDim.x应该是32的倍数</font>，每个block对应的<font color="red" size="4">Shared memory大小也要是32的倍数</font>。这样才能保证<font color="red" size="4">在第二阶段所处理的数据是整齐的</font>。</p>
-<p>所以设<code>threadPerBLock</code>为<code>512</code>时的示意图如下：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/pic16.png" width="700"></div>
-
-<p>第三步中，不需要<code>__syncthreads()</code>，一个warp中的threads天然同步。</p>
-<p>这个kernel是个模板kernel，在被host函数调用时，要指定<code>threadsPerBlock</code>的值。</p>
-<p>调用kernel的host函数也必须是一个模板函数： </p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">int</span> threadsPerBlock&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">callReduction</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* partial, </span></span></span><br><span class="line"><span class="function"><span class="params">                    <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N, </span></span></span><br><span class="line"><span class="function"><span class="params">                    <span class="keyword">int</span> numBlocks)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 第一阶段，得到所有block对应的shared memory中的值</span></span><br><span class="line">    reductionKernel&lt;numBlocks&gt;&lt;&lt;&lt;numBlocks, </span><br><span class="line">                                threadsPerBlocks, </span><br><span class="line">                                <span class="function">threadsPerBlocks*<span class="title">sizeof</span><span class="params">(<span class="keyword">int</span>)</span></span></span><br><span class="line">                                &gt;&gt;&gt;(partial, in, N);</span><br><span class="line">    <span class="comment">// 两个阶段串行</span></span><br><span class="line">    <span class="comment">// 第二阶段，对上一步中partial中的所有值，执行规约</span></span><br><span class="line">    reductionKernel&lt;numBlocks&gt;&lt;&lt;&lt;<span class="number">1</span>, </span><br><span class="line">                                threadsPerBlocks, </span><br><span class="line">                                <span class="function">threadsPerBlocks*<span class="title">sizeof</span><span class="params">(<span class="keyword">int</span>)</span></span></span><br><span class="line">                                &gt;&gt;&gt;(res, partial, numBlocks);             </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用switch语句，按照不同 block大小出发对应的模板函数。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* partial, </span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N, </span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span> numBlocks, <span class="keyword">int</span> threadsPerBlock)</span></span>&#123;</span><br><span class="line">    <span class="keyword">switch</span>( theadsPerBlock )&#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">1</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">2</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">2</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">4</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">4</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">8</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">8</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">16</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">16</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">32</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">32</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">64</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">64</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">128</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">128</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">256</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">256</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">512</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">512</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1024</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">1024</span> &gt;(...);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>之所以不能再一个kernel中获得最后结果，是因为，<font color="red">block与block之间是没有同步的</font>。而第二阶段的规约需要所有block的buffer中第一个值，集合在一起，作为前提，如第一幅图所示。可不可以只一阶段就完成任务呢。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%86%8D%E7%9C%8B%E8%A7%84%E7%BA%A6-%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80/" data-id="ckatsrgtz0075xqfzc2thc1ab" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1128,7 +1104,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">23</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">25</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1138,7 +1114,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">50</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BST/" rel="tag">BST</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">52</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1148,7 +1124,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/BST/" style="font-size: 10px;">BST</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
     </div>
   </div>
 
@@ -1157,7 +1133,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">26</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">28</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1170,6 +1146,14 @@
       <ul>
         
           <li>
+            <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
           </li>
         
@@ -1178,15 +1162,7 @@
           </li>
         
           <li>
-            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/13/LeetCode-153-%E6%89%BE%E5%88%B0%E6%9C%80%E5%B0%8F%E5%80%BC/">LeetCode-153-找到最小值</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
+            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k-Kth-lagest</a>
           </li>
         
       </ul>
