@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>caffe-工具箱 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="caffe使用工具caffe 编译后生成动态链接库 libcaffe.so。使用caffe时，在main.cpp中调用相应API，编译时包含对应的头文件，链接时加入 libcaffe.so。如此才是一个完整的caffe应用。 在tools&#x2F;中就是一些调用libcaffe.so的工具源码。 前面提到过，caffe.bin工具由4个功能： 1234.&#x2F;caffe.bin train">
+<meta property="og:type" content="article">
+<meta property="og:title" content="caffe-工具箱">
+<meta property="og:url" content="http://yoursite.com/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="caffe使用工具caffe 编译后生成动态链接库 libcaffe.so。使用caffe时，在main.cpp中调用相应API，编译时包含对应的头文件，链接时加入 libcaffe.so。如此才是一个完整的caffe应用。 在tools&#x2F;中就是一些调用libcaffe.so的工具源码。 前面提到过，caffe.bin工具由4个功能： 1234.&#x2F;caffe.bin train">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-06-28T01:42:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T01:44:34.224Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="Caffe">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-caffe-工具箱" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/" class="article-date">
+  <time datetime="2020-06-28T01:42:00.000Z" itemprop="datePublished">2020-06-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      caffe-工具箱
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="caffe使用工具"><a href="#caffe使用工具" class="headerlink" title="caffe使用工具"></a>caffe使用工具</h1><p>caffe 编译后生成动态链接库 <code>libcaffe.so</code>。使用caffe时，在main.cpp中调用相应API，编译时包含对应的头文件，链接时加入 <code>libcaffe.so</code>。如此才是一个完整的caffe应用。</p>
+<p>在tools/中就是一些调用<code>libcaffe.so</code>的工具源码。</p>
+<p>前面提到过，caffe.bin工具由4个功能：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">./caffe.bin train           <span class="comment">#train or finetune a model</span></span><br><span class="line">./caffe.bin <span class="built_in">test</span>            <span class="comment">#score a model</span></span><br><span class="line">./caffe.bin device_query    <span class="comment">#show GPU diagnostic information</span></span><br><span class="line">./caffe.bin time            <span class="comment">#benchmark model execution time</span></span><br></pre></td></tr></table></figure>
+
+<p>从<code>tools/caffe.cpp</code>中看看是如何实现传递不同的参数，执行不同的功能。</p>
+<p>首先定义一个caffe命令注册表：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">int</span> <span class="params">(*BrewFunction)</span><span class="params">()</span></span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="built_in">std</span>::<span class="built_in">map</span>&lt;caffe::<span class="built_in">string</span>, BrewFunction&gt; BrewMap;</span><br><span class="line">BrewMap g_brew_map;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RegisterBrewFunction(func) \</span></span><br><span class="line"><span class="keyword">namespace</span> &#123; \</span><br><span class="line"><span class="class"><span class="keyword">class</span> __<span class="title">Registerer_</span>##<span class="title">func</span> &#123;</span> \</span><br><span class="line">    <span class="keyword">public</span>: <span class="comment">/* NOLINT */</span> \</span><br><span class="line">        __Registerer_#<span class="meta">#func() &#123; \</span></span><br><span class="line">    g_brew_map[<span class="meta">#func] = &amp;func; \</span></span><br><span class="line">    &#125; \</span><br><span class="line">&#125;; \</span><br><span class="line">__Registerer_#<span class="meta">#func g_registerer_##func; \</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="device-query命令："><a href="#device-query命令：" class="headerlink" title="device_query命令："></a>device_query命令：</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">device_query</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"Querying GPUs "</span> &lt;&lt; FLAGS_gpu;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; gpus;</span><br><span class="line">    get_gpus(&amp;gpus);  <span class="comment">// TODO </span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; gpus.size(); ++i) &#123;</span><br><span class="line">        caffe::Caffe::SetDevice(gpus[i]);</span><br><span class="line">        caffe::Caffe::DeviceQuery();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">RegisterBrewFunction(device_query);</span><br></pre></td></tr></table></figure>
+
+<h2 id="train命令"><a href="#train命令" class="headerlink" title="train命令"></a>train命令</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">train</span><span class="params">()</span> </span>&#123;...&#125;</span><br><span class="line">RegisterBrewFunction(train);</span><br></pre></td></tr></table></figure>
+
+<h2 id="test命令"><a href="#test命令" class="headerlink" title="test命令"></a>test命令</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">test</span><span class="params">()</span> </span>&#123;...&#125;</span><br><span class="line">RegisterBrewFunction(test);</span><br></pre></td></tr></table></figure>
+
+<h2 id="time命令"><a href="#time命令" class="headerlink" title="time命令"></a>time命令</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">time</span><span class="params">()</span> </span>&#123;...&#125;</span><br><span class="line">RegisterBrewFunction(time);</span><br></pre></td></tr></table></figure>
+
+<p>上述将4条命令加入注册表。</p>
+<p>从注册表中取对应的命令：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> BrewFunction <span class="title">GetBrewFunction</span><span class="params">(<span class="keyword">const</span> caffe::<span class="built_in">string</span>&amp; name)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (g_brew_map.count(name)) &#123;</span><br><span class="line">        <span class="keyword">return</span> g_brew_map[name];</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;...&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从main函数中调用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    gflags::SetUsageMessage(<span class="string">"command line brew\n"</span></span><br><span class="line">        <span class="string">"usage: caffe &lt;command&gt; &lt;args&gt;\n\n"</span></span><br><span class="line">        <span class="string">"commands:\n"</span></span><br><span class="line">        <span class="string">"  train           train or finetune a model\n"</span></span><br><span class="line">        <span class="string">"  test            score a model\n"</span></span><br><span class="line">        <span class="string">"  device_query    show GPU diagnostic information\n"</span></span><br><span class="line">        <span class="string">"  time            benchmark model execution time"</span>);</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">return</span> GetBrewFunction(caffe::<span class="built_in">string</span>(argv[<span class="number">1</span>]))();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如上实现了在caffe.bin工具中执行不同的命令。</p>
+<p>还有其他工具：特征提取，图像格式转换，计算图像均值，等等。</p>
+<h1 id="编写自己的工具"><a href="#编写自己的工具" class="headerlink" title="编写自己的工具"></a>编写自己的工具</h1><p>编写自己的工具帮助理解 caffe 框架和操作。</p>
+<h1 id="caffe中的GPU实现"><a href="#caffe中的GPU实现" class="headerlink" title="caffe中的GPU实现"></a>caffe中的GPU实现</h1><p>其实caffe不需要手动编写CUDA程序，而是直接使用<code>cuBLAS</code>实现数学计算，相当于CPU端的<code>OpenBLAS</code>和<code>MKL</code>计算库。</p>
+<p>上述是从数学计算角度，而对于DL中常见算子，如卷积，下采样等，在<code>cuDNN</code>中都已实现。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/" data-id="ckc02u6ia0000s0fz5l378eik" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">LeetCode-merge应用-求逆序对</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">25</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">52</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 18px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 16px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 14px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 12px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">29</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

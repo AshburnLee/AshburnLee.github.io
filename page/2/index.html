@@ -64,6 +64,68 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-caffe-阅读Log运行日志" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/" class="article-date">
+  <time datetime="2020-06-10T19:14:11.000Z" itemprop="datePublished">2020-06-11</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/">caffe-阅读Log运行日志</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接着笔记<code>caffe-数据&amp;模型-模型输出log</code>，继续阅读Log。是关于内存磁盘间的通信。</p>
+<h1 id="从prototxt描述转换城内存表示方式"><a href="#从prototxt描述转换城内存表示方式" class="headerlink" title="从prototxt描述转换城内存表示方式"></a>从prototxt描述转换城内存表示方式</h1><p>要构建一个Net，就需要解析两个超参数文件。对于模型结构参数文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 解析</span></span><br><span class="line">I0610 04:53:36.096751 13919 solver.cpp:102] Creating training net from net file: /media/junhui/DATA/caffe_workspace/my_linearReggresion/mylr.prototxt</span><br><span class="line"><span class="comment"># 这两行前面解释过了，区分哪些层用于TRAIN，哪些层用于TEST</span></span><br><span class="line">I0610 04:53:36.097002 13919 net.cpp:296] The NetState phase (0) differed from the phase (1) specified by a rule <span class="keyword">in</span> layer mnist</span><br><span class="line">I0610 04:53:36.097012 13919 net.cpp:296] The NetState phase (0) differed from the phase (1) specified by a rule <span class="keyword">in</span> layer accuracy</span><br><span class="line">I0610 04:53:36.097085 13919 net.cpp:53] Initializing net from parameters:</span><br></pre></td></tr></table></figure>
+
+<p>找到对应位置：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Solver&lt;Dtype&gt;::InitTrainNet() &#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// param_是一个SolverParameter对象，如果mylr.prototxt文件中定义了Net结构，则如下</span></span><br><span class="line">    <span class="keyword">if</span> (param_.has_net()) &#123;</span><br><span class="line">    LOG_IF(INFO, Caffe::root_solver()) <span class="comment">// 打印Log</span></span><br><span class="line">        &lt;&lt; <span class="string">"Creating training net from net file: "</span> &lt;&lt; param_.net();</span><br><span class="line">    <span class="comment">// 解析mylr.prototxt中内容，将其内容存入 NetParameter 对象 net_param 中。</span></span><br><span class="line">    <span class="comment">// 转换过程由ProtoBuffer工具完成的。</span></span><br><span class="line">    ReadNetParamsFromTextFileOrDie(param_.net(), &amp;net_param);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如此就将磁盘中的prototxt描述转换到内存。</p>
+<h1 id="将内存中模型存储到磁盘"><a href="#将内存中模型存储到磁盘" class="headerlink" title="将内存中模型存储到磁盘"></a>将内存中模型存储到磁盘</h1><p>当需要保存当前模型和快照时：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">I0610 04:53:38.909629 13919 solver.cpp:464] Snapshotting to binary proto file my_lr_iter_5000.caffemodel</span><br><span class="line">I0610 04:53:38.910568 13919 sgd_solver.cpp:284] Snapshotting solver state to binary proto file my_lr_iter_5000.solverstate</span><br></pre></td></tr></table></figure>
+
+<p>solver.cpp:464 将模型存入磁盘：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="built_in">string</span> Solver&lt;Dtype&gt;::SnapshotToBinaryProto() &#123;</span><br><span class="line">    <span class="built_in">string</span> model_filename = SnapshotFilename(<span class="string">".caffemodel"</span>);</span><br><span class="line">    <span class="comment">// 文件名，只用提供后缀</span></span><br><span class="line">    LOG(INFO) &lt;&lt; <span class="string">"Snapshotting to binary proto file "</span> &lt;&lt; model_filename;</span><br><span class="line">    <span class="comment">// NetParameter 定义在 caffe.pb.h 中</span></span><br><span class="line">    NetParameter net_param;</span><br><span class="line">    <span class="comment">// 序列化到 net_param，一个 ProtoBuffer 对象</span></span><br><span class="line">    net_-&gt;ToProto(&amp;net_param, param_.snapshot_diff());</span><br><span class="line">    <span class="comment">// 将这个 ProtoBuffer 对象写入磁盘</span></span><br><span class="line">    WriteProtoToBinaryFile(net_param, model_filename);</span><br><span class="line">    <span class="keyword">return</span> model_filename;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述写入磁盘过程在<a href="https://ashburnlee.github.io/2020/06/04/caffe-Blob-1/" target="_blank" rel="noopener">caffe-Blob-(1)</a>解释过。</p>
+<p>sgd_solver.cpp:284 将快照存入磁盘：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Dtype&gt;</span><br><span class="line"><span class="keyword">void</span> SGDSolver&lt;Dtype&gt;::SnapshotSolverStateToBinaryProto(</span><br><span class="line">    <span class="keyword">const</span> <span class="built_in">string</span>&amp; model_filename) &#123;</span><br><span class="line">    <span class="comment">// SolverState 定义在 caffe.pb.h 中</span></span><br><span class="line">    <span class="comment">// 创建一个序列化对象</span></span><br><span class="line">    SolverState state;</span><br><span class="line">    <span class="comment">// 获得当前网络迭代参数</span></span><br><span class="line">    state.set_iter(<span class="keyword">this</span>-&gt;iter_);</span><br><span class="line">    state.set_learned_net(model_filename);</span><br><span class="line">    state.set_current_step(<span class="keyword">this</span>-&gt;current_step_);</span><br><span class="line">    state.clear_history();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; history_.size(); ++i) &#123;</span><br><span class="line">        <span class="comment">// Add history</span></span><br><span class="line">        BlobProto* history_blob = state.add_history();</span><br><span class="line">        <span class="comment">// 写入 ProtoBuffer 对象</span></span><br><span class="line">        history_[i]-&gt;ToProto(history_blob);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">string</span> snapshot_filename = Solver&lt;Dtype&gt;::SnapshotFilename(<span class="string">".solverstate"</span>);</span><br><span class="line">    LOG(INFO)</span><br><span class="line">        &lt;&lt; <span class="string">"Snapshotting solver state to binary proto file "</span> &lt;&lt; snapshot_filename;</span><br><span class="line">    <span class="comment">// 将 ProtoBuffer 对象 写入磁盘</span></span><br><span class="line">    WriteProtoToBinaryFile(state, snapshot_filename.c_str());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>类<code>NetParameter</code>和类<code>SolverState</code>都是在<code>caffe.pb.h</code>文件中定义的。这个文件是编译时由 ProtoBuffer 的编译器自动生成的。其中定义了很多类，包括<code>NetParameter</code>和<code>SolverState</code>。为什么会自动成成的文件中会有特定的类名？ 和可能是ProtoBuffer根据<code>caffe.proto</code>协议生成的。</p>
+<p>对比发现，<code>caffe.pb.h</code> 中所有的类名在 <code>caffe.proto</code> 中都是一个message 对象： <code>message NAME {}</code>。</p>
+<p>上述属于内存磁盘通信的内容。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/11/caffe-%E9%98%85%E8%AF%BBLog%E8%BF%90%E8%A1%8C%E6%97%A5%E5%BF%97/" data-id="ckb9u1y9200008nfz2sh5hnv7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-caffe-数据-模型-模型输出log" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/06/10/caffe-%E6%95%B0%E6%8D%AE-%E6%A8%A1%E5%9E%8B-%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BAlog/" class="article-date">
@@ -624,56 +686,6 @@
 
 
   
-    <article id="post-caffe-所使用的数据格式" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/" class="article-date">
-  <time datetime="2020-06-04T03:12:30.000Z" itemprop="datePublished">2020-06-04</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/">caffe-所使用的数据格式</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="caffe为什么使用LMDB和levelDB，而不是直接使用原始数据"><a href="#caffe为什么使用LMDB和levelDB，而不是直接使用原始数据" class="headerlink" title="caffe为什么使用LMDB和levelDB，而不是直接使用原始数据"></a>caffe为什么使用LMDB和levelDB，而不是直接使用原始数据</h1><p>第一，原始数据的类型，种类很多，如二进制文件，<code>.npy</code>文件，多种图像可是文件等等，不可能使用统一的代码来读取，所以转换成统一的格式可以简化数据读取层的实现。具体说是将不同类型的数据存储为<code>key-value</code>的对应关系。便于caffe <code>DataLayer</code>获取这些数据。</p>
-<p>第二，使用LMDB和LEVELDB可以提高磁盘的IO利用率。</p>
-<p>较新的caffe，都使用<code>LMDB</code>，<code>LEVELDB</code>是caffe早起使用的。</p>
-<h1 id="什么是protobuff"><a href="#什么是protobuff" class="headerlink" title="什么是protobuff"></a>什么是protobuff</h1><p>ProtoBuff是一种实现内存和其他存储介质数据交换（<font color="red">从磁盘读取数据到内存，从内存保存数据到磁盘</font>）的协议。在caffe中protobuff用于解析<code>.prototxt</code>文件，包括超参数设置，和模型结构的定义。protobuff将<code>.prototxt</code>文件中的配置参数按照<code>caffe.proto</code>的协议解析并加载到内存变量<code>Caffe::SolverParameter</code>对象中。自己可以尝试对一个<code>solver.prototxt</code>文件按照<code>caffe.proto</code>解析出参数.</p>
-<p>在caffe中使用一个ProtoBuffer工具完成数据在存储介质间的数据交换。</p>
-<h1 id="什么是HDF5"><a href="#什么是HDF5" class="headerlink" title="什么是HDF5"></a>什么是HDF5</h1><p>HDF5是一种数据格式，同时还有处理这种数据格式的统一函数库。</p>
-<h1 id="HDF5-LMDB-ProtoBuff分别在什么时候使用"><a href="#HDF5-LMDB-ProtoBuff分别在什么时候使用" class="headerlink" title="HDF5, LMDB, ProtoBuff分别在什么时候使用"></a>HDF5, LMDB, ProtoBuff分别在什么时候使用</h1><p>caffe 模型结构超参数的定义和训练超参数的定义，使用ProtoBuff（默认），可以看到相应的文件都是以<code>.prototxt</code>为后缀，也可以使用HDF5。而caffe所处理的数据，要转换成LMDB。</p>
-<p>在caffe官方文档中，由关于data layer的描述：数据可以是来自高效的LMDB，levelDB数据库，可以使来自内存，或者来自HDF5或通用的图像格式的数据（当效率不是很重要时）。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/06/04/caffe-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F/" data-id="ckb07i8ne0000lofz6d850jmp" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -689,7 +701,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">17</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">25</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">25</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -699,7 +711,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">52</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">17</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">52</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -718,7 +730,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">28</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">29</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -729,6 +741,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
+          </li>
         
           <li>
             <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
@@ -744,10 +760,6 @@
         
           <li>
             <a href="/2020/06/16/LeetCode-BST%E7%9B%B8%E5%85%B3/">LeetCode-BST相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/15/LeetCode-top-k/">LeetCode-top-k-Kth-lagest</a>
           </li>
         
       </ul>
