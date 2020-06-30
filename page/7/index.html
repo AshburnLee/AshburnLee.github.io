@@ -64,6 +64,133 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Trouble-Shooting" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/13/Trouble-Shooting/" class="article-date">
+  <time datetime="2020-01-12T17:49:49.000Z" itemprop="datePublished">2020-01-13</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/13/Trouble-Shooting/">Trouble-Shooting</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="查看所连接WiFi及psswrd"><a href="#查看所连接WiFi及psswrd" class="headerlink" title="查看所连接WiFi及psswrd"></a>查看所连接WiFi及psswrd</h2><ol>
+<li><p>查看所有链接过的WiFi： </p>
+<p> <code>$ cd /etc/NetworkManager/system-connections</code><br> <code>$ ls</code></p>
+</li>
+<li><p>选择所查看WiFi,显示配置文件：</p>
+<p> <code>$ sudo vim TP-LINK_DBBB</code></p>
+</li>
+<li><p>对应密码在<code>wifi-security</code>字段的<code>psk</code>处</p>
+</li>
+</ol>
+<h2 id="为应用创建快捷方式-如firefox"><a href="#为应用创建快捷方式-如firefox" class="headerlink" title="为应用创建快捷方式 如firefox"></a>为应用创建快捷方式 如firefox</h2><ol>
+<li><p>下载firefox</p>
+</li>
+<li><p><code>$ tar -xvf firefox-70.0.1.tar.bz2</code> 解压</p>
+</li>
+<li><p><code>$ mv firefox /opt</code> 将解压后文件放入opt</p>
+</li>
+<li><p><code>$ cd /usr/share/applications</code></p>
+</li>
+<li><p><code>$ sudo touch firefox.desktop</code> 创建桌面图标文件</p>
+</li>
+<li><p><code>$ sudo vim firefox.desktop</code> 编辑文件</p>
+<pre><code>[Desktop Entry]
+Name=Firefox
+Comment=this is firefox
+Exec=/opt/firefox/firefox
+Icon=/opt/firefox/chrome/default/icons/default128.png
+Terminal=false
+Type=Application
+Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可执行文件的路径；<code>Icon</code>是Firefox应用图标路径</p>
+</li>
+<li><p><code>icon</code>加入了application 列表，便可以快速访问了</p>
+</li>
+</ol>
+<h2 id="apt-install-fail"><a href="#apt-install-fail" class="headerlink" title="apt install fail"></a>apt install fail</h2><p>Linux 中<code>sudo apt install ...</code>时关于<code>could not get lock /var/lib/dpkg/lock -open(11:Resource temorarily unavailable)</code>的解决方案：</p>
+<ul>
+<li><p>第一步：找到所有含有“apt”的进程：</p>
+<p>  <code>$ ps -A | grep apt</code></p>
+</li>
+<li><p>第二步：删除所有你含”apt”的进程：</p>
+<p>  <code>$ sudo kill -9 进程ID</code></p>
+</li>
+</ul>
+<h2 id="更新activation-key-windows"><a href="#更新activation-key-windows" class="headerlink" title="更新activation key(windows)"></a>更新activation key(windows)</h2><ul>
+<li><p>卸载之前的key</p>
+<p>  <code>&gt; slmgr.vbs /upk</code></p>
+</li>
+<li><p>安装新的key</p>
+<p>  <code>&gt; slmgr /ipk XXXXX-XXXXX-XXXXX-XXXXX-XXXXX</code></p>
+</li>
+<li><p>设置计算机秘钥管理地址</p>
+<p>  <code>&gt; slmgr /XXX.XXX.XXX</code></p>
+</li>
+<li><p>激活</p>
+<p>  <code>&gt; slmgr /ato</code></p>
+</li>
+</ul>
+<h2 id="修复U盘（Windows）"><a href="#修复U盘（Windows）" class="headerlink" title="修复U盘（Windows）"></a>修复U盘（Windows）</h2><p>当优盘出现问题时，比如作为系统盘使用后的异常。可以使用一下方法修复。windows中。</p>
+<p>在terminal中依次输入下面命令：</p>
+<ol>
+<li><p><code>diskpart</code>: 进入磁盘交互界面</p>
+</li>
+<li><p><code>list disk</code>: 返回机器中的所有磁盘的列表。比如“磁盘0”，“磁盘1”.</p>
+</li>
+<li><p><code>select disk 1</code>: 选择待处理的盘，比如“磁盘1”，从容量上也可以区分。</p>
+</li>
+<li><p><code>clean</code>: 删除U盘下的所有分区。</p>
+</li>
+<li><p><code>create partition primiry</code>: 在U盘中建立一个主分区。</p>
+</li>
+<li><p><code>active</code>: 激活</p>
+</li>
+<li><p><code>format fs=fat32 quick</code>: 快速格式化磁盘为fat32格式。加<code>quick</code>与没有加<code>quick</code>的区别：</p>
+<ul>
+<li>加<code>quick</code>只是删除磁盘中的文件。</li>
+<li>不加<code>quick</code>是真正地格式化，将磁盘重新分道分簇。</li>
+</ul>
+</li>
+<li><p><code>exit</code>: 推出磁盘交互界面</p>
+</li>
+</ol>
+<p>##　Windows系统用户临时文件</p>
+<p>定期将用户临时文件删除。</p>
+<p>系统盘-&gt;用户-&gt;自己的账户-&gt;显示隐藏那个文件-&gt;AppData。AppData中有三个文件夹：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">├── Local</span><br><span class="line">├── LocalLow</span><br><span class="line">└── Roaming</span><br></pre></td></tr></table></figure>
+
+<p>这三个文件夹中的Temp文件夹都是用户临时文件，删。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/13/Trouble-Shooting/" data-id="ckatsrgsj0042xqfzhxrhd5m3" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Linear-Algebra-看待矩阵的视角" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/" class="article-date">
@@ -129,58 +256,6 @@
       <a data-url="http://yoursite.com/2020/01/03/Linear-Algebra-%E7%9C%8B%E5%BE%85%E7%9F%A9%E9%98%B5%E7%9A%84%E8%A7%86%E8%A7%92/" data-id="ckatsrgs9003hxqfz509h3hyo" class="article-share-link">Share</a>
       
       
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
-  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">LeetCode-二进制中1的个数</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>bit操作</p>
-<p>知识点</p>
-<ol>
-<li>一个整数除以2，与将这个整数右移1位等价，但是移位运算效率更高。</li>
-<li>一个整数减一，后与原整数做‘与’运算，这个操作会把这个整数最右边的1变成零。</li>
-</ol>
-<p>有了上述两点，求二进制中1的个数，思路就有了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numberOfOne</span><span class="params">(<span class="keyword">int</span> num)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(num)&#123;</span><br><span class="line">        count++;</span><br><span class="line">        num = num &amp; (num - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>此方法对正负整数均使用。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" data-id="ckayvgezt0003lufz5yw5azs3" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
     </footer>
   </div>
   
@@ -269,6 +344,58 @@
     </div>
     <footer class="article-footer">
       <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" data-id="ckay1n2y900014afz92sqaa7u" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
+  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">LeetCode-二进制中1的个数</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>bit操作</p>
+<p>知识点</p>
+<ol>
+<li>一个整数除以2，与将这个整数右移1位等价，但是移位运算效率更高。</li>
+<li>一个整数减一，后与原整数做‘与’运算，这个操作会把这个整数最右边的1变成零。</li>
+</ol>
+<p>有了上述两点，求二进制中1的个数，思路就有了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numberOfOne</span><span class="params">(<span class="keyword">int</span> num)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(num)&#123;</span><br><span class="line">        count++;</span><br><span class="line">        num = num &amp; (num - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此方法对正负整数均使用。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" data-id="ckayvgezt0003lufz5yw5azs3" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
@@ -937,175 +1064,6 @@
 
 
   
-    <article id="post-LeetCode-方法论-数组相关-三" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/" class="article-date">
-  <time datetime="2019-12-20T09:17:12.000Z" itemprop="datePublished">2019-12-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/">LeetCode-方法论-数组相关-三</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>接着记录leetcode问题：<br>1002, 4, 215, 88, 674, 950</p>
-<p>提炼技术：</p>
-<ul>
-<li>记录字符频数</li>
-<li>实时更新</li>
-<li>额外变量</li>
-<li>逻辑中由插入操作，考虑使用<font color="red" size="4">队列</font></li>
-</ul>
-<h1 id="1002"><a href="#1002" class="headerlink" title="#1002"></a>#1002</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">找到单词的共有字符：</span><br><span class="line">Input: [&quot;bella&quot;,&quot;label&quot;,&quot;roller&quot;]</span><br><span class="line">Output: [&quot;e&quot;,&quot;l&quot;,&quot;l&quot;]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>思路</p>
-<p>  假设输入单词的列表是：[‘bcdc’, ‘dcc’, ‘cddcb’]<br>  过程如下：</p>
-<pre><code>loop：对于每一个单词记录其中字母出现的频数count，根据这个count，更新count26。
-        当所有单词统计过后，count26就包含了最终每个单词共有的字符出现的频数。
-最后一步：将count26中频数大于0的字母放入res数组。</code></pre><p>  其中，count26把元素初始化为可能的最大值；而且是个全局变量，对于每个单词都实时更新其值，节省了空间。</p>
-  <div align="center"><img src="/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/1002.png" width="650"></div>
-
-<p>  最终返回两个c一个d：[‘c’,’c’,’d’]。</p>
-</li>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="built_in">string</span>&gt; commonChars(<span class="built_in">vector</span>&lt;<span class="built_in">string</span>&gt;&amp; A)&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; count26(<span class="number">26</span>, INT_MAX);</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">string</span>&gt; res;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> word: A)&#123;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 统计每个单词中每个字母出现的频数</span></span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; count(<span class="number">26</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">auto</span> chara: word)&#123;</span><br><span class="line">            count[chara - <span class="string">'a'</span>]++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 每一个单词统计频数后更新count26</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">26</span>; i++)&#123;</span><br><span class="line">            count26[i] = min(count26[i], count[i]);  <span class="comment">// online update</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 最终的count26中记录了每个字母出现的次数</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">26</span>; i++)</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;count26[i]; j++)</span><br><span class="line">            res.push_back(<span class="built_in">string</span>(<span class="number">1</span>, i+<span class="string">'a'</span>));  <span class="comment">// 索引0对应‘a’</span></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">记录字符频数</font>，<font color="red" size="4">实时更新</font>，</p>
-<h1 id="4-Median-of-Two-Sorted-Arrays"><a href="#4-Median-of-Two-Sorted-Arrays" class="headerlink" title="#4 Median of Two Sorted Arrays"></a>#4 Median of Two Sorted Arrays</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">There are two sorted arrays nums1 and nums2 of size m and n respectively.</span><br><span class="line">Find the median of the two sorted arrays.</span><br><span class="line"></span><br><span class="line">nums1 &#x3D; [1, 2]</span><br><span class="line">nums2 &#x3D; [3, 4]</span><br><span class="line">The median is (2 + 3)&#x2F;2 &#x3D; 2.5</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-<ul>
-<li><p>思路</p>
-<p>  思路直接：第一步：merge两个有序数组，第二步：找到median。</p>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">findMedianSortedArrays</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> m = nums1.size();</span><br><span class="line">    <span class="keyword">int</span> n = nums2.size();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// aux 数组记录merge后的数组</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; aux(n+m ,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// merge two sorted arrays</span></span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">0</span>,j=<span class="number">0</span>,k=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (k=<span class="number">0</span>; k&lt; m+n; k++)&#123;</span><br><span class="line">        <span class="comment">// 如果i超过了nums1的长度，表示nums1中元素遍历完毕</span></span><br><span class="line">        <span class="keyword">if</span> (i&gt;=m)   </span><br><span class="line">            aux[k] = nums2[j++];</span><br><span class="line">        <span class="comment">// 如果j超过了nums2 的长度，表示nums2中元素遍历完毕 </span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (j&gt;=n) </span><br><span class="line">            aux[k] = nums1[i++];</span><br><span class="line">        <span class="comment">// 如果两个数组都没有遍历完毕</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(i&lt;m &amp;&amp; j&lt;n &amp;&amp; nums1[i] &lt; nums2[j] ) </span><br><span class="line">            aux[k] = nums1[i++];</span><br><span class="line">        <span class="comment">// 如果两个数组都没有遍历完毕</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (i&lt;m &amp;&amp; j&lt;n &amp;&amp; nums1[i] &gt;= nums2[j] ) </span><br><span class="line">            aux[k] = nums2[j++];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 计算中间两个数的median</span></span><br><span class="line">    <span class="keyword">double</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span>((m+n)%<span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line">        res = <span class="number">0.5</span>*(aux[(m+n)/<span class="number">2</span>] + aux[(m+n)/<span class="number">2</span><span class="number">-1</span>]);</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>((m+n)%<span class="number">2</span> == <span class="number">1</span>)</span><br><span class="line">        res = (aux[(m+n)/<span class="number">2</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>  其实在后两个if else语句中的<code>i&lt;m &amp;&amp; j&lt;n</code>是多余的，因为，如果执行到了这里，<code>i&lt;m &amp;&amp; j&lt;n</code>就已经满足了。</p>
-</li>
-</ul>
-<p>关键：<font color="red">merge</font>操作的情况要考虑清楚，所有情况要<font color="red">完备且neat</font>，功能实现无误后，将冗余的删除。</p>
-<h1 id="215-Kth-largest-element"><a href="#215-Kth-largest-element" class="headerlink" title="#215 Kth largest element"></a>#215 Kth largest element</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,2,1,5,6,4] and k &#x3D; 2</span><br><span class="line">Output: 5</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<ol>
-<li><p>当数组中的元素可以是任何整数时：</p>
-<p> 先排序，后直接取第k个元素（no good）</p>
-</li>
-<li><p>当数组中的元素中只含有0~9这10个，可以有其他方法：</p>
-<p> 使用频数数组记录每个digit出现的次数，根据这个频数与k的关系取到最终值。</p>
-</li>
-<li><p>一般的方法：</p>
-<p> Top-k 问题，使用冒泡排序，秩序要冒泡k次。</p>
-</li>
-</ol>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-<ol>
-<li><p>第一种情况：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Increase</span>&#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">const</span> <span class="keyword">int</span>&amp; a, <span class="keyword">const</span> <span class="keyword">int</span>&amp; b)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> a&gt;b;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findKthLargestElement</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> k)</span></span>&#123;</span><br><span class="line">    sort(nums.begin(), nums.end(), Increase());</span><br><span class="line">    <span class="keyword">return</span> nums[k<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>第二种情况可以使用如下方式：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">findKthLargestElement</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> k)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> res = <span class="number">1</span>;  <span class="comment">// 与k比较</span></span><br><span class="line">	<span class="keyword">int</span> count[<span class="number">10</span>] = &#123;<span class="number">0</span>&#125;;  <span class="comment">// 频数记录</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">		count[nums[i]]++;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">9</span>; i&gt;=<span class="number">0</span>; i--)&#123;    </span><br><span class="line">		<span class="keyword">if</span> (count[i] == <span class="number">0</span>) <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;=count[i]; j++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (res &lt; k) res+=<span class="number">1</span>;  </span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span>(res == k) <span class="keyword">return</span> i;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">throw</span> invalid_argument(<span class="string">"no return"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-</li>
-</ul>
-<h1 id="88-Merge-Two-Array"><a href="#88-Merge-Two-Array" class="headerlink" title="#88 Merge Two Array"></a>#88 Merge Two Array</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">nums1 &#x3D; [1,2,3,0,0,0], m &#x3D; 3</span><br><span class="line">nums2 &#x3D; [2,5,6],       n &#x3D; 3</span><br><span class="line"></span><br><span class="line">Output: [1,2,2,3,5,6]</span><br><span class="line"></span><br><span class="line">NOTE: num1&amp;num2 are sorted</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  其实就是实现Merge Sort的一个树结点的操作</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; merge2(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums1, <span class="keyword">int</span> m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums2, <span class="keyword">int</span> n) &#123;</span><br><span class="line">    <span class="keyword">int</span> i=<span class="number">0</span>; <span class="comment">//def num1 的index</span></span><br><span class="line">    <span class="keyword">int</span> j=<span class="number">0</span>;  <span class="comment">//def num2 的index</span></span><br><span class="line">    <span class="keyword">int</span> k=<span class="number">0</span>; <span class="comment">//def  结果array的index</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; arr(m+n);</span><br><span class="line">    <span class="keyword">while</span>(i&lt;m || j&lt;n)&#123;</span><br><span class="line">        <span class="keyword">if</span>(nums1[i] &lt;= nums2[j])</span><br><span class="line">            arr[k++] = nums1[i++];</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            arr[k++] = nums2[j++];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> arr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="674-最长连续递增子序列的长度"><a href="#674-最长连续递增子序列的长度" class="headerlink" title="#674 最长连续递增子序列的长度"></a>#674 最长连续递增子序列的长度</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">比如：nums&#x3D;[1,3,7,5,6,8,9]</span><br><span class="line"></span><br><span class="line">返回4. 最长递增子序列是[5,6,8,9]</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  用变量<code>start</code>标记每个递增子序列的第一个数的索引。<br>  遍历<code>nums</code>数组，只要<code>nums[i]&lt;=nums[i-1]</code>，更新<code>start</code>为当前索引<code>i</code>。<br>  <code>i</code>每次加1，<code>res</code>更新一次：<code>res=max(res, i-start+1)</code>.</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">func</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> start = <span class="number">0</span>;  <span class="comment">// extra variable </span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;nums.size();i++)&#123;</span><br><span class="line">        <span class="keyword">if</span>(i&gt;<span class="number">0</span> &amp;&amp; nums[i]&lt;=nums[i<span class="number">-1</span>])</span><br><span class="line">            start=i;</span><br><span class="line">        res = max(res, i-start+<span class="number">1</span>); <span class="comment">// update</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关键： <font color="red" size="4">额外变量</font>，<font color="red" size="4">实时更新</font>，<font color="red" size="4">先手动实现</font>，</p>
-</li>
-</ul>
-<h1 id="950-Reveal-Cards-In-Increasing-Order"><a href="#950-Reveal-Cards-In-Increasing-Order" class="headerlink" title="#950 Reveal Cards In Increasing Order"></a>#950 Reveal Cards In Increasing Order</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">给出一个序列，含若干个元素，任意顺序，现在确定一种顺序S，使得这个顺序的序列执行如下操作的过程中，第一步取出元素为递增顺序。这个操作如下：</span><br><span class="line">    1. 取出序列的第一个元素</span><br><span class="line">    2. 如果此时序列中还有元素，将第一个元素放到序列尾部。</span><br><span class="line">    3. 只要序列中有元素，就执行1,2步骤。 </span><br><span class="line"></span><br><span class="line">返回S。</span><br><span class="line"></span><br><span class="line">例：</span><br><span class="line">Input: [17,13,11,2,3,5,7]</span><br><span class="line">Output: [2,13,3,11,5,17,7]</span><br><span class="line">Explanation: </span><br><span class="line">We get the deck in the order [17,13,11,2,3,5,7] (this order doesn&#39;t matter), and reorder it.</span><br><span class="line">After reordering, the deck starts as [2,13,3,11,5,17,7], where 2 is the top of the deck.</span><br><span class="line">We reveal 2, and move 13 to the bottom.  The deck is now [3,11,5,17,7,13].</span><br><span class="line">We reveal 3, and move 11 to the bottom.  The deck is now [5,17,7,13,11].</span><br><span class="line">We reveal 5, and move 17 to the bottom.  The deck is now [7,13,11,17].</span><br><span class="line">We reveal 7, and move 13 to the bottom.  The deck is now [11,17,13].</span><br><span class="line">We reveal 11, and move 17 to the bottom.  The deck is now [13,17].</span><br><span class="line">We reveal 13, and move 17 to the bottom.  The deck is now [17].</span><br><span class="line">We reveal 17.</span><br><span class="line">Since all the cards revealed are in increasing order, the answer is correct.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<ol>
-<li><p>既然初始序列<code>deck</code>是任意的，所以先排序，从大到小排序得到新<code>deck</code>。</p>
-</li>
-<li><p>过程中需要插入序列第二个位置，所以考虑使用双端队列为容器<code>dq</code>。把第一个元素放入队列，从第二个元素开始。</p>
-<ul>
-<li>第一步 将队列的最后元素插入队列的第一个位置。</li>
-<li>第二步 将当前序列中的元素<code>deck[i]</code> 插入队列首。</li>
-<li>第三步 将此时的队列中最后元素删除。</li>
-</ul>
-</li>
-</ol>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; deckRevealedIncreasing(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; deck)&#123;</span><br><span class="line">    sort(deck.begin(), deck.end(), [](<span class="keyword">int</span>&amp; a, <span class="keyword">int</span>&amp; b)-&gt;<span class="keyword">bool</span>&#123;</span><br><span class="line">                <span class="keyword">return</span> a&gt;b;</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">deque</span>&lt;<span class="keyword">int</span>&gt; dq;</span><br><span class="line">    dq.push_front(deck[<span class="number">0</span>]);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt; deck.size(); i++)&#123;</span><br><span class="line">        dq.insert(dq.begin(), *(dq.end()<span class="number">-1</span>));</span><br><span class="line">        dq.push_front(deck[i]);</span><br><span class="line">        dq.pop_back();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(dq.begin(), dq.end());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键： <font color="red" size="4">已知结果求原因，反推过去</font>，<br>逻辑中由插入操作，考虑使用<font color="red" size="4">队列</font>、<br>双端队列常用方法： <code>push_front()</code>, <code>push_back()</code>, <code>pop_back()</code>, <code>pop_front()</code>, <code>insert()</code></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/20/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-%E6%95%B0%E7%BB%84%E7%9B%B8%E5%85%B3-%E4%B8%89/" data-id="ckatsrgu6007oxqfzhnu31wl7" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1121,7 +1079,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -1150,7 +1108,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">30</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1161,6 +1119,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
+          </li>
         
           <li>
             <a href="/2020/06/30/LeetCode-%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97%E7%9B%B8%E5%85%B3/">LeetCode-优先队列相关</a>
@@ -1176,10 +1138,6 @@
         
           <li>
             <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
           </li>
         
       </ul>

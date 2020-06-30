@@ -64,6 +64,93 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-例-规约" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" class="article-date">
+  <time datetime="2020-02-20T01:51:24.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/">CUDA-例-规约</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="优化实列：并行规约（parallel-reduction）"><a href="#优化实列：并行规约（parallel-reduction）" class="headerlink" title="优化实列：并行规约（parallel reduction）"></a>优化实列：并行规约（parallel reduction）</h1><p>规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
+<h1 id="未优化的规约（为便于图中展示，假设warp大小为2）"><a href="#未优化的规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="未优化的规约（为便于图中展示，假设warp大小为2）"></a>未优化的规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>过程看图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
+
+<p>其中</p>
+<ul>
+<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
+<li>n个元素需要<code>lg(n)</code>次平行。</li>
+</ul>
+<p><font color="gree">warp大小为2，从一开始的第一次并行，就存在divergence</font>。</p>
+<p>过程实现（假如在shared memory中实现）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只使用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作（因为是在同一个warp中），但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
+<h1 id="优化后规约（为便于图中展示，假设warp大小为2）"><a href="#优化后规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="优化后规约（为便于图中展示，假设warp大小为2）"></a>优化后规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
+<p>这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程处理相邻位置的数据</font>. </p>
+<p>所以改进如图：</p>
+<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
+
+<p>其中：</p>
+<ul>
+<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
+<li>n个元素需要<code>lg(n)</code>次平行。</li>
+<li>当数据元素更多时，橙色虚线框对应的threads与其他threads（很多时候）不属于同个warp，所以threads所用资源较前一个实现提前释放。</li>
+</ul>
+<p><font color="gree">warp大小为2，图中所有次并行计算都不存在divergence</font>。</p>
+<p>实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 4，2，1</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=blockDim.x/<span class="number">2</span>; stride &gt; <span class="number">0</span>; stride /= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对特定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; stride)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为什么此法好？</p>
+<ol>
+<li>每一轮都有一半的 thread不需要工作，资源释放掉。让warp提前完工，释放资源。</li>
+<li>block中的warp，没有了<font color="red" size="4">分支发散</font>，或者说是最小化了分支发散。回忆<font clolor="red">warp</font>：<ul>
+<li><font color="gree" size="4">在一个block中，连续的32个threads一组构成一个warp; </font></li>
+<li>warp 是最基本的调度单元</li>
+<li>warp中的threads在同步执行相同的指令（SIMT）</li>
+<li>warp中threads需要执行不同 的路径时（分支发散），warp中每个threads都要执行所有的分支，因为是同步的。比如一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</li>
+<li>warp之间时没有关系的。</li>
+<li>warp间的切换时没有代价的。多warp工作可以隐藏延时</li>
+<li>warp的分割，连续32个threadIdx.x 为一组（一个warp）0到31，32到63，…</li>
+<li>warp中的分支发散不总是问题，但是如有很多分支语句的话，每个thread就需要执行所有的分支。</li>
+<li>在设计程序时，不应个这样：<code>if (threadIdx.x &gt; 15){...}</code> 而应该这样<code>if (threadIdx.x &gt; 32-1) {...}</code>。后者，表示说，第一个warp干他的事，第二个warp执行这个分支。</li>
+</ul>
+</li>
+</ol>
+<p>就这个优化，当元素的个数小于32（warp的大小）时，<font color="red">不可避免</font>的会产生分支发散。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" data-id="ckatsrgrc0012xqfz3i0l2wo3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-例-向量相乘" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E4%BE%8B-%E5%90%91%E9%87%8F%E7%9B%B8%E4%B9%98/" class="article-date">
@@ -842,133 +929,6 @@
 
 
   
-    <article id="post-Trouble-Shooting" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/13/Trouble-Shooting/" class="article-date">
-  <time datetime="2020-01-12T17:49:49.000Z" itemprop="datePublished">2020-01-13</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/13/Trouble-Shooting/">Trouble-Shooting</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="查看所连接WiFi及psswrd"><a href="#查看所连接WiFi及psswrd" class="headerlink" title="查看所连接WiFi及psswrd"></a>查看所连接WiFi及psswrd</h2><ol>
-<li><p>查看所有链接过的WiFi： </p>
-<p> <code>$ cd /etc/NetworkManager/system-connections</code><br> <code>$ ls</code></p>
-</li>
-<li><p>选择所查看WiFi,显示配置文件：</p>
-<p> <code>$ sudo vim TP-LINK_DBBB</code></p>
-</li>
-<li><p>对应密码在<code>wifi-security</code>字段的<code>psk</code>处</p>
-</li>
-</ol>
-<h2 id="为应用创建快捷方式-如firefox"><a href="#为应用创建快捷方式-如firefox" class="headerlink" title="为应用创建快捷方式 如firefox"></a>为应用创建快捷方式 如firefox</h2><ol>
-<li><p>下载firefox</p>
-</li>
-<li><p><code>$ tar -xvf firefox-70.0.1.tar.bz2</code> 解压</p>
-</li>
-<li><p><code>$ mv firefox /opt</code> 将解压后文件放入opt</p>
-</li>
-<li><p><code>$ cd /usr/share/applications</code></p>
-</li>
-<li><p><code>$ sudo touch firefox.desktop</code> 创建桌面图标文件</p>
-</li>
-<li><p><code>$ sudo vim firefox.desktop</code> 编辑文件</p>
-<pre><code>[Desktop Entry]
-Name=Firefox
-Comment=this is firefox
-Exec=/opt/firefox/firefox
-Icon=/opt/firefox/chrome/default/icons/default128.png
-Terminal=false
-Type=Application
-Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可执行文件的路径；<code>Icon</code>是Firefox应用图标路径</p>
-</li>
-<li><p><code>icon</code>加入了application 列表，便可以快速访问了</p>
-</li>
-</ol>
-<h2 id="apt-install-fail"><a href="#apt-install-fail" class="headerlink" title="apt install fail"></a>apt install fail</h2><p>Linux 中<code>sudo apt install ...</code>时关于<code>could not get lock /var/lib/dpkg/lock -open(11:Resource temorarily unavailable)</code>的解决方案：</p>
-<ul>
-<li><p>第一步：找到所有含有“apt”的进程：</p>
-<p>  <code>$ ps -A | grep apt</code></p>
-</li>
-<li><p>第二步：删除所有你含”apt”的进程：</p>
-<p>  <code>$ sudo kill -9 进程ID</code></p>
-</li>
-</ul>
-<h2 id="更新activation-key-windows"><a href="#更新activation-key-windows" class="headerlink" title="更新activation key(windows)"></a>更新activation key(windows)</h2><ul>
-<li><p>卸载之前的key</p>
-<p>  <code>&gt; slmgr.vbs /upk</code></p>
-</li>
-<li><p>安装新的key</p>
-<p>  <code>&gt; slmgr /ipk XXXXX-XXXXX-XXXXX-XXXXX-XXXXX</code></p>
-</li>
-<li><p>设置计算机秘钥管理地址</p>
-<p>  <code>&gt; slmgr /XXX.XXX.XXX</code></p>
-</li>
-<li><p>激活</p>
-<p>  <code>&gt; slmgr /ato</code></p>
-</li>
-</ul>
-<h2 id="修复U盘（Windows）"><a href="#修复U盘（Windows）" class="headerlink" title="修复U盘（Windows）"></a>修复U盘（Windows）</h2><p>当优盘出现问题时，比如作为系统盘使用后的异常。可以使用一下方法修复。windows中。</p>
-<p>在terminal中依次输入下面命令：</p>
-<ol>
-<li><p><code>diskpart</code>: 进入磁盘交互界面</p>
-</li>
-<li><p><code>list disk</code>: 返回机器中的所有磁盘的列表。比如“磁盘0”，“磁盘1”.</p>
-</li>
-<li><p><code>select disk 1</code>: 选择待处理的盘，比如“磁盘1”，从容量上也可以区分。</p>
-</li>
-<li><p><code>clean</code>: 删除U盘下的所有分区。</p>
-</li>
-<li><p><code>create partition primiry</code>: 在U盘中建立一个主分区。</p>
-</li>
-<li><p><code>active</code>: 激活</p>
-</li>
-<li><p><code>format fs=fat32 quick</code>: 快速格式化磁盘为fat32格式。加<code>quick</code>与没有加<code>quick</code>的区别：</p>
-<ul>
-<li>加<code>quick</code>只是删除磁盘中的文件。</li>
-<li>不加<code>quick</code>是真正地格式化，将磁盘重新分道分簇。</li>
-</ul>
-</li>
-<li><p><code>exit</code>: 推出磁盘交互界面</p>
-</li>
-</ol>
-<p>##　Windows系统用户临时文件</p>
-<p>定期将用户临时文件删除。</p>
-<p>系统盘-&gt;用户-&gt;自己的账户-&gt;显示隐藏那个文件-&gt;AppData。AppData中有三个文件夹：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">├── Local</span><br><span class="line">├── LocalLow</span><br><span class="line">└── Roaming</span><br></pre></td></tr></table></figure>
-
-<p>这三个文件夹中的Temp文件夹都是用户临时文件，删。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/13/Trouble-Shooting/" data-id="ckatsrgsj0042xqfzhxrhd5m3" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -984,7 +944,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -1013,7 +973,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">30</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1024,6 +984,10 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
+          </li>
         
           <li>
             <a href="/2020/06/30/LeetCode-%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97%E7%9B%B8%E5%85%B3/">LeetCode-优先队列相关</a>
@@ -1039,10 +1003,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
           <li>
             <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
           </li>
         
       </ul>

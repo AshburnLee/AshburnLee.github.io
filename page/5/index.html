@@ -64,6 +64,136 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-stack" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" class="article-date">
+  <time datetime="2020-02-25T04:21:48.000Z" itemprop="datePublished">2020-02-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/">LeetCode-方法论-stack</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>20, 1021, 1019, 155，921，</p>
+<h2 id="20-valid-parenthese"><a href="#20-valid-parenthese" class="headerlink" title="#20 valid parenthese"></a>#20 valid parenthese</h2><ul>
+<li><p>问题描述</p>
+<p>  对于string S，判断是否是合法的括号对儿。</p>
+<p>  如：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;[()]()&#125;()  合法</span><br><span class="line">&#123;()]       不合法</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  遍历s：</p>
+<ol>
+<li><p>如果<code>s[i]</code>是左括号“(”，“[”, “{”，则入栈<code>stack.push(s[i])</code>。</p>
+</li>
+<li><p>如果是右括号，如果栈为空，表示第一个就不合法，结束。否则，记录栈顶元素<code>curr=stack.top()</code>，后出栈顶元素<code>stack.pop()</code>。</p>
+</li>
+<li><p>根据匹配规则，得到<code>curr</code><font color="red">应该</font>是什么，用<code>match</code>表示。然后匹配：看<code>实际curr</code>是否与<code>应该match</code>相同。若相同，继续遍历，否则不合法，结束。</p>
+<p>关键：判断当前元素<font color="red">应该</font>是什么，与<font color="red">实际</font>是什么，是否一致。</p>
+</li>
+</ol>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">matchParenthese</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">       <span class="built_in">stack</span>&lt;<span class="keyword">char</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">       <span class="comment">// 遍历每一个字符</span></span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="comment">// 如果是'(', 入栈</span></span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span> || S[i] == <span class="string">'['</span> || S[i] == <span class="string">'&#123;'</span> )</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line">           <span class="comment">// 如果是')'：</span></span><br><span class="line">           <span class="keyword">else</span> &#123;</span><br><span class="line">               <span class="comment">// 如果栈开始就为空，则不合法</span></span><br><span class="line">               <span class="keyword">if</span>(<span class="built_in">stack</span>.size() == <span class="number">0</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">               <span class="comment">// 得到栈顶元素 “实际”是啥</span></span><br><span class="line">               <span class="keyword">char</span> curr = <span class="built_in">stack</span>.top();</span><br><span class="line">               <span class="built_in">stack</span>.pop();</span><br><span class="line">               <span class="comment">// 匹配原则 得到“应该”是啥</span></span><br><span class="line">               <span class="keyword">char</span> match;</span><br><span class="line">               <span class="keyword">if</span> (S[i] == <span class="string">')'</span>) match = <span class="string">'('</span>;</span><br><span class="line">               <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">']'</span>) match = <span class="string">'['</span>;</span><br><span class="line">               <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">'&#125;'</span>) match = <span class="string">'&#123;'</span>;</span><br><span class="line">                   </span><br><span class="line">               <span class="comment">// 这时才开始匹配 “实际”与“应该”一致否</span></span><br><span class="line">               <span class="keyword">if</span>(curr != match) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span>(<span class="built_in">stack</span>.size() != <span class="number">0</span>) </span><br><span class="line">           <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">       <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>这个问题是stack 的经典应用。</p>
+<h2 id="1021-remove-outermost-parentheses"><a href="#1021-remove-outermost-parentheses" class="headerlink" title="#1021 remove outermost parentheses"></a>#1021 remove outermost parentheses</h2><ul>
+<li><p>问题描述</p>
+<p>  括号对儿是和法的。对于输入，返回输出：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Input: <span class="string">"(()())(())"</span></span><br><span class="line">Ouput: <span class="string">"()()()"</span></span><br><span class="line">Explanation: </span><br><span class="line">The input string is <span class="string">"(()())(())"</span>, with primitive decomposition <span class="string">"(()())"</span> + <span class="string">"(())"</span>.</span><br><span class="line">After removing outer parentheses of each part, this is <span class="string">"()()"</span> + <span class="string">"()"</span> = <span class="string">"()()()"</span>.</span><br><span class="line"></span><br><span class="line">Input: <span class="string">"()()"</span></span><br><span class="line">Output: <span class="string">""</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<ol>
+<li><p>第一步，遍历<code>S</code>，将每一对儿最外层的括号的右括号的<code>Index</code>记录在<code>arr</code>中，（初始化的<code>arr</code>中有个-1）。例：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">S:     ( ( (  ) ) )  ( ( ) ( )  )</span><br><span class="line">index: 0 1 2  3 4 5  6 7 8 9 10 11</span><br></pre></td></tr></table></figure>
+<p> 根据描述，返回<code>arr: [-1, 5, 11]</code>。因为<code>0~5</code>是第一对儿最外层括号，<code>6~11</code>是第二对儿最外层括号。</p>
+</li>
+<li><p>第二步，对arr中的前<code>n-1</code>个元素，取<code>arr[i]+2</code>和<code>arr[i+1]-1</code>之间的 所有对应的<code>S</code>中的元素。结束。</p>
+</li>
+</ol>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">removeOutermostParentheses</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">       <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; arr;</span><br><span class="line">       arr.push_back(<span class="number">-1</span>);</span><br><span class="line">       <span class="comment">// the 1st step</span></span><br><span class="line">       <span class="built_in">stack</span>&lt;<span class="keyword">char</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line">           <span class="keyword">else</span>&#123;</span><br><span class="line">               <span class="built_in">stack</span>.pop();</span><br><span class="line">               <span class="comment">// 当stack为空，表示一组匹配结束，记录结束的index</span></span><br><span class="line">               <span class="keyword">if</span>(<span class="built_in">stack</span>.size()==<span class="number">0</span>)</span><br><span class="line">                   arr.push_back(i);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="comment">// the 2nd step</span></span><br><span class="line">       <span class="built_in">string</span> resS;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;arr.size()<span class="number">-1</span>; i++)&#123;</span><br><span class="line">           <span class="keyword">int</span> start = arr[i]+<span class="number">2</span>;</span><br><span class="line">           <span class="keyword">int</span> end = arr[i+<span class="number">1</span>]<span class="number">-1</span>;</span><br><span class="line">           <span class="keyword">if</span>(start&gt;=end) <span class="keyword">continue</span>;</span><br><span class="line">           <span class="comment">// 将outermost括号内的所有内用append到resS中</span></span><br><span class="line">           <span class="keyword">for</span>(<span class="keyword">int</span> j=start; j&lt;=end; j++)&#123;</span><br><span class="line">               resS+=S[j];</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> resS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h2 id="1019-next-greater-nodes-in-linked-list"><a href="#1019-next-greater-nodes-in-linked-list" class="headerlink" title="#1019 next greater nodes in linked list"></a>#1019 next greater nodes in linked list</h2><ul>
+<li><p>问题描述</p>
+<p>  看下面这个例子：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [2,7,4,3,5]</span><br><span class="line">Output: [7,0,5,5,0]</span><br><span class="line"></span><br><span class="line">解释：</span><br><span class="line">对于2，其后第一个比他大的是7</span><br><span class="line">对于7，气候第一个比他大的没有，0</span><br><span class="line">对于4，其后第一个比他大的是5</span><br><span class="line">对于3，其后第一个比他大的是5</span><br><span class="line">对于5，为最后一个元素，其后没有比他大的，0</span><br><span class="line">所以返回[7,0,5,5,0]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+</li>
+<li><p>实现</p>
+</li>
+</ul>
+<h2 id="155-Min-Stack"><a href="#155-Min-Stack" class="headerlink" title="#155 Min Stack"></a>#155 Min Stack</h2><ul>
+<li><p>描述 </p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Design a stack that supports push(), pop(), top(), and retrieving the minimum element in constant time: getMin().</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑<br>  在这个类中，使用两个stack。一个<code>mystack</code>正常工作，另一个<code>min</code>记录栈<code>mystack</code>目前的最小值，保证<code>min</code>中的栈顶元素是最小的，而且<code>min</code>从栈顶到栈底元素大小递增。比如<code>min： 底|3|2|1 ...  |顶</code>。并且始终<font color="red">保持min的性质始终不变</font>。</p>
+<p>  特点：<font color="orange">使用两个stack，一个正常工作，引入另一个使得整个stack类有了其他功能</font>。</p>
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MinStack</span>&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; mystack;  <span class="comment">// 提供stack正常的功能。</span></span><br><span class="line">    <span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; min;   <span class="comment">// 记录最小值。</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    MinStack()&#123;&#125;;</span><br><span class="line">    ~MinStack()&#123;&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">push</span><span class="params">(<span class="keyword">int</span> x)</span></span>&#123;</span><br><span class="line">        mystack.push(x);</span><br><span class="line">        <span class="comment">// 只要待处理元素小于min的top元素，</span></span><br><span class="line">        <span class="comment">// min也要push进这个元素，</span></span><br><span class="line">        <span class="comment">// 保证min的top为当前mystack的最小值</span></span><br><span class="line">        <span class="keyword">if</span>(min.empty() || x&lt;=min.top())</span><br><span class="line">            min.push(x);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">top</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> mystack.top();   </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getMin</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> min.top();   </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">empty</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> mystack.empty();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 当mystack.top() == min.top()时，两个stack都要pop()</span></span><br><span class="line">    <span class="comment">// 保证min的top为当前mystack的最小值。</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">pop</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(mystack.top() == min.top())</span><br><span class="line">            min.pop();</span><br><span class="line">        mystack.pop();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+<h2 id="921-Minimum-Add-to-Make-Parentheses-Valid"><a href="#921-Minimum-Add-to-Make-Parentheses-Valid" class="headerlink" title="#921 Minimum Add to Make Parentheses Valid"></a>#921 Minimum Add to Make Parentheses Valid</h2><ul>
+<li><p>描述</p>
+<p>  添加最少的括号，使得括号字符串有效，例子：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: &quot;())&quot;</span><br><span class="line">Output: 1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Input: &quot;(((&quot;</span><br><span class="line">Output: 3</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Input: &quot;()&quot;</span><br><span class="line">Output: 0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<p>  使用栈：</p>
+<p>  遍历S，遇到<code>&#39;(&#39;</code>入站，遇到<code>&#39;)&#39;</code>出站，表示有一对是匹配的，并将记录匹配对数的count+1。遍历完后，只需要：<code>S.length()-2*count</code>。的结果。</p>
+<p>  还可以不使用栈。其实栈的作用只是记录<code>&#39;(&#39;</code>，所以可以只是用一个int变量来记录。如此空间复杂度从<code>O(N)</code>变为<code>O(1)</code>。</p>
+<p>  <font color="orange">所有思路中一定有一个是适用于所有情况的，所以如果一个思路中有很多情况不能满足，思路不对</font>。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">// use stack</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">minAddToMakeValid</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">	<span class="built_in">stack</span>&lt;<span class="keyword">int</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line">	<span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               <span class="built_in">stack</span>.push(S[i]);</span><br><span class="line"></span><br><span class="line">           <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">')'</span>)&#123;</span><br><span class="line">               <span class="keyword">if</span>(!<span class="built_in">stack</span>.empty())&#123;</span><br><span class="line">                   <span class="built_in">stack</span>.pop();</span><br><span class="line">				count++;</span><br><span class="line">               &#125;   </span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> S.length()<span class="number">-2</span>*count;</span><br><span class="line">&#125;</span><br><span class="line">   <span class="comment">// No stack</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">minAddToMakeValid</span><span class="params">(<span class="built_in">string</span> S)</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> left_p=<span class="number">0</span>;</span><br><span class="line">	<span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;S.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(S[i] == <span class="string">'('</span>)</span><br><span class="line">               left_p++;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">else</span> <span class="keyword">if</span>(S[i] == <span class="string">')'</span>)&#123;</span><br><span class="line">               <span class="keyword">if</span>(left_p!=<span class="number">0</span>)&#123;</span><br><span class="line">                   left_p--;;</span><br><span class="line">				count++;</span><br><span class="line">               &#125;   </span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> S.length()<span class="number">-2</span>*count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/25/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-stack/" data-id="ckatsrgs50036xqfz9kmkg6m4" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-杂记待归类" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/" class="article-date">
@@ -887,93 +1017,6 @@
 
 
   
-    <article id="post-CUDA-例-规约" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" class="article-date">
-  <time datetime="2020-02-20T01:51:24.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/">CUDA-例-规约</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="优化实列：并行规约（parallel-reduction）"><a href="#优化实列：并行规约（parallel-reduction）" class="headerlink" title="优化实列：并行规约（parallel reduction）"></a>优化实列：并行规约（parallel reduction）</h1><p>规约的更为<font color="red">一般的形式：对一个输入数组进行某种操作，会产生一个更小的结果数组</font>。比如点积算子，累加，min，max，平方和，逻辑与，逻辑或等等。规约的成立前提是，这些算子中的二元操作符合<font color="orange">结合率</font>。</p>
-<h1 id="未优化的规约（为便于图中展示，假设warp大小为2）"><a href="#未优化的规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="未优化的规约（为便于图中展示，假设warp大小为2）"></a>未优化的规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>过程看图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction0.png" width="700"></div>
-
-<p>其中</p>
-<ul>
-<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
-<li>n个元素需要<code>lg(n)</code>次平行。</li>
-</ul>
-<p><font color="gree">warp大小为2，从一开始的第一次并行，就存在divergence</font>。</p>
-<p>过程实现（假如在shared memory中实现）：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只使用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 1，2，4</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=<span class="number">1</span>; stride &lt; blockDim.x; stride *= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对指定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x % (<span class="number">2</span>*stride) == <span class="number">0</span>)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述过程中，（看图）每次循环会规律的有线程没有做实际的工作，这些threads也在工作（因为是在同一个warp中），但是没有实际操作数。每一轮实际所需的线程数在减半。</p>
-<h1 id="优化后规约（为便于图中展示，假设warp大小为2）"><a href="#优化后规约（为便于图中展示，假设warp大小为2）" class="headerlink" title="优化后规约（为便于图中展示，假设warp大小为2）"></a>优化后规约（为便于图中展示，假设<font color="gree">warp大小为2</font>）</h1><p>由上一个实现中，看到了，每一轮的实际工作线程数在减半，但是实际上所有的threads都在工作，很多是没有意义的工作。</p>
-<p>这样为什么不好？因为违反了<font color="red" size="4">Coalescing Access：相邻的线程处理相邻位置的数据</font>. </p>
-<p>所以改进如图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/reduction1.png" width="700"></div>
-
-<p>其中：</p>
-<ul>
-<li><code>id</code>既是存储地址的id，也是threads的id。（因为threads的id此处没有更新）。</li>
-<li>n个元素需要<code>lg(n)</code>次平行。</li>
-<li>当数据元素更多时，橙色虚线框对应的threads与其他threads（很多时候）不属于同个warp，所以threads所用资源较前一个实现提前释放。</li>
-</ul>
-<p><font color="gree">warp大小为2，图中所有次并行计算都不存在divergence</font>。</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    __shared__ <span class="keyword">float</span> partialSum[];</span><br><span class="line">    <span class="comment">// ...将数据放入shared memory中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 因为只是用一个block，所以只需要threads 的id</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环计算每一层，stride 为 4，2，1</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> stride=blockDim.x/<span class="number">2</span>; stride &gt; <span class="number">0</span>; stride /= <span class="number">2</span>)&#123;</span><br><span class="line">        <span class="comment">// 对特定的thread 进行加操作，与id和stride有关，拿笔画画就找到规律。</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; stride)</span><br><span class="line">            partialSum[x] += partialSum[x + stride];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这一层都求和结束后，才能进行下一步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>为什么此法好？</p>
-<ol>
-<li>每一轮都有一半的 thread不需要工作，资源释放掉。让warp提前完工，释放资源。</li>
-<li>block中的warp，没有了<font color="red" size="4">分支发散</font>，或者说是最小化了分支发散。回忆<font clolor="red">warp</font>：<ul>
-<li><font color="gree" size="4">在一个block中，连续的32个threads一组构成一个warp; </font></li>
-<li>warp 是最基本的调度单元</li>
-<li>warp中的threads在同步执行相同的指令（SIMT）</li>
-<li>warp中threads需要执行不同 的路径时（分支发散），warp中每个threads都要执行所有的分支，因为是同步的。比如一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</li>
-<li>warp之间时没有关系的。</li>
-<li>warp间的切换时没有代价的。多warp工作可以隐藏延时</li>
-<li>warp的分割，连续32个threadIdx.x 为一组（一个warp）0到31，32到63，…</li>
-<li>warp中的分支发散不总是问题，但是如有很多分支语句的话，每个thread就需要执行所有的分支。</li>
-<li>在设计程序时，不应个这样：<code>if (threadIdx.x &gt; 15){...}</code> 而应该这样<code>if (threadIdx.x &gt; 32-1) {...}</code>。后者，表示说，第一个warp干他的事，第二个warp执行这个分支。</li>
-</ul>
-</li>
-</ol>
-<p>就这个优化，当元素的个数小于32（warp的大小）时，<font color="red">不可避免</font>的会产生分支发散。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E4%BE%8B-%E8%A7%84%E7%BA%A6/" data-id="ckatsrgrc0012xqfz3i0l2wo3" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -989,7 +1032,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">2</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -1018,7 +1061,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">30</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1029,6 +1072,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
+          </li>
         
           <li>
             <a href="/2020/06/30/LeetCode-%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97%E7%9B%B8%E5%85%B3/">LeetCode-优先队列相关</a>
@@ -1044,10 +1091,6 @@
         
           <li>
             <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/17/caffe-%E5%9C%A8%E6%96%B0%E6%A0%B7%E6%9C%AC%E4%B8%8A%E4%BD%BF%E7%94%A8%E8%AE%AD%E7%BB%83%E5%A5%BD%E7%9A%84%E6%A8%A1%E5%9E%8B/">caffe-在新样本上使用训练好的模型</a>
           </li>
         
       </ul>
