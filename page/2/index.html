@@ -64,6 +64,61 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-34-find-positions-of-elements" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/12/LeetCode-34-find-positions-of-elements/" class="article-date">
+  <time datetime="2020-06-12T15:28:16.000Z" itemprop="datePublished">2020-06-12</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/12/LeetCode-34-find-positions-of-elements/">LeetCode-34-find-positions-of-elements</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>二分查找。</p>
+<ul>
+<li><p>描述</p>
+<p>  在一个有序的数组中找到指定元素的起始和结束位置，如下：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: nums = [5,7,7,8,8,10], target = 8</span><br><span class="line">Output: [3,4]</span><br></pre></td></tr></table></figure>
+<p>  如果没有找到target，返回[-1, -1]。</p>
+</li>
+<li><p>思路</p>
+<p>  分两步，首先用二分查找法找到数组中的一个target，然后分别从这个target开始先前和向后移动，找到其开始和结束的位置。实现如下，时间复杂度O(m*logN)，m为target元素个数：</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// 二分查找</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; searchRange(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> target) &#123;</span><br><span class="line">        <span class="keyword">if</span>(nums.size()==<span class="number">0</span>) <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&#123;<span class="number">-1</span>,<span class="number">-1</span>&#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> head = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> tail = nums.size()<span class="number">-1</span>;</span><br><span class="line">        <span class="keyword">while</span>(head&lt;=tail)&#123;</span><br><span class="line">            <span class="keyword">int</span> m = (tail+head)/<span class="number">2</span>;</span><br><span class="line">            <span class="keyword">if</span>(nums[m] == target) &#123;</span><br><span class="line">                <span class="keyword">return</span> mySearch(m, nums);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span>(nums[m] &lt; target)</span><br><span class="line">                head = m + <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                tail = m - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 当没有找到target</span></span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &#123;<span class="number">-1</span>, <span class="number">-1</span>&#125;;</span><br><span class="line">    &#125;   </span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="comment">// 搜索起始和结束位置</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; mySearch(<span class="keyword">int</span> m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)&#123;</span><br><span class="line">        <span class="keyword">int</span> mUp = m;</span><br><span class="line">        <span class="keyword">int</span> mDown = m;</span><br><span class="line">        <span class="comment">// 向后搜索</span></span><br><span class="line">        <span class="keyword">while</span>(mUp+<span class="number">1</span>&lt;nums.size() &amp;&amp; nums[mUp] == nums[mUp+<span class="number">1</span>]) </span><br><span class="line">            mUp++;</span><br><span class="line">        <span class="comment">// 向前搜索</span></span><br><span class="line">        <span class="keyword">while</span>(mDown<span class="number">-1</span>&gt;=<span class="number">0</span> &amp;&amp; nums[mDown] == nums[mDown<span class="number">-1</span>]) </span><br><span class="line">            mDown--;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&#123;mDown, mUp&#125;;</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/12/LeetCode-34-find-positions-of-elements/" data-id="ckbcdjnvu0000cpfz5rn4ahup" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-求一个数的平方根sqrt-x" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84%E5%B9%B3%E6%96%B9%E6%A0%B9sqrt-x/" class="article-date">
@@ -112,7 +167,7 @@
       <a data-url="http://yoursite.com/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84%E5%B9%B3%E6%96%B9%E6%A0%B9sqrt-x/" data-id="ckbcav8uq00007nfzapsu843x" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
 
     </footer>
   </div>
@@ -147,7 +202,8 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <ul>
+        <p>递归</p>
+<ul>
 <li><p>问题描述：</p>
 <p>  求x的n次方<code>power(x, n)</code>，如<code>power(2,4) = 16</code>。</p>
 </li>
@@ -171,7 +227,7 @@
       <a data-url="http://yoursite.com/2020/06/12/LeetCode-%E6%B1%82%E4%B8%80%E4%B8%AA%E6%95%B0%E7%9A%84n%E6%AC%A1%E5%B9%82/" data-id="ckbc9fx290000infzgxddhof1" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
 
     </footer>
   </div>
@@ -628,53 +684,6 @@
 
 
   
-    <article id="post-caffe-SyncedMemory" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/06/06/caffe-SyncedMemory/" class="article-date">
-  <time datetime="2020-06-06T15:46:51.000Z" itemprop="datePublished">2020-06-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/06/06/caffe-SyncedMemory/">caffe-SyncedMemory</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>结构：caffe命名空间中包含两个inline函数和类SyncedMemory的声明。 </p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CAFFE_SYNCEDMEM_HPP_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CAFFE_SYNCEDMEM_HPP_</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdlib&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> USE_MKL</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mkl.h"</span>  <span class="comment">// 使用intel数学运算库MKL</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"caffe/common.hpp"</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> caffe &#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用cudaMallocHost()方法从Host内存开辟空间。从这里开辟空间对于单个GPU性能提升不明显，但是对于大的模型在多GPU上的训练，有较大的性能提升。</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">CaffeMallocHost</span><span class="params">(<span class="keyword">void</span>** ptr, <span class="keyword">size_t</span> size, <span class="keyword">bool</span>* use_cuda)</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CPU_ONLY <span class="comment">// 如果没有指明CPU_ONLY，则：</span></span></span><br><span class="line">    <span class="keyword">if</span> (Caffe::mode() == Caffe::GPU) &#123;</span><br><span class="line">        CUDA_CHECK(cudaMallocHost(ptr, size));</span><br><span class="line">        *use_cuda = <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> USE_MKL <span class="comment">// 如果使用MKL，则：</span></span></span><br><span class="line">    *ptr = mkl_malloc(size ? size:<span class="number">1</span>, <span class="number">64</span>);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span>  <span class="comment">// 否则：</span></span></span><br><span class="line">    *ptr = <span class="built_in">malloc</span>(size);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    *use_cuda = <span class="literal">false</span>;</span><br><span class="line">    CHECK(*ptr) &lt;&lt; <span class="string">"host allocation of size "</span> &lt;&lt; size &lt;&lt; <span class="string">" failed"</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 与开辟空间对应，用于释放内存。</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">CaffeFreeHost</span><span class="params">(<span class="keyword">void</span>* ptr, <span class="keyword">bool</span> use_cuda)</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CPU_ONLY</span></span><br><span class="line">    <span class="keyword">if</span> (use_cuda) &#123;</span><br><span class="line">        CUDA_CHECK(cudaFreeHost(ptr));</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> USE_MKL</span></span><br><span class="line">    mkl_free(ptr);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    <span class="built_in">free</span>(ptr);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 负责Host和Device内存的分配，和两者间内存同步</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SyncedMemory</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// 构造和析构函数</span></span><br><span class="line">    SyncedMemory();</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">SyncedMemory</span><span class="params">(<span class="keyword">size_t</span> size)</span></span>;</span><br><span class="line">    ~SyncedMemory();</span><br><span class="line">    <span class="comment">// 只读方式只读数据</span></span><br><span class="line">    <span class="function"><span class="keyword">const</span> <span class="keyword">void</span>* <span class="title">cpu_data</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">const</span> <span class="keyword">void</span>* <span class="title">gpu_data</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="comment">// 设置数据</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">set_cpu_data</span><span class="params">(<span class="keyword">void</span>* data)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">set_gpu_data</span><span class="params">(<span class="keyword">void</span>* data)</span></span>;</span><br><span class="line">    <span class="comment">// 读写方式读取数据</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span>* <span class="title">mutable_cpu_data</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span>* <span class="title">mutable_gpu_data</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="comment">// 状态变量：未初始化，CPU数据有效，GPU数据有效，已同步</span></span><br><span class="line">    <span class="keyword">enum</span> SyncedHead &#123; UNINITIALIZED, </span><br><span class="line">                        HEAD_AT_CPU, </span><br><span class="line">                        HEAD_AT_GPU, </span><br><span class="line">                        SYNCED &#125;;</span><br><span class="line">    <span class="comment">// 获取当前状态变量值</span></span><br><span class="line">    <span class="function">SyncedHead <span class="title">head</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> head_; &#125;</span><br><span class="line">    <span class="comment">// 返回当前存储空间的大小</span></span><br><span class="line">    <span class="keyword">size_t</span> size() <span class="keyword">const</span> &#123; <span class="keyword">return</span> size_; &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CPU_ONLY</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">async_gpu_push</span><span class="params">(<span class="keyword">const</span> cudaStream_t&amp; stream)</span></span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">check_device</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">to_cpu</span><span class="params">()</span></span>;  <span class="comment">// 同步数据到host</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">to_gpu</span><span class="params">()</span></span>;  <span class="comment">// 同步数据到Device</span></span><br><span class="line">    <span class="keyword">void</span>* cpu_ptr_;  <span class="comment">// 位于Host的数据指针</span></span><br><span class="line">    <span class="keyword">void</span>* gpu_ptr_;  <span class="comment">// 位于Device的数据指针</span></span><br><span class="line">    <span class="keyword">size_t</span> size_;  <span class="comment">// 存储空间的大小</span></span><br><span class="line">    SyncedHead head_;  <span class="comment">// 当前状态变量</span></span><br><span class="line">    <span class="keyword">bool</span> own_cpu_data_;  <span class="comment">// 是否有cpu数据的所有权</span></span><br><span class="line">    <span class="keyword">bool</span> cpu_malloc_use_cuda_;  <span class="comment">// 是否</span></span><br><span class="line">    <span class="keyword">bool</span> own_gpu_data_;  <span class="comment">// 是否有gpu数据的所有权</span></span><br><span class="line">    <span class="keyword">int</span> device_;  <span class="comment">// 设备号</span></span><br><span class="line"></span><br><span class="line">    DISABLE_COPY_AND_ASSIGN(SyncedMemory);</span><br><span class="line">&#125;;  <span class="comment">// class SyncedMemory</span></span><br><span class="line"></span><br><span class="line">&#125;  <span class="comment">// namespace caffe</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span>  <span class="comment">// CAFFE_SYNCEDMEM_HPP_</span></span></span><br></pre></td></tr></table></figure>
-
-<h1 id="补充，条件编译预编译指令"><a href="#补充，条件编译预编译指令" class="headerlink" title="补充，条件编译预编译指令"></a>补充，条件编译预编译指令</h1><p><code>#define</code><br><code>#undef</code><br><code>#if</code><br><code>#ifdef</code><br><code>#ifndef</code><br><code>#elif</code><br><code>#else</code><br><code>#endif</code><br><code>defined</code>：与#if, #elif配合使用，判断某个宏是否被定义</p>
-<p>宏<code>USE_MKL</code>的定义在文件<code>include/caffe/util/mkl_alternate.hpp</code>中。<br>宏<code>CPU_ONLY</code>的定义在文件``？？？？？</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/06/06/caffe-SyncedMemory/" data-id="ckb3tbsv90002v6fzfnpmc64r" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -690,7 +699,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -700,7 +709,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">53</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">53</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -710,7 +719,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 17.5px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 15px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 12.5px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 10px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 13.33px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
     </div>
   </div>
 
@@ -719,7 +728,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -730,6 +739,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
+          </li>
         
           <li>
             <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
@@ -745,10 +758,6 @@
         
           <li>
             <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
           </li>
         
       </ul>

@@ -64,6 +64,132 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-线性模型-一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/22/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%B8%80/" class="article-date">
+  <time datetime="2019-08-22T07:02:28.000Z" itemprop="datePublished">2019-08-22</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/22/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%B8%80/">线性模型-(一)-最小二乘</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li>线性模型形式简单，具有很好的可解释性。虽然简单却蕴藏着重要的机器学习的基本思想。一般实践中，都会先使用线性回归方法尝试。</li>
+<li>把分类问题的样本点放在在坐标轴上，坐标轴每一个轴代表一个特征。而回归问题的样本点放到坐标轴上，<strong>x轴是连续的，可以是其中一个特征的连续值</strong>，其他轴代表不同的特征。</li>
+<li>线性回归的目标是度量出模型没有拟合住样本点的部分，此时的目标函数称为 loss fucntion。</li>
+<li>而有的算法中度量的是拟合的程度，此时成目标函数为效用函数 utility function 。</li>
+<li>通过分析问题，确定问题的目标函数，通过最优化目标(最小化loss 或最大化utility)，获得机器学习模型。</li>
+<li>为参数学习，找到一组参数，这组参数可以最小化loss 或最大化utility。涉及到<strong>最优化原理</strong>或<strong>凸优化理论</strong>，如常见的牛顿法，梯度下降，模拟退火等算法。许多计算机问题如最短路径，背包问题都属于最优化问题。</li>
+<li>对于(一元或多元)线性回归，直接用最小二乘法求解。</li>
+<li>使用线性模型的前提，是假设数据与目标间由线性关系。</li>
+</ul>
+<h1 id="最小二乘法解一元线性回归"><a href="#最小二乘法解一元线性回归" class="headerlink" title="最小二乘法解一元线性回归"></a>最小二乘法解一元线性回归</h1><p>基于<strong>最小化均方误差</strong>来进行模型求解的方法为<strong>最小二乘法</strong>，即试图找一条直线，使得所有样本点到该直线的欧氏距离之和最小。具体的结果是经过数学推导，而非迭代参数学习。</p>
+<p>数据为一维向量：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 小写X表示这是一个向量</span></span><br><span class="line">x = np.array([<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="number">8</span>,<span class="number">9</span>,<span class="number">10</span>,])</span><br><span class="line">y = np.array([<span class="number">3</span>,<span class="number">4</span>,<span class="number">6</span>,<span class="number">5</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">8</span>,<span class="number">10</span>,<span class="number">9</span>,<span class="number">11</span>,])</span><br></pre></td></tr></table></figure>
+
+<p>根据最小二乘法结果公式的得：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 最小二乘法</span></span><br><span class="line">x_bar = np.mean(x)</span><br><span class="line">y_bar = np.mean(y)</span><br><span class="line"></span><br><span class="line">fenzi = <span class="number">0.0</span></span><br><span class="line">fenmu = <span class="number">0.0</span></span><br><span class="line"><span class="keyword">for</span> i, j <span class="keyword">in</span> zip(x, y):</span><br><span class="line">    fenzi += (i - x_bar) * (j - y_bar)</span><br><span class="line">    fenmu += (i - x_bar)**<span class="number">2</span></span><br><span class="line"></span><br><span class="line">a = fenzi / fenmu</span><br><span class="line">b = y_bar - a * x_bar</span><br></pre></td></tr></table></figure>
+
+<p>绘制拟合直线：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 绘制直线</span></span><br><span class="line">y_hat = a*x + b</span><br><span class="line"></span><br><span class="line">plt.scatter(x, y)</span><br><span class="line">plt.plot(x, y_hat, color=<span class="string">'r'</span>)</span><br><span class="line">plt.axis([<span class="number">0</span>, <span class="number">12</span>, <span class="number">0</span>, <span class="number">12</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/22/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%B8%80/linear.png" width="500"></div>
+
+<p>使用模型，分别预测单个值，预测一组值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 预测单个值</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">predict</span><span class="params">(x)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> a * x + b</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测多个值</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">predict_X</span><span class="params">(X)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> np.asarray([a * x + b <span class="keyword">for</span> x <span class="keyword">in</span> X])</span><br></pre></td></tr></table></figure>
+
+<p>上述计算过程是遍历每一个x和y，部分相乘后相加，这样计算的效率并不高。另一种方式是使用矩阵的乘法，即<strong>内积(Dot Product 点乘)</strong></p>
+<h1 id="向量化"><a href="#向量化" class="headerlink" title="向量化"></a>向量化</h1><p>使用矩阵的内积，便可以用python中的向量相乘法则快速计算：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">x_mean = np.mean(x_train)</span><br><span class="line">y_mean = np.mean(y_train)</span><br><span class="line"></span><br><span class="line">a = (x_train - x_mean).dot(y_train - y_mean) / (x_train - x_mean).dot(x_train - x_mean)</span><br><span class="line">b = y_mean - a * x_mean</span><br></pre></td></tr></table></figure>
+
+<p>用内积代替了循环遍历，计算性能上会有很大提升。对于1亿的数据量，两者使用时间：</p>
+<pre><code>循环遍历： 55.904422
+内积：    2.4315210000000036</code></pre><p>很多时候，<font color="red" size="4">算法原理的数学推导，最终要能变化成向量内积的形式，很重要</font>。</p>
+<h1 id="评价现行模型的性能"><a href="#评价现行模型的性能" class="headerlink" title="评价现行模型的性能"></a>评价现行模型的性能</h1><p>评价线性模型主要用MSE, RMSE, MAE:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 公式：</span></span><br><span class="line">mse = np.sum((y_predict - y_test)**<span class="number">2</span> / len(y_test))</span><br><span class="line">rmse = math.sqrt(mse)</span><br><span class="line">mae = np.sum(np.absolute(y_predict - y_test)) / len(y_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># sklearn：</span></span><br><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> mean_squared_error</span><br><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> mean_absolute_error</span><br></pre></td></tr></table></figure>
+
+<p>相对来说，RMSE比MAE好，最小化RMSE，它表示错误样本中最大的错误值相应的比较小。而在线性回归中最好的指标要数R Squared。</p>
+<h1 id="R-Squared"><a href="#R-Squared" class="headerlink" title="R Squared"></a>R Squared</h1><p>这个是线性回归最常用的性能指标。其定义为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">r_squared = <span class="number">1</span> - (y_predict - y_test).dot(y_predict - y_test)</span><br><span class="line">               /</span><br><span class="line">               (y_means - y_test).dot(y_means - y_test)</span><br></pre></td></tr></table></figure>
+
+<p>其中分子可以表示，使用我们的模型预测产生的错误。<br>而分母表示使用baseline 模型y=y_means 预测产生的错误。</p>
+<p>分母的预测是不论x是多少，我都把他预测成y_means，错误率自然多。而分子是我们训练模型的实际预测，即我的模型实际拟合住样本的地方。</p>
+<p>所以</p>
+<ul>
+<li>r_squared 是我的模型与baseline的比较。</li>
+<li>两者相除小于等于1，</li>
+<li>r_squared 越大，表示我们的模型越好</li>
+<li>当r_squared = 1，表示，我的模型没有犯任何错。</li>
+<li>当r_squared = 0，表示，我的模型性能等同于baseline。</li>
+<li>当r_squared &lt; 0，表示，我的模型不如baseline，很可能，原数据不存在现<strong>线性关系</strong>。</li>
+</ul>
+<p>当r_squared 定义中分子分母同时除以测试样本个数，r_squared还可以写成：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">r_squared = <span class="number">1</span> - mse(y_predict, y_test)/var(y_test)</span><br></pre></td></tr></table></figure>
+<p>其中var(y_test)，表示y_test 数据方差。所以r_squared 是由统计意义的。</p>
+<p>在sklearn中使用</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> r2_score</span><br><span class="line"></span><br><span class="line">r2_score(y_predict, y_test)</span><br></pre></td></tr></table></figure>
+<p>在sklearn中的LinearRegression模型里的 score成员方法返回的就是r_squared：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># MODEL 表示任何模型的实例</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">score</span><span class="params">(x_test, y_test)</span>:</span></span><br><span class="line">    y_predict = MODEL.predict(x_test)</span><br><span class="line">    <span class="keyword">return</span> r2_score(y_test, y_predict)</span><br></pre></td></tr></table></figure>
+
+<h1 id="多元线性回归与Normal-Equation"><a href="#多元线性回归与Normal-Equation" class="headerlink" title="多元线性回归与Normal Equation"></a>多元线性回归与Normal Equation</h1><p>依旧可以使用最小二乘法得到最终解，即normal equation。但是计算机求解normal equation 的时间复杂度为O(n^3)。优点是根据数学解方程得到，不需要归一化处理。</p>
+<p>sklearn中多元线性回归套路：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">boston = datasets.load_boston()</span><br><span class="line"><span class="comment"># print(boston.DESCR)  # (503, 13)</span></span><br><span class="line"><span class="comment"># print(boston.feature_names)</span></span><br><span class="line"></span><br><span class="line">X = boston.data</span><br><span class="line">y = boston.target</span><br><span class="line"></span><br><span class="line"><span class="comment"># 除去异常点</span></span><br><span class="line">X = X[y &lt; <span class="number">50</span>]</span><br><span class="line">y = y[y &lt; <span class="number">50</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LinearRegression</span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=<span class="number">123</span>)</span><br><span class="line"></span><br><span class="line">lin_reg = LinearRegression()</span><br><span class="line">lin_reg.fit(X_train, y_train)</span><br><span class="line"></span><br><span class="line">print(lin_reg.coef_)      <span class="comment">#  得到最终模型所有参数</span></span><br><span class="line">print(lin_reg.intercept_)  <span class="comment"># 包括截距</span></span><br><span class="line">print(lin_reg.score(X_test, y_test))   <span class="comment"># 应用在测试数据集上的得分</span></span><br></pre></td></tr></table></figure>
+
+<p>实现normal equation：</p>
+<p>首先在原本X_train中加入一列全为1：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_b = np.hstack([np.ones((len(X_train), <span class="number">1</span>)), X_train])</span><br></pre></td></tr></table></figure>
+
+<p>根据normal equation 的公式，其中intercept_表示直线上的截距，截距与样本特征无关，或者说，截距对应的特征是常数1。coef_表示coefficient，每个特征的系数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">_theta = np.linalg.inv(X_b.T.dot(X_b)).dot(X_b.T).dot(y_train)  <span class="comment"># 完全根据公式</span></span><br><span class="line"></span><br><span class="line">intercept_ = _theta[<span class="number">0</span>]  <span class="comment"># 参数的第一列为截距</span></span><br><span class="line">coef_ = _theta[<span class="number">1</span>:]</span><br></pre></td></tr></table></figure>
+
+<p>有了参数，就可以用于测试样本。写成函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">predict</span><span class="params">(X_sample)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> intercept_ <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span> <span class="keyword">and</span> coef_ <span class="keyword">in</span> <span class="keyword">not</span> <span class="literal">None</span>, \</span><br><span class="line">        <span class="string">"Must fit before predict"</span></span><br><span class="line">    <span class="keyword">assert</span> X_sample.shape[<span class="number">1</span>] == len(coef_), \</span><br><span class="line">        <span class="string">"the feature number of X_sample must be equal to the lenght of coef_"</span></span><br><span class="line">    </span><br><span class="line">    X_b = np.hstack([np.ones((len(X_sample), <span class="number">1</span>)), X_sample])</span><br><span class="line">    <span class="keyword">return</span> X_b.dot(_theta)</span><br></pre></td></tr></table></figure>
+<p>创建样本，使用模型：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">X_sample = np.array([[<span class="number">0.5</span>, <span class="number">20.</span>, <span class="number">4.</span>, <span class="number">0.</span>, <span class="number">0.57</span>, <span class="number">7.</span>, <span class="number">52.</span>, <span class="number">2.8</span>, <span class="number">5.</span>, <span class="number">264.</span>, <span class="number">13.</span>, <span class="number">390.</span>, <span class="number">3.16</span>]])</span><br><span class="line"></span><br><span class="line">lr.predict(X_sample)  <span class="comment"># 返回模型认为的预测值</span></span><br></pre></td></tr></table></figure>
+<h2 id="线性回归的可解释性"><a href="#线性回归的可解释性" class="headerlink" title="线性回归的可解释性"></a>线性回归的可解释性</h2><p>对所有数据解normal equation 方程得所有系数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[ -1.05574295e-01   3.52748549e-02  -4.35179251e-02   4.55405227e-01</span><br><span class="line">  -1.24268073e+01   3.75411229e+00  -2.36116881e-02  -1.21088069e+00</span><br><span class="line">   2.50740082e-01  -1.37702943e-02  -8.38888137e-01   7.93577159e-03</span><br><span class="line">  -3.50952134e-01]</span><br></pre></td></tr></table></figure>
+<p>系数的正负表示，这个特征与预测指标(如房价)是正相关还是负相关。<br>正值表示正相关，越大表示这个特征越大房价越高。<br>负值表示负相关，越大表示这个特征越大，房价越低。 <br>系数的绝对值的大小表示了该特征对房价的影响程度。可以把特征的值从小到大排列，分析什么特征的影响大，什么特和那个的影响小：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 按系数排序，返回排序后的索引</span></span><br><span class="line">sort_index = np.argsort(lin_reg2.coef_)</span><br><span class="line"><span class="comment"># 使用排序后的索引，给特征名称排序 </span></span><br><span class="line">boston.feature_names[sort_index]</span><br></pre></td></tr></table></figure>
+<p>比如，最大值系数表示房间数目。房间数目与房价正相关，且越大房价越高。合理。<br>最小系数对应一氧化氮浓度。浓度与房价成负相关，且值越大，房价越低。合理。</p>
+<p>这就是“现行模型的可解释性”，有针对的采集更多数据，帮助决策。 </p>
+<p><strong>注意</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">np.array([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>])  </span><br><span class="line">np.array([[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>]])</span><br></pre></td></tr></table></figure>
+<p>前者是向量，大小为： (8,)<br><br>后者是矩阵，大小为： (2, 8)</p>
+<p><font color="gree" size="5">敲黑板</font>机器学习算法实现不是目的，一个算法的优劣是将它放在特定任务中，与其他算法比较得出的。也就是说，单单训练好一个模型，还没结束，而是与其他训练好的模型一起评价，比如使用由confusion matrix 得到的指标：查准率，查全率，F-alpha，P-R曲线， ROC曲线等。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/22/%E7%BA%BF%E6%80%A7%E6%A8%A1%E5%9E%8B-%E4%B8%80/" data-id="ckatsrgvd008exqfz5a1h4bst" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-集成学习-Boosting-四" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/21/%E9%9B%86%E6%88%90%E5%AD%A6%E4%B9%A0-Boosting-%E5%9B%9B/" class="article-date">
@@ -727,62 +853,6 @@
 
 
   
-    <article id="post-CUDA-更新线程ID" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" class="article-date">
-  <time datetime="2019-08-12T06:13:44.000Z" itemprop="datePublished">2019-08-12</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/">CUDA-更新线程ID</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="更新-thread-ID"><a href="#更新-thread-ID" class="headerlink" title="更新 thread ID"></a>更新 thread ID</h1><p>当数据个数 <code>≥ CUDA core</code> 个数时，<code>thread id</code> 不用更新，一次同时习性完。</p>
-<p>如我有2024个数据，而我的GPU每次可分配2048个threads。我的<code>kernel</code>配置<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>，那么2024个数据可以被2024个threads一次执行完毕，其中有24个threads空闲，因为因为没有多余的数据去处理。</p>
-<p>如果还是2024个数据，而我的GPU只允许用户一次配置512个threads。我的kernel配置是&lt;&lt;&lt;1, 512&gt;&gt;&gt;，一次是不能把数据全部处理完的。当第一次处理完后，还要3次threads的id更新，最后一次有24个threads空闲，因为没有多余出具需要被处理。</p>
-<p>kernel代码片段如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> id = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line"><span class="keyword">while</span>(id &lt; N)&#123;</span><br><span class="line">    <span class="comment">// TODO excute operation</span></span><br><span class="line">    id += blockDIm.x * gridDim.x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>其中<code>while()</code>判断当前thread的id需要更新多少次。</p>
-<ul>
-<li><p>对于<code>&lt;&lt;&lt;1, 2048&gt;&gt;&gt;</code>的kernel，处理2024个数据，其中<code>N=2024</code>。假如其中一个thread的起始<code>id</code>为0，干完活后，判断<code>0＜2024</code>，所以这个thread的<code>id</code>会被跟新为2048，此时再判断<code>2048＜2024</code>，返回<code>false</code>，这个thread的工作结束。thread的id未被更新。</p>
-</li>
-<li><p>对于&lt;&lt;&lt;1, 512&gt;&gt;&gt;的kernel，处理2024个数据， 其中N=2024。<br>仍假如有一个thread是起始id为0，判断0＜2024，执行操作。所以跟新id为512；<br>判断512＜2024，执行操作，再更新id为1024；<br>判断1024＜2024，执行操作，再更新id为1536；<br>判断1536＜2024，执行操作，再更新id为2048；<br>判断2048＜2024，返回false。该thread的工作结束。</p>
-</li>
-</ul>
-<p>期间这个thread的id被更新了4次，第4次更新玩后，并无操作。</p>
-<h1 id="Matrix-Transpose-理解id更新"><a href="#Matrix-Transpose-理解id更新" class="headerlink" title="Matrix Transpose 理解id更新"></a>Matrix Transpose 理解id更新</h1>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/12/CUDA-%E6%9B%B4%E6%96%B0%E7%BA%BF%E7%A8%8BID/" data-id="ckatsrgrk001nxqfzcb12f9g7" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -798,7 +868,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -808,7 +878,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">53</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" rel="tag">二分查找</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%80%92%E5%BD%92/" rel="tag">递归</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">53</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -818,7 +888,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 17.5px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 15px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 12.5px;">Test Analysis</a> <a href="/tags/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" style="font-size: 10px;">二分查找</a> <a href="/tags/%E9%80%92%E5%BD%92/" style="font-size: 10px;">递归</a>
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 13.33px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
     </div>
   </div>
 
@@ -827,7 +897,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -838,6 +908,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
+          </li>
         
           <li>
             <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
@@ -853,10 +927,6 @@
         
           <li>
             <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
           </li>
         
       </ul>
