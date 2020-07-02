@@ -64,6 +64,62 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-map-set-二" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/" class="article-date">
+  <time datetime="2019-12-24T12:54:50.000Z" itemprop="datePublished">2019-12-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/">LeetCode-方法论-map&amp;set-二</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>454, </p>
+<h1 id="454-4Sum-II"><a href="#454-4Sum-II" class="headerlink" title="#454 4Sum II"></a>#454 4Sum II</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Input:</span><br><span class="line">A &#x3D; [ 1, 2]</span><br><span class="line">B &#x3D; [-2,-1]</span><br><span class="line">C &#x3D; [-1, 2]</span><br><span class="line">D &#x3D; [ 0, 2]</span><br><span class="line"></span><br><span class="line">Output:</span><br><span class="line">2</span><br><span class="line"></span><br><span class="line">Explanation:</span><br><span class="line">The two tuples are:</span><br><span class="line">1. (0, 0, 0, 1) -&gt; A[0] + B[0] + C[0] + D[1] &#x3D; 1 + (-2) + (-1) + 2 &#x3D; 0</span><br><span class="line">2. (1, 1, 0, 0) -&gt; A[1] + B[1] + C[0] + D[0] &#x3D; 2 + (-1) + (-1) + 0 &#x3D; 0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>逻辑</p>
+<pre><code>第一步：将A和B中元素的可能和作为key放入map1，value为这个和出现的频数。
+第二步：将C和D中元素的可能和作为key放入map2，value为这个和出现的频数。
+第三步：对于map1中的每个元素，在map2中查找这个元素对应的负数，如果找到，则结果中加上(这个元素的频数)×(map2中这个元素负数的频数)  DONE。</code></pre></li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fourSumCount</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; A, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; B, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; C, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; D)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 第一步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp1;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> a:A)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> b:B)</span><br><span class="line">            mp1[a+b]++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步</span></span><br><span class="line">    <span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; mp2;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> c: C)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> d: D)</span><br><span class="line">            mp2[c+d]++;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 第三步</span></span><br><span class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> &amp; itr : mp1)&#123;</span><br><span class="line">        <span class="keyword">if</span> (mp2.find(-(itr.first)) != mp2.end())</span><br><span class="line">            res += (itr.second) * (mp2[-(itr.first)]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><font color="green" size="5">敲黑板</font>理清楚逻辑后再实现。</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/24/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-map-set-%E4%BA%8C/" data-id="ckatsrgs8003dxqfz2rvl8avr" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-大话-线性代数" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/12/20/%E5%A4%A7%E8%AF%9D-%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0/" class="article-date">
@@ -1401,78 +1457,6 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
 
 
   
-    <article id="post-CUDA-Performance-Metrics" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/11/27/CUDA-Performance-Metrics/" class="article-date">
-  <time datetime="2019-11-27T14:46:48.000Z" itemprop="datePublished">2019-11-27</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/27/CUDA-Performance-Metrics/">CUDA-Performance Metrics</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="Implement-Performance-Metrics-in-CUDA"><a href="#Implement-Performance-Metrics-in-CUDA" class="headerlink" title="Implement Performance Metrics in CUDA"></a>Implement Performance Metrics in CUDA</h1><p>“Before we jump into these performance measurement techniques, we need to discuss how to synchronize execution between the host and device.”<br>why? 因为有些指令同步执行，有些指令异步执行。只有知道了区别才可以正确测量性能。</p>
-<p>遇到<code>cudaMemcpy()</code> 执行变成同步的，也就是说，所有指令必须等待其他指令执行到此，才可以一起向下继续执行。如果没有<code>cudaMemcpy()</code>，可以使用<code>cudaDeviceSynchronize()</code>实现同步。</p>
-<h2 id="使用CPU的timer"><a href="#使用CPU的timer" class="headerlink" title="使用CPU的timer"></a>使用CPU的timer</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">t1 = myCPUTimer();</span><br><span class="line">saxpy&lt;&lt;&lt;(N+<span class="number">255</span>)/<span class="number">256</span>, <span class="number">256</span>&gt;&gt;&gt;(N, <span class="number">2.0</span>, d_x, d_y);</span><br><span class="line">cudaDeviceSynchronize();   <span class="comment">// </span></span><br><span class="line">t2 = myCPUTimer();</span><br><span class="line"></span><br><span class="line">cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br></pre></td></tr></table></figure>
-
-<p>“we use the explicit synchronization barrier <code>cudaDeviceSynchronize()</code> to block CPU execution until all previously issued commands on the device have completed. Without this barrier, this code would measure the kernel launch time and not the kernel execution time.” 在这里犯过错，CPU负责控制，当执行到kernel函数时，是CPU调用kernel函数，但是在GPU上执行，CPU调用之后，马上执行下面的语句，如果没有<code>cudaDeviceSynchronize()</code>，CPU会执行t2，如此一来t2-t1测的是调用kernel的时间，而非kernel执行的时间。也就是说，CPU与GPU是异步的，只有加上<code>cudaDeviceSynchronize()</code>，告诉CPU等待GPU把kernel执行完毕，后一同执行t2. </p>
-<h2 id="Timing-using-CUDA-Events"><a href="#Timing-using-CUDA-Events" class="headerlink" title="Timing using CUDA Events"></a>Timing using CUDA Events</h2><p>A problem with using host-device synchronization points, such as <code>cudaDeviceSynchronize()</code>, is that they stall the GPU pipeline. For this reason, CUDA offers a relatively light-weight alternative to CPU timers via the CUDA event API. The CUDA event API includes calls to create and destroy events, record events, and compute the elapsed time in milliseconds between two recorded events.</p>
-<p> A CUDA stream is simply a sequence of operations that are performed in order on the device. Operations in different streams can be interleaved and in some cases overlapped—a property that can be used to hide data transfers between the host and the device </p>
-<p>默认使用的stream 0，<br> Up to now, all operations on the GPU have occurred in the default stream, or stream 0 (also called the “Null Stream”).</p>
-<p> here is an example:</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">cudaEvent_t start, stop;</span><br><span class="line">cudaEventCreate(&amp;start);</span><br><span class="line">cudaEventCreate(&amp;stop);</span><br><span class="line"></span><br><span class="line">cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">cudaEventRecord(start);</span><br><span class="line">saxpy&lt;&lt;&lt;(N+<span class="number">255</span>)/<span class="number">256</span>, <span class="number">256</span>&gt;&gt;&gt;(N, <span class="number">2.0f</span>, d_x, d_y);</span><br><span class="line">cudaEventRecord(stop);</span><br><span class="line"></span><br><span class="line">cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">cudaEventSynchronize(stop);</span><br><span class="line"><span class="keyword">float</span> milliseconds = <span class="number">0</span>;</span><br><span class="line">cudaEventElapsedTime(&amp;milliseconds, start, stop);</span><br></pre></td></tr></table></figure>
-
-<p> 这个计时器记录的是核函数的执行时间。</p>
-<p> CUDA events are of type <code>cudaEvent_t</code> and are created and destroyed with <code>cudaEventCreate()</code> and <code>cudaEventDestroy()</code>. In the above code <code>cudaEventRecord()</code> places the start and stop events into the default stream, <code>stream 0</code>. The device will record a time stamp for the event when it reaches that event in the stream. The function <code>cudaEventSynchronize()</code> blocks CPU execution until the specified event is recorded. The <code>cudaEventElapsedTime()</code> function returns in the first argument the number of milliseconds time elapsed between the recording of start and stop. This value has a resolution of approximately one half microsecond.</p>
-<h2 id="Memory-Bandwidth"><a href="#Memory-Bandwidth" class="headerlink" title="Memory Bandwidth"></a>Memory Bandwidth</h2><p> 我们需要知道极限带宽，和实际带宽。</p>
-<h3 id="极限带宽（理论带宽）"><a href="#极限带宽（理论带宽）" class="headerlink" title="极限带宽（理论带宽）"></a>极限带宽（理论带宽）</h3><p> Theoretical bandwidth can be calculated using hardware specifications available in the product literature. For example, the NVIDIA Tesla M2050 GPU uses DDR (double data rate) RAM with a memory clock rate of <code>1,546 MHz</code> and a <code>384-bit</code> wide memory interface. Using these data items, the peak theoretical memory bandwidth of this GPU can be computed using the following:</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BWTheoretical &#x3D; 1546 * 10^6 * (384&#x2F;8) * 2 &#x2F; 10^9 &#x3D; 148 GB&#x2F;s</span><br></pre></td></tr></table></figure>
-
-<p>解释：In this calculation, we convert the memory clock rate to Hz, multiply it by the interface width (divided by 8, to convert bits to bytes) and multiply by 2 due to the double data rate. Finally, we divide by 109 to convert the result to GB/s.</p>
-<h3 id="实际带宽"><a href="#实际带宽" class="headerlink" title="实际带宽"></a>实际带宽</h3><p>We calculate effective bandwidth by timing specific program activities and by knowing how our program accesses data. We use the following equation.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BWEffective &#x3D; (RB + WB) &#x2F; (t * 10^9)</span><br></pre></td></tr></table></figure>
-
-<p>Here, <code>BWEffective</code> is the effective bandwidth in units of GB/s, <code>RB</code> is the number of bytes read per kernel, <code>WB</code> is the number of bytes written per kernel, and <code>t</code> is the elapsed time given in seconds.</p>
-<p>实例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">__global__</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> a, <span class="keyword">float</span> *x, <span class="keyword">float</span> *y)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = blockIdx.x*blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (i &lt; n) y[i] = a*x[i] + y[i];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> N = <span class="number">20</span> * (<span class="number">1</span> &lt;&lt; <span class="number">20</span>);</span><br><span class="line">    <span class="keyword">float</span> *x, *y, *d_x, *d_y;</span><br><span class="line">    x = (<span class="keyword">float</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">    y = (<span class="keyword">float</span>*)<span class="built_in">malloc</span>(N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">    cudaMalloc(&amp;d_x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>)); </span><br><span class="line">    cudaMalloc(&amp;d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">        x[i] = <span class="number">1.0f</span>;</span><br><span class="line">        y[i] = <span class="number">2.0f</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cudaEvent_t start, stop;</span><br><span class="line">    cudaEventCreate(&amp;start);</span><br><span class="line">    cudaEventCreate(&amp;stop);</span><br><span class="line"></span><br><span class="line">    cudaMemcpy(d_x, x, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">    cudaMemcpy(d_y, y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">    cudaEventRecord(start);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Perform SAXPY on 1M elements</span></span><br><span class="line">    saxpy&lt;&lt;&lt;(N+<span class="number">511</span>)/<span class="number">512</span>, <span class="number">512</span>&gt;&gt;&gt;(N, <span class="number">2.0f</span>, d_x, d_y);</span><br><span class="line"></span><br><span class="line">    cudaEventRecord(stop);</span><br><span class="line"></span><br><span class="line">    cudaMemcpy(y, d_y, N*<span class="keyword">sizeof</span>(<span class="keyword">float</span>), cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line">    cudaEventSynchronize(stop);</span><br><span class="line">    <span class="keyword">float</span> milliseconds = <span class="number">0</span>;</span><br><span class="line">    cudaEventElapsedTime(&amp;milliseconds, start, stop);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> maxError = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">        maxError = max(maxError, <span class="built_in">abs</span>(y[i]<span class="number">-4.0f</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Max error: %fn"</span>, maxError);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Effective Bandwidth (GB/s): %fn"</span>, N*<span class="number">4</span>*<span class="number">3</span>/milliseconds/<span class="number">1e6</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>In the bandwidth calculation, N*4 is the number of bytes transferred per array read or write, and the factor of three represents the reading of x and the reading and writing of y. The elapsed time is stored in the variable milliseconds to make units clear. Note that in addition to adding the functionality needed for the bandwidth calculation, we have also changed the array size and the thread-block size.</p>
-<p>CUDA events use the GPU timer and therefore avoid the problems associated with host-device synchronization</p>
-<p>原文作者Mark Harris<br>原文<a href="https://devblogs.nvidia.com/how-implement-performance-metrics-cuda-cc/" target="_blank" rel="noopener">链接</a></p>
-<hr>
-<p><span style="font-family:Papyrus; font-size:2em;">CUDA</span></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/11/27/CUDA-Performance-Metrics/" data-id="ckatsrgr5000kxqfz9bbb2ioy" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1488,7 +1472,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">27</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -1498,7 +1482,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">53</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">54</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1517,7 +1501,7 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1528,6 +1512,10 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
+          </li>
         
           <li>
             <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
@@ -1543,10 +1531,6 @@ val | 1 | 3 | 2 | 1 | 1 |</code></pre><p>  2) 遍历map：</p>
         
           <li>
             <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
           </li>
         
       </ul>

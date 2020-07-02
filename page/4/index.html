@@ -64,6 +64,66 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-判断是否是子树" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/" class="article-date">
+  <time datetime="2020-06-03T02:09:46.000Z" itemprop="datePublished">2020-06-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/">LeetCode-判断是否是子树</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>有两棵树，A和B，判断B是否是A的子树。<br>如下图左为A，右为B：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">    <span class="number">5</span></span><br><span class="line">   / \</span><br><span class="line">  <span class="number">4</span>   <span class="number">6</span>           <span class="number">4</span></span><br><span class="line"> / \   \         / \</span><br><span class="line"><span class="number">7</span>   <span class="number">8</span>   <span class="number">9</span>       <span class="number">7</span>   <span class="number">8</span></span><br><span class="line">   / \</span><br><span class="line">  <span class="number">1</span>   <span class="number">2</span></span><br></pre></td></tr></table></figure>
+
+<p>有两种情况：</p>
+<ol>
+<li>B 可以只是A子树的一部分。那么上例中B是A的子树。</li>
+<li>B 严格是A的子树。那么上例中B不是A的子树。</li>
+</ol>
+<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>两种情况主题思路是一样的：<br>第一步，在Ａ中找与B的根节点一样的结点。先序遍历，如果B的根节点与Ａ的当前结点不同，那么分别考察Ａ的左子树和右子树。</p>
+<p>第二步，当在Ａ中找到B的根节点一样的结点Ｒ后，判断Ａ以Ｒ为树根的子树是否与Ｂ相同。此时就要区分上述两种情况了。</p>
+<h2 id="实现："><a href="#实现：" class="headerlink" title="实现："></a>实现：</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// 先序遍历找到R</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">findR</span><span class="params">(Node* s, Node* t)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!s &amp;&amp; !t) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="keyword">if</span> (!s || !t) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">bool</span> res = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (s-&gt;val == t-&gt;val) &#123;</span><br><span class="line">            res = isSubTree(s, t);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!res) res = findR(s-&gt;left, t);</span><br><span class="line">        <span class="keyword">if</span> (!res) res = findR(s-&gt;right, t);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">isSubTree</span><span class="params">(Node* a, Node* b)</span> </span>&#123;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">/// relativaly equal 第一种情况</span></span><br><span class="line">        <span class="keyword">if</span> (a==<span class="literal">nullptr</span> &amp;&amp; b==<span class="literal">nullptr</span>) <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">if</span> (a==<span class="literal">nullptr</span> &amp;&amp; b!=<span class="literal">nullptr</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="keyword">if</span> (a!=<span class="literal">nullptr</span> &amp;&amp; b==<span class="literal">nullptr</span>) <span class="keyword">return</span> <span class="literal">true</span>; </span><br><span class="line"></span><br><span class="line">        <span class="comment">/// absolutly equal 第二种情况</span></span><br><span class="line">        <span class="comment">//if (a==nullptr &amp;&amp; b==nullptr) return true;</span></span><br><span class="line">        <span class="comment">//if ((!a &amp;&amp; b) || (a &amp;&amp; !b)) return false;  </span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (a-&gt;val != b-&gt;val) <span class="keyword">return</span>  <span class="literal">false</span>;</span><br><span class="line">        <span class="keyword">return</span> isSubTree(a-&gt;left, b-&gt;left) &amp;&amp; isSubTree(a-&gt;right, b-&gt;right);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<ol>
+<li>只要访问一个对象，就要提前判断这个对象是否合法。</li>
+<li>树的问题绝大数情况是要对数进行遍历，上述问题就是先序遍历。</li>
+<li>注意递归返回值，返回值是bool型，</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/03/LeetCode-%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%AD%90%E6%A0%91/" data-id="ckayvgezr0001lufzcv442wvd" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-caffe-sigmoid-cross-entropy-loss-layer类" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/06/02/caffe-sigmoid-cross-entropy-loss-layer%E7%B1%BB/" class="article-date">
@@ -855,125 +915,6 @@
 
 
   
-    <article id="post-Cpp-pro-tip-1" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/05/Cpp-pro-tip-1/" class="article-date">
-  <time datetime="2020-03-05T10:05:50.000Z" itemprop="datePublished">2020-03-05</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/05/Cpp-pro-tip-1/">Cpp pro tip 1</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="从源文件到可执行文件"><a href="#从源文件到可执行文件" class="headerlink" title="从源文件到可执行文件"></a>从源文件到可执行文件</h1><ul>
-<li>预处理（pre-processing）E<br>从<code>.c</code>到<code>.i</code>。编译器将C源代码中的包含的头文件如stdio.h编译进来，替换宏。</li>
-<li>编译（Compiling）S<br>从<code>.i</code>到<code>.s</code>。gcc首先要检查代码的规范性、是否有语法错误等，以确定代码的实际要做的工作，在检查无误后，gcc把代码翻译成汇编语言。</li>
-<li>汇编（Assembling） c<br>把编译阶段生成的<code>.s</code>文件转成二进制目标代码<code>.o</code>文件。</li>
-<li>链接 （Linking）<br>链接到库中，生成可执行文件。</li>
-</ul>
-<p>绘制这里的图(<a href="https://blog.csdn.net/Meteor_s/article/details/85208589" target="_blank" rel="noopener">https://blog.csdn.net/Meteor_s/article/details/85208589</a>)</p>
-<p><a href="https://www.cnblogs.com/ericling/articles/11736681.html" target="_blank" rel="noopener">这里</a>更详细</p>
-<div align="center"><img src="/2020/03/05/Cpp-pro-tip-1/.png"></div>
-
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -E hello.c -o hello.i</span><br><span class="line">gcc –S hello.i –o hello.s</span><br><span class="line">gcc –c hello.s –o hello.o</span><br><span class="line">gcc hello.o –o hello</span><br></pre></td></tr></table></figure>
-
-<p>生成<code>.o</code>文件，可以重定向，方便其他应用使用。</p>
-<p>一条命令从源文件到可执行文件：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc hello.c –o hello</span><br></pre></td></tr></table></figure>
-
-<h1 id="1-虚析构函数"><a href="#1-虚析构函数" class="headerlink" title="1 虚析构函数"></a>1 虚析构函数</h1><p>补充内容（tip 7）：</p>
-<p>任何时候都应该为待多态性质的基类（父类）声明<code>virtual</code>析构函数。如果一个class含有任何<code>virual</code>函数，就一定要有一个<code>virtual</code>析构函数。</p>
-<p>而如果这个class的设计不是作为基类使用，或者不准备让这个class具备多态性，就不该声明<code>virtual</code>析构函数。</p>
-<p>含有多态性质的<code>base class</code>的设计目的是为了通过<code>base class</code>的接口来使用<code>derived class</code>。所以通常使用<code>base class</code>类的指针指向<code>derived class</code>的对象。</p>
-<p>并不是所有的<code>base class</code>都是为了多态用途，比如STL容器的设计不是用作<code>base class</code>的。</p>
-<p><code>virtual</code>同名函数的目的是允许<code>derived class</code>的实现可以<font color="red">客制化</font>。</p>
-<h1 id="2-C-帮你实现了的函数"><a href="#2-C-帮你实现了的函数" class="headerlink" title="2 C++帮你实现了的函数"></a>2 C++帮你实现了的函数</h1><p>（tip 5）</p>
-<p>当定义了一个class，又没有实现任何成员函数时，编译器会为这个class声明4个函数：</p>
-<ul>
-<li>一个default构造函数</li>
-<li>一个copy构造函数</li>
-<li>一个析构函数</li>
-<li>一个copy操作符</li>
-</ul>
-<p>这些函数都是<code>public</code>和<code>inline</code>的。如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass()&#123;...&#125;</span><br><span class="line">    Myclass(<span class="keyword">const</span> Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">    ~Myclass()&#123;...&#125;</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实例化这个class，并使用</span></span><br><span class="line">Myclass e1;       <span class="comment">//default 构造函数</span></span><br><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span>;   <span class="comment">//copy构造函数</span></span><br><span class="line">e2=e1;            <span class="comment">//copy符号操作符</span></span><br><span class="line">                  <span class="comment">//析构函数</span></span><br></pre></td></tr></table></figure>
-
-<p>其中</p>
-<ol>
-<li>编译器给出的析构函数是个<code>non-virtual</code>函数，除非这个class的<code>base class</code>含有<code>virtual</code>析构函数。此时这个class的虚拟性来自其<code>base class</code>。</li>
-<li>对于构造函数，如果我声明了一个构造函数，那么编译器不再创建<code>default</code>构造函数</li>
-<li>copy构造函数，和copy操作符只是单纯的将来源对象的每一个<code>non-static</code>成员变量拷贝到目标对象。所以: <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span></span><br></pre></td></tr></table></figure>
- 是使用<code>e1</code>的成员变量来初始化<code>e2</code>的成员变量。</li>
-</ol>
-<h1 id="3-为classes实现赋值操作符"><a href="#3-为classes实现赋值操作符" class="headerlink" title="3 为classes实现赋值操作符"></a>3 为classes实现赋值操作符</h1><p>使用赋值操作时，通常可以写成如下形式：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> x, y, z;</span><br><span class="line">x=y=z=<span class="number">2</span>;</span><br></pre></td></tr></table></figure>
-
-<p>上述实际上的赋值行为是</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x=(y=(z=<span class="number">2</span>));</span><br></pre></td></tr></table></figure>
-
-<p>其行为是将2赋值给<code>z</code>，再将<code>z</code>赋值给<code>y</code>，最后将<code>y</code>赋值给<code>x</code>。</p>
-<p>为了实现上述的连锁赋值，赋值操作符必须返回一个引用指向操作符的左侧：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> Myclass&amp; rhs)&#123;</span><br><span class="line">        ...</span><br><span class="line">        <span class="keyword">return</span>* <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>同样的上述的形式也适用于所有相关的操作符，如<code>+=</code>，<code>-=</code>，<code>×=</code>。</p>
-<p>这是一条<font color="red">协议</font>，被所有内置类型和标准库函数共同遵守，所以，遵守它吧。</p>
-<h1 id="4-将成员变量声明为private"><a href="#4-将成员变量声明为private" class="headerlink" title="4 将成员变量声明为private"></a>4 将成员变量声明为private</h1><p>为什么要把classes的成员变量声明为<code>private</code>：因为这体现了<font color="red">封装</font>。</p>
-<p>类成员变量应该只被这个类的成员方法可见，<code>protected</code>成员变量同<code>public</code>成员变量一样<font color="red">缺乏封装性</font>。</p>
-<p>从封装的角度讲，访问权限只有提供封装（private）和不提供封装两种。</p>
-<h1 id="5-使用non-member-non-friend函数而非再定义一个member函数"><a href="#5-使用non-member-non-friend函数而非再定义一个member函数" class="headerlink" title="5 使用non-member non-friend函数而非再定义一个member函数"></a>5 使用non-member non-friend函数而非再定义一个member函数</h1><p>假设由一个类含有若干个清理函数，只是清理的对象不同：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearHistory</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearCache</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearCookies</span><span class="params">()</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>其实很多时候，用户想要一次性执行这些动作，如何一次性完成，两种方案：</p>
-<ol>
-<li><p>给这个class中添加一个member函数<code>clearAll()</code>，它调用上述三个清理函数：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearAll</span><span class="params">()</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;；</span><br></pre></td></tr></table></figure></li>
-<li><p>使用一个non-member，non-friend函数：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clearBrowser</span><span class="params">(WebBrowser&amp; wb)</span></span>&#123;</span><br><span class="line">    wb.clearHistory();</span><br><span class="line">    wb.clearCache();</span><br><span class="line">    wb.clearCookies();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>pro tip告诉你使用后者。后者更体系那封装性。后者保护了类的包裹性，进而有较低的编译依赖，增强了类的<font color="orange">可延展性</font>。</p>
-</li>
-</ol>
-<p>对于封装性，可以访问private成员变量的只有<font color="orange">member函数</font>和<font color="orange">friend函数</font>。上述两种方式提供了相同的功能，而后者提供了较强的封装性，因为<font color="red">它不能增加访问private变量的能力</font>。</p>
-<p>P.S. friend函数和member函数对于类private成员的访问能力相同。</p>
-<p>在C++ 中自然的做法是将类<code>WebBrowser</code>和函数<code>clearBrowser()</code>放置于同一个<code>namespace</code>中：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> Web&#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span>...&#125;;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearBrowser</span><span class="params">(WebBrowser&amp; wb)</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>namespace 可以跨越多个源码文件，而class不能。就是说相同的namespace中可以有多个头文件，这正是C++标准库的组织方式：<code>std::vector</code>, <code>std::sort</code>, <code>std::map</code>, … C++ 将不同的部分，不同<code>container</code>放在不同的头文件中，每个声明了<code>std</code>的某部分功能，这样当使用<code>vector</code>，时只用<code>include &lt;vector&gt;</code>，而不必将所有的<code>std</code>内容<code>include</code>进来。就是说，用户只用对所用的部分进行编译。而class必须整体定义，不能分割。</p>
-<p>想要扩充这个namespace的能力，只需要在这个namespace中添加更多的non-member，non-friend函数。即增强了功能，又没有破坏封装性，由没有增加编译依赖。</p>
-<p><font color="orange" size="4">敲黑板</font>两个角度：</p>
-<ul>
-<li>增强封装性</li>
-<li>减小编译依赖</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/05/Cpp-pro-tip-1/" data-id="ckatsrgrz002oxqfz5ixp6ux4" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -989,7 +930,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">27</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -999,7 +940,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">53</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">54</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1018,7 +959,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1029,6 +970,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
+          </li>
         
           <li>
             <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
@@ -1044,10 +989,6 @@
         
           <li>
             <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
           </li>
         
       </ul>

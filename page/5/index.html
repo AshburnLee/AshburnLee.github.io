@@ -64,6 +64,125 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Cpp-pro-tip-1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/05/Cpp-pro-tip-1/" class="article-date">
+  <time datetime="2020-03-05T10:05:50.000Z" itemprop="datePublished">2020-03-05</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/05/Cpp-pro-tip-1/">Cpp pro tip 1</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="从源文件到可执行文件"><a href="#从源文件到可执行文件" class="headerlink" title="从源文件到可执行文件"></a>从源文件到可执行文件</h1><ul>
+<li>预处理（pre-processing）E<br>从<code>.c</code>到<code>.i</code>。编译器将C源代码中的包含的头文件如stdio.h编译进来，替换宏。</li>
+<li>编译（Compiling）S<br>从<code>.i</code>到<code>.s</code>。gcc首先要检查代码的规范性、是否有语法错误等，以确定代码的实际要做的工作，在检查无误后，gcc把代码翻译成汇编语言。</li>
+<li>汇编（Assembling） c<br>把编译阶段生成的<code>.s</code>文件转成二进制目标代码<code>.o</code>文件。</li>
+<li>链接 （Linking）<br>链接到库中，生成可执行文件。</li>
+</ul>
+<p>绘制这里的图(<a href="https://blog.csdn.net/Meteor_s/article/details/85208589" target="_blank" rel="noopener">https://blog.csdn.net/Meteor_s/article/details/85208589</a>)</p>
+<p><a href="https://www.cnblogs.com/ericling/articles/11736681.html" target="_blank" rel="noopener">这里</a>更详细</p>
+<div align="center"><img src="/2020/03/05/Cpp-pro-tip-1/.png"></div>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -E hello.c -o hello.i</span><br><span class="line">gcc –S hello.i –o hello.s</span><br><span class="line">gcc –c hello.s –o hello.o</span><br><span class="line">gcc hello.o –o hello</span><br></pre></td></tr></table></figure>
+
+<p>生成<code>.o</code>文件，可以重定向，方便其他应用使用。</p>
+<p>一条命令从源文件到可执行文件：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc hello.c –o hello</span><br></pre></td></tr></table></figure>
+
+<h1 id="1-虚析构函数"><a href="#1-虚析构函数" class="headerlink" title="1 虚析构函数"></a>1 虚析构函数</h1><p>补充内容（tip 7）：</p>
+<p>任何时候都应该为待多态性质的基类（父类）声明<code>virtual</code>析构函数。如果一个class含有任何<code>virual</code>函数，就一定要有一个<code>virtual</code>析构函数。</p>
+<p>而如果这个class的设计不是作为基类使用，或者不准备让这个class具备多态性，就不该声明<code>virtual</code>析构函数。</p>
+<p>含有多态性质的<code>base class</code>的设计目的是为了通过<code>base class</code>的接口来使用<code>derived class</code>。所以通常使用<code>base class</code>类的指针指向<code>derived class</code>的对象。</p>
+<p>并不是所有的<code>base class</code>都是为了多态用途，比如STL容器的设计不是用作<code>base class</code>的。</p>
+<p><code>virtual</code>同名函数的目的是允许<code>derived class</code>的实现可以<font color="red">客制化</font>。</p>
+<h1 id="2-C-帮你实现了的函数"><a href="#2-C-帮你实现了的函数" class="headerlink" title="2 C++帮你实现了的函数"></a>2 C++帮你实现了的函数</h1><p>（tip 5）</p>
+<p>当定义了一个class，又没有实现任何成员函数时，编译器会为这个class声明4个函数：</p>
+<ul>
+<li>一个default构造函数</li>
+<li>一个copy构造函数</li>
+<li>一个析构函数</li>
+<li>一个copy操作符</li>
+</ul>
+<p>这些函数都是<code>public</code>和<code>inline</code>的。如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass()&#123;...&#125;</span><br><span class="line">    Myclass(<span class="keyword">const</span> Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">    ~Myclass()&#123;...&#125;</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> Myclass&amp; rhs)&#123;...&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实例化这个class，并使用</span></span><br><span class="line">Myclass e1;       <span class="comment">//default 构造函数</span></span><br><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span>;   <span class="comment">//copy构造函数</span></span><br><span class="line">e2=e1;            <span class="comment">//copy符号操作符</span></span><br><span class="line">                  <span class="comment">//析构函数</span></span><br></pre></td></tr></table></figure>
+
+<p>其中</p>
+<ol>
+<li>编译器给出的析构函数是个<code>non-virtual</code>函数，除非这个class的<code>base class</code>含有<code>virtual</code>析构函数。此时这个class的虚拟性来自其<code>base class</code>。</li>
+<li>对于构造函数，如果我声明了一个构造函数，那么编译器不再创建<code>default</code>构造函数</li>
+<li>copy构造函数，和copy操作符只是单纯的将来源对象的每一个<code>non-static</code>成员变量拷贝到目标对象。所以: <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Myclass <span class="title">e2</span><span class="params">(e1)</span></span></span><br></pre></td></tr></table></figure>
+ 是使用<code>e1</code>的成员变量来初始化<code>e2</code>的成员变量。</li>
+</ol>
+<h1 id="3-为classes实现赋值操作符"><a href="#3-为classes实现赋值操作符" class="headerlink" title="3 为classes实现赋值操作符"></a>3 为classes实现赋值操作符</h1><p>使用赋值操作时，通常可以写成如下形式：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> x, y, z;</span><br><span class="line">x=y=z=<span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>上述实际上的赋值行为是</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x=(y=(z=<span class="number">2</span>));</span><br></pre></td></tr></table></figure>
+
+<p>其行为是将2赋值给<code>z</code>，再将<code>z</code>赋值给<code>y</code>，最后将<code>y</code>赋值给<code>x</code>。</p>
+<p>为了实现上述的连锁赋值，赋值操作符必须返回一个引用指向操作符的左侧：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Myclass</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Myclass&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> Myclass&amp; rhs)&#123;</span><br><span class="line">        ...</span><br><span class="line">        <span class="keyword">return</span>* <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>同样的上述的形式也适用于所有相关的操作符，如<code>+=</code>，<code>-=</code>，<code>×=</code>。</p>
+<p>这是一条<font color="red">协议</font>，被所有内置类型和标准库函数共同遵守，所以，遵守它吧。</p>
+<h1 id="4-将成员变量声明为private"><a href="#4-将成员变量声明为private" class="headerlink" title="4 将成员变量声明为private"></a>4 将成员变量声明为private</h1><p>为什么要把classes的成员变量声明为<code>private</code>：因为这体现了<font color="red">封装</font>。</p>
+<p>类成员变量应该只被这个类的成员方法可见，<code>protected</code>成员变量同<code>public</code>成员变量一样<font color="red">缺乏封装性</font>。</p>
+<p>从封装的角度讲，访问权限只有提供封装（private）和不提供封装两种。</p>
+<h1 id="5-使用non-member-non-friend函数而非再定义一个member函数"><a href="#5-使用non-member-non-friend函数而非再定义一个member函数" class="headerlink" title="5 使用non-member non-friend函数而非再定义一个member函数"></a>5 使用non-member non-friend函数而非再定义一个member函数</h1><p>假设由一个类含有若干个清理函数，只是清理的对象不同：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearHistory</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearCache</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearCookies</span><span class="params">()</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>其实很多时候，用户想要一次性执行这些动作，如何一次性完成，两种方案：</p>
+<ol>
+<li><p>给这个class中添加一个member函数<code>clearAll()</code>，它调用上述三个清理函数：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearAll</span><span class="params">()</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;；</span><br></pre></td></tr></table></figure></li>
+<li><p>使用一个non-member，non-friend函数：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clearBrowser</span><span class="params">(WebBrowser&amp; wb)</span></span>&#123;</span><br><span class="line">    wb.clearHistory();</span><br><span class="line">    wb.clearCache();</span><br><span class="line">    wb.clearCookies();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>pro tip告诉你使用后者。后者更体系那封装性。后者保护了类的包裹性，进而有较低的编译依赖，增强了类的<font color="orange">可延展性</font>。</p>
+</li>
+</ol>
+<p>对于封装性，可以访问private成员变量的只有<font color="orange">member函数</font>和<font color="orange">friend函数</font>。上述两种方式提供了相同的功能，而后者提供了较强的封装性，因为<font color="red">它不能增加访问private变量的能力</font>。</p>
+<p>P.S. friend函数和member函数对于类private成员的访问能力相同。</p>
+<p>在C++ 中自然的做法是将类<code>WebBrowser</code>和函数<code>clearBrowser()</code>放置于同一个<code>namespace</code>中：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> Web&#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">WebBrowser</span>&#123;</span>...&#125;;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearBrowser</span><span class="params">(WebBrowser&amp; wb)</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>namespace 可以跨越多个源码文件，而class不能。就是说相同的namespace中可以有多个头文件，这正是C++标准库的组织方式：<code>std::vector</code>, <code>std::sort</code>, <code>std::map</code>, … C++ 将不同的部分，不同<code>container</code>放在不同的头文件中，每个声明了<code>std</code>的某部分功能，这样当使用<code>vector</code>，时只用<code>include &lt;vector&gt;</code>，而不必将所有的<code>std</code>内容<code>include</code>进来。就是说，用户只用对所用的部分进行编译。而class必须整体定义，不能分割。</p>
+<p>想要扩充这个namespace的能力，只需要在这个namespace中添加更多的non-member，non-friend函数。即增强了功能，又没有破坏封装性，由没有增加编译依赖。</p>
+<p><font color="orange" size="4">敲黑板</font>两个角度：</p>
+<ul>
+<li>增强封装性</li>
+<li>减小编译依赖</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/05/Cpp-pro-tip-1/" data-id="ckatsrgrz002oxqfz5ixp6ux4" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-并行一维卷积" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/02/28/CUDA-%E5%B9%B6%E8%A1%8C%E4%B8%80%E7%BB%B4%E5%8D%B7%E7%A7%AF/" class="article-date">
@@ -624,7 +743,7 @@
 <p>调用kernel的host函数也必须是一个模板函数： </p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">int</span> threadsPerBlock&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">callReduction</span><span class="params">(<span class="keyword">int</span>* res, <span class="keyword">int</span>* partial, </span></span></span><br><span class="line"><span class="function"><span class="params">                    <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N, </span></span></span><br><span class="line"><span class="function"><span class="params">                    <span class="keyword">int</span> numBlocks)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 第一阶段，得到所有block对应的shared memory中的值</span></span><br><span class="line">    reductionKernel&lt;numBlocks&gt;&lt;&lt;&lt;numBlocks, </span><br><span class="line">                                threadsPerBlocks, </span><br><span class="line">                                <span class="function">threadsPerBlocks*<span class="title">sizeof</span><span class="params">(<span class="keyword">int</span>)</span></span></span><br><span class="line">                                &gt;&gt;&gt;(partial, in, N);</span><br><span class="line">    <span class="comment">// 两个阶段串行</span></span><br><span class="line">    <span class="comment">// 第二阶段，对上一步中partial中的所有值，执行规约</span></span><br><span class="line">    reductionKernel&lt;numBlocks&gt;&lt;&lt;&lt;<span class="number">1</span>, </span><br><span class="line">                                threadsPerBlocks, </span><br><span class="line">                                <span class="function">threadsPerBlocks*<span class="title">sizeof</span><span class="params">(<span class="keyword">int</span>)</span></span></span><br><span class="line">                                &gt;&gt;&gt;(res, partial, numBlocks);             </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用switch语句，按照不同 block大小出发对应的模板函数。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span>* out, <span class="keyword">int</span>* partial, </span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span>* in, <span class="keyword">size_t</span> N, </span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span> numBlocks, <span class="keyword">int</span> threadsPerBlock)</span></span>&#123;</span><br><span class="line">    <span class="keyword">switch</span>( theadsPerBlock )&#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">1</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">2</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">2</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">4</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">4</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">8</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">8</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">16</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">16</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">32</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">32</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">64</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">64</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">128</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">128</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">256</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">256</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">512</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">512</span> &gt;(...);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1024</span>: <span class="keyword">return</span> callReduction&lt; <span class="number">1024</span> &gt;(...);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>之所以不能再一个kernel中获得最后结果，是因为，<font color="red">block与block之间是没有同步的</font>。而第二阶段的规约需要所有block的buffer中第一个值，集合在一起，作为前提，如第一幅图所示。可不可以只一阶段就完成任务呢。</p>
+<p>之所以不能在一个kernel中获得最后结果，是因为，<font color="red">block与block之间是没有同步的</font>。而第二阶段的规约需要所有block的buffer中第一个值，集合在一起，作为前提，如第一幅图所示。可不可以只一阶段就完成任务呢。</p>
 
       
     </div>
@@ -975,84 +1094,6 @@
 
 
   
-    <article id="post-CUDA-死锁-例-点积" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/" class="article-date">
-  <time datetime="2020-02-20T02:06:51.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/">CUDA-死锁-例-点积</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="好好体会-Dot-product"><a href="#好好体会-Dot-product" class="headerlink" title="好好体会-Dot product"></a>好好体会-Dot product</h1><p>（CUDA by example 55页）</p>
-<p><font color="orange" size="3">这个例子值得好好感悟</font></p>
-<p>点积：两个长度相同的向量A和B，对应元素相乘后相加。</p>
-<p>CUDA实现思路：每个线程分别读取A和B中对应位置的元素，紧接着执行相乘操作，最后将相乘结果存入shared memory的对应位置。</p>
-<p>注意，当向量元素个数远远超过一个block中的threads数量时的处理。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> N = <span class="number">33</span>*<span class="number">1025</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> threadsPerBlock = <span class="number">256</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> blocksPerGrid = (N+threadsPerBlock<span class="number">-1</span>)/threadsPerBlock;</span><br><span class="line"></span><br><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">dotProduction</span><span class="params">(<span class="keyword">float</span>* a, <span class="keyword">float</span>* b)</span></span>&#123;</span><br><span class="line">    <span class="comment">/// 第一步：thread计算得到a和b对应元素的乘积，</span></span><br><span class="line">    <span class="comment">// 存入这个thread对应的shared memory中的位置</span></span><br><span class="line">    <span class="comment">// 每个block对应的shared memory的大小为这个block中的threads数量</span></span><br><span class="line">    __shared__ <span class="keyword">float</span> cache[threadsPerBlock];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x*blocIdx.x;</span><br><span class="line">    <span class="comment">// 每个block的shared memory的索引就是threadIdx.x，与blockIdx.x 无关,</span></span><br><span class="line">    <span class="comment">// 这个block和那个block中的thread的ID是一摸一样的。</span></span><br><span class="line">    <span class="keyword">int</span> cacheIndex = threadsIdx.x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行乘法操作，更新threads ID，</span></span><br><span class="line">    <span class="comment">// 同stride-loop</span></span><br><span class="line">    <span class="comment">// 看图一的过程</span></span><br><span class="line">    <span class="keyword">float</span> tmp = <span class="number">0.0f</span>;</span><br><span class="line">    <span class="keyword">while</span> (tid&lt;N)&#123;</span><br><span class="line">        tmp += a[tid]*b[tid];</span><br><span class="line">        tid += blockDim.x*gridDim.x;</span><br><span class="line">    &#125;</span><br><span class="line">    cache[cacheIndex] = tmp;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 同步这个block中的所有threads</span></span><br><span class="line">    __syncthreads();</span><br><span class="line">    <span class="comment">// 确保所有threads完成工作之后，执行后续指令</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/// 第二步：对于每个block对应的shared memory中的元素，进行规约求和。</span></span><br><span class="line">    <span class="comment">// 其中threadPerBlock必须是2的指数。</span></span><br><span class="line">    <span class="comment">// 同for-loop</span></span><br><span class="line">    <span class="keyword">int</span> i = blockDim.x/<span class="number">2</span>;</span><br><span class="line">    <span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span> (cacheIndex &lt;i )</span><br><span class="line">            cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">        <span class="comment">// 确保上一轮所有和得到，所以要同步</span></span><br><span class="line">        __syncthreads();</span><br><span class="line">        i /= <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 把每个shared memory中的第一个元素，也就是这个shared memory中</span></span><br><span class="line">    <span class="comment">// 所有元素之和，写入c中对应的位置。</span></span><br><span class="line">    <span class="keyword">if</span>(cacheIndex == <span class="number">0</span>)</span><br><span class="line">        c[blockIdx.x] = cache[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="comment">// 在主函数中，把c从device拷贝到host，以及之后：</span></span><br><span class="line">cudaMemcpy(h_c, c, cudaMemcpyDeviceToHost);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在CPU上将h_c中的结果求和，于此同时GPU上可以后其他任务执行。</span></span><br><span class="line"><span class="comment">// CPU和GPU并行执行。隐藏延时</span></span><br><span class="line"><span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i &lt; blocksPerGrid; i++)&#123;</span><br><span class="line">    sum += h_c[i];</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// sum即是最终点积结果。</span></span><br></pre></td></tr></table></figure>
-
-<p>其中这一部分：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> tmp = <span class="number">0.0f</span>;</span><br><span class="line"><span class="keyword">while</span> (tid&lt;N)&#123;</span><br><span class="line">    tmp += a[tid]*b[tid];</span><br><span class="line">    tid += blockDim.x*gridDim.x; <span class="comment">// 更新tid，自加不是1，而是所有threads数量。</span></span><br><span class="line">&#125;</span><br><span class="line">cache[cacheIndex] = tmp;</span><br></pre></td></tr></table></figure>
-
-<p>当所有threads的数目小于a或b中的元素个数时（不论有多少个blocks），上述保证正确，与<font color="red">stride更新</font>效果相同。当threads个数等于元素个数时，也正确。所以这样写，分析见下图：</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/dot0.png" width="600"></div>
-
-<p>上图中只使用了<font color="orange">一个block</font>，所以在第二步归约计算时，就可以在第0个位置上得到最终结果。当使用多个blocks时，第二步得到<font color="orange">每个block的第0个元素</font>，而这些若干个第0个元素保存于c（Global）中，最终还要将c中元素求和。</p>
-<p>而下面这种实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (tid&lt;N)&#123;</span><br><span class="line">    cache[threadIdx.x] = a[tid]*b[tid];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>只适用于thread个数等于元素个数时。但通常元素个数会远大于threads数。所以不适用此法。</p>
-<div align="center"><img src="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/dot1.png" width="600"></div>
-
-<ul>
-<li><p>技能：<font color="orange" size="4">多个blocks中的各个shared memory 缓存同时被s操作</font>。</p>
-</li>
-<li><p>为什么要将最后的结果传回host计算？</p>
-<p>  因为，事实证明，<font color="orange">想GPU这种大规模并行机器在执行最后的规约步骤时，通常会浪费计算资源，因为此时的数据集非常小。比如，当使用480 个threads将32 个数相加时，将难以充分使用每一个threads</font>。</p>
-</li>
-</ul>
-<p>总结一下，使用shared memory优化dot-production为什么有效，因为减少了写入global memory的次数，并且复制回host的数据量减少。性能增加。</p>
-<p><font color="gree" size="4">敲黑板</font>注意threadIdx.x 与threads ID的区别，前者相对ID后者绝对ID。<font color="red" size="4">访存Shared memory时，一定使用threadIdx.x</font>。</p>
-<h1 id="syncthreads-放错位置会导致死锁"><a href="#syncthreads-放错位置会导致死锁" class="headerlink" title="__syncthreads() 放错位置会导致死锁"></a>__syncthreads() 放错位置会导致死锁</h1><p>规约程序中：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i=blockDim.x/<span class="number">2</span>;</span><br><span class="line"><span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">    <span class="keyword">if</span> (cacheIndex &lt;i )</span><br><span class="line">        cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">    __syncthreads();</span><br><span class="line">    i /= <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>如果将<code>__syncthreads()</code>放入if语句，会产生死锁：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i=blockDim.x/<span class="number">2</span>;</span><br><span class="line"><span class="keyword">while</span>(i != <span class="number">0</span>)&#123;</span><br><span class="line">    <span class="keyword">if</span> (cacheIndex &lt;i )&#123;</span><br><span class="line">        cache[cacheIndex] += cache[cacheIndex + i];</span><br><span class="line">        __syncthreads();</span><br><span class="line">    &#125;</span><br><span class="line">    i /= <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>解释一下，当出现线程发散时，发散的分支会使得某些threads处于空闲状态，而其他threads将执行分支中的代码。而对于<code>__syncthreads()</code>而言，<font color="orange" size="4">CUDA架构确保，一个block中的所有threads都执行到<code>__syncthreads()</code>，才能执行<code>__syncthreads()</code>之后的语句</font>。这样一来，上述代码块，只要有一个threads没有执行if语句，也就不能够执行<code>__syncthreads()</code>，其他执行了if语句的threads会等待哪一个thread，一直等下去，造成死锁。</p>
-<p>所以，对于<code>__syncthreads()</code>要谨慎使用。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/" data-id="ckatsrgro001zxqfz8ve10gze" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1068,7 +1109,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">26</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">27</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -1078,7 +1119,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">53</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">54</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1097,7 +1138,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1108,6 +1149,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
+          </li>
         
           <li>
             <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
@@ -1123,10 +1168,6 @@
         
           <li>
             <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
           </li>
         
       </ul>
