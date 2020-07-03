@@ -17,7 +17,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/dot0.png">
 <meta property="og:image" content="http://yoursite.com/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/dot1.png">
 <meta property="article:published_time" content="2020-02-20T02:06:51.000Z">
-<meta property="article:modified_time" content="2020-02-22T13:02:45.096Z">
+<meta property="article:modified_time" content="2020-07-02T22:39:51.087Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -112,11 +112,12 @@
 <p>上图中只使用了<font color="orange">一个block</font>，所以在第二步归约计算时，就可以在第0个位置上得到最终结果。当使用多个blocks时，第二步得到<font color="orange">每个block的第0个元素</font>，而这些若干个第0个元素保存于c（Global）中，最终还要将c中元素求和。</p>
 <p>而下面这种实现：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (tid&lt;N)&#123;</span><br><span class="line">    cache[threadIdx.x] = a[tid]*b[tid];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>只适用于thread个数等于元素个数时。但通常元素个数会远大于threads数。所以不适用此法。</p>
+
+<p>只适用于thread个数等于元素个数时（如下图）。但通常元素个数会远大于threads数。所以不适用此法。</p>
 <div align="center"><img src="/2020/02/20/CUDA-%E6%AD%BB%E9%94%81-%E4%BE%8B-%E7%82%B9%E7%A7%AF/dot1.png" width="600"></div>
 
 <ul>
-<li><p>技能：<font color="orange" size="4">多个blocks中的各个shared memory 缓存同时被s操作</font>。</p>
+<li><p>技能：<font color="orange" size="4">多个blocks中的各个shared memory 缓存同时被操作</font>。</p>
 </li>
 <li><p>为什么要将最后的结果传回host计算？</p>
 <p>  因为，事实证明，<font color="orange">想GPU这种大规模并行机器在执行最后的规约步骤时，通常会浪费计算资源，因为此时的数据集非常小。比如，当使用480 个threads将32 个数相加时，将难以充分使用每一个threads</font>。</p>
