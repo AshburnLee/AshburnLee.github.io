@@ -64,6 +64,245 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LeetCode-方法论-Floyd-s-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" class="article-date">
+  <time datetime="2019-08-02T16:08:05.000Z" itemprop="datePublished">2019-08-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/">LeetCode-方法论-Floyd&#39;s Algorithm</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录Floyd算法，及若干与之相关的Leetcode问题。体会本题是怎样将问题<strong>转化</strong>的。当原问题棘手时，找到合适的方向可以转化为简单问题。</p>
+<h1 id="141-Linked-List-Cycle"><a href="#141-Linked-List-Cycle" class="headerlink" title="#141 Linked List Cycle"></a>#141 Linked List Cycle</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Input: head &#x3D; [3,2,0,-4], pos &#x3D; 1</span><br><span class="line">Output: true</span><br><span class="line">Explanation: There is a cycle in the linked list, where tail connects to the second node.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p> 如果存在环，兔子与乌龟会第二次相遇；否则除了起点，龟兔不会再相遇。</p>
+</li>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">hasCycle</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    ListNode* rabbit=head;</span><br><span class="line">    ListNode* turtle=head;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(rabbit &amp;&amp; turtle)&#123;</span><br><span class="line">        rabbit = rabbit-&gt;next;</span><br><span class="line">        turtle = turtle-&gt;next;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (rabbit) rabbit=rabbit-&gt;next; <span class="comment">// one step faster than the turtle</span></span><br><span class="line">        <span class="keyword">if</span> (rabbit &amp;&amp; (rabbit==turtle))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="287-Find-the-Duplicate-Number"><a href="#287-Find-the-Duplicate-Number" class="headerlink" title="#287 Find the Duplicate Number"></a>#287 Find the Duplicate Number</h1><ul>
+<li><p>描述</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Input: [3,1,3,4,2]</span><br><span class="line">Output: 3</span><br><span class="line">Note:</span><br><span class="line"></span><br><span class="line">    You must not modify the array (assume the array is read only).</span><br><span class="line">    You must use only constant, O(1) extra space.</span><br><span class="line">    Your runtime complexity should be less than O(n2).</span><br><span class="line">    There is only one duplicate number in the array, but it could be repeated more than once.</span><br><span class="line"></span><br><span class="line">依照本题意，数组中一定有重复元素，找到数组中重复出现的元素。</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>思路</p>
+<p>  就题意而言，数组元素唯一和数组元素有重复的区别可用下图表示：</p>
+<p>  1) 当给定数组中无重复元素时，如<code>nums={3,4,5,2,1}</code>。以第一行为当前位置，第二行为下一位置。小人从位置0开始走最终走到5停止。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/no_circle.png" width="700"> </div>
+  <div align="center">路经无环</div>
+
+<p>  2) 当给定数组中有重复元素时，如<code>nums={1，4，6，5，6，2，3}</code>。小人从位置0开始走，路经有环始终不会停止。而且被两个箭头指向的节点6为重复元素。</p>
+  <div align="center"> <img src="/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/circle.png" width="700"> </div>
+  <div align="center">路经有环</div>
+
+
+</li>
+</ul>
+<ul>
+<li><p>实现</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">findDuplicate</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> turtle = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> rabbit = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">do</span>&#123;</span><br><span class="line">        turtle = nums[turtle];      <span class="comment">// one step</span></span><br><span class="line">        rabbit = nums[nums[rabbit]]; <span class="comment">// two steps</span></span><br><span class="line">    &#125;<span class="keyword">while</span>(turtle != rabbit);  </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ptr1 = nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">int</span> ptr2 = turtle;</span><br><span class="line">    <span class="keyword">while</span>(ptr1 != ptr2)&#123;</span><br><span class="line">        ptr1 = nums[ptr1];</span><br><span class="line">        ptr2 = nums[ptr2];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ptr1;              </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  当龟兔位于同起点，向相同的方向跑，<strong>如果赛道无环，乌龟永远追不上兔子。若赛道有环，兔子会再次追上乌龟</strong>。这就是Floy’s 算法的来源。</p>
+<p>  表面上与龟兔赛跑无关，在<font color="red" size="4">逻辑上构建出类似链表</font>后，就水到渠成了。</p>
+<p>  本题并不复杂，但当经过<font color="red" size="4">转化</font>后时间空间复杂度达到若干方法中较优。时刻有转化问题的意识。</p>
+</li>
+</ul>
+<p>关键：<font color="red" size="4">问题转化</font>，<font color="red" size="4">龟兔赛跑</font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/03/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-Floyd-s-Algorithm/" data-id="ckatsrgs40032xqfz8nl381b5" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-文本分类-一-几类模型" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2019-08-02T11:23:04.000Z" itemprop="datePublished">2019-08-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Deep-Learning/">Deep Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/">文本分类(一)-几类模型</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>文本分类任务中，输入为一条由词语组成的文本，模型判断这条文本的类别。</p>
+<h2 id="1-基本文本模型"><a href="#1-基本文本模型" class="headerlink" title="1.基本文本模型"></a>1.基本文本模型</h2><p>模型一：使用RNN(LSTM)的最后一个状态判断类别，是最基本的RNN模型。如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>LSTM的最后一个状态，或者说是该LSTM结点的最后一个time step 包含了整个句子的信息。将这个信息传入一个普通的全连接的神经网络。最终得到一个分类。比如一个句子传入模型后被判断为威胁类别。如果是二分类，使用sigmoid实现，若是多分类，使用softmax实现。</p>
+<p>这个过程中涉及到embedding，就是用向量来表示一个词语，或者说是对词语的进一步编码。第一次编码是将词语转化为数字，两者一一对应。</p>
+<p>不使用one-hot 编码，深度学习领域使用embedding的方式对词语进行编码。具体如何做，如下：</p>
+<table>
+<thead>
+<tr>
+<th align="right">词语</th>
+<th align="right">id1</th>
+<th align="right">id2</th>
+<th align="right">id3</th>
+<th align="right">id4</th>
+<th align="right">id5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">海洋</td>
+<td align="right">0.11</td>
+<td align="right">0.52</td>
+<td align="right">0.45</td>
+<td align="right">1.27</td>
+<td align="right">0.72</td>
+</tr>
+<tr>
+<td align="right">阳光</td>
+<td align="right">0.63</td>
+<td align="right">0.24</td>
+<td align="right">1.12</td>
+<td align="right">0.27</td>
+<td align="right">1.27</td>
+</tr>
+<tr>
+<td align="right">冲浪</td>
+<td align="right">0.72</td>
+<td align="right">0.22</td>
+<td align="right">0.23</td>
+<td align="right">0.37</td>
+<td align="right">0.46</td>
+</tr>
+</tbody></table>
+<p>我把每一个出现了的词用长度为5的向量表示。并且embedding中的数值是变量，在训练模型时，所有数值是要被学习(更新)的。从而使得每个词语对应的向量与词语意思更相关。</p>
+<p>当把输入编码成一个向量时，过程就更类似对图像的处理了(两者还是很不一样)。输入与输出都是向量。</p>
+<h2 id="2-双向文本模型"><a href="#2-双向文本模型" class="headerlink" title="2.双向文本模型"></a>2.双向文本模型</h2><p>上述基本模型有个问题：虽然LSTM可以选择性地保存信息，但是，随后一个词语还是会与其较近的词语由更大的关系，而弱化较早以前的词语。所以更早些的信息可能不会被保存下来。双向RNN就是用来解决这个问题的，如图：</p>
+<p>&lt;&gt;pic&lt;&gt;</p>
+<div align="center"><img src></div>
+
+<p>特点：</p>
+<ul>
+<li>信息正向传播，并且逆向传播。</li>
+<li>把每一个词语经过这个LSTM的输出，做组合(拼接，pooling等)</li>
+<li>最终将组合结果传入一个全连接层</li>
+</ul>
+<h2 id="3-HAN"><a href="#3-HAN" class="headerlink" title="3.HAN"></a>3.HAN</h2><p>特点：</p>
+<ul>
+<li>分层，第一层词语编码，第二层句编码。</li>
+<li>每一层增加一个类似LSTM内部门的操作，成为Attention 机制</li>
+</ul>
+<h2 id="4-CNN解决文本问题"><a href="#4-CNN解决文本问题" class="headerlink" title="4.CNN解决文本问题"></a>4.CNN解决文本问题</h2>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/02/%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB-%E4%B8%80-%E5%87%A0%E7%B1%BB%E6%A8%A1%E5%9E%8B/" data-id="ckatsrgt30058xqfz07z6dfak" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-组成原理缓存置换算法" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" class="article-date">
+  <time datetime="2019-08-02T01:26:37.000Z" itemprop="datePublished">2019-08-02</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/">组成原理-缓存置换算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇笔记记录了4种缓存置换算法</p>
+<ul>
+<li>随机置换算法</li>
+<li>FIFO</li>
+<li>LRU</li>
+<li>LFU</li>
+</ul>
+<h2 id="FIFO-先进先出算法"><a href="#FIFO-先进先出算法" class="headerlink" title="FIFO(先进先出算法)"></a>FIFO(先进先出算法)</h2><p><strong>原理</strong>：置换缓存时，从硬件角度：当缓存不满时，直接添加所需内容，否则，将最先进入缓存的内容删除，并把需使用的内容添加到缓存。对应的逻辑角度：当缓存不满时，直接添加新节点到链表尾。若缓存满，先将链表头节点删除，并且把新的节点连接到链表尾部。</p>
+<p><strong>实现</strong>：缓存使用双向链表实现<em>DoubleLinkedList</em>，其中节点由<em>Node</em>实现。 </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> DoubleLinkedList <span class="keyword">import</span> Node, DoubleLinkedList</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FIFO</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, capacity)</span>:</span></span><br><span class="line">        self.capacity = capacity</span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line">        self.map = &#123;&#125;   <span class="comment"># &#123;key: node&#125; as search table</span></span><br><span class="line">        self.dlist = DoubleLinkedList(self.capacity)  <span class="comment"># as the cache</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span><span class="params">(self, key)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> self.map:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node = self.map.get(key)</span><br><span class="line">            <span class="keyword">return</span> node.value</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">put</span><span class="params">(self, key, value)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> self.capacity == <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">in</span> self.map:   <span class="comment"># if this key exist in map</span></span><br><span class="line">            node = self.map.get(key)  <span class="comment"># get this key</span></span><br><span class="line">            self.dlist.remove(node)   <span class="comment"># remove the node with this key</span></span><br><span class="line">            node.value = value     <span class="comment"># update the value of that node</span></span><br><span class="line">            self.dlist.append(node)  <span class="comment"># add node to the tail</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">if</span> self.size == self.capacity:   <span class="comment"># if cache is full</span></span><br><span class="line">                node = self.dlist.pop()</span><br><span class="line">                <span class="keyword">del</span> self.map[node.key]   <span class="comment"># delete the node at the head</span></span><br><span class="line">                self.size -= <span class="number">1</span></span><br><span class="line">            node = Node(key, value)</span><br><span class="line">            self.dlist.append(node)   <span class="comment"># add new node to the tail</span></span><br><span class="line">            self.map[key] = node</span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.dlist.print()</span><br></pre></td></tr></table></figure>
+<p>测试：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    cache = FIFO(<span class="number">4</span>)</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">10</span>)</span><br><span class="line">    cache.put(<span class="number">2</span>, <span class="number">20</span>)</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">12</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(<span class="string">"------"</span>)</span><br><span class="line">    cache.put(<span class="number">4</span>, <span class="number">40</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">5</span>, <span class="number">50</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">1</span>, <span class="number">11</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    cache.put(<span class="number">3</span>, <span class="number">30</span>)</span><br><span class="line">    cache.print()</span><br><span class="line">    print(cache.get(<span class="number">1</span>))</span><br><span class="line">    print(cache.get(<span class="number">2</span>))</span><br></pre></td></tr></table></figure>
+<p>结果如下，注释体现了FIFO<strong>算法过程</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;1: 10&#125;-&gt;&#123;2: 20&#125;-&gt;&#123;3: 30&#125;            &#x2F;&#x2F; 该时刻的缓存内容</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;            &#x2F;&#x2F; 缓存未满，key&#x3D;1的接点在缓存中，删除头部key&#x3D;1的&#123;1: 10&#125;，尾部加入&#123;1: 12&#125;</span><br><span class="line">------</span><br><span class="line">&#123;2: 20&#125;-&gt;&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;   &#x2F;&#x2F; 缓存未满，key&#x3D;4的节点不存在，所以在尾部加&#123;4: 40&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;1: 12&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;5的节点不存在，删除头部&#123;2: 20&#125;，尾部加&#123;5: 50&#125;</span><br><span class="line">&#123;3: 30&#125;-&gt;&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;   &#x2F;&#x2F; 缓存满，key&#x3D;1的节点在缓存中，删除key&#x3D;1的&#123;1: 12&#125;，尾部加&#123;1: 11&#125;</span><br><span class="line">&#123;4: 40&#125;-&gt;&#123;5: 50&#125;-&gt;&#123;1: 11&#125;-&gt;&#123;3: 30&#125;   &#x2F;&#x2F; 同理</span><br><span class="line">11                                   &#x2F;&#x2F; 查找key&#x3D;1的value，存在</span><br><span class="line">-1                                   &#x2F;&#x2F; 查找key&#x3D;2的value，不存在</span><br></pre></td></tr></table></figure>
+<h2 id="LRU-最不经常使用算法"><a href="#LRU-最不经常使用算法" class="headerlink" title="LRU(最不经常使用算法)"></a>LRU(最不经常使用算法)</h2><p>待填坑</p>
+<h2 id="LFU-最近最少使用算法"><a href="#LFU-最近最少使用算法" class="headerlink" title="LFU(最近最少使用算法)"></a>LFU(最近最少使用算法)</h2><p>待填坑</p>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><h3 id="Node定义"><a href="#Node定义" class="headerlink" title="Node定义"></a>Node定义</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, key, val)</span>:</span></span><br><span class="line">        self.key = key</span><br><span class="line">        self.value = val</span><br><span class="line">        self.prev = <span class="literal">None</span></span><br><span class="line">        self.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__repr__</span><span class="params">(self)</span>:</span></span><br><span class="line">        val = <span class="string">'&#123;%d: %d&#125;'</span> % (self.key, self.value)</span><br><span class="line">        <span class="keyword">return</span> val</span><br></pre></td></tr></table></figure>
+<h3 id="双向链表DoubleLinkedList定义"><a href="#双向链表DoubleLinkedList定义" class="headerlink" title="双向链表DoubleLinkedList定义"></a>双向链表DoubleLinkedList定义</h3><p>对于<strong>成员函数为什么返回看似无用的node节点</strong>，经验上讲这样做是最优的。在FIFO的实现过程中会发现，如果成员函数返回其他内容，或无返回值，最终的应用回出现逻辑错误。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DoubleLinkedList</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, cap=<span class="number">0xffff</span>)</span>:</span></span><br><span class="line">        self.capacity = cap</span><br><span class="line">        self.head = <span class="literal">None</span></span><br><span class="line">        self.tail = <span class="literal">None</span></span><br><span class="line">        self.size = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.head.next = <span class="literal">None</span></span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.head.prev = node</span><br><span class="line">            node.next = self.head</span><br><span class="line">            self.head = node</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">        self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># append node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add_tail</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            self.head = node</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            self.tail.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail.next = node</span><br><span class="line">            node.prev = self.tail</span><br><span class="line">            self.tail = node</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">            self.size += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_tail</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.tail:</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node.prev:</span><br><span class="line">            self.tail = node.prev</span><br><span class="line">            self.tail.next = <span class="literal">None</span></span><br><span class="line">            node.prev = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.tail = self.head = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># delete head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__del_head</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.head:  <span class="comment"># if empty list</span></span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        node = self.head  <span class="comment"># assign self.head to a new node</span></span><br><span class="line">        <span class="keyword">if</span> node.next:</span><br><span class="line">            self.head = node.next</span><br><span class="line">            self.head.prev = <span class="literal">None</span></span><br><span class="line">            node.next = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">else</span>:  <span class="comment"># only a head exist</span></span><br><span class="line">            self.head = self.tail = <span class="literal">None</span></span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove node in any position</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__remove</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="comment"># if node==None, remove tail by default</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> node:</span><br><span class="line">            node = self.tail</span><br><span class="line">        <span class="keyword">if</span> node == self.tail:</span><br><span class="line">            self.__del_tail()</span><br><span class="line">        <span class="keyword">elif</span> node == self.head:</span><br><span class="line">            self.__del_head()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            node.prev.next = node.next</span><br><span class="line">            node.next.prev = node.prev</span><br><span class="line">        self.size -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> node</span><br><span class="line"></span><br><span class="line">    <span class="comment"># APIs</span></span><br><span class="line">    <span class="comment"># pop node from head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pop</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__del_head()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the tail</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_tail(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add node to the head</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">append_head</span><span class="params">(self, node)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__add_head(node)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># remove</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">remove</span><span class="params">(self, node=None)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.__remove(node)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">print</span><span class="params">(self)</span>:</span></span><br><span class="line">        p = self.head</span><br><span class="line">        line = <span class="string">''</span></span><br><span class="line">        <span class="keyword">while</span> p:</span><br><span class="line">            line += <span class="string">'%s'</span> % p</span><br><span class="line">            p = p.next</span><br><span class="line">            <span class="keyword">if</span> p:</span><br><span class="line">                line += <span class="string">'-&gt;'</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> line:</span><br><span class="line">            print(<span class="string">"empty double linked list"</span>)</span><br><span class="line">        print(line)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/02/%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E7%BC%93%E5%AD%98%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95/" data-id="ckatsrgtj006gxqfzcuh7bb0o" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Mobile-Net-深度可分离卷积" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/01/Mobile-Net-%E6%B7%B1%E5%BA%A6%E5%8F%AF%E5%88%86%E7%A6%BB%E5%8D%B7%E7%A7%AF/" class="article-date">
@@ -563,125 +802,11 @@
 
 
   
-    <article id="post-Markdown-常用语法" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/" class="article-date">
-  <time datetime="2019-07-01T13:32:34.000Z" itemprop="datePublished">2019-07-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/">Markdown-常用语法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>常用的记录下来，方便查找</p>
-<ul>
-<li><p>插入图片</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div align&#x3D;center&gt;&lt;img src&#x3D;&quot;IMAGE_PATH.png&quot; width&#x3D;500&gt;&lt;&#x2F;div&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>添加图片描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div align&#x3D;center&gt;Description of images&lt;&#x2F;div&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>表格</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">指标 | 值   </span><br><span class="line">:-|:-</span><br><span class="line">Maximum dimensionality of grid of thread blocks | 3 |</span><br><span class="line">Maximum x- or y-dimension of a block | 1024 |</span><br><span class="line">Maximum z-dimension of a block | 64 |</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改文本中字体颜色大小</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;font color&#x3D;red size&#x3D;4&gt;字体颜色大小&lt;&#x2F;font&gt;</span><br></pre></td></tr></table></figure>
-<p>  更多颜色看<a href="https://www.w3school.com.cn/tags/html_ref_colornames.asp" target="_blank" rel="noopener">这里</a>.</p>
-</li>
-<li><p>链接</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[我的主页](https:&#x2F;&#x2F;ashburnlee.github.io&#x2F;)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>另起一行 </p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">表示另起一行&lt;&#x2F;br&gt;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>用线划掉</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~~用横线划掉~~</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/01/Markdown-%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95/" data-id="ckatsrgsc003nxqfz0bb37f7b" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/1970/01/01/hello-world/" class="article-date">
-  <time datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/1970/01/01/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/1970/01/01/hello-world/" data-id="ckatsrgsn004dxqfz1ms45plc" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/13/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span>
+    <a class="extend prev" rel="prev" href="/page/13/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/15/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -692,7 +817,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">27</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -702,7 +827,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">54</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -721,7 +846,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -734,23 +859,23 @@
       <ul>
         
           <li>
+            <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/11/LeetCode-BST-%E6%89%BE%E5%89%8D%E9%A9%B1%E4%B8%8E%E5%90%8E%E7%BB%A7%E7%BB%93%E7%82%B9/">LeetCode-BST 找前驱与后继结点</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
           </li>
         
           <li>
             <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/LeetCode-%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97%E7%9B%B8%E5%85%B3/">LeetCode-优先队列相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
           </li>
         
       </ul>

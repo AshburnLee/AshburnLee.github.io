@@ -64,6 +64,360 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-caffe-如何使用" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/" class="article-date">
+  <time datetime="2020-03-07T15:06:20.000Z" itemprop="datePublished">2020-03-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/">caffe-使用已有的lenet模型</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>关于如何使用，在网上找了半天，没有一篇博客说清楚。之后才发现，下载好的caffe的examples目录中就是我想找的。通过examples，caffe的工作流程基本明了。一般由4步：</p>
+<ol>
+<li>数据准备： 将原始数据转化为caffe-format</li>
+<li>定义网络结构和参数，</li>
+<li>定义训练超参数solver，</li>
+<li>训练</li>
+</ol>
+<p>给个caffe自带的mnist例子</p>
+<h1 id="1-数据准备"><a href="#1-数据准备" class="headerlink" title="1.数据准备"></a>1.数据准备</h1><p>回到caffe的根目录后执行下面脚本：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$.&#x2F;data&#x2F;mnist&#x2F;get_mnist.sh</span><br><span class="line">$.&#x2F;examples&#x2F;mnist&#x2F;create_mnist.sh</span><br></pre></td></tr></table></figure>
+
+<p>上述代码所做的事情是：先下载解压mnist数据集，后将源数据通过<code>build/examples/mnist/convert_mnist_data.bin</code>写入将原始mnist数据写成<code>LMDB</code>格式，所以会有两个文件生成：<code>mnist_train_lmdb</code>和<code>mnist_test_lmdb</code>。</p>
+<h1 id="2-定义模型结构和参数"><a href="#2-定义模型结构和参数" class="headerlink" title="2.定义模型结构和参数"></a>2.定义模型结构和参数</h1><p>我使用caffe为我们定义好的<code>LeNet</code>网络，它的定义在文件<code>examples/mnist/lenet_train_test.prototxt</code>中。定义的格式是Google Protobuff，解析<code>.prorotxt</code>文件的　统一规则由文件<code>/src/caffe/proto/caffe.proto.</code>提供。</p>
+<p>打开文件<code>lenet_train_test.prototxt</code>，是lenet的网络结构：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">name: &quot;LeNet&quot;</span><br><span class="line">layer &#123;</span><br><span class="line">&#x2F;&#x2F; ...layer definition...</span><br><span class="line">include: &#123; phase: TRAIN &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>若干层（Layer）堆叠在一起，构成了一个网络（Net）。lenet网络每层定义的细节间附录。</li>
+<li>这个文件被称作<code>network definition protobuf file</code>。其中<code>top</code>表示这层输出，<code>bottom</code>表示这层出入。caffe中模型的逻辑图结构与其<code>.prototxt</code>文件的对应。</li>
+<li>网络结构可以通过可视化工具绘制（详见后）。</li>
+</ul>
+<h1 id="3-指明训练超参数：solver-prototxt"><a href="#3-指明训练超参数：solver-prototxt" class="headerlink" title="3.指明训练超参数：solver.prototxt"></a>3.指明训练超参数：solver.prototxt</h1><p>从这里查看训练超参数<code>examples/mnist/lenet_solver.prototxt</code>。在caffe中，设定训练超参数（非训练参数）被称作<code>solver</code>，这个文件被称作<code>solver protobuf file</code>，也是Google protobuff 文件格式。如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 网络结构定义</span></span><br><span class="line">net: <span class="string">"examples/mnist/lenet_train_test.prototxt"</span></span><br><span class="line"><span class="comment"># Test阶段的迭代次数。batch_size也是100，所以由10,000测试数据</span></span><br><span class="line">test_iter: 100</span><br><span class="line"><span class="comment"># 每500次训练后执行1次测试</span></span><br><span class="line">test_interval: 500</span><br><span class="line"><span class="comment"># The base learning rate, momentum and the weight decay of the network.</span></span><br><span class="line">base_lr: 0.01</span><br><span class="line">momentum: 0.9</span><br><span class="line">weight_decay: 0.0005</span><br><span class="line"><span class="comment"># 设定学习率的策略</span></span><br><span class="line">lr_policy: <span class="string">"inv"</span></span><br><span class="line">gamma: 0.0001</span><br><span class="line">power: 0.75</span><br><span class="line"><span class="comment"># 每100次迭代后，打印</span></span><br><span class="line">display: 100</span><br><span class="line"><span class="comment"># 最大迭代次数</span></span><br><span class="line">max_iter: 10000</span><br><span class="line"><span class="comment"># 每5000次记录一次快照，中间结果</span></span><br><span class="line">snapshot: 5000</span><br><span class="line">snapshot_prefix: <span class="string">"examples/mnist/lenet"</span></span><br><span class="line"><span class="comment"># 用什么计算</span></span><br><span class="line">solver_mode: GPU</span><br></pre></td></tr></table></figure>
+
+<p><font color="red">这个文件在程序中按照<code>caffe.proto</code>的协议解析到一个<code>Caffe::SolverParameter</code> 对象中，进而将解析后的参数使用到网络中。用于解析的文件是 <code>caffe.pb.h</code> 和 <code>caffe.pb.cc</code>，其位于<code>build/src/caffe/proto/</code></font>。</p>
+<p>默认使用GPU。可以使用同目录的其他的参数配置文件（不同优化方法）：</p>
+<p><code>lenet_multistep_solver.prototxt</code><br><code>lenet_solver_adam.prototxt</code><br><code>lenet_solver_rmsprop.prototxt</code></p>
+<h1 id="4-训练与测试"><a href="#4-训练与测试" class="headerlink" title="4.训练与测试"></a>4.训练与测试</h1><p>有了caffe-format的数据；有了网络结构；有了确定的超参数，就可以执行下面脚本开始训练：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;examples&#x2F;mnist&#x2F;train_lenet.sh</span><br></pre></td></tr></table></figure>
+
+<p><code>train_lenet.sh</code>文件包含一行代码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/usr/bin/env sh</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"> </span><br><span class="line">./build/tools/caffe train --solver=examples/mnist/lenet_solver.prototxt <span class="variable">$@</span></span><br></pre></td></tr></table></figure>
+
+<p>使用<code>caffe</code>命令（这个<code>caffe</code>是tools中的命令，这是caffe提供的命令行接口<code>cmdcaffe</code>）， 指明是<code>trian</code>，指明训练超参数配置，即使用哪个<code>*solver.prototxt</code>文件。(而网络结构超参数的地址，在<code>*solver.prototxt</code>中指明）</p>
+<p>训练结束后，在<code>examples/mnist/</code>路径下生成两个文件<code>lenet_iter_10000.caffemodel</code>和<code>lenet_iter_10000.solverstate</code>。</p>
+<ol>
+<li><code>.caffemodel</code>文件是最终模型，二进制文件。</li>
+<li><code>.solverstate</code>是保存的训练状态（snapshot），可以从此继续开始训练。</li>
+</ol>
+<h1 id="训练结束"><a href="#训练结束" class="headerlink" title="训练结束"></a>训练结束</h1><p><code>lenet_iter_10000.caffemodel</code> 是binary protobuf 文件，就是训练10000次的最终模型，用于对真实样本的推理。</p>
+<p>MNIST数据集是小数据集，所以使用GPU的效果并不好，原因是GPU的计算核心与存储的通讯开销。所以对于复杂模型和数据集GPU的速度提升是显著的。</p>
+<h1 id="使用预训练的model对新样本预测"><a href="#使用预训练的model对新样本预测" class="headerlink" title="使用预训练的model对新样本预测"></a>使用预训练的model对新样本预测</h1><p>训练结束后生成的<code>.caffemodel</code>是可以直接拿来使用的模型（其实就是所有训练好的参数），用作推理。如何使用？</p>
+<p>如果要使用预训练的模型，从这里下载预训练的模型<a href="http://dl.caffe.berkeleyvision.org/" target="_blank" rel="noopener">caffe model index</a>，如<code>bvlc_reference_caffenet.caffemodel</code>， 并且将其放到<code>caffe-root/models/bvlc_reference_caffenet/</code>中。</p>
+<p>使用预训练模型：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 指明 -weights 关键字，提供预训练模型</span></span><br><span class="line">./build/tools/caffe \</span><br><span class="line">train \</span><br><span class="line">--solver examples/finetuning_on_flickr_style/solver.prototxt \</span><br><span class="line">--weights models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel</span><br></pre></td></tr></table></figure>
+
+<p><font color="red" size="5">上面有问题</font></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>生成制定格式数据{数据&amp;模型之数据}：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$.&#x2F;data&#x2F;mnist&#x2F;get_mnist.sh</span><br><span class="line">$.&#x2F;examples&#x2F;mnist&#x2F;create_mnist.sh</span><br></pre></td></tr></table></figure>
+
+<p>在GPU上训练{数据&amp;模型之模型}：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe train \</span><br><span class="line">--solver=examples/mnist/lenet_solver.prototxt -gpu 0</span><br></pre></td></tr></table></figure>
+
+<p>关键字为<code>train</code>，需要提供<code>*solver.prototxt</code>文件，和网络结构文件，后者的路径在<code>*solver.prototxt</code>文件中指明。有了结构参数和超参数，就可以进行学习。</p>
+<p>提供快照文件<code>.solverstate</code>可以接着训练：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe train \</span><br><span class="line">-solver examples/mnist/lenet_solver.prototxt \</span><br><span class="line">-snapshot examples/mnist/lenet_iter_5000.solverstate</span><br></pre></td></tr></table></figure>
+
+<h1 id="附录-lenet模型定义"><a href="#附录-lenet模型定义" class="headerlink" title="附录 lenet模型定义"></a>附录 lenet模型定义</h1><p>说明，以下是模型结构参数文件的内容，其包括了TRAIN网络和TEST网络，所需的每个Layer。其实在运行Log中打印的两个网络才更直观。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br></pre></td><td class="code"><pre><span class="line">name: <span class="string">"LeNet"</span></span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"mnist"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Data"</span></span><br><span class="line">  top: <span class="string">"data"</span></span><br><span class="line">  top: <span class="string">"label"</span></span><br><span class="line">  include &#123;</span><br><span class="line">    phase: TRAIN  <span class="comment"># 本层只用于训练过程中</span></span><br><span class="line">  &#125;</span><br><span class="line">  transform_param &#123;  <span class="comment"># 数据变换使用的方所因子</span></span><br><span class="line">    scale: 0.00390625</span><br><span class="line">  &#125;</span><br><span class="line">  data_param &#123;     <span class="comment"># 数据层参数，包括二进制数据的路径</span></span><br><span class="line">    <span class="built_in">source</span>: <span class="string">"examples/mnist/mnist_train_lmdb"</span></span><br><span class="line">    batch_size: 64</span><br><span class="line">    backend: LMDB</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"mnist"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Data"</span></span><br><span class="line">  top: <span class="string">"data"</span></span><br><span class="line">  top: <span class="string">"label"</span></span><br><span class="line">  include &#123;</span><br><span class="line">    phase: TEST   <span class="comment"># 同样的数据层，只用于测试阶段</span></span><br><span class="line">  &#125;</span><br><span class="line">  transform_param &#123;</span><br><span class="line">    scale: 0.00390625</span><br><span class="line">  &#125;</span><br><span class="line">  data_param &#123;</span><br><span class="line">    <span class="built_in">source</span>: <span class="string">"examples/mnist/mnist_test_lmdb"</span></span><br><span class="line">    batch_size: 100</span><br><span class="line">    backend: LMDB</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"conv1"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Convolution"</span></span><br><span class="line">  bottom: <span class="string">"data"</span></span><br><span class="line">  top: <span class="string">"conv1"</span></span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 1  <span class="comment"># 权值学习速率因子，1表示保持与全局参数一致</span></span><br><span class="line">  &#125;</span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 2  <span class="comment"># bias学习因子，2表示是全局的2倍</span></span><br><span class="line">  &#125;</span><br><span class="line">  convolution_param &#123;  <span class="comment"># 卷基层参数</span></span><br><span class="line">    num_output: 20</span><br><span class="line">    kernel_size: 5</span><br><span class="line">    stride: 1</span><br><span class="line">    weight_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"xavier"</span>  <span class="comment"># 权值使用xavier方法初始化？</span></span><br><span class="line">    &#125;</span><br><span class="line">    bias_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"constant"</span>  <span class="comment"># bias初始化为常量？</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"pool1"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Pooling"</span></span><br><span class="line">  bottom: <span class="string">"conv1"</span></span><br><span class="line">  top: <span class="string">"pool1"</span></span><br><span class="line">  pooling_param &#123;</span><br><span class="line">    pool: MAX</span><br><span class="line">    kernel_size: 2</span><br><span class="line">    stride: 2</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"conv2"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Convolution"</span></span><br><span class="line">  bottom: <span class="string">"pool1"</span></span><br><span class="line">  top: <span class="string">"conv2"</span></span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 1</span><br><span class="line">  &#125;</span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 2</span><br><span class="line">  &#125;</span><br><span class="line">  convolution_param &#123;</span><br><span class="line">    num_output: 50</span><br><span class="line">    kernel_size: 5</span><br><span class="line">    stride: 1</span><br><span class="line">    weight_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"xavier"</span></span><br><span class="line">    &#125;</span><br><span class="line">    bias_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"constant"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"pool2"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Pooling"</span></span><br><span class="line">  bottom: <span class="string">"conv2"</span></span><br><span class="line">  top: <span class="string">"pool2"</span></span><br><span class="line">  pooling_param &#123;</span><br><span class="line">    pool: MAX</span><br><span class="line">    kernel_size: 2</span><br><span class="line">    stride: 2</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"ip1"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"InnerProduct"</span></span><br><span class="line">  bottom: <span class="string">"pool2"</span></span><br><span class="line">  top: <span class="string">"ip1"</span></span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 1</span><br><span class="line">  &#125;</span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 2</span><br><span class="line">  &#125;</span><br><span class="line">  inner_product_param &#123; <span class="comment"># 全连接层InnerProduct</span></span><br><span class="line">    num_output: 500   </span><br><span class="line">    weight_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"xavier"</span></span><br><span class="line">    &#125;</span><br><span class="line">    bias_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"constant"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;   <span class="comment"># 非现行变换层</span></span><br><span class="line">  name: <span class="string">"relu1"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"ReLU"</span></span><br><span class="line">  bottom: <span class="string">"ip1"</span></span><br><span class="line">  top: <span class="string">"ip1"</span></span><br><span class="line">&#125;</span><br><span class="line">layer &#123;  </span><br><span class="line">  name: <span class="string">"ip2"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"InnerProduct"</span></span><br><span class="line">  bottom: <span class="string">"ip1"</span></span><br><span class="line">  top: <span class="string">"ip2"</span></span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 1</span><br><span class="line">  &#125;</span><br><span class="line">  param &#123;</span><br><span class="line">    lr_mult: 2</span><br><span class="line">  &#125;</span><br><span class="line">  inner_product_param &#123;</span><br><span class="line">    num_output: 10</span><br><span class="line">    weight_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"xavier"</span></span><br><span class="line">    &#125;</span><br><span class="line">    bias_filler &#123;</span><br><span class="line">      <span class="built_in">type</span>: <span class="string">"constant"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"accuracy"</span>   <span class="comment"># 计算accuracy 只用于Test阶段</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Accuracy"</span></span><br><span class="line">  bottom: <span class="string">"ip2"</span></span><br><span class="line">  bottom: <span class="string">"label"</span></span><br><span class="line">  top: <span class="string">"accuracy"</span></span><br><span class="line">  include &#123;</span><br><span class="line">    phase: TEST</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"loss"</span>   <span class="comment"># loss层</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"SoftmaxWithLoss"</span></span><br><span class="line">  bottom: <span class="string">"ip2"</span></span><br><span class="line">  bottom: <span class="string">"label"</span></span><br><span class="line">  top: <span class="string">"loss"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/07/caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8/" data-id="ckatsrgsk0046xqfzdag77562" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Caffe-如何使用-2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/" class="article-date">
+  <time datetime="2020-03-07T14:30:38.000Z" itemprop="datePublished">2020-03-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/">Caffe-Blob Layer Net</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Layer和Net"><a href="#Layer和Net" class="headerlink" title="Layer和Net"></a>Layer和Net</h1><p>caffe中的每个层对象，都是一个模型的基本计算单元。一个层对象包括 “…filters, pool, take inner products, apply nonlinearities like rectified-linear and sigmoid and other elementwise transformations, normalize, load data, and compute losses like softmax and hinge”。见<a href="http://caffe.berkeleyvision.org/tutorial/net_layer_blob.html" target="_blank" rel="noopener">官方文档</a></p>
+<p>几乎所有的层类都会继承自<code>Layer</code>类：<code>class caffe::Layer&lt;Dtype&gt;</code> 这些层类必须实现一个 <code>Forward()</code>, 它接受一个<code>input Blob（bottom）</code>计算输出的<code>Blob（top）</code>。还要实现一个 <code>Backward()</code>，它使用给定其输出<code>Blob</code>的误差梯度，计算相对于其输入<code>Blob</code>的误差梯度。（实现反向传播）</p>
+<p>每个层对象一定包含三个基本方法：setup()，forward()，backward()。</p>
+<ol>
+<li>setup()：一些计算前的操作，用来初始化层。</li>
+<li>forward()：前向计算。多个Layer构成一个Net，一个Net中连续的前向传播由<code>Net::Forward()</code>实现。</li>
+<li>backward()：官方文档解释的很好：“given the gradient w.r.t. the top output, compute the gradient w.r.t. to the input and send to the bottom. A layer with parameters computes the gradient w.r.t. to its parameters and stores it internally.”。其中<code>w.r.t.</code>表示“with respect to”，中文表示“对…（求梯度等操作）”。这就是反向对参数求梯度的过程。当多个层链接到一起，就会形成反向传播的链条（对应了链式法则）。这个链式法则在<code>Net::Backward()</code>中实现</li>
+</ol>
+<p>前向计算和后向计算都有CPU和GPU版本的实现。实现自己的层也是不难的，只需要定义好上述三个关键方法。</p>
+<p><a href="http://caffe.berkeleyvision.org/tutorial/layers.html" target="_blank" rel="noopener">这里</a>是管方文档中所有的层。<br><br><a href="http://caffe.berkeleyvision.org/tutorial/forward_backward.html" target="_blank" rel="noopener">这里</a>是caffe中的前向传播和后向传播的官方描述。</p>
+<p>一个Net由多个Layer构成，如下面一个计算图（有向无环图）：</p>
+<div align="center"><img src="/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/logreg.jpg" width="350"></div>
+
+<p>其中蓝色矩形表示layer，里边的小写表示层的name，大写表示层的type；黄色多边形表示在图中游走的数据<code>Blob</code>，数据移动方向从下向上，下为<code>bottom</code>，上为<code>top</code>。这个图对应的<code>.prototxt</code>如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">name: <span class="string">"LogReg"</span></span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"mnist"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"Data"</span></span><br><span class="line">  top: <span class="string">"data"</span>   <span class="comment">#输出</span></span><br><span class="line">  top: <span class="string">"label"</span>  <span class="comment">#输出</span></span><br><span class="line">  data_param &#123;</span><br><span class="line">    <span class="built_in">source</span>: <span class="string">"input_leveldb"</span></span><br><span class="line">    batch_size: 64</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"ip"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"InnerProduct"</span></span><br><span class="line">  bottom: <span class="string">"data"</span>  <span class="comment">#输入</span></span><br><span class="line">  top: <span class="string">"ip"</span>       <span class="comment">#输出</span></span><br><span class="line">  inner_product_param &#123;</span><br><span class="line">    num_output: 2</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">layer &#123;</span><br><span class="line">  name: <span class="string">"loss"</span></span><br><span class="line">  <span class="built_in">type</span>: <span class="string">"SoftmaxWithLoss"</span></span><br><span class="line">  bottom: <span class="string">"ip"</span>     <span class="comment">#输入</span></span><br><span class="line">  bottom: <span class="string">"label"</span>   <span class="comment">#输入</span></span><br><span class="line">  top: <span class="string">"loss"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个Net的初始化通过执行<code>Net::Init()</code>，其作用是生成Blob和Layers，并调用Layer的setup函数。终端的输出信息表示caffe还有记录的工作被执行。<br><br>用<code>Caffe::mode()</code>和<code>Caffe::set_mode()</code>指定使用CPU或GPU执行.CPU和GPU的切换是无缝的，与模型的定义是无关的。<br><br>模型的定义在机器中是以<code>protocol buffer schema (prototxt)</code>形式存在的。对应训练好的模型是以<code>binary protocol buffer (binaryproto)</code>存在与磁盘的，就是相应路径中的<code>.caffemodel</code>文件。<br><br>模型在caffe中的格式<code>。prototxt</code>由<code>caffe.proto</code>解析。细节见<a href="https://github.com/BVLC/caffe/blob/master/src/caffe/proto/caffe.proto" target="_blank" rel="noopener">这里</a>本地路径：<code>caffe-ROOT/src/caffe/proto/caffe.proto</code>。所使用的技术是<a href="https://code.google.com/p/protobuf/" target="_blank" rel="noopener">Google Protocol Buffer</a>通过科学上网查看。</p>
+<p>为什么要使用<code>protocal buffer</code>来格式化模型？<br>因为，你哪里见过一边砌墙一边烧砖的。使用 protobuff 将整个流程分开，实现每一个组件，之后在将所需的组件拼接起来，最后训练。</p>
+<h1 id="Blob"><a href="#Blob" class="headerlink" title="Blob"></a>Blob</h1><p>Blob为模型提供数据和数据载体，在模型的正向反向传播中移动。它还提供了CPU和GPU间的同步机制。Blob中的数据可以是一批图像，模型参数，中间计算结果。在Blob中不同类型的数据，其大小是不同的。</p>
+<ol>
+<li><p>图像数据Blob，其中的数据是4维的：<code>（N, K, H, W）</code>分别表示batch size，channel数量，长和宽。当一个Blob对象中的数据变化时，变化优先级从右向左。所以索引为<code>（n, k, h, w）</code>的数值在物理存储中的索引是<code>((n×K + k)×H + h)×W + w</code>。</p>
+</li>
+<li><p>对于非图像的数据，使用2D Blob，（N, D），此时通常与<code>InnerProductLayer</code>一同使用。</p>
+</li>
+<li><p>对于参数Blob，其维度要具体问题具体分析了。比如对于conv层，由64个conv kernel，一个kernel的大小是11×11，输入通道数为3，那么此情况的参数Blob大小为（96,3,11,11）。而对于全连接层或上述的<code>InnerProductLayer</code>，如果输出1000维，输入1024维，那么此情况的参数Blob大小为（1000,1024）。</p>
+</li>
+</ol>
+<p>Blob数据一旦定以好后，caffe的模块化就可以做剩下的工作了。</p>
+<h1 id="Blob细节"><a href="#Blob细节" class="headerlink" title="Blob细节"></a>Blob细节</h1><p>通常我们关心Blob中的数值（一般的数据，比如一批输入图像）和梯度值。所以一个Blob由两块儿存储：<code>data</code>和<code>diff</code>。</p>
+<p>更进一步，Blob中的数值有两种访问的方式，cont和mutable，前者数值不变，后者数值可改变。比如</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">const</span> Dtype* <span class="title">cpu_data</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br><span class="line"><span class="function">Dtype* <span class="title">mutable_cpu_data</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>同样的，对于<code>cpu_diff</code>和<code>gpu_data</code>, <code>gpu_diff</code> 也有两种访问方式。</p>
+<h1 id="Blob为什么要如此设计？"><a href="#Blob为什么要如此设计？" class="headerlink" title="Blob为什么要如此设计？"></a>Blob为什么要如此设计？</h1><p>官方文档给出如下解释：</p>
+<ol>
+<li><p>Blob使用<code>SyncedMem</code>类实现CPU与GPU间的数据拷贝，目的是隐藏延时。</p>
+</li>
+<li><p>如果不想更改数值，那么始终使用const方式调用，而且永远不要将指针存储在自己的对象中。每次处理Blob时，都要调用函数来获取指针，因为<code>SyncedMem</code>类需要这个函数来确定何时复制数据。</p>
+</li>
+<li><p>在实际中，调用设备内核来执行GPU计算的同时，CPU将数据从磁盘加载到Blob，并将Blob转移到下一层，这是GPU和CPU延时隐藏的基本技巧。因为大部分层都有GPU实现，所以所有的中间数据和梯度都将保留在GPU的内存中。</p>
+</li>
+</ol>
+<p>其他原因如，Blob与其他深度学习框架的数据结构相对应，tensorflow中的tensor，cuda-convnet中的NVMatrix，等，这使得框架之间的转换更容易。</p>
+<h2 id="Blob中数据在CPU和GPU之间拷贝行为"><a href="#Blob中数据在CPU和GPU之间拷贝行为" class="headerlink" title="Blob中数据在CPU和GPU之间拷贝行为"></a>Blob中数据在CPU和GPU之间拷贝行为</h2><p>假设数据在CPU（Host）上被初始化，存在于一个Blob中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义一个const访问指针，一个mutable访问指针</span></span><br><span class="line"><span class="keyword">const</span> Dtype* foo;   </span><br><span class="line">Dtype* bar;</span><br><span class="line"><span class="comment">// GPU上没有数据数据</span></span><br><span class="line">foo = blob.gpu_data(); <span class="comment">// data copied cpu-&gt;gpu.</span></span><br><span class="line"><span class="comment">// 上下两句间没有任何操作，所以下一句并不会发生数据拷贝</span></span><br><span class="line">foo = blob.cpu_data(); <span class="comment">// no data copied since both have up-to-date contents.</span></span><br><span class="line">bar = blob.mutable_gpu_data(); <span class="comment">// 一样，没有数据拷贝.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// 对数据进行操作...</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line">bar = blob.mutable_gpu_data(); <span class="comment">// 当前位于GPU上，没有数据拷贝到gpu.   ？？？？？？</span></span><br><span class="line">foo = blob.cpu_data(); <span class="comment">// 因为数据被操作，所以数据拷贝从GPU到CPU发生。</span></span><br><span class="line">foo = blob.gpu_data(); <span class="comment">// 因为GPU和CPU都是最新数据，所以没有数据拷贝发生。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ？？？？？？</span></span><br><span class="line">bar = blob.mutable_cpu_data(); <span class="comment">// still no data copied.</span></span><br><span class="line">bar = blob.mutable_gpu_data(); <span class="comment">// data copied cpu-&gt;gpu.</span></span><br><span class="line">bar = blob.mutable_cpu_data(); <span class="comment">// data copied gpu-&gt;cpu.</span></span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/07/Caffe-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-2/" data-id="ckatxvx570000lzfzc08zem2b" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-caffe-安装及trouble-shooting" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/" class="article-date">
+  <time datetime="2020-03-06T15:15:29.000Z" itemprop="datePublished">2020-03-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/">caffe 安装及trouble shooting</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="1-安装依赖库"><a href="#1-安装依赖库" class="headerlink" title="1. 安装依赖库"></a>1. 安装依赖库</h1><p>执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$sudo</span> apt-get install libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libhdf5-serial-dev protobuf-compiler</span><br><span class="line"><span class="variable">$sudo</span> apt-get install --no-install-recommends libboost-all-dev</span><br><span class="line"><span class="variable">$sudo</span> apt-get install libgflags-dev libgoogle-glog-dev liblmdb-dev</span><br><span class="line"><span class="variable">$sudo</span> apt-get install libatlas-base-dev</span><br></pre></td></tr></table></figure>
+
+<p>安装第一个就出问题：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install libprotobuf-dev</span><br></pre></td></tr></table></figure>
+
+<p>返回错误：</p>
+<p>由于解决问题后，将terminal的输出被clear掉了，所以用以下相似的问题来说明解决过程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">The following packages have unmet dependencies:</span><br><span class="line"> libxml2-dev : Depends: libxml2 (&#x3D; 2.7.8.dfsg-5.1ubuntu4) but 2.7.8.dfsg-5.1ubuntu4.6 is to be installed</span><br></pre></td></tr></table></figure>
+
+<p>解决方法：</p>
+<ol>
+<li>安装<code>aptitude</code>:</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$sudo apt-get install aptitude</span><br><span class="line">$aptitude why-not libxml2</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>找到已经安装的对应的<code>libxml2</code>包：</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$dpkg -l | grep libxml2</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>删除<code>libxml2</code>，并删除其他所有依赖包，<code>--force-all</code>参数不能少：</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$sudo dpkg --purge --force-all libxml2</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>更正错误：</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$sudo apt-get -f install</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li>安装欠缺的包</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$sudo apt-get install libxml2-dev</span><br></pre></td></tr></table></figure>
+
+<p>遇到相同的问题，将<code>libxml2-dev</code>和<code>libxml2</code>，替换成自己问题中的对应库。</p>
+<h1 id="2-安装NVIDIA驱动和CUDA，openCV"><a href="#2-安装NVIDIA驱动和CUDA，openCV" class="headerlink" title="2. 安装NVIDIA驱动和CUDA，openCV"></a>2. 安装NVIDIA驱动和CUDA，openCV</h1><p>早已安装完成</p>
+<h1 id="3-下载caffe源码"><a href="#3-下载caffe源码" class="headerlink" title="3. 下载caffe源码"></a>3. 下载caffe源码</h1><p>从<a href="https://github.com/BVLC/caffe" target="_blank" rel="noopener">这里</a>下载到<code>home/XXX</code>。</p>
+<p>修改<code>Makefile.config</code>文件。先复制一份：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp Makefile.config.example Makefile.config</span><br></pre></td></tr></table></figure>
+
+<p>后修改配置文件<code>Makefile.config</code>，下面是我的修改：</p>
+<ol>
+<li><p>hdf5</p>
+<p> 将hdf5的路径添加到<code>INCLUDE_DIRS</code>和<code>LIBRARY_DIRS</code>之后：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">INCLUDE_DIRS :&#x3D; $(PYTHON_INCLUDE) &#x2F;usr&#x2F;local&#x2F;include &#x2F;usr&#x2F;include&#x2F;hdf5&#x2F;serial</span><br><span class="line">LIBRARY_DIRS :&#x3D; $(PYTHON_LIB) &#x2F;usr&#x2F;local&#x2F;lib &#x2F;usr&#x2F;lib &#x2F;usr&#x2F;lib&#x2F;x86_64-linux-gnu&#x2F;hdf5&#x2F;serial</span><br></pre></td></tr></table></figure></li>
+<li><p>sm_version</p>
+<p> 由于我的机器的CUDA版本是9.0，所以要将下面的<code>sm_20</code>, <code>sm_21</code>注释掉，低版本的一些指令对于高版本的不适用。如下：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">CUDA_ARCH :&#x3D; -gencode arch&#x3D;compute_30,code&#x3D;sm_30 \</span><br><span class="line">     -gencode arch&#x3D;compute_35,code&#x3D;sm_35 \</span><br><span class="line">     -gencode arch&#x3D;compute_50,code&#x3D;sm_50 \</span><br><span class="line">     -gencode arch&#x3D;compute_52,code&#x3D;sm_52 \</span><br><span class="line">     -gencode arch&#x3D;compute_60,code&#x3D;sm_60 \</span><br><span class="line">     -gencode arch&#x3D;compute_61,code&#x3D;sm_61 \</span><br><span class="line">     -gencode arch&#x3D;compute_61,code&#x3D;compute_61 \</span><br><span class="line"> #   -gencode arch&#x3D;compute_20,code&#x3D;sm_20 \</span><br><span class="line"> #   -gencode arch&#x3D;compute_20,code&#x3D;sm_21 \</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>OpenCV版本</p>
+<p> 去掉下面的注释，表示使用openCV 版本3：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OPENCV_VERSION :&#x3D; 3</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>CUDA路径</p>
+<p> 检查机器CUDA路径是否正确：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CUDA_DIR :&#x3D; &#x2F;usr&#x2F;local&#x2F;cuda</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h1 id="4-编译测试"><a href="#4-编译测试" class="headerlink" title="4. 编译测试"></a>4. 编译测试</h1><p>配置完成之后编译，<code>-j4</code>表示用4个核心执行任务：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$sudo make all -j4 </span><br><span class="line">$sudo make test -j4</span><br><span class="line">$sudo make runtest -j4</span><br></pre></td></tr></table></figure>
+
+<p>期待不出错。</p>
+<p>如果有错，比如编译期间又修改了<code>Makefile.config</code>文件，返回类似错误：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">undefined reference to &#96;cv::imread(cv::String const&amp;, int)</span><br></pre></td></tr></table></figure>
+
+<p>可是OpenCV已经修改过了，此时的处理情况：</p>
+<p>将编译了一半的<code>build</code>文件夹删除，后重新编译：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$sudo rm -rf .&#x2F;build&#x2F;*</span><br><span class="line">$sudo make all -j4</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>build/</code>文件夹是编译后得到的，</p>
+<p>最终期望的是<code>sudo make runtest -j4</code>运行无误，如果terminal最后返回：</p>
+<div align="center"><img src="/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/result.png"></div>
+
+<p>表示caffe 安装配置成功完成（如果要使用python接口，还要其他操作，我使用CXX）。</p>
+<h1 id="5-编译python接口"><a href="#5-编译python接口" class="headerlink" title="5. 编译python接口"></a>5. 编译python接口</h1><p>caffe使用python2.</p>
+<ol>
+<li><p>第O步，使用linux自带python2，安装依赖库：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install python-pip</span><br><span class="line">sudo apt-get install python-numpy</span><br></pre></td></tr></table></figure>
+
+<p> 在caffe根目录的python文件夹下，有一个<code>requirements.txt</code>的清单文件，上面列出了需要的依赖库，需要按照这个清单安装：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install gfortran</span><br><span class="line"><span class="built_in">cd</span> ./python</span><br><span class="line">sudo cat python/requirements.txt|xargs -L 1 sudo pip install -i https://pypi.tuna.tsinghua.edu.cn/simple</span><br></pre></td></tr></table></figure>
+
+<p> 检查</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install -r python/requirements.txt</span><br></pre></td></tr></table></figure>
+<p> 编译成功的会显示<code>Requirement already satisfied</code>，没有编译成功的会继续安装。</p>
+</li>
+<li><p>第一步，执行命令：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ make pycaffe -j4</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>第二步，在<code>~/.bashrc</code>或<code>/etc/profile</code>中添加caffe中的python 路径：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> PYTHONPATH=/home/junhui/caffe-master/python:$PYTHONPATH</span><br></pre></td></tr></table></figure></li>
+<li><p>第三步，source使之生效：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">source</span> /etc/profile</span><br><span class="line">$ <span class="built_in">source</span> ~/.bashrc</span><br></pre></td></tr></table></figure>
+<p> 现在在python脚本中就可以<code>import caffe</code>了。</p>
+</li>
+</ol>
+<h1 id="可能的出错："><a href="#可能的出错：" class="headerlink" title="可能的出错："></a>可能的出错：</h1><ol>
+<li><p>numpy/arrayobject.h: missing</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">junhui@gnome:~/caffe$ sudo make pytest –j4</span><br><span class="line">CXX/LD -o python/caffe/_caffe.so python/caffe/_caffe.cpp</span><br><span class="line">python/caffe/_caffe.cpp:10:31: fatal error: numpy/arrayobject.h: No such file or directory</span><br><span class="line">    <span class="comment">#include &lt;numpy/arrayobject.h&gt;</span></span><br><span class="line">                                ^</span><br><span class="line">compilation terminated.</span><br><span class="line">Makefile:517: recipe <span class="keyword">for</span> target <span class="string">'python/caffe/_caffe.so'</span> failed</span><br><span class="line">make: *** [python/caffe/_caffe.so] Error 1</span><br></pre></td></tr></table></figure>
+<p> 解决方法：</p>
+<p> 在Makefile.config文件中的这个地方：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># We need to be able to find Python.h and numpy/arrayobject.h.</span></span><br><span class="line">PYTHON_INCLUDE := /usr/include/python2.7 \</span><br><span class="line">        /usr/lib/python2.7/dist-packages/numpy/core/include</span><br></pre></td></tr></table></figure>
+<p> 添加一行：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># We need to be able to find Python.h and numpy/arrayobject.h.</span></span><br><span class="line">PYTHON_INCLUDE := /usr/include/python2.7 \</span><br><span class="line">        /usr/lib/python2.7/dist-packages/numpy/core/include \</span><br><span class="line">        /usr/<span class="built_in">local</span>/lib/python2.7/dist-packages/numpy/core/include</span><br></pre></td></tr></table></figure>
+
+<p> 再次编译成功</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ make pycaffe -j4</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Python.h: No suchfile or directory</p>
+<p> caffe 使用python2，需要在<code>./bashrc</code>中添加python2的路径： </p>
+<p> 如果不是使用anaconda2中的python2，则添加如下第一句；如果使用用的anaconda2中的python2，则添加如下第二句</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> CPLUS_INCLUDE_PATH=/usr/include/python2.7:<span class="variable">$CPLUS_INCLUDE_PATH</span></span><br><span class="line"><span class="built_in">export</span> CPLUS_INCLUDE_PATH=/home/junhui/anaconda2/include/python2.7/:<span class="variable">$CPLUS_INCLUDE_PATHort</span></span><br></pre></td></tr></table></figure></li>
+<li><p>protobuf出错</p>
+<p> 使用anaconda时出的错：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">CXX .build_release/src/caffe/proto/caffe.pb.cc</span><br><span class="line">In file included from .build_release/src/caffe/proto/caffe.pb.cc:5:0:</span><br><span class="line">.build_release/src/caffe/proto/caffe.pb.h:12:2: error: <span class="comment">#error This file was generated by a newer version of protoc which is</span></span><br><span class="line"><span class="comment">#error This file was generated by a newer version of protoc which is</span></span><br><span class="line">^</span><br><span class="line">.build_release/src/caffe/proto/caffe.pb.h:13:2: error: <span class="comment">#error incompatible with your Protocol Buffer headers. Please update</span></span><br><span class="line"><span class="comment">#error incompatible with your Protocol Buffer headers.  Please update</span></span><br><span class="line">^</span><br><span class="line">.build_release/src/caffe/proto/caffe.pb.h:14:2: error: <span class="comment">#error your headers.</span></span><br><span class="line"><span class="comment">#error your headers.</span></span><br><span class="line">^</span><br><span class="line">In file included from .build_release/src/caffe/proto/caffe.pb.cc:5:0:</span><br><span class="line">.build_release/src/caffe/proto/caffe.pb.h:26:55: fatal error: google/protobuf/generated_enum_reflection.h: No such file or directory</span><br><span class="line"><span class="comment">#include &lt;google/protobuf/generated_enum_reflection.h&gt;</span></span><br><span class="line"></span><br><span class="line">compilation terminated.</span><br><span class="line">make: *** [.build_release/src/caffe/proto/caffe.pb.o] Error 1</span><br></pre></td></tr></table></figure>
+<p> 解决方法，将机器上的anaconda3删除，使用linux自带python2，并安装以来库。（其实可以使用anaconda2）.</p>
+</li>
+<li><p>make clean</p>
+<p> 如果<code>make</code>中间出错，改错后，先<code>make clean</code>，后重新<code>make</code></p>
+</li>
+</ol>
+<h1 id="import-caffe-成功后测试pycaffe"><a href="#import-caffe-成功后测试pycaffe" class="headerlink" title="import caffe 成功后测试pycaffe"></a>import caffe 成功后测试pycaffe</h1><p>在mnist数据集上运行lenet</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo ./data/mnist/get_mnist.sh</span><br><span class="line">sudo ./examples/mnist/create_mnist.sh</span><br><span class="line">sudo ./examples/mnist/train_lenet.sh</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/" data-id="ckatsrgsl0048xqfzc9asf5y7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Cpp-pro-tip-1" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/05/Cpp-pro-tip-1/" class="article-date">
@@ -765,345 +1119,11 @@
 
 
   
-    <article id="post-CUDA-ComputeCapacity-SM-version6-1的参数值" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" class="article-date">
-  <time datetime="2020-02-20T02:15:23.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/">CUDA-ComputeCapacity-SM_version6.1的参数值</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ol>
-<li><p>Compute Capability</p>
-<p> 对于CPU，不同架构的CPU有者不同的功能和指令集（MMX，SSE，SSE2）。而对于GPU，不同的功能由不同的<code>Compute Capability</code>表示。</p>
-<p> NVIDIA GPU支持的Compute Capability有<code>1.0，1.0，... 2.0，... 6.0，6.1，7.5</code>。高版本的<code>Compute Capability</code>是低版本<code>Compute Capability</code>的超集，就是俄罗斯套娃式的嵌套结构。比如6.1版本支持1.0版本的所有功能。</p>
-<p> 比如，原子操作时硬件在内存上执行的。而只有<code>1.1和1.1之后</code>的版本才支持global memory上的原子操作，而只有<code>1.2和1.2之后</code>的版本才支持shared memory上的原子操作</p>
-<p> 在应用中，通常会指定最低<code>Compute Capability</code>版本，如2.3，告诉编译器，如果硬件支持的<code>Compute Capability</code>版本低于2.3，那么将无法执行这个和函数。做法是使用nvcc时增加一个选项<code>nvcc -arch=sm_23</code>，所以<code>Compute Capability</code>有称作<code>SM版本</code>。</p>
-<p> <code>SM版本</code>的形式是<code>X.Y</code>，X表示核心的架构，7表示Volta，6表示Pascal。Y表示硬件的特性版本。</p>
-<p> 不同的SM版本所支持的特性，和技术参数，间这个页面的table14和table15：<br>  <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities" target="_blank" rel="noopener">https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities</a></p>
-</li>
-<li><p>SM version=6.1 的关键参数</p>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Maximum dimensionality of grid of thread blocks</td>
-<td align="left">3</td>
-</tr>
-<tr>
-<td align="left">Maximum x- or y-dimension of a block</td>
-<td align="left">1024</td>
-</tr>
-<tr>
-<td align="left">Maximum z-dimension of a block</td>
-<td align="left">64</td>
-</tr>
-</tbody></table>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Maximum number of threads per block</td>
-<td align="left">1024</td>
-</tr>
-<tr>
-<td align="left">Warp size</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>grids</strong> per device</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>blocks</strong> per multiprocessor</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>warps</strong> per multiprocessor</td>
-<td align="left">64</td>
-</tr>
-<tr>
-<td align="left">Maximum number of resident <strong>threads</strong> per multiprocessor</td>
-<td align="left">2048</td>
-</tr>
-</tbody></table>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Number of 32-bit registers <strong>per multiprocessor</strong></td>
-<td align="left">64 K</td>
-</tr>
-<tr>
-<td align="left">Maximum number of 32-bit registers <strong>per thread block</strong></td>
-<td align="left">64 KB</td>
-</tr>
-<tr>
-<td align="left">Maximum number of 32-bit registers <strong>per thread</strong></td>
-<td align="left">255</td>
-</tr>
-</tbody></table>
-<table>
-<thead>
-<tr>
-<th align="left">指标</th>
-<th align="left">值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">Maximum amount of shared memory per multiprocessor</td>
-<td align="left">96 KB</td>
-</tr>
-<tr>
-<td align="left">Maximum amount of shared memory per thread block</td>
-<td align="left">48 KB</td>
-</tr>
-<tr>
-<td align="left">Number of shared memory banks</td>
-<td align="left">32</td>
-</tr>
-<tr>
-<td align="left">Amount of local memory per thread</td>
-<td align="left">512 KB</td>
-</tr>
-<tr>
-<td align="left">Constant memory size</td>
-<td align="left">64 KB</td>
-</tr>
-<tr>
-<td align="left">Maximum number of instructions per kernel</td>
-<td align="left">512 million</td>
-</tr>
-</tbody></table>
-</li>
-</ol>
-<p>这些指标要心里有数</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-ComputeCapacity-SM-version6-1%E7%9A%84%E5%8F%82%E6%95%B0%E5%80%BC/" data-id="ckatsrgqr0002xqfzhfh17e89" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-原子操作-例-直方图" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/" class="article-date">
-  <time datetime="2020-02-20T02:11:52.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/">CUDA-原子操作-例-直方图</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="原子操作"><a href="#原子操作" class="headerlink" title="原子操作"></a>原子操作</h1><p><code>atomicAdd(), atomicSub(), atomicXor()...</code></p>
-<p>原子操作要排队，所以，能不用就不要使用。</p>
-<h1 id="原子操作-直方图"><a href="#原子操作-直方图" class="headerlink" title="原子操作-直方图"></a>原子操作-直方图</h1><p>前面说过了，原子操作能不用就不使用。但是有些情况只能使用原子操作，<font color="orange">当成千上万个threads同时修改同一个内存地址时，大规模并行系统会带来负担</font>，在硬件中支持的原子操作可以减轻这种负担。比如计算“直方图”：计算一个数组中元素的出现频率。许多算法需要计算直方图，比如在图像处理使用过。</p>
-<p>这里给出计算直方图的3种方法，CPU，未优化的GPU，优化后的GPU。</p>
-<p>假如有一个很大的字符数组，实际中可能是像素的颜色值，或者是音频的采样数据。计算这个字符数组的直方图。由于每个随机的字符（一个char型占1 byte）都有<code>2x2x2x2x2x2x2x2=256</code>个不同的可能取值。所以直方图中要包含256个元素。</p>
-<ol>
-<li><p>CPU版本</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE (100*1024*1024)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> main&#123;</span><br><span class="line">    <span class="comment">// 1) 生成100MB的随机数据</span></span><br><span class="line">    <span class="keyword">char</span>* buffer = (<span class="keyword">char</span>*)big_random_block( SIZE );</span><br><span class="line">    <span class="comment">// 2) 将buffer数组初始化为0</span></span><br><span class="line">    <span class="keyword">int</span> histo[<span class="number">256</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">256</span>;i++)&#123;</span><br><span class="line">        histo[i] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 3) 计算每个字符出现的频率</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;SIZE;i++)&#123;</span><br><span class="line">        histo[buffer[i]]++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 4) 回收资源</span></span><br><span class="line">    <span class="built_in">free</span>(buffer);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p> 不必解释。</p>
-</li>
-<li><p>未优化的GPU</p>
-<p> 计算直方图的特点是，读取buffer中的每一个元素，在histo数组中找到这个元素，后这个元素的频数加一，直到得到最后的直方图。如果使用并行计算，看到了吧，问题在哪？每一个thread读取buffer中不同的地址，取元素，没毛病。<font color="red">但是当写入histo数组时，会同时有多个threads写入histo的同一个位置，只必然造成Race condition（竞争）</font>。所以多个threads写入同一个地址时，将写操作串行。先给出Host的主体：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)big_random_block( SIZE );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *dev_buffer;</span><br><span class="line">    <span class="keyword">int</span> *dev_histo;</span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;dev_buffer, SIZE ) );</span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( dev_buffer, buffer, SIZE,cudaMemcpyHostToDevice ) );</span><br><span class="line"></span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;dev_histo, <span class="number">256</span> * <span class="keyword">sizeof</span>( <span class="keyword">long</span> ) ) );</span><br><span class="line">    <span class="comment">// dev_histo的初始化使用cudaMemset(), 将所有元素值设为0</span></span><br><span class="line">    HANDLE_ERROR( cudaMemset( dev_histo, <span class="number">0</span>, <span class="number">256</span> * <span class="keyword">sizeof</span>( <span class="keyword">int</span> ) ) );</span><br><span class="line"></span><br><span class="line">    kernel&lt;&lt;&lt;&gt;&gt;&gt;();  <span class="comment">//！！！</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> histo[<span class="number">256</span>];</span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( histo, dev_histo, <span class="number">256</span> * <span class="keyword">sizeof</span>(<span class="keyword">int</span>), cudaMemcpyDeviceToHost ) );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 验证GPU上计算的正确性，执行逆向运算，</span></span><br><span class="line">    <span class="comment">// 判断最后histo数组是否全为零（看是否可以会到初始值）</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SIZE; i++)</span><br><span class="line">        histo[buffer[i]]--;  </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">256</span>; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (histo[i] != <span class="number">0</span>)</span><br><span class="line">            <span class="built_in">printf</span>( <span class="string">"Failure at %d!\n"</span>, i );</span><br><span class="line">    &#125;</span><br><span class="line">    cudaFree( dev_histo );</span><br><span class="line">    cudaFree( dev_buffer );</span><br><span class="line">    <span class="built_in">free</span>( buffer );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p> 现在只剩下kernel函数。结果直方图数组有<code>256</code>个元素，所以考虑每个block含有<code>256</code>个threads。其实可以有其他的配置，比如<code>100MB</code>数据共有<code>104,857,600</code>个字节，所以可以启动一个block，让每个thread处理<code>409,600</code>个数据，或者可以启动<code>409600</code>个blocks，每个thread处理1个元素。</p>
-<p> 最有的配置方案介于这两种极端情况之间。实验发现，<font color="orange">当block的数量是芯片SM数量的2倍时，将达到最有性能。</font></p>
-<p> 所以要先查硬件信息得到所使用GPU的SM数量：</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cudaDeviceProp prop;</span><br><span class="line">HANDLE_ERROR( cudaGetDeviceProperties( &amp;prop, <span class="number">0</span> ) ); <span class="comment">// 使用0号GPU</span></span><br><span class="line"><span class="keyword">int</span> numSM = prop.multiProcessorCount;</span><br><span class="line">kernel&lt;&lt;&lt;numSM*<span class="number">2</span>, <span class="number">256</span>&gt;&gt;&gt;(dev_buffer, SIZE, dev_histo); <span class="comment">// 未实现</span></span><br></pre></td></tr></table></figure>
-
-<p> 下面实现kernel。</p>
-<p> kernel的参数有三个：一个指向输入数组的指针，输入数组的长度，一个指向输出直方图数组的指针。</p>
- <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">histo_kernel</span><span class="params">( <span class="keyword">char</span> *buffer,</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">long</span> size,</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> *histo )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> stride = blockDim.x * gridDim.x;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// stride loop</span></span><br><span class="line">    <span class="keyword">while</span> (i &lt; size) &#123;</span><br><span class="line">        atomicAdd( &amp;(histo[buffer[i]]), <span class="number">1</span> );</span><br><span class="line">        i += stride;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p> 其中<code>atomicAdd( &amp;(histo[buffer[i]]), 1 )</code>展示了如何使用原子操作：<code>atomicAdd( add, y )</code>, 这个操作读取地址add中值，将y加到add的值上。这个例子中add就是直方图中相应元素的位置。</p>
-<p> 性能结果怎样呢？实验得GPU版本比CPU版本性能差很多倍。分析原因：</p>
-<ul>
-<li><p>第一，kernel函数实际上只包含了非常少的计算工作，而对global的访问远远多于计算，并且对global的访问相当慢。<font color="orange">计算少，访存多，撞上性能瓶颈</font>。</p>
-</li>
-<li><p>第二，当上<font color="red">万</font>个threads访问<font color="red">少量</font>（256）的内存位置时，发生<font color="red">严重</font>的race condition。而且原子操作为了保证结果的正确性，对于相同的内存位置都将<font color="red">串行化</font>。这导致<font color="red">排了非常长</font>的队伍，因此抵消了并行带来的性能提升。</p>
-<p>所以尝试优化GPU</p>
-</li>
-</ul>
-</li>
-<li><p>使用shared memory优化原子操作</p>
-<p> 主要问题并不是使用了过多的原子操作，而是有<font color="orange">太多的threads写入太少的地址造成的竞争</font>。考虑使用两段操作。</p>
-<p> 为方便画图表示，假如元素只有<code>x，y，z</code>三种字符。那么自然地，每个block使用3个threads干活，对应的Shared memory大小也为3。假设block个数是2。两阶段如下图：</p>
- <div align="center"><img src="/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/histo.png" width="700"></div>
-
-<p> 过程如下：</p>
-<p> 第一段，让每个并行的block计算它所处理的数据，将结果写入各自block对应的shared memory中。这样做的好处有：</p>
-<ul>
-<li><p>第一，所有blocks之间的计算是<font color="orange">并行的</font>。</p>
-</li>
-<li><p>第二，写入shared memory效率远高于写入global memory。</p>
-</li>
-<li><p>第三，这种方式仍然需要原子操作，但是此时是<font color="orange">256个threads在256个地址上的竞争，竞争程度显著减少</font>。</p>
-<p>所以，第一阶段计算得到每个block的临时直方图，比如，有三个blocks, 那么遍历完所有元素后会得到三个临时直方图。当得到所有三个临时直方图后（要同步），开始第二个计算阶段。</p>
-<p>第二段，将得到的全部临时直方图合并为最终直方图，也应该是原子操作。这一段是，会有<font color="orange">block数量个threads在256个地址上的竞争，竞争程度又显著减少</font>。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">histo_kernel</span><span class="params">( <span class="keyword">char</span>* buffer,</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">long</span> size,</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span>* histo )</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">    __shared__ <span class="keyword">unsigned</span> <span class="keyword">int</span> temp[<span class="number">256</span>];</span><br><span class="line">    temp[threadIdx.x] = <span class="number">0</span>;</span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> offset = blockDim.x * gridDim.x;</span><br><span class="line">    <span class="comment">// 第一段计算</span></span><br><span class="line">    <span class="keyword">while</span> (i &lt; size) &#123;</span><br><span class="line">        atomicAdd( &amp;temp[buffer[i]], <span class="number">1</span> );</span><br><span class="line">        i += offset;</span><br><span class="line">    &#125;</span><br><span class="line">    __syncthreads();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//第二段计算</span></span><br><span class="line">    atomicAdd( &amp;(histo[threadIdx.x]), temp[threadIdx.x] );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// kernel 的配置如下</span></span><br><span class="line">kernel&lt;&lt;&lt;numSM*<span class="number">2</span>, <span class="number">256</span>&gt;&gt;&gt;(dev_buffer, SIZE, dev_histo);</span><br></pre></td></tr></table></figure>
-
-<p>在实际SP和threads执行中，上述代码（指令）被复制很多份，有多少个threads就复制多少份。这些拷贝的不同在于，<code>threadIdx.x</code>，<code>blockIdx.x</code>这些值会被自动赋值，<code>0, 1, 2, 3, ...</code></p>
-<p>性能如何？比CPU版本的<font color="red">快了一个数量级</font>。</p>
-</li>
-</ul>
-</li>
-</ol>
-<p>总结：使用了一种两阶段的算法，从而降低了在global memory上访存的竞争程度。这种降低竞争的策略总能获得不错的效果，所以当使用原子操作时，记住这种操作。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BE%8B-%E7%9B%B4%E6%96%B9%E5%9B%BE/" data-id="ckatsrgu00077xqfze6ok3067" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-CUDA-常量内存提升性能-例-RayTracing" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" class="article-date">
-  <time datetime="2020-02-20T02:09:40.000Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/">CUDA-常量内存提升性能-例-RayTracing</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ol>
-<li><p>constants 常量必须在函数外声明</p>
-</li>
-<li><p><code>cudaMemcpyToSymbol()</code></p>
-<p> 这个函数是特殊版本的<code>cudaMemcpy()</code>, 唯一的不同是，<code>cudaMemcpyToSymbol()</code>将数据复制到<font color="red">常量内存constant memory</font>，而<code>cudaMemcpy()</code>将数据复制到global memory。</p>
-</li>
-<li><p>常量内存为什么能提升性能-Ray tracing</p>
-<p> <code>__constant__</code> 把变量的访问限制为<code>read-only</code>，有了这个限制，必然获得某种回报。这个回报是：<font>与从global memory中读取数据相比，从constant memory中读取相同的数据可以节约内存带宽</font>，有两个原因：</p>
-<ul>
-<li><p>对constant memory的<font color="red">单次读</font>操作可以广播到其他<font>临近</font>的threads。 </p>
-</li>
-<li><p>constant memory的数据将会缓存起来，因此<font color="red">相同地址的连续读操作</font>不会产生额外的内存通信。</p>
-<p>half-warp的 广播是一把双刃剑。当16 个threads都读取constant memory<font color="red">相同</font>的地址的时，性能极大地提升。但是当16个threads分别读取从constant memory<font color="red">不同</font>的地址时，读操作会被串行化，性能会下降，这种情况就不如从global中读取。</p>
-<p>从<code>Ray-Tracing</code>实例中体会：</p>
-<p>要使用到的数据结构：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INF 2e10f</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Sphere</span> &#123;</span></span><br><span class="line">    <span class="keyword">float</span> r,b,g;</span><br><span class="line">    <span class="keyword">float</span> radius;</span><br><span class="line">    <span class="keyword">float</span> x,y,z;</span><br><span class="line">    <span class="comment">// 假设有一个观察平面，那么（ox，oy）是这个观察平面中一个像素的坐标，</span></span><br><span class="line">    <span class="comment">// 这个方法将计算从这个像素中发射出的光线是否与这个球面相交。</span></span><br><span class="line">    <span class="comment">// 如果相交，则计算从这个像素点到这个球面的距离。当光线命中多个球时，</span></span><br><span class="line">    <span class="comment">// 只有最近的球面才会被看到。</span></span><br><span class="line">    __<span class="function">device__ <span class="keyword">float</span> <span class="title">hit</span><span class="params">( <span class="keyword">float</span> ox, <span class="keyword">float</span> oy, <span class="keyword">float</span> *n )</span> </span>&#123;</span><br><span class="line">        <span class="keyword">float</span> dx = ox - x;</span><br><span class="line">        <span class="keyword">float</span> dy = oy - y;</span><br><span class="line">        <span class="keyword">if</span> (dx*dx + dy*dy &lt; radius*radius) &#123;</span><br><span class="line">            <span class="keyword">float</span> dz = sqrtf( radius*radius - dx*dx - dy*dy );</span><br><span class="line">            *n = dz / sqrtf( radius * radius );</span><br><span class="line">            <span class="keyword">return</span> dz + z;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> -INF;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>kernel函数输入一个bitmap：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> *ptr )</span> </span>&#123;</span><br><span class="line">    <span class="comment">// map from threadIdx/BlockIdx to pixel position</span></span><br><span class="line">    <span class="keyword">int</span> x = threadIdx.x + blockIdx.x * blockDim.x;</span><br><span class="line">    <span class="keyword">int</span> y = threadIdx.y + blockIdx.y * blockDim.y;</span><br><span class="line">    <span class="keyword">int</span> offset = x + y * blockDim.x * gridDim.x;</span><br><span class="line">    <span class="keyword">float</span> ox = (x - DIM/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> oy = (y - DIM/<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">float</span> r=<span class="number">0</span>, g=<span class="number">0</span>, b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> maxz = -INF;</span><br><span class="line">    <span class="comment">// 每个线程考察所有的球，得到每个距离每个像素最近的球面。</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SPHERES; i++) &#123;</span><br><span class="line">        <span class="keyword">float</span> n;</span><br><span class="line">        <span class="keyword">float</span> t = s[i].hit( ox, oy, &amp;n );</span><br><span class="line">        <span class="keyword">if</span> (t &gt; maxz) &#123;</span><br><span class="line">            <span class="keyword">float</span> fscale = n;</span><br><span class="line">            r = s[i].r * fscale;</span><br><span class="line">            g = s[i].g * fscale;</span><br><span class="line">            b = s[i].b * fscale;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">0</span>] = (<span class="keyword">int</span>)(r * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">1</span>] = (<span class="keyword">int</span>)(g * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">2</span>] = (<span class="keyword">int</span>)(b * <span class="number">255</span>);</span><br><span class="line">    ptr[offset*<span class="number">4</span> + <span class="number">3</span>] = <span class="number">255</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>for循环中，每一个thread循环球集合<code>Sphere *s</code>中的所有球<code>s[i]</code>，得到每个像素的一个颜色值。这里的模式是：<font color="red">所有threads都会只读相同的存储地址</font>。考虑上述的关于constant的特点，使用constant memory 进行优化。</p>
-<p>优化前的main函数如下：其中<code>s</code>是声明在global memory中的。用constant memory优化只需要将下面code中的<code>&lt;1&gt;&lt;2&gt;</code>分别修改为</p>
-</li>
-<li><p>&lt;1&gt; <code>__constant__ Sphere s[SPHERES]</code>;</p>
-</li>
-<li><p>&lt;2&gt; <code>HANDLE_ERROR( cudaMemcpyToSymbol( s, temp_s, sizeof(Sphere) * SPHERES) );</code></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cpu_bitmap.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> rnd( x ) (x * rand() / RAND_MAX)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPHERES 20</span></span><br><span class="line">Sphere *s; <span class="comment">// &lt;1&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="function">CPUBitmap <span class="title">bitmap</span><span class="params">( DIM, DIM )</span></span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> *dev_bitmap;</span><br><span class="line">    <span class="comment">// allocate memory on the GPU for the output bitmap</span></span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;dev_bitmap, bitmap.image_size() ) );</span><br><span class="line">    <span class="comment">// allocate memory for the Sphere dataset</span></span><br><span class="line">    HANDLE_ERROR( cudaMalloc( (<span class="keyword">void</span>**)&amp;s, <span class="keyword">sizeof</span>(Sphere) * SPHERES ) ); <span class="comment">// &lt;2&gt;</span></span><br><span class="line"></span><br><span class="line">    Sphere *temp_s = (Sphere*)<span class="built_in">malloc</span>( <span class="keyword">sizeof</span>(Sphere) * SPHERES );</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;SPHERES; i++) &#123;</span><br><span class="line">        temp_s[i].r = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].g = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].b = rnd( <span class="number">1.0f</span> );</span><br><span class="line">        temp_s[i].x = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].y = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].z = rnd( <span class="number">1000.0f</span> ) - <span class="number">500</span>;</span><br><span class="line">        temp_s[i].radius = rnd( <span class="number">100.0f</span> ) + <span class="number">20</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( s, temp_s, <span class="keyword">sizeof</span>(Sphere) * SPHERES,</span><br><span class="line">                                cudaMemcpyHostToDevice ) );</span><br><span class="line">    <span class="built_in">free</span>( temp_s );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// generate a bitmap from our sphere data</span></span><br><span class="line">    <span class="function">dim3 <span class="title">grids</span><span class="params">(DIM/<span class="number">16</span>,DIM/<span class="number">16</span>)</span></span>;</span><br><span class="line">    <span class="function">dim3 <span class="title">threads</span><span class="params">(<span class="number">16</span>,<span class="number">16</span>)</span></span>;</span><br><span class="line">    kernel&lt;&lt;&lt;grids,threads&gt;&gt;&gt;( dev_bitmap );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// copy our bitmap back from the GPU for display</span></span><br><span class="line">    HANDLE_ERROR( cudaMemcpy( bitmap.get_ptr(), dev_bitmap, bitmap.image_size(),</span><br><span class="line">                                cudaMemcpyDeviceToHost ) );</span><br><span class="line">    bitmap.display_and_exit();</span><br><span class="line">    <span class="comment">// free our memory</span></span><br><span class="line">    cudaFree( dev_bitmap );</span><br><span class="line">    cudaFree( s );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上述过程使用constant memory保存只读对象。感受这个模式：<font color="red">每个threads都访问相同的只读数据时，将获得额外的性能提升</font>. 前面说了的两个原因：第一，这种模式将读取操作在半个warp中广播，第二，芯片上包含了常量内存缓存。</p>
-<p>在许多算法中，内存带宽都是瓶颈，因此要时刻想着改善这种情况，</p>
-</li>
-</ul>
-</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E5%B8%B8%E9%87%8F%E5%86%85%E5%AD%98%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD-%E4%BE%8B-RayTracing/" data-id="ckatsrgrl001qxqfze0r861xe" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/4/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/6/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/4/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/6/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -1114,7 +1134,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">27</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -1124,7 +1144,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">54</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1143,7 +1163,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1156,23 +1176,23 @@
       <ul>
         
           <li>
+            <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/11/LeetCode-BST-%E6%89%BE%E5%89%8D%E9%A9%B1%E4%B8%8E%E5%90%8E%E7%BB%A7%E7%BB%93%E7%82%B9/">LeetCode-BST 找前驱与后继结点</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
           </li>
         
           <li>
             <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/LeetCode-%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97%E7%9B%B8%E5%85%B3/">LeetCode-优先队列相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
           </li>
         
       </ul>

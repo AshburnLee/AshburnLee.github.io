@@ -64,6 +64,245 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-优化优先级" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/" class="article-date">
+  <time datetime="2020-01-17T12:49:36.000Z" itemprop="datePublished">2020-01-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/">CUDA-优化优先级</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="高优先级："><a href="#高优先级：" class="headerlink" title="高优先级："></a>高优先级：</h2><ul>
+<li><p>为最大化开发者的效率，使用程序分析工具来找到程序最耗时的部分，找到效率瓶颈。</p>
+</li>
+<li><p>最大化地利用CUDA， 首先想办法把原程序中的串行代码并行化。</p>
+</li>
+<li><p>使用程序使用的有效带宽最为测量性能和优化效果的指标。</p>
+<ul>
+<li><p>理论带宽</p>
+<p>  理论带宽可以从硬件的商品指标计算得到。比如NVIDIA Tesla V100 使用 HBM2 (double data rate) RAM 时钟频率是 877 MHz。存储器位宽为 4096-bit-wide。</p>
+<p>  通过上述指标可以计算这个显卡的理论带宽：</p>
+<p>  <code>( 0.877 × 10^9 × ( 4096 / 8 ) × 2 ) ÷ 10^9 = 898 ⁢ GB/s ⁡</code></p>
+<p>  <code>(0.877 × 10^9)</code>表示把时钟频率转化成Hz。 <code>(4096 / 8) × 2)</code>将位宽单位转化成字节， 后乘以2，由于RAM是double data rate。最后除以 <code>10^9</code> 将最终单位转化为<code>GB/s</code>。</p>
+</li>
+<li><p>实际带宽</p>
+<p>  实际带宽通过程序的实际执行，通过下面的公式得到：</p>
+<p>  <code>实际带宽 = ( ( Br + Bw ) ÷ 10^9 ) ÷ time</code> </p>
+<p>  结果的单位是<code>GB/s</code>。<code>Br</code>表示每个kernel读取的字节数，<code>Bw</code>表示每个kernel写入的字节数。</p>
+<p>  比如，一个程序要计算一个2048*2048的矩阵拷贝，整个过程的带宽：</p>
+<p>  <code>实际带宽 = ( (  2048^2 × 4 × 2 ) ÷ 10^9 ) ÷ time</code> </p>
+<p>  其中乘以4 表示矩阵每个元素的类型是float（4字节）， 乘以2是因为由读写两个过程。最后除以 <code>10^9</code> 将最终单位转化为<code>GB/s</code>。</p>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>尽可能不使用PCIe，步进行Device和Host间的数据传输。数据传输很可能抵消掉并行带来的 性能提升。 </p>
+<p>  中间数据应在Device内存中创建，销毁，由设备操作。此外，由于与每个传输相关联的开销，将许多小的传输批处理为一个较大的传输要比分别进行每个传输好得多。</p>
+<p>  此外，当使用<code>pinned memory</code>时，Device和Host间的带宽更高。</p>
+</li>
+<li><p>尽可能确保Global memory的访问时，地址是连续的。记住，<font color="orange">连续的threads访问连续的地址，效率是最高的</font>。</p>
+</li>
+<li><p>尽量少用Global memory，尽量多的使用Shared memory。</p>
+<p>  内存指令（Memory instructions）包括读取或写入shared，local或Global内存的任何指令。当访问未缓存的local或Global内存时，内存延迟有数百个时钟周期。 </p>
+<p>  下边这个例子，的赋值运算符，由很高的吞吐量，但是从Global的读操作，会有上百个时钟周期的延迟。</p>
+  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">__shared__ <span class="keyword">float</span> shared[<span class="number">32</span>];</span><br><span class="line">__device__ <span class="keyword">float</span> device[<span class="number">32</span>]; </span><br><span class="line">shared[threadIdx.x] = device[threadIdx.x];</span><br></pre></td></tr></table></figure>
+
+<p>  如果在等待Global内存访问完成的同时，可以发出足够的独立算术指令，则线程调度程序（thread scheduler）可以隐藏大部分全局内存延迟。但是，最好尽可能避免访问全局内存。这种操作称为<code>Overlap</code></p>
+<p>  总之，能不用Global memory就尽量不使用。</p>
+</li>
+<li><p>在一个warp中，避免出现分支，就是说，避免Divergence。 </p>
+</li>
+</ul>
+<h2 id="中优先级"><a href="#中优先级" class="headerlink" title="中优先级"></a>中优先级</h2><ul>
+<li><p>使用Shared内存以避免从Global内存进行冗余传输。见使用Shared memory对矩阵相乘进行的优化。</p>
+</li>
+<li><p>为每个线程保持足够的寄存器占用率。CUDA有个工具来计算资源占用率：<code>CUDA Occupancy Calculator</code></p>
+</li>
+<li><p>对于kernel的配置，每个block中的线程数应该是32 的倍数，CUDA中32是个特别的数字，一个warp由32 个线程，Shared memory被划分成32个banks。</p>
+</li>
+<li><p>在loop中，对于循环计数器，由于循环计数器的值通常都是正的，因此可能会尝试将其声明为无符号的。但是，为了获得更好的性能，应该将它们声明为signed。 </p>
+</li>
+<li><p>当速度超过精度时，使用快速的数学库。</p>
+<p>  CUDA支持两种数学库，两种数学库通过名字区分：<code>__functionName()</code>和<code>functionName()</code>。</p>
+<ul>
+<li><code>__functionName()</code>运算时，直接映射到硬件层。快，但是精度低。</li>
+<li><code>functionName()</code>慢，但是精度高。</li>
+</ul>
+</li>
+<li><p>尽可能的使用更快，更专的数学库，而不是更慢，更通用的数学库。 <a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#math-libraries" target="_blank" rel="noopener">这里</a></p>
+</li>
+</ul>
+<h2 id="低优先级"><a href="#低优先级" class="headerlink" title="低优先级"></a>低优先级</h2><ul>
+<li><p>Use zero-copy operations on integrated GPUs for CUDA Toolkit version 2.2 and later. </p>
+</li>
+<li><p>使用移位运算来避免昂贵的出发和取模运算。 </p>
+<p>  Integer division and modulo operations are particularly costly and should be avoided or replaced with bitwise operations whenever possible: If n is a power of 2, ( i / n ) is equivalent to ( i ≫ log2 n ) and ( i % n ) is equivalent to ( i &amp; n - 1 ). </p>
+</li>
+<li><p>避免将双精度数自动转换为浮点数。</p>
+<p>  The compiler must on occasion insert conversion instructions, introducing additional execution cycles. This is the case for:</p>
+<ul>
+<li><p>Functions operating on <code>char</code> or <code>short</code> whose operands generally need to be converted to an <code>int</code></p>
+</li>
+<li><p>Double-precision floating-point constants (defined without any type suffix) used as input to single-precision floating-point computations</p>
+<p>The latter case can be avoided by using single-precision floating-point constants, defined with an <code>f</code> suffix such as <code>3.141592653589793f</code>, <code>1.0f</code>, <code>0.5f</code>.</p>
+<p>For single-precision code, use of the float type and the single-precision math functions are highly recommended.</p>
+<p>It should also be noted that the CUDA math library’s complementary error function, <code>erfcf()</code>, is particularly fast with full single-precision accuracy. </p>
+</li>
+</ul>
+</li>
+<li><p>让编译器很容易使用分支预测代替（in lieu of）循环或控制语句。</p>
+<p>  Sometimes, the compiler may 循环展开 unroll loops or optimize out <code>if</code> or <code>switch</code> statements by using branch predication instead. In these cases, no warp can ever diverge. The programmer can also control loop unrolling using <code>#pragma unroll</code>.</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/" data-id="ckatsrgre0015xqfz88rm9e1b" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-Memory-Optimization-Local-Memory" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/" class="article-date">
+  <time datetime="2020-01-14T18:08:56.000Z" itemprop="datePublished">2020-01-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/">CUDA-Memory Optimization-Local Memory</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Local-Memory"><a href="#Local-Memory" class="headerlink" title="Local Memory"></a>Local Memory</h2><p>Local memory 的命周期是一个thread，它存在与Global memory中，所以对Local memory的访存是低效的。</p>
+<p>Local memory 是存储自动变量的。通常自动变量是较复杂的structures 或者数组，这些对象都会消耗太多的这个线程的寄存器。当nvcc编译器发现没有足够的寄存器空间来保存变量时，就会将变量放进Local memory中。</p>
+<p>有个技巧，如果一个kernel函数中需要使用数组，而且数组的长度是固定的，为了避免使用Local memory，将这个数组拆成单个的变量，这些变量会被存储到Registers中（当然是当Registers的个数足够时）。</p>
+<h2 id="Constant-Memory"><a href="#Constant-Memory" class="headerlink" title="Constant Memory"></a>Constant Memory</h2><p>在Device中共有64KB大小的Constant memory。</p>
+<p><font color="orange">如果一个warp中的所有threads访问同一个Constant memory地址时，此时的访存可以和Registers一样快</font>。所以对于只读的全局数据，选择放在Constant memory中。</p>
+<h2 id="Registers"><a href="#Registers" class="headerlink" title="Registers"></a>Registers</h2><p>通常，访问寄存器每一条指令都不会消耗额外的时钟周期，但由于寄存器的读写依赖关系和寄存器内存bank冲突，可能会出现延迟。</p>
+<p>编译器和硬件线程调度程序将尽可能优化调度指令，以避免寄存器bank冲突。应用程序无法直接控制这些银行冲突。这些开发者不受控制。</p>
+<p>当没有足够的寄存器可用分配给指定任务时，就会出现寄存器压力。尽管每个多处理器都包含数千个32位寄存器但它们都是在并发线程之间分配的。为了防止编译器分配太多寄存器，使用<code>-maxrregcount=N</code>编译器命令行选项（nvcc）或启动边界内核定义限定符来控制每个线程分配的寄存器的最大数量。</p>
+<h2 id="Allocation"><a href="#Allocation" class="headerlink" title="Allocation"></a>Allocation</h2><p>使用cudaMallo() 和cudaFree()在Device上申请, 和回收空间是很耗时的操作，所以程序应该尽可能<font color="red" size="4">重复利用</font>已分配好的空间。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Local-Memory/" data-id="ckatsrgqx0007xqfzdoszc8s9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CUDA-Memory-Optimization-Shared-Memory" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" class="article-date">
+  <time datetime="2020-01-14T17:24:41.000Z" itemprop="datePublished">2020-01-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/">CUDA-Memory Optimization-Shared Memory</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Shared-Memory"><a href="#Shared-Memory" class="headerlink" title="Shared Memory"></a>Shared Memory</h1><p>Shared Memory 的特点：</p>
+<ul>
+<li>on-chip</li>
+<li>高带宽，低延时，相较于local 和 global memory</li>
+<li>在线程间没有bank冲突</li>
+<li>线程可通过shared memory 来进行协作。</li>
+</ul>
+<p>Shared Memory 的快速访问。通常将<font color="green">经常要访问的数据</font>放入shared memory，来减少访存的次数Shared Memory。</p>
+<p>为了在并发访问中，实现高的内存带宽，shared memory被分成大小相等的块，<font color="green" size="4">banks</font>，这些banks可以被同时访问。所以任何对n个不同banks进行访存，这些访存是同时的。这就实现了高带宽。</p>
+<p>再深入一点，shared memory 被划分为banks，一个bank对外有一个<font color="green">接口</font>，使得每个周期只相应这个bank中的一个地址。所以对于同一个bank的不同地址的并发访问将导致bank conflict。如下图中的<code>threads a</code>和<code>threads b</code>，同时访问<code>bank 1</code>，冲突了。冲突了怎么办，冲突的访存会被排队串行执行。</p>
+<div align="center"><img src="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/bank.png" width="800"></div>
+
+<p>这就是shared memory 架构的设计特点。看更详细的bank，<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" target="_blank" rel="noopener">看这里</a>。</p>
+<p>关于bank conflict：</p>
+<ul>
+<li><p>一个Warp中的所有（多个）threads访问不同的banks，无冲突。如图中<code>thread c</code>与<code>thread a</code>不冲突，<code>thread c</code>与<code>thread b</code>也不冲突。</p>
+</li>
+<li><p>一个Warp中所有（多个）的threads访问同一个地址，这是<font color="green">广播</font>，无冲突。这个地址所在的bank只相应这个地址，所以可以同时访问。[In this case, multiple broadcasts from different banks are coalesced into a single multicast from the requested shared memory locations to the threads. ]</p>
+</li>
+<li><p>关于bank conflict，一个Warp有32个threads，一个bank中的地址也是32，所以bank conflicts 可能发生在同一个warp中的任何线程。</p>
+</li>
+</ul>
+<p><font color="green"></font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/" data-id="ckatsrgr1000cxqfzdny78v9m" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-APOD-Strong-Scaling-Weak-Scaling" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/14/CUDA-APOD-Strong-Scaling-Weak-Scaling/" class="article-date">
@@ -416,6 +655,58 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
+    <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
+  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">LeetCode-二进制中1的个数</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>bit操作</p>
+<p>知识点</p>
+<ol>
+<li>一个整数除以2，与将这个整数右移1位等价，但是移位运算效率更高。</li>
+<li>一个整数减一，后与原整数做‘与’运算，这个操作会把这个整数最右边的1变成零。</li>
+</ol>
+<p>有了上述两点，求二进制中1的个数，思路就有了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numberOfOne</span><span class="params">(<span class="keyword">int</span> num)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(num)&#123;</span><br><span class="line">        count++;</span><br><span class="line">        num = num &amp; (num - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此方法对正负整数均使用。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" data-id="ckayvgezt0003lufz5yw5azs3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-对大数的操作" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" class="article-date">
@@ -508,58 +799,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
-  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">LeetCode-二进制中1的个数</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>bit操作</p>
-<p>知识点</p>
-<ol>
-<li>一个整数除以2，与将这个整数右移1位等价，但是移位运算效率更高。</li>
-<li>一个整数减一，后与原整数做‘与’运算，这个操作会把这个整数最右边的1变成零。</li>
-</ol>
-<p>有了上述两点，求二进制中1的个数，思路就有了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numberOfOne</span><span class="params">(<span class="keyword">int</span> num)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(num)&#123;</span><br><span class="line">        count++;</span><br><span class="line">        num = num &amp; (num - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>此方法对正负整数均使用。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" data-id="ckayvgezt0003lufz5yw5azs3" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
     <article id="post-LeetCode-从链表删除节点" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/" class="article-date">
@@ -639,320 +878,11 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-汇总ShortCuts" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/" class="article-date">
-  <time datetime="2019-12-31T18:14:44.000Z" itemprop="datePublished">2020-01-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/">汇总ShortCuts</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>记录Linux平台及其上常用软件的快捷键。提升效率</p>
-<h2 id="通用"><a href="#通用" class="headerlink" title="通用"></a>通用</h2><p><code>Fn+left/right</code>: 在文本编辑时，移动cursor与行首/行尾<br><code>ctrl+left/right</code>: 文本编辑时，以单词为单位移动cursor<br>上边移动cursor时按住<code>shift</code>: 选中cursor走过的内容</p>
-<h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><p><code>grep -n -H -r &quot;CUDA_KERNEL_LOOP&quot;</code>: 在当前路径下查找所有含有此关键字的文件，并显示文件名，行号。<br><code>tree -d</code>: 显示文件夹树</p>
-<p><code>Alt + F4</code>: close current window<br><code>Alt + PrtSc</code>: take <font color="gree" size="3">screen shot</font> on current window<br><code>Alt + F7</code>: move current window<br><code>Alt + F8</code>: use arrow to adjust the size of current window<br><code>Alt + arrows</code>: move out or move in a directory\<br><code>Win + D</code> : show desk</p>
-<p><code>$ make clean</code>: 清理编译内容<br><code>$ make all -j4</code>: 使用4个线程编译<br><code>$ cp -r foldername ./</code>: 将foldername中所有内容复制到 当期那目录<br><code>$ rm -t foldername</code>: 删除foldername<font color="gree" size="3">及其中所有内容</font>.<br><code>$ systemctl suspend</code>: suspend mode，保存当前工作内容与内存，按任意键唤醒<br><code>$ systemctl hybernate</code>:  也是睡眠，保存当前工作内容，但要按电源键唤醒</p>
-<p><code>$ sudo apt-get install -f</code>: ?<br><code>$ sudo apt-get update</code>: ?<br><code>$ sudo apt-get upgrade</code>: ?</p>
-<p><code>$ Libreoffice FILENAME.odt</code>: open .odt file</p>
-<p><code>$ ls | wc -l</code>: the number of files in current path<br><code>$ ls -l | grep ^- | wc -l</code>: the number of files in current directory<br><code>$ ls -l | grep ^d | wc -l</code>: the number of directories in current directory</p>
-<p><code>$ mv &#39;ls | head -1000&#39; ../</code>: move first 1000 files from current to upper level<br><code>$ find /opt/opencv/ -name &quot;imgproc.hpp&quot;</code>: find file in a directory<br><code>$ sudo dpkg -i FILENAME.deb</code> : install .deb file<br><code>$ dpkg --list</code>: show installed software in system<br><code>$ sudo apt-get --purge remove (name)</code> :packages uninstall</p>
-<p><code>$ df -lhT</code> :info about <font color="gree" size="3">disk</font><br><code>$ tar -zcvf 压缩包名.tar.gz 源文件</code>: 压缩.tar.gz</p>
-<p><code>$ git clone URL</code> : GitHub url to current directory<br><code>$ git add FILENAME</code>: 向remote添加新文件FILENAME <br><code>$ git commit -m &quot;massage&quot;</code>: make a commitment about that change<br><code>$ git push</code>: 将本地的改变推入remote<br><code>$ git pull</code>: 更新本地repository</p>
-<p><code>$ ipython trust filename.ipynb</code>: trust this notebook</p>
-<p><code>$ source activate tensorflow</code>: activate tensor <font color="gree" size="3">environment</font><br><code>$ source deactivate</code>: deactive that environment</p>
-<p><code>$ which/whereis/type package</code>: show <font color="gree" size="3">where</font> is that package</p>
-<p><code>$ export PS1=’:&gt; ’</code>    change the prompt(shorten prompt when it is too long)<br><code>:&gt; bash</code>    change back</p>
-<p><code>$ xdg-open .</code>   : open the current directory in terminal<br><code>$ sudo apt-get install alacarte</code>: 删除Linux中invalid app icon</p>
-<h2 id="Chrome-amp-Firefox"><a href="#Chrome-amp-Firefox" class="headerlink" title="Chrome &amp; Firefox"></a>Chrome &amp; Firefox</h2><p><code>Ctrl + Tab</code> or <code>Ctrl + PgDn</code>: Jump to next open tab<br><code>Ctrl + Shift + Tab</code> or <code>Ctrl + PgUp</code>: Jump to the previous open tab<br><code>Ctrl + t</code>: New tab<br><code>Ctrl + w</code>: close current tab<br><code>Ctrl + n</code>: new windows</p>
-<h2 id="Terminal"><a href="#Terminal" class="headerlink" title="Terminal"></a>Terminal</h2><p><code>ctrl + a</code>:移动光标到头<br><code>ctrl + e</code>:移动光标到尾<br><code>ctrl + u</code>:删除光标所在行<br><code>ctrl + k</code>:<br><code>ctrl + r</code>:历史中搜索<br><code>!xxx</code>: 调用最后一个以xxx开头的命令（当命令较长时）<br><code>export PS1=&quot;--&gt;&quot;</code>: 缩短命令行</p>
-<h2 id="Quake-Terminal"><a href="#Quake-Terminal" class="headerlink" title="Quake Terminal"></a>Quake Terminal</h2><p><code>ctrl+shift+t</code>: new tab <br><code>ctrl+shift+w</code>: close tab<br><code>ctrl+page up</code>: go to previous tab<br><code>ctrl+page down</code>: go to next tab</p>
-<h2 id="Ipython-notebook-非Edit模式下"><a href="#Ipython-notebook-非Edit模式下" class="headerlink" title="Ipython notebook (非Edit模式下)"></a>Ipython notebook (非Edit模式下)</h2><p><code>b</code>: add cell below<br><code>a</code>: add cell above<br><code>1</code>: change cell to head 1<br><code>2</code>: change cell to head 2<br><code>Esc</code>: change to command mode<br><code>Enter</code>: change to edit mode<br><code>d+d</code>: delete cell<br><code>Shift+l</code>: show/close line numbers</p>
-<h2 id="Tmux"><a href="#Tmux" class="headerlink" title="Tmux"></a>Tmux</h2><p><code>ctrl+b</code>: pre-fix P<br><code>ctrl+b arrows</code>: move around windows<br><code>ctrl+b %</code>: split window l&amp;r<br><code>ctrl+b ”</code>: split window u&amp;d<br><code>ctrl+b x</code>: kill this split-screen<br><code>ctrl+b &amp;</code>: kill this window<br><code>kill-server</code> : kill all sessions</p>
-<p>For more info check <a href="http://cenalulu.github.io/linux/tmux/" target="_blank" rel="noopener">here</a></p>
-<h2 id="Intellij"><a href="#Intellij" class="headerlink" title="Intellij"></a>Intellij</h2><p><code>ctrl+shift+F7</code>:for a specific variable, highlight them<br><code>F3</code>: navigate among these variables.<br><code>ctrl+w</code>: select word<br><code>Esc</code>: quit highlights.</p>
-<h2 id="pycharm"><a href="#pycharm" class="headerlink" title="pycharm"></a>pycharm</h2><p><code>ctrl+shift+-</code>：折叠<br><code>ctrl+shift++</code>：展开</p>
-<h2 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a>Docker</h2><p><code>$ Docker(rosslee:zhen0miaod)</code>:<br><code>$ sudo docker login</code>: login my docker hub account</p>
-<p><code>$ sudo docker images -a</code>: show all downloaded images<br><code>$ sudo docker rmi &lt;name|id&gt;</code>: delete downloaded image<br><code>$ sudo docker rmi $(docker images -a -q)</code> : remove all images</p>
-<p><code>$ sudo docker ps -a</code>: list all containers<br><code>$ sudo docker rm &lt;name|id&gt;</code>: remove containe</p>
-<h2 id="Visual-studio-代码调试"><a href="#Visual-studio-代码调试" class="headerlink" title="Visual studio 代码调试"></a>Visual studio 代码调试</h2><ol>
-<li>跟踪变量，一步一步执行</li>
-</ol>
-<p><code>F9</code>: 在鼠标当前位置设置breakpoint。<br><code>F5</code>：开始debug。在菜单栏中点击<code>degug</code> -&gt; <code>Windows</code> -&gt; <code>autos</code>。如此便可以看到每个变量的值随着调试的过程动态改变。<br><code>选中code中变量，右键-&gt;add watch</code>: 将这个变量放入跟踪中。<br><code>Continue按钮</code>：开始执行，到下一个breakpoint<br><code>F10</code>: 不同与continue，这个是一句一句执行，可以跟踪临时变量。但是这回跳过子函数。<br><code>F11</code>：一句一句执行，回进入子函数。</p>
-<ol start="2">
-<li>run without debugging</li>
-</ol>
-<p><code>ctrl+F5</code></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/01/%E6%B1%87%E6%80%BBShortCuts/" data-id="ckatsrgtg0067xqfz8r5egm0n" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Linux安装cuDNN" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/" class="article-date">
-  <time datetime="2019-12-31T08:15:54.000Z" itemprop="datePublished">2019-12-31</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Utility/">Utility</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/">Linux安装cuDNN</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li><p>假设CUDA已经成功安装，先确定CUDA的版本</p>
-<p>  <code>cat /usr/local/cuda/version.txt</code> </p>
-</li>
-<li><p>进入cudnn官网，用户登录，在cudnn下载处根据Linux机器上的CUDA版本选择对应的cudnn版本</p>
-<ol>
-<li><p>去<a href="https://developer.nvidia.com/cudnn" target="_blank" rel="noopener">nvidia cuDNN home page</a></p>
-</li>
-<li><p>点击下载</p>
-</li>
-<li><p>用户登录，完成问卷，提交</p>
-</li>
-<li><p>接受条款</p>
-</li>
-<li><p>选择与机器CUDA版本对应的cuDNN版本下载tar文件和Sample Code：</p>
-<p> cuDNN Library for Linux<br> cuDNN Code Samples and User Guide for Ubuntu16.04 (Deb)</p>
-</li>
-</ol>
-</li>
-<li><p>使用tar文件安装</p>
-<ol>
-<li><p>转到tar文件所在目录</p>
-</li>
-<li><p>解压</p>
-<p> <code>$ tar -xzvf cudnn-10.2-linux-x64-v7.6.5.32.tgz</code></p>
-</li>
-<li><p>复制文件到已安装的CUDA Toolkit目录，并且修改权限</p>
-<p> <code>$ sudo cp cuda/include/cudnn.h /usr/local/cuda/include</code><br> <code>$ sudo cp cuda/lib64/libcudnn* /usr/local/cuda/lib64</code><br> <code>$ sudo chmod a+r /usr/local/cuda/include/cudnn.h /usr/local/cuda/lib64/libcudnn*</code></p>
-</li>
-</ol>
-</li>
-<li><p>为了测试安装成功否，安装samples code和用户指南：</p>
-<p>  <code>$ sudo dpkg -i libcudnn7-doc_7.6.5.32-1+cuda10.2_amd64.deb</code></p>
-</li>
-<li><p>测试</p>
-<ol>
-<li><p>把Samples Code 复制到可写的目录下<code>$HOME</code></p>
-</li>
-<li><p>进入这个可写目录</p>
-<p> <code>$ cd  $HOME/cudnn_samples_v7/mnistCUDNN</code></p>
-</li>
-<li><p>编译 mnistCUDNN 实例</p>
-<p> <code>$ make clean &amp;&amp; make</code></p>
-</li>
-<li><p>运行可执行文件</p>
-<p> <code>$ ./mnistCUDNN</code></p>
-<p> 如果可以返回如下，表示安装成功：</p>
-<p> <code>Test passed!</code></p>
-</li>
-</ol>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/31/Linux%E5%AE%89%E8%A3%85cuDNN/" data-id="ckatsrgsa003jxqfz3bb4ecya" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-方法论-DP-二" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/" class="article-date">
-  <time datetime="2019-12-26T07:24:48.000Z" itemprop="datePublished">2019-12-26</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/">LeetCode-方法论-DP-二</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="213-House-Robber-II"><a href="#213-House-Robber-II" class="headerlink" title="#213 House Robber II"></a>#213 House Robber II</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">与#198不同，这回抢的街是环形，即首位相连，依旧是在不相邻的房子间抢，求可获得的最好收益。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  技巧：选择一个房子作为首：第一条街偷除第一个房子的其他房子，第二次偷除最后一个房子的其他房子。两次偷的结果取较大值。<br>  其中每次偷房子的方式同#198.</p>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">1</span>) <span class="keyword">return</span> nums[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">2</span>) <span class="keyword">return</span> max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]); </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 最后一间房子 不强</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo1(nums.size(), <span class="number">0</span>);        </span><br><span class="line">    memo1[<span class="number">0</span>] = nums[<span class="number">0</span>];        </span><br><span class="line">    memo1[<span class="number">1</span>] = max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]);        </span><br><span class="line">            </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;nums.size(); i++)&#123;        </span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;        </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)        </span><br><span class="line">            <span class="keyword">if</span> (memo1[j]&gt;tmp)        </span><br><span class="line">                tmp = memo1[j];        </span><br><span class="line">        memo1[i] = max(memo1[i<span class="number">-1</span>], nums[i]+tmp);        </span><br><span class="line">                </span><br><span class="line">    &#125;        </span><br><span class="line">                                        </span><br><span class="line">    <span class="comment">// 第一间房子 不强</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo2(nums.size(), <span class="number">0</span>);    </span><br><span class="line">    memo2[<span class="number">1</span>] = nums[<span class="number">1</span>];        </span><br><span class="line">    memo2[<span class="number">2</span>] = max(nums[<span class="number">1</span>], nums[<span class="number">2</span>]);        </span><br><span class="line">            </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">3</span>; i&lt;nums.size(); i++)&#123;        </span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;        </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)        </span><br><span class="line">            <span class="keyword">if</span> (memo2[j]&gt;tmp)        </span><br><span class="line">                tmp = memo2[j];        </span><br><span class="line">        memo2[i] = max(memo2[i<span class="number">-1</span>], nums[i]+tmp);        </span><br><span class="line">                </span><br><span class="line">    &#125;    </span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>  max( memo1[nums.size()<span class="number">-2</span>], memo2[nums.size()<span class="number">-1</span>]);     </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="96Unique-BST"><a href="#96Unique-BST" class="headerlink" title="#96Unique BST"></a>#96Unique BST</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">给出一个正整数n，返回从1～n可以构成不同BST 的个数。</span><br><span class="line"></span><br><span class="line">如n&#x3D;3时，可以构成的BST数量为5.</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<ul>
-<li><p>动手找几个n值画画图，从中找规律。</p>
-</li>
-<li><p>状态的定义：<code>memo[i]</code> 表示以<code>1～i</code>为节点的 BST的个数。定义<code>memo[0]=1</code>.</p>
-</li>
-<li><p>状态转移方程：看下示意图，以n=3为例：</p>
-<div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/96.png" width="600"></div>
-
-<p>图中<code>memo[3]=memo[0]*memo[2] + memo[1]*memo[1] + memo[2]*memo[0]</code> 就是n=3时的状态转移方程。</p>
-<p>这其中<code>memo[2]=memo[0]*memo[1] + memo[1]*memo[0]=2</code> 是n=2时的状态转移方程。</p>
-</li>
-<li><p>当n=4：</p>
-<p>  <code>memo[0]=1</code>;<br>  <code>memo[1]=memo[0]*memo[0]=1</code>;<br>  <code>memo[2]=memo[0]*memo[1] + memo[1]*memo[0]=2</code>;<br>  <code>memo[3]=memo[0]*memo[2] + memo[1]*memo[1] + memo[2]*memo[0]=5</code>;<br>  <code>memo[4]=memo[0]*memo[3] + memo[1]*memo[2] + memo[2]*memo[1] + memo[3]*memo[0]=14</code>;</p>
-<p>可以观察出，要想求出<code>memo[1]</code>,需要求出<code>memo[0]</code>，要想求出<code>memo[2]</code>,需要求出<code>memo[1]</code>和<code>memo[0]...</code>。</p>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numTree</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123;</span><br><span class="line">	<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(n+<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">	memo[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;=n ;i++)&#123;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> k=<span class="number">1</span>; k&lt;=i; k++)&#123;</span><br><span class="line">			memo[i] += memo[k<span class="number">-1</span>] * memo[i<span class="number">-1</span>-(k<span class="number">-1</span>)];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> memo[n];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">找规律</font>，</p>
-<h1 id="304-Sum-of-Region"><a href="#304-Sum-of-Region" class="headerlink" title="#304 Sum of Region"></a>#304 Sum of Region</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">给定一个矩阵，和两个点, 左上角(r1,c1)和右下角(r2,c2)。</span><br><span class="line">求出由这两个点围成的矩阵所有元素之和。</span><br><span class="line"></span><br><span class="line">NOTE，对于同一个矩阵，需要大量的上述query操作。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<ul>
-<li><p>第一步：构建memo</p>
-<ul>
-<li><p>状态定义：<code>memo[i][j]</code>表示从matrix最左上角到<code>matrix[i][j]</code>处的元素之和。</p>
-</li>
-<li><p>状态转移方程 看下图示，假如matrix如作图所示：</p>
-<div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/304-1.png" width="600"></div>
-
-<p>memo中的红圈重点值如何得到? 红圈中的值按照定义，等于matrix最左上角到红圈的元素和，从作图中看就是6，怎么算的？ <code>6=绿+紫-粉+自身</code>。在右图中就等于<code>绿+紫-粉+1=6</code>。</p>
-<p>所以状态转移方程是：<br><code>当前memo值=左边memo值+上边memo值+当前matrix值-左上memo值</code>。</p>
-<p>在实现中， 由于要对memo第一行和memo第一列做同样的操作，所以memo大小较matrix多了一行一列。</p>
-</li>
-</ul>
-</li>
-<li><p>第二步：query 从memo中取所需值。</p>
-<p>  过程如下图：注意根据memo的定义，在matrix中的矩形，一定是从matrix最左上角开始。</p>
-  <div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/304-2.png" width="600"></div>
-
-<p>  如上图所示，假如要得到matrix中<code>(1,1)</code>到<code>(2,2)</code>元素和，在左边matrix矩阵中，就等于<code>蓝-粉-绿+紫</code>，对应于有图memo中就是<code>红-粉-绿+紫</code>。就是最终返回值。</p>
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NumMatrix</span>&#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// 构建memo数组</span></span><br><span class="line">    NumMatrix(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; matrix) &#123;</span><br><span class="line">        <span class="keyword">if</span> (matrix.size()==<span class="number">0</span> || matrix[<span class="number">0</span>].size()==<span class="number">0</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 在原先matrix大小基础上增加一行一列，并且初始化为0</span></span><br><span class="line">        memo = <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;(matrix.size()+<span class="number">1</span>, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(matrix[<span class="number">0</span>].size()+<span class="number">1</span>, <span class="number">0</span>));</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> r=<span class="number">0</span>; r&lt;matrix.size(); r++)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> c=<span class="number">0</span>; c&lt;matrix[<span class="number">0</span>].size(); c++)&#123;</span><br><span class="line">                <span class="comment">// 状态转移方程：</span></span><br><span class="line">                memo[r+<span class="number">1</span>][c+<span class="number">1</span>] = memo[r][c+<span class="number">1</span>] + memo[r+<span class="number">1</span>][c] + matrix[r][c]-memo[r][c];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用memo求出制定区域的元素之和。</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">sumRegion</span><span class="params">(<span class="keyword">int</span> row1, <span class="keyword">int</span> col1, <span class="keyword">int</span> row2, <span class="keyword">int</span> col2)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> memo[row2+<span class="number">1</span>][col2+<span class="number">1</span>]-memo[row1][col2+<span class="number">1</span>]-memo[row2+<span class="number">1</span>][col1]+memo[row1][col1];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">找规律</font></p>
-<h1 id="70-Climb-Staires"><a href="#70-Climb-Staires" class="headerlink" title="#70 Climb Staires"></a>#70 Climb Staires</h1><ul>
-<li><p>描述</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">你爬楼梯，每次只能爬1阶或2阶，那么要爬到n阶，由多少种走法</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>逻辑</p>
-<p>  逻辑与斐波那契数列相同。以n=5为例。</p>
-<ul>
-<li><p>状态定义：memo[i]表示爬i阶台阶由多少中爬法。其中定义memo[0]=1, memo[1]=1。</p>
-</li>
-<li><p>状态转移方程：见下图：</p>
-<div align="center"><img src="/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/70.png" width="800"></div>
-
-<p>DP的特点是从已知计算求下一步结果，进而再求下下步结果。计算是由一个特定方向的。所以按照图中箭头方向分析：</p>
-<p><code>爬2阶的爬法 = 爬1阶的爬法(爬了1阶，再爬1阶) + 爬0阶的爬法(爬了0阶，再爬2阶)</code>;<br><code>爬3阶的爬法 = 爬2阶的爬法(爬了2阶，再爬1阶) + 爬1阶的爬法(爬了1阶，再爬2阶)</code>;<br><code>爬4阶的爬法 = 爬3阶的爬法(爬了3阶，再爬1阶) + 爬2阶的爬法(爬了2阶，再爬2阶)</code>;<br><code>...</code></p>
-<p>这一类问题有重复计算的子问题。所以DP的记忆化机制保存了中间的结果，从而避免了重复的计算。</p>
-</li>
-</ul>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">climbStairs</span> <span class="params">(<span class="keyword">int</span> numStairs)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(numStairs + <span class="number">1</span>, <span class="number">-1</span>);</span><br><span class="line">    memo[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">    memo[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i =<span class="number">2</span>; i &lt;= numStairs; i++) &#123;</span><br><span class="line">        memo[i] = memo[i<span class="number">-1</span>] + memo[i<span class="number">-2</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> memo[numStairs];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/26/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%BA%8C/" data-id="ckatsrgs3002zxqfzer0ha6ks" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/6/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/8/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/6/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/8/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -963,7 +893,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">27</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -973,7 +903,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">54</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -992,7 +922,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1005,23 +935,23 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
       <ul>
         
           <li>
+            <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/11/LeetCode-BST-%E6%89%BE%E5%89%8D%E9%A9%B1%E4%B8%8E%E5%90%8E%E7%BB%A7%E7%BB%93%E7%82%B9/">LeetCode-BST 找前驱与后继结点</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
           </li>
         
           <li>
             <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/LeetCode-%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97%E7%9B%B8%E5%85%B3/">LeetCode-优先队列相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
           </li>
         
       </ul>

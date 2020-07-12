@@ -64,6 +64,234 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-回看SVM-三" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/" class="article-date">
+  <time datetime="2019-08-18T14:42:57.000Z" itemprop="datePublished">2019-08-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/">回看SVM-(三)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="升维"><a href="#升维" class="headerlink" title="升维"></a>升维</h1><p>在现实任务中，样本空间内很可能不存在一个能将样本正确划分的超平面。此时，可以将样本<font color="red">从原始空间映射到一个更高维的样本空间</font>，使得样本在这个高维空间内线性可分。如果原始空间是有限维的，也就是说，样本的属性个数有限，那么一定存在一个更高的样本维度使样本线性可分。</p>
+<p>上述涉及到每一个特征映射到高维空间后之间的内积，由于特征空间的维度可能很高，甚至是无穷维的，因此先映射到高维空间后计算，是非常困难的。即，核函数可以等价代替<strong>样本映射后的特征向量间的内积</strong>。使用<code>Kernel Trick</code> 避开这个障碍。如此用一个近似的计算来取代映射到高维特征向量。好处：减少了计算量，节省了内存，Kernel Trick是一个可以应用于任何算法的技巧。</p>
+<h1 id="RBF核"><a href="#RBF核" class="headerlink" title="RBF核"></a>RBF核</h1><p>假如原始数据只有一维信息，如果有两个landmark，就将数据变化为2维数据。每个样本的取值变化为x-&gt;( ，)，即含有2个特征。下面模拟该过程： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 一维数据x</span></span><br><span class="line">x = np.arange(<span class="number">-10</span>, <span class="number">10</span>, <span class="number">1</span>) </span><br><span class="line"></span><br><span class="line"><span class="comment"># 对应的lable</span></span><br><span class="line">y = np.asarray((x &gt;= <span class="number">-3</span>) &amp; (x &lt;= <span class="number">3</span>), dtype=int)</span><br><span class="line"></span><br><span class="line">plt.scatter(x[y == <span class="number">0</span>], <span class="number">0</span>*(y[y == <span class="number">0</span>]))</span><br><span class="line">plt.scatter(x[y == <span class="number">1</span>], <span class="number">0</span>*(y[y == <span class="number">1</span>]))</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>如图：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/rbf-1.png" width="500"></div>
+<div align="center">图 原始数据 </div>
+
+<p>定义一个函数，每个样本跟landmark进行计算，得到新的x：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gaussian</span><span class="params">(x, l)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    每个x 跟l计算得到新的x</span></span><br><span class="line"><span class="string">    :param x: 原来x</span></span><br><span class="line"><span class="string">    :param l: x跟谁计算</span></span><br><span class="line"><span class="string">    :return: 新的x</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    gamma = <span class="number">0.05</span></span><br><span class="line">    <span class="keyword">return</span> np.exp(-gamma * (x - l)**<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+
+<p>对x的每个样本进行升维处理，得到新的x：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">x_new = np.empty((len(x), <span class="number">2</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i, data <span class="keyword">in</span> enumerate(x):</span><br><span class="line">    <span class="comment"># x_new 的第一个特征：</span></span><br><span class="line">    x_new[i, <span class="number">0</span>] = gaussian(data, <span class="number">1</span>)</span><br><span class="line">    <span class="comment"># x_new 的第二个特征：</span></span><br><span class="line">    x_new[i, <span class="number">1</span>] = gaussian(data, <span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line">plt.scatter(x_new[y == <span class="number">0</span>, <span class="number">0</span>], x_new[y == <span class="number">0</span>, <span class="number">1</span>])</span><br><span class="line">plt.scatter(x_new[y == <span class="number">1</span>, <span class="number">0</span>], x_new[y == <span class="number">1</span>, <span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>如图：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/rbf-2.png" width="500"></div>
+<div align="center">图 升维后的数据 </div>
+
+<p>此2维数据显然是线性可分的。本例是使用l1和l2 两个landmark，即，只将数据变化为2维，原本20x1的数据映射成20x2。BRF高斯核实际上是使用每一个数据点作为landmark，即原本mxn的数据映射成mxm的数据。当m远远大于n时(一般合格的数据集)，数据特征由n增加到m。当然，对于一个m小于n的数据集(如NLP等情境下的数据)，依然变换为mxm，其实是降维处理。</p>
+<h1 id="RBF核gamma"><a href="#RBF核gamma" class="headerlink" title="RBF核gamma"></a>RBF核gamma</h1><p>RBF中的参数gamma与高斯分布有关：gamma越大，分布越窄越高。<br>实验如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用moon数据：</span></span><br><span class="line">x, y = datasets.make_moons(noise=<span class="number">0.15</span>, random_state=<span class="number">11</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义模型：</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">RBFKernel</span><span class="params">(gamma=<span class="number">0.1</span>)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([(<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">                     (<span class="string">"svc"</span>, SVC(kernel=<span class="string">"rbf"</span>, gamma=gamma))])</span><br></pre></td></tr></table></figure>
+
+<p>指定gamma，并学习，当gamma=100时：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">svc = RBFKernel(<span class="number">100</span>)</span><br><span class="line">svc.fit(x, y)</span><br><span class="line">plot_decision_boundary(svc, axis=[<span class="number">-1.5</span>, <span class="number">2.5</span>, <span class="number">-1.0</span>, <span class="number">1.5</span>])</span><br><span class="line">plt.scatter(x[y == <span class="number">0</span>, <span class="number">0</span>], x[y == <span class="number">0</span>, <span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y == <span class="number">1</span>, <span class="number">0</span>], x[y == <span class="number">1</span>, <span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>绘图：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/rbf-3.png" width="500"></div>
+<div align="center">图 gamma=100 </div>
+
+<p>当gamma=100，很大， 对应高斯分布越高越窄， 反映在图中就是每一个橘色样本点周围的小区域为一个高斯分布，橘色样本点本身为分布的顶点，即，模型判断，样本点只在这样一个区域内，才被判定为橘色点。 此情况显然<font color="red">过拟合</font>。</p>
+<p>当gamma=10， 上述的分布区域变大了：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/rbf-4.png" width="500"></div>
+<div align="center">图 gamma=10 </div>
+
+<p>当gamma=0.1，很小时，不拟合：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/rbf-5.png" width="500"></div>
+<div align="center">图 gamma=0.1 </div>
+
+<p>所以可以说，gamma值在控制模型的复杂度，gamma越小，模型复杂度越小，<br>所以<font>要找到合适的gamma</font>。</p>
+<h1 id="SVM解决回归问题：SVR"><a href="#SVM解决回归问题：SVR" class="headerlink" title="SVM解决回归问题：SVR"></a>SVM解决回归问题：SVR</h1><p>SVR 使得<font color="red">在margin范围里的样本点越多越好，表示这个范围可以较好地表示样本点。此时取中间的线为回归曲线</font>。</p>
+<p>或者说，SVR解决的问题与SVM相反，soft SVM要使得margin间的点越少越好，而SVR要使得margin间的点越多越好。</p>
+<p>又或者说，SVR目的与SVM相同，都是最大化margin间的距离。SVR假设我们可以容忍f(x)与y之间最多有epislon的偏差，即，<strong>当且仅当f(x)与y之间的距离绝对值大于epsilon时，才计算损失，损失仍是最小化margin间的距离</strong>。这个过程相当于构建了宽度为2×epsilon的间隔带，<strong>如果样本点在间隔带之间，则认为是被预测正确的</strong>。</p>
+<p>sklearn中的使用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> LinearSVR</span><br><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVR  <span class="comment"># 指明核函数</span></span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler</span><br><span class="line"><span class="keyword">from</span> sklearn.pipeline <span class="keyword">import</span> Pipeline</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">StandardLinearSVR</span><span class="params">(epsilon=<span class="number">0.1</span>, c=<span class="number">1</span>)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    指明参数 epsilon 和 C 等</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([</span><br><span class="line">        (<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">        (<span class="string">"LinearSVR"</span>, LinearSVR(epsilon=epsilon, C=c))</span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%B8%89/" data-id="ckatsrgsu004mxqfz16ks7hi6" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-回看SVM-二" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/" class="article-date">
+  <time datetime="2019-08-18T13:18:45.000Z" itemprop="datePublished">2019-08-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/">回看SVM-(二)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>对于线性不可分而非线性可分的数据，也可以使用线性SVM。只需要<font color="red">将数据转换为高维的含有多项式项的数据</font>。</p>
+<h1 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h1><p>先找一个，分线性可分数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line">x, y = datasets.make_moons(noise=<span class="number">0.15</span>, random_state=<span class="number">11</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绘制出结果：</span></span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon.png" width="500"></div>
+<div align="center">图 待处理数据</div>
+
+
+<h1 id="含多项式特征的LinearSVM"><a href="#含多项式特征的LinearSVM" class="headerlink" title="含多项式特征的LinearSVM"></a>含多项式特征的LinearSVM</h1><p><font color="red">指定多形式的阶数</font>，将数据转化成高维的含有多项式项数据，后传入<code>LinearSVM</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">PolynomialSVC</span><span class="params">(degree, C=<span class="number">0.1</span>)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([</span><br><span class="line">        (<span class="string">"Poly"</span>, PolynomialFeatures(degree=degree)),</span><br><span class="line">        (<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">        (<span class="string">"LinearSVC"</span>, LinearSVC(C=C))</span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>Pipline</code>可以顺序执行各部分。实例化模型，并查看模型信息：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">poly_svc = PolynomialSVC(<span class="number">3</span>)</span><br><span class="line">poly_svc.fit(x, y)</span><br><span class="line">print(poly_svc)</span><br></pre></td></tr></table></figure>
+
+<p>模型信息：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Pipeline(memory=<span class="literal">None</span>,</span><br><span class="line">     steps=[(<span class="string">'Poly'</span>, PolynomialFeatures(degree=<span class="number">3</span>, include_bias=<span class="literal">True</span>, interaction_only=<span class="literal">False</span>)), (<span class="string">'standard'</span>, StandardScaler(copy=<span class="literal">True</span>, with_mean=<span class="literal">True</span>, with_std=<span class="literal">True</span>)), (<span class="string">'LinearSVC'</span>, LinearSVC(C=<span class="number">0.1</span>, class_weight=<span class="literal">None</span>, dual=<span class="literal">True</span>, fit_intercept=<span class="literal">True</span>,</span><br><span class="line">     intercept_scaling=<span class="number">1</span>, loss=<span class="string">'squared_hinge'</span>, max_iter=<span class="number">1000</span>,</span><br><span class="line">     multi_class=<span class="string">'ovr'</span>, penalty=<span class="string">'l2'</span>, random_state=<span class="literal">None</span>, tol=<span class="number">0.0001</span>,</span><br><span class="line">     verbose=<span class="number">0</span>))])</span><br></pre></td></tr></table></figure>
+
+<p>绘出分类边界：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">plot_decision_boundary(poly_svc, axis=[<span class="number">-1.5</span>, <span class="number">2.5</span>, <span class="number">-1.0</span>, <span class="number">1.5</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>结果为分线性边界：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-2.png" width="500"></div>
+<div align="center">图 分类边界</div>
+
+<h1 id="多项式核函数"><a href="#多项式核函数" class="headerlink" title="多项式核函数"></a>多项式核函数</h1><p>SVM可以<font color="red">直接使用数据的多项式特征，即多项式核函数</font>，所以使用SVC而非LinearSVC。此时Pipline中不需先得到多项式特征：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVC</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">Polynomial_KernelSVC</span><span class="params">(degree, C=<span class="number">0.1</span>)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> Pipeline([</span><br><span class="line">        (<span class="string">"standard"</span>, StandardScaler()),</span><br><span class="line">        (<span class="string">"kernelSVC"</span>, SVC(kernel=<span class="string">"poly"</span>, degree=degree, C=C))  </span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
+
+<p>传入kernel参数，指定使用什么样的核函数。实例化模型，绘制分类边界：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">poly_kernel_svc = Polynomial_KernelSVC(degree=<span class="number">5</span>)</span><br><span class="line">poly_kernel_svc.fit(x, y)</span><br><span class="line"></span><br><span class="line">plot_decision_boundary(poly_kernel_svc, axis=[<span class="number">-1.5</span>, <span class="number">2.5</span>, <span class="number">-1.0</span>, <span class="number">1.5</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">0</span>, <span class="number">0</span>], x[y==<span class="number">0</span>,<span class="number">1</span>])</span><br><span class="line">plt.scatter(x[y==<span class="number">1</span>, <span class="number">0</span>], x[y==<span class="number">1</span>,<span class="number">1</span>])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>边界：</p>
+<div align="center"><img src="/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/svm-moon-3.png" width="500"></div>
+<div align="center">图 使用多项式核函数的分类边界</div>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/18/%E5%9B%9E%E7%9C%8BSVM-%E4%BA%8C/" data-id="ckatsrgsv004pxqfzfw1xbm2m" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-信息论-信息量与二叉树" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/" class="article-date">
+  <time datetime="2019-08-18T09:46:24.000Z" itemprop="datePublished">2019-08-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/">信息论-信息量与二叉树</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>香浓认为，对于一条信息，重要的是找出这条信息中含有多少信息量，要搞清楚信息量，就要找到一个量化度量信息的单位。香浓的最大贡献就是找到了这个单位“比特(bit)”。<br>比特是度量信息量的基本单位。它可以被这样定义：<em>如果一个黑盒子里由A和B两种可能，而且这两种可能出现的概率相同。那么要搞清楚黑盒子中到底是A还是B，所需要的信息量就是一个比特(bit)</em>。<br>当A和B的出现的概率不相同时，确定他们谁出现所需的信息量就不到一个比特。</p>
+<p>比如，设抛一枚两面质地均匀的硬币为一个系统，状态A和B分别是正面朝上和反面朝上。则确定一次投掷所需要的信息量为一个比特。<br>可以这样计算：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-1.png" width="400"></div>
+
+<p>又比如，做一道4(有A,B,C,D4中状态)选一个的选择题，需要多少信息量才能找到正确答案。2bits。先使用1bit信息确定比如是否在A或B中，若是，再使用1bit信息量确定是否是A，若否，则最终答案是B。(这只是一种判断出结果的方法，但每种方法所需的信息量都是2bits)：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-2.png" width="400"></div>
+
+<p>所以，如果由32个足球队参加世界杯，最终需要5bits的信息量确定最终哪支球队为冠军。</p>
+<p>可以看出的规律：一棵树，以所有可能情况为根，<strong>平均</strong>分所有情况给左子右子，如此递归，直到每个叶节点只有一种情况。此时得到树的深度即为确定做种是哪种情况所需的信息量。以选择题为例：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-3.png" width="400"></div>
+
+<p>树的深度为2，从树根到树叶需要2步走，即需要2bits信息确定究竟是哪一个。</p>
+<p>我们把充满不确定性的盒子称作“信息源”，它里面的不确定性称作“信息熵”，“信息”是用来消除这些不确定性的(信息熵)。所以要消除黑盒子里的不确定性，需要的“信息量”等于“信息熵”。“熵”是热力学的概念，它表示混乱程度，同样的，信息论中的信息熵表示一个系统中的不确定性。</p>
+<p>一个系统中的状态数量也叫做<strong>可能性数量，越多，系统不确定性越大；当状态数量确定时，各个状态的可能性相同，熵达到最大；相反，如果只要概率有不相同，系统不确定性就会减小，极限情况下，当状态A发生的概率为99.9%，而其他所有状态发生的概率和为0.01%时，系统的不确定性很小：很大的概率上A是会发生的</strong>。香浓用以下公式可以计算出系统信息熵：</p>
+<img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-4.png">
+
+<p>以二分类为例，下图体现了一个状态的概率与系统的信息熵的关系：</p>
+<div align="center"><img src="/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/bit-5.png" width="500"></div>
+
+<p>当状态概率为0.5时，系统信息熵，即不确定性达最大值。实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 根据上述信息熵计算公式</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">entropy</span><span class="params">(p)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> -p * np.log2(p)-(<span class="number">1</span>-p)*np.log2(<span class="number">1</span>-p)</span><br><span class="line"></span><br><span class="line">x = np.linspace(<span class="number">0.01</span>, <span class="number">0.99</span>, <span class="number">200</span>)</span><br><span class="line"></span><br><span class="line">plt.plot(x, entropy(x))</span><br><span class="line"><span class="comment"># 绘出一个点</span></span><br><span class="line">plt.scatter([<span class="number">0.5</span>], [<span class="number">1</span>], marker=<span class="string">'o'</span>, edgecolors=<span class="string">'r'</span>)   </span><br><span class="line"><span class="comment"># 添加注释 </span></span><br><span class="line">plt.text(<span class="number">0.5</span>, <span class="number">1</span>, (<span class="number">0.5</span>, <span class="number">1</span>), ha=<span class="string">'center'</span>, va=<span class="string">'bottom'</span>, fontsize=<span class="number">10</span>)   </span><br><span class="line">plt.xlabel(<span class="string">'Pr(x)'</span>, fontsize=<span class="number">10</span>)</span><br><span class="line">plt.ylabel(<span class="string">'Entropy'</span>, fontsize=<span class="number">10</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>在构建ID3决策树时，就是根据信息熵公式，得到各种划分后的信息熵，选取信息熵最小的划分。即这个划分使得系统不确定性变得最小！</p>
+<p>如四选一选择题，假如，每种选项的概率均为0.25，根据公式，消除选择题的不确定性所需信息量为2bits。<br>如果4中选项的概率不相同，不论哪种情况，信息熵均小于2bits。</p>
+<p>通过平衡二叉树来理解信息量单位比特。如果一个分类模型在一个数据集上的正确率为0.5，那么可以说，这个模型是最糟糕的模型，它对减少系统信息熵没有贡献。</p>
+<h1 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h1><p>热力学熵和信息熵的物理意义，数学形式，完全一样，不存在本质区别，只是应用领域不同。克劳修斯形式(熵的宏观形式)用于内燃机研究，进入量子时代后主要使用玻尔兹曼形式(熵的微观形式)。<br>玻尔兹曼熵与信息熵的唯一不同只是前者计算对数用e为底数得到单位为nats，后者计算使用2为底数得到单位为bit。<br><br>另外，取10为底，得到单位是bans。其实，在决策树的计算中，求信息熵的对数底可以使任意的，因为具体在划分的时候，不管底取多少，H这个函数的性质是不会变的。模型其实在意熵的相对值，而非绝对值。</p>
+<p>熵增原理：任何孤立的系统，总熵不会减少。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/18/%E4%BF%A1%E6%81%AF%E8%AE%BA-%E4%BF%A1%E6%81%AF%E9%87%8F%E4%B8%8E%E4%BA%8C%E5%8F%89%E6%A0%91/" data-id="ckatsrgsp004ixqfzh24x56h2" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Style-Transfer" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/13/Style-Transfer/" class="article-date">
@@ -741,355 +969,11 @@
 
 
   
-    <article id="post-LeetCode-方法论-DP-一" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" class="article-date">
-  <time datetime="2019-08-07T07:11:57.000Z" itemprop="datePublished">2019-08-07</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/">LeetCode-方法论-DP-一</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>总结一下与DP相关的问题。</p>
-<p>64, 300(LIS), LCS, 120, 62, 303, 198, </p>
-<p><strong>DP特点</strong>：</p>
-<ul>
-<li>把重复计算的结果保存下来，避免重复计算（记忆机制）。</li>
-<li>DP自下而上执行，通过可计算的最小子结构逐步向上求值，直到得到最终值。</li>
-<li>通常问题是要求最优值。</li>
-</ul>
-<p><strong>实现DP方法</strong>：</p>
-<ul>
-<li>画递归树，自顶向下思考，自下而上实现</li>
-<li>找到合适的<strong>状态</strong>及<strong>状态转移方程</strong><ul>
-<li>状态：递归树的结点啥定义，即每一步记忆的内容是啥<code>memo[i]</code>，即函数是啥。</li>
-<li>状态转移方程：结点怎样实现，即怎样得到<code>memo[i]</code>，即函数怎么做。</li>
-</ul>
-</li>
-</ul>
-<h1 id="64-Minimum-Sum-Path"><a href="#64-Minimum-Sum-Path" class="headerlink" title="#64 Minimum Sum Path"></a>#64 Minimum Sum Path</h1><p>问题描述：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Given a m x n grid filled with non-negative numbers, find a path from **top left** to **bottom right** which minimizes the sum of all numbers along its path.</span><br><span class="line">Note: You can only move either *down* or *right* at any point in time.</span><br><span class="line"></span><br><span class="line">Input:</span><br><span class="line">[</span><br><span class="line">  [1,3,1],</span><br><span class="line">  [1,5,1],</span><br><span class="line">  [4,2,1]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">Output: 7</span><br><span class="line">the path 1→3→1→1→1 minimizes the sum, which is 7.</span><br></pre></td></tr></table></figure>
-<ul>
-<li><p>思路</p>
-<p>  记忆的逐步实现：</p>
-<ul>
-<li><p>初始化：memo所有元素初始化为0，且第一行第一列特殊处理。</p>
-</li>
-<li><p>状态定义：<code>memo[i][j]</code>表示从左上角到<code>Input[i][j]</code>的最短路径。</p>
-</li>
-<li><p>状态转移方程：<code>memo[i][j] = Input[i][j] + min(memo[i][j-1], memo[i-1][j])</code>。</p>
-</li>
-<li><p>返回值：<code>memo[i-1][j-1]</code></p>
-<p>图示：</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/dp1.png" width="700"></div>
-
-<p>最终返回memo右下角值：7。</p>
-</li>
-</ul>
-</li>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minPathSum</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; grid)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> m = grid.size();</span><br><span class="line">    <span class="keyword">int</span> n = grid[<span class="number">0</span>].size();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)</span><br><span class="line">        grid[i][<span class="number">0</span>] += grid[i<span class="number">-1</span>][<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;n; i++)</span><br><span class="line">        grid[<span class="number">0</span>][i] += grid[<span class="number">0</span>][i<span class="number">-1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            grid[i][j] += min(grid[i][j<span class="number">-1</span>], grid[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> grid[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="300-Longest-Increasing-Subsequence"><a href="#300-Longest-Increasing-Subsequence" class="headerlink" title="#300 Longest Increasing Subsequence"></a>#300 Longest Increasing Subsequence</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input: [10,9,2,5,3,7,101,18]</span><br><span class="line">Output: 4 </span><br><span class="line">Explanation: The longest increasing subsequence is [2,3,7,101], therefore the length is 4. </span><br><span class="line"></span><br><span class="line">返回最长公共子序列的长度。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<ul>
-<li>初始化：mem数组为全1。</li>
-<li>状态的定义：定义<code>mem[i]</code>为以<code>nums[i]</code> 为结尾的最长上升子序列的长度。</li>
-<li>状态转移方程：当前元素<code>nums[i]</code>与其前元素逐个比较，如果当前元素大于其前某个元素<code>nums[j]</code>，更新<code>mem[i]=max(mem[i], 1+mem[j])</code>.</li>
-<li>最终：找到<code>mem</code>数组中最大的值即可。DONE</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lengthOfLIS</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (nums.size() == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// calculate memo</span></span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;i; j++)&#123;</span><br><span class="line">            <span class="keyword">if</span> (nums[i]&gt;nums[j])</span><br><span class="line">                memo[i] = max(memo[i], <span class="number">1</span>+memo[j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// get max length</span></span><br><span class="line">    <span class="keyword">int</span> res = memo[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;memo.size(); i++)</span><br><span class="line">        res = max(res, memo[i]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：<font color="red" size="4">由最小已知求未知，接着根据当前的已知求进一步的未知</font>， <font color="red" size="4">状态的定义</font>，<font color="red" size="4">找到状态转移方程</font>，</p>
-<h1 id="LCS-Longest-Common-Subsequence"><a href="#LCS-Longest-Common-Subsequence" class="headerlink" title="#LCS Longest Common Subsequence"></a>#LCS Longest Common Subsequence</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">给定两个字符数组，求其公共的子序列。公共子序列的元素在原序列中可以不连续。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>逻辑</li>
-</ul>
-<ul>
-<li>实现</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">string</span> <span class="title">getLCS</span><span class="params">(<span class="keyword">const</span> <span class="built_in">string</span>&amp; s1, <span class="keyword">const</span> <span class="built_in">string</span>&amp; s2)</span></span>&#123;</span><br><span class="line">		<span class="keyword">int</span> m = s1.size();</span><br><span class="line">		<span class="keyword">int</span> n = s2.size();</span><br><span class="line">		</span><br><span class="line">		<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m ,<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">		<span class="comment">// initilize memo</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[i]==s2[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=i; k&lt;m; k++)</span><br><span class="line">					memo[k][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s2[j]==s1[<span class="number">0</span>])&#123;</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> k=j; k&lt;n; k++)</span><br><span class="line">					memo[<span class="number">0</span>][k]=<span class="number">1</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// DP progress for the rest</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;m; i++)&#123;</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)&#123;</span><br><span class="line">				<span class="keyword">if</span> (s1[i]==s2[j])</span><br><span class="line">					memo[i][j] = <span class="number">1</span> + memo[i<span class="number">-1</span>][j<span class="number">-1</span>];</span><br><span class="line">				<span class="keyword">else</span></span><br><span class="line">					memo[i][j] = max(memo[i<span class="number">-1</span>][j], memo[i][j<span class="number">-1</span>]);</span><br><span class="line">			&#125;	</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;<span class="string">"The lenght of the LCS: "</span>&lt;&lt;memo[m<span class="number">-1</span>][n<span class="number">-1</span>]&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">		<span class="comment">// get the longest common sequence</span></span><br><span class="line">		<span class="built_in">string</span> res = <span class="string">""</span>;</span><br><span class="line">		<span class="keyword">while</span> (m&gt;=<span class="number">0</span> &amp;&amp; n&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">			<span class="keyword">if</span> (s1[m] == s2[n])&#123;</span><br><span class="line">				res = s1[m] + res;</span><br><span class="line">				m--;</span><br><span class="line">				n--;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (m==<span class="number">0</span>) n--;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (n==<span class="number">0</span>) m--;</span><br><span class="line">			<span class="keyword">else</span>&#123;</span><br><span class="line">				<span class="keyword">if</span> (memo[m<span class="number">-1</span>][n]&gt;memo[m][n<span class="number">-1</span>]) m--;</span><br><span class="line">				<span class="keyword">else</span> n--;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> res;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="120-Triangle"><a href="#120-Triangle" class="headerlink" title="#120 Triangle"></a>#120 Triangle</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Given a triangle, find the minimum path sum from top to bottom. </span><br><span class="line">Each step you may move to adjacent numbers on the row below.</span><br><span class="line"></span><br><span class="line">For example, given the following triangle</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">     [2],</span><br><span class="line">    [3,4],</span><br><span class="line">   [6,5,7],</span><br><span class="line">  [4,1,8,3]</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 &#x3D; 11).</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  bottom-up DP或者Top-down DP。使用Top-down：</p>
-<ul>
-<li><p>状态定义：<code>triangle[i][j]</code> 表示从顶端到第<code>i</code>行第<code>j</code>个位置的最小路径</p>
-</li>
-<li><p>状态转移方程：见下图</p>
-<p>Top-down DP过程如下图表示：其中椭圆结点构成的triangle为源triangle，矩形结点构成的triangle就是DP的<code>mem</code>，即状态。</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/120.png" width="650"></div>
-
-
-</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>看图说话</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">minimumTotal</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; triangle)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = triangle.size();  <span class="comment">// height of this triangle</span></span><br><span class="line"></span><br><span class="line">    triangle[<span class="number">0</span>][<span class="number">0</span>] = triangle[<span class="number">0</span>][<span class="number">0</span>];  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i&lt;n; i++)&#123;    <span class="comment">// </span></span><br><span class="line">        <span class="comment">// 这一行第一个值</span></span><br><span class="line">        triangle[i][<span class="number">0</span>] += triangle[i<span class="number">-1</span>][<span class="number">0</span>];  </span><br><span class="line">        <span class="comment">// 这一行最后一个值</span></span><br><span class="line">        triangle[i][i] += triangle[i<span class="number">-1</span>][i<span class="number">-1</span>];</span><br><span class="line">        <span class="comment">// 这一行其他值</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>;j&lt;i;j++)</span><br><span class="line">            triangle[i][j] += min(triangle[i<span class="number">-1</span>][j<span class="number">-1</span>], triangle[i<span class="number">-1</span>][j]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 源triangle被修改了，所以最终结果在这个triangle的最后一层找最小值即可</span></span><br><span class="line">    <span class="keyword">return</span> *min_element(triangle[n<span class="number">-1</span>].begin(), triangle[n<span class="number">-1</span>].end());</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>关键：当处理最值相关问题，考虑DP</p>
-<h1 id="62-Unique-Path"><a href="#62-Unique-Path" class="headerlink" title="#62 Unique Path"></a>#62 Unique Path</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">从grid的左上角位置到右下角位置有几种走法？只能向下走或向右走。</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  Top-down DP或者Bottom-up DP，使用Bottom-up：</p>
-<ul>
-<li>状态定义：从<code>(i,j)</code>出发到终点<code>(m-1,n-1)</code>由多少条路径。</li>
-<li>状态转移方程：同Fibonacci()，<code>numPath(i,j) = numPath(i,j+1) + numPath(i+1,j)</code>;</li>
-<li>初始化最右边和最下边值为1. 过程从这里开始<code>up</code>。</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-<ul>
-<li>Bottom-up<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line">    <span class="comment">// 初始化最下行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][n<span class="number">-1</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最右行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[m<span class="number">-1</span>][j] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// Bottom up</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = m<span class="number">-2</span>; i&gt;=<span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> j = n<span class="number">-2</span>; j&gt;=<span class="number">0</span>; j-- )</span><br><span class="line">            memo[i][j] = memo[i][j+<span class="number">1</span>] + memo[i+<span class="number">1</span>][j];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> memo[<span class="number">0</span>][<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li>Top-down <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">uniquePaths</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt; memo(m, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(n, <span class="number">-1</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 初始化第一行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;m; i++)</span><br><span class="line">        memo[i][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 初始化最左行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;n; j++)</span><br><span class="line">        memo[<span class="number">0</span>][j] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// top-down</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>;i&lt;m; i++)</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n; j++)</span><br><span class="line">            memo[i][j] = memo[i<span class="number">-1</span>][j] + memo[i][j<span class="number">-1</span>];</span><br><span class="line">    <span class="keyword">return</span> memo[m<span class="number">-1</span>][n<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-</li>
-</ul>
-<h1 id="303-Range-Sum-Query-Immutable"><a href="#303-Range-Sum-Query-Immutable" class="headerlink" title="#303 Range Sum Query - Immutable"></a>#303 Range Sum Query - Immutable</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Given an integer array nums, find the sum of the elements between indices i and j (i ≤ j), inclusive.</span><br><span class="line"></span><br><span class="line">Example:</span><br><span class="line">Given nums &#x3D; [-2, 0, 3, -5, 2, -1]</span><br><span class="line"></span><br><span class="line">sumRange(0, 2) -&gt; 1</span><br><span class="line">sumRange(2, 5) -&gt; -1</span><br><span class="line">sumRange(0, 5) -&gt; -3</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<p>  从nums[i] 到nums[j] 元素累加就可以了。这种方法对于一条query，没问题。但是query一般频繁的。最好可以把结果提前计算出来，之后的query操作秩序做一次减法，便可以得到结果。所以使用DP。</p>
-<ul>
-<li>状态定义：mem[0]=0，mem[i]表示从第一个数到第i个数的和。</li>
-<li>状态转移方程：<code>memo[i+1] = memo[i] + nums[i]</code>;</li>
-<li>初始化mem为全零。</li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NumArray2</span>&#123;</span></span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        NumArray2(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)&#123;</span><br><span class="line">            <span class="comment">// n+1个元素。</span></span><br><span class="line">            memo = <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;(nums.size()+<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;nums.size(); i++)</span><br><span class="line">                memo[i+<span class="number">1</span>] = memo[i] + nums[i];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 频繁操作只需求一次减法。效率高</span></span><br><span class="line">        <span class="function"><span class="keyword">int</span> <span class="title">sumRange</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>&#123;</span><br><span class="line">            <span class="keyword">return</span> memo[j+<span class="number">1</span>] - memo[i];</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h1 id="198-House-Robber"><a href="#198-House-Robber" class="headerlink" title="#198 House Robber"></a>#198 House Robber</h1><ul>
-<li>描述</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">一条街上有若干房子，现在要抢劫房子，从街头到街尾，所抢的房子不能直接相邻，求可能的最大收益。</span><br><span class="line"></span><br><span class="line">Input: [2,7,9,3,1]</span><br><span class="line">Output: 12</span><br><span class="line">Explanation: Rob house 1 (money &#x3D; 2), rob house 3 (money &#x3D; 9) and rob house 5 (money &#x3D; 1).</span><br><span class="line">             Total amount you can rob &#x3D; 2 + 9 + 1 &#x3D; 12.</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>逻辑</p>
-<ul>
-<li><p>状态定义：mem[i]表示抢[0~i]可获得的最大收益。</p>
-</li>
-<li><p>状态转移方程：<code>memo[i] = max(memo[i-1], nums[i]+tmp</code>;</p>
-<p>下图为抢house=[5,2,3,1,1,5]的DP过程：</p>
-<div align="center"><img src="/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/198.png" width="500"></div>
-</li>
-</ul>
-</li>
-<li><p>实现</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; memo(nums.size(), <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 切入口：前两个值特殊处理</span></span><br><span class="line">    memo[<span class="number">0</span>] = nums[<span class="number">0</span>];  </span><br><span class="line">    memo[<span class="number">1</span>] = max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 开始切~~</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;nums.size(); i++)&#123;</span><br><span class="line">        <span class="comment">// 求tmp：当前位置之前可抢劫最大收益（不包括与当前位置紧邻的房子）</span></span><br><span class="line">        <span class="keyword">int</span> tmp=<span class="number">0</span>;    </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=i<span class="number">-2</span>; j++)</span><br><span class="line">            <span class="keyword">if</span> (memo[j]&gt;tmp)</span><br><span class="line">                tmp = memo[j];</span><br><span class="line"></span><br><span class="line">        memo[i] = max(memo[i<span class="number">-1</span>], nums[i]+tmp);</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> memo[nums.size()<span class="number">-1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关键：<font color="red" size="4">mem[],以初始化的值为切入点，一个一个计算。</font>，</p>
-</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/07/LeetCode-%E6%96%B9%E6%B3%95%E8%AE%BA-DP-%E4%B8%80/" data-id="ckatsrgu2007cxqfz3h4l48rl" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-模拟退火-增强学习任务间的迁移学习" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" class="article-date">
-  <time datetime="2019-08-06T14:20:35.000Z" itemprop="datePublished">2019-08-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/">模拟退火-增强学习任务间的迁移学习</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇笔记为概述，记录使用模拟退火算法(Simulated Anneling)解决，迁移学习(Transfer Learning)应用在增强学习(Reinforcemet Learning)任务间整体效率的问题。实现过程看<a href="https://github.com/AshburnLee/earlyTerminationOfTransferLearningInReinforcementLearning" target="_blank" rel="noopener">这里</a>。</p>
-<h2 id="增强学习"><a href="#增强学习" class="headerlink" title="增强学习"></a>增强学习</h2><p>增强学习是一个agent在与它所处的环境相互作用中学习的过程。比如把一只老鼠放在一个迷宫中，让它自己试错找到出口。agent与环境的相互作用由三个变量体现：状态，动作，奖励。状态指agent当前的位置，动作指agent在当前位置有哪些行动的选择。比如老鼠在迷宫中的当前位置可以向前，后，左，右移动。奖励指agent在每次行动后得到的奖励。比如迷宫中的老鼠每找到一粒花生得+10奖励，若它掉进陷阱里得到-10的奖励，且本次学习结束。为了让老鼠尽快学习，一般设置，如果每次执行一个动作，没有正负效果的话，获得-1奖励。这激励agent用较少的步数达到目标，对于老鼠说，吃到花生。</p>
-<p>增强学习的可视化环境使用开源<a href="http://burlap.cs.brown.edu/index.html" target="_blank" rel="noopener">BURLAP</a>可视化RL环境。其中agent是个像素小人儿，小人儿的目标是执行不同的动作来找到出口。使用Q-learning学习算法后，可以得到关于本阶段相关数据。一个阶段可能要执行多次学习，比如100次学习。这个项目使用3列数据：Episode Index，#Actions，Reward。这些数据在学习过程中生成，并且保存在外部文件中。</p>
-<p>经过一个阶段的学习后，可视化这个阶段学习：<font color="green" size="4">Reward-EpisodesIndex图像</font>。E-R图像表示每一个episode对应的reward。可以观察到小人儿确实学习了的。因为钱若干次的R值较小且波动，但是呈上升趋势，直到上升到一个稳定值。此时可以认为小人儿停止学习了，或者说，小人儿找到了最优路径。开始稳定横坐标暂且称为“完全学习Episode”。</p>
-<p>为了减少噪声对R-E图像的影响，可以尝试让小人儿学习多阶段，比如10阶段，每阶段学习相同次数，后对R&amp;A分别求均值。为了使图像便于观察，对平均操作后的图像加上平滑操作。<font color="green" size="4">平滑后的图像</font>。</p>
-<h2 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h2><p>迁移学习对于相似但又不同的任务(一个成为源任务，另一个成为目标任务)，可以把在源任务中学习到的内容应用于目标任务的学习中，进而可以加速目标学习的速度。这已被实验证实。</p>
-<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>进一步实验发现，其实即使只在源任务学习少于“完全学习Episode”的Episode，在目标任务中的学习也可以提前拟合，相较于从零开始学习目标任务。<font color="green" size="4">目标任务提前拟合</font>。那么小人儿在源中学习具体学习多少次，可以使迁移后的整体步数更少来达到拟合。</p>
-<p>此处对于图像有个改动，横轴不再是Episode Index，而换成每一个Episode对应的Accumulated Actions。即从此往下使用AA-R图像。为什么要如此做，这么做，横轴不单单是Episode，更增加了到达这一Episode为止一共执行了多少Actions。换句话说，之前这个“系统”中的信息只有Episode Index和对应的Reward，两个有用信息。现在这个“系统”中的有用信息包括，Episode Index，当前Episode的Actions数和从开始到现在一共的Actions数。根据信息论观点，<strong>增加有用信息，可以减少系统不确定性</strong>。</p>
-<p>回到问题，具体在源任务中学习多少次。先探索一下。我的做法是，1）分别在源任务中学习1E，2E，3E，… ，nE后迁移到目标任务中，如此得到n个迁移学习过程。对应n个AA-R条曲线，并合并到一幅图中。2）设定一个具体Reward值为R。观察哪条曲线先穿过R。<strong>现在我的目标转化为</strong>，在不需要执行完n个迁移学习过程的前提下，如何确定哪条曲线先穿过R。</p>
-<p>记录第二步中每条曲线穿过R时的对应Episode值，如此便可以得到在源任务中学习次数与其对应的穿过R时的AA值。绘出这条曲线。<font color="green" size="4">E-AA图像</font>。此时的<strong>目标转化为</strong>：在这条曲线中搜索最小值。多次实验发现这条曲线是非凸的，即有局部最小值，且很多。所以在线搜索只能找到第一个局部最优值，不可取。那遍历一遍就可以搜索到最小值。错，如果那样做，整个过程将毫无意义。为了搜索最值，而把所有值求出来。记住求出曲线中一个值，其代价是要完整地执行RL(Surce task)-&gt;TL-&gt;RL(Target task) 阶段数×每阶段的Episode数。比如10阶段，每阶段执行100Episode。得到一个值要执行1000次完整的上述过程。成本太高。</p>
-<p>这个问题类似TSP(Traveling Salesman Problem)问题。同样是求最值，TSP提前得到所有方案是不可能的，就现在的计算机。借鉴TSP的解法，<a href="https://github.com/AshburnLee/GeneticAlgorithmForTSP" target="_blank" rel="noopener">遗传算法</a>或<a href="https://github.com/AshburnLee/simulatedAnnealingForTSP" target="_blank" rel="noopener">模拟退火</a>，分别点击见实现。因为此问题的输入不是序列，所以遗传算法不适用，实验模拟退火，成功。</p>
-<p>模拟退火与遗传算法都属于带有随机性的算法。遗传算法中的交叉，变异操作，模拟退火中的以一定概率接受一个比之前差的结果，都是引入随机性。而随机性给了算法跳出当前局部最有值的能力。</p>
-<p><font color="gree" size="5">敲黑板</font></p>
-<ol>
-<li>这个项目中达到目标进行了至少两次的问题转化。</li>
-<li>借鉴相同性质问题的成熟解法。</li>
-<li>积累不同问题的解法。</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E6%8B%9F%E9%80%80%E7%81%AB-%E5%A2%9E%E5%BC%BA%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1%E9%97%B4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/" data-id="ckatsrgte0060xqfz0eayfek8" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-模型评价-ROC曲线" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/" class="article-date">
-  <time datetime="2019-08-06T12:25:23.000Z" itemprop="datePublished">2019-08-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Machine-Learning/">Machine Learning</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/">模型评价-ROC曲线</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>ROC曲线是由TPR和FPR为横纵轴，</p>
-<ul>
-<li>TPR表示：所有实际为<strong>正</strong>，我的模型有多少也预测为<strong>正</strong>；</li>
-<li>FPR表示：所有实际为<strong>反</strong>，我的模型由多少预测为<strong>正</strong>。</li>
-</ul>
-<p>二者实现如下，其中你已经知道TP，FN，FP，TN的含义：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">TPR</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    tp = TP(y_true, y_predict)</span><br><span class="line">    fn = FN(y_true, y_predict)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> tp / (tp + fn)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FPR</span><span class="params">(y_true, y_predict)</span>:</span></span><br><span class="line">    fp = FP(y_true, y_predict)</span><br><span class="line">    tn = TN(y_true, y_predict)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> fp / (fp + tn)</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.</span></span><br></pre></td></tr></table></figure>
-
-<p>TPR和FPR是和P&amp;R相似的概念，计算所用到的值都在Confusion Matrix中。所以<font color="red">绘制ROC图过程同PR曲线</font>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">fprs = []</span><br><span class="line">tprs = []</span><br><span class="line">thresholds = np.arange(np.min(decision_scores), np.max(decision_scores), <span class="number">0.1</span>)</span><br><span class="line"><span class="keyword">for</span> threshold <span class="keyword">in</span> thresholds:</span><br><span class="line">    y_predict = np.array(decision_scores &gt;= threshold, dtype=<span class="string">'int'</span>)</span><br><span class="line">    fprs.append(FPR(y_test, y_predict))</span><br><span class="line">    tprs.append(TPR(y_test, y_predict))</span><br></pre></td></tr></table></figure>
-
-<p>得到不同的threshold值，每一个值对应一个模型，计算每一个模型的TPR和FPR，分别放入空列表中。就可以绘图了：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.plot(fprs, tprs, label=<span class="string">'ROC'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower right'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'FPR'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'TPR'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p>结果：</p>
-<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/roc.png" width="600"></div>
-<div align="center">图 ROC曲线</div>
-
-<p>使用sklearn中自带实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> roc_curve</span><br><span class="line"></span><br><span class="line">fprs, tprs, thresholds = roc_curve(y_test, decision_scores)</span><br><span class="line"></span><br><span class="line">plt.plot(fprs, tprs, label=<span class="string">'ROC'</span>)</span><br><span class="line">plt.legend(loc=<span class="string">'lower right'</span>, prop=&#123;<span class="string">'size'</span>: <span class="number">10</span>&#125;)</span><br><span class="line">plt.xlabel(<span class="string">'FPR'</span>)</span><br><span class="line">plt.ylabel(<span class="string">'TPR'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p>如图：</p>
-<div align="center"><img src="/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/roc2.png" width="600"></div>
-<div align="center">图 ROC曲线 built-in</div>
-
-<p><strong>ROC的作用</strong>是为了计算AUC(Area Under Curve)。而比较模型的相对性能，只要得到两个模型各自的ROC，分别计算各自的AUC，谁大，谁的相对性能好。</p>
-<p>sklearn提供AUC的计算：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> roc_auc_score</span><br><span class="line"></span><br><span class="line">print(roc_auc_score(y_test, decision_scores))     <span class="comment">#  0.98304526749</span></span><br></pre></td></tr></table></figure>
-
-<p>传入y_test和decision_scores即可得到。</p>
-<p><font color="green" size="5">敲黑板</font>ROC的两个指标，与PR指标相似又不同，是另一个角度的对模型性能的量化。引入相似但不同的信息有助于减少系统的不确定性，这里是模型选择的不确定性。衡量一个模型的性能，通常要尽可能把所有指标都找到，综合衡量。<br>给出<a href="https://coding.imooc.com/learn/questiondetail/42693.html" target="_blank" rel="noopener">liuyubobobo老师的话</a>：<br><font color="grey" size="3">我们的目的不是“找到”单一的“最好”的指标；而是了解所有的指标背后在反映什么，在看到这个指标出现问题的时候，能够判断问题可能出现在哪里，进而改进我们的模型。虽然我们的改进方向可能是单一的。<br><br>具体到PR曲线和ROC曲线，他们的核心区别在TN。可以看出来，PR曲线其实不反应TN。所以，如果你的应用场景中，如果TN并不重要，那么PR曲线是一个很好的指标（事实上，Precision和Recall就是通过抹去TN，来去除极度的偏斜数据带来的影响，进而放大FP, FN和TP三者的关系的）。<br><br>而ROC曲线则综合了TN, FP, FN和TP。虽然它对TN极度多的情况下，FP，FN和TP的变化不敏感。所以在TN没有那么多（数据没有那么偏斜），或者TN是一种很重要的需要考虑的情况下，ROC能反映出PR不能反映的问题。</font></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/06/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7-ROC%E6%9B%B2%E7%BA%BF/" data-id="ckatsrgta005oxqfz3w3t8kr1" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/11/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="page-number" href="/page/11/">11</a><span class="page-number current">12</span><a class="page-number" href="/page/13/">13</a><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/13/">Next &amp;raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/11/">&amp;laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="page-number" href="/page/11/">11</a><span class="page-number current">12</span><a class="page-number" href="/page/13/">13</a><a class="page-number" href="/page/14/">14</a><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/13/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -1100,7 +984,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">35</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">27</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -1110,7 +994,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">54</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">33</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -1129,7 +1013,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1142,23 +1026,23 @@
       <ul>
         
           <li>
+            <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/11/LeetCode-BST-%E6%89%BE%E5%89%8D%E9%A9%B1%E4%B8%8E%E5%90%8E%E7%BB%A7%E7%BB%93%E7%82%B9/">LeetCode-BST 找前驱与后继结点</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
           </li>
         
           <li>
             <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/%E6%AF%94%E7%89%B9%E5%B8%81-%E4%BB%A5%E5%A4%AA%E5%9D%8A-%E5%8C%BA%E5%9D%97%E9%93%BE/">比特币-以太坊-区块链</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/LeetCode-%E4%BC%98%E5%85%88%E9%98%9F%E5%88%97%E7%9B%B8%E5%85%B3/">LeetCode-优先队列相关</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/28/caffe-%E5%B7%A5%E5%85%B7%E7%AE%B1/">caffe-工具箱</a>
           </li>
         
       </ul>
