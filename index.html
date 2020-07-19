@@ -64,6 +64,110 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-线程-warp-延时隐藏" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/" class="article-date">
+  <time datetime="2020-07-19T08:31:43.000Z" itemprop="datePublished">2020-07-19</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/">CUDA-线程-warp-延时隐藏</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="什么是线程"><a href="#什么是线程" class="headerlink" title="什么是线程"></a>什么是线程</h1><p>一个线程包括程序代码，程序执行当前点，变量数值和数据结构。线程的执行是串行的。CUDA启动kernel后，启动大量线程，以充分利用数据的并行性。</p>
+<p>CPU中的线程生成和调度需要上千的时钟周期，相比GPU只需要很少的时钟周期。更具体说，在一个Warp中的线程的切换几乎是没有开销的，因为线程的上下文直接存储在物理空间中。</p>
+<h1 id="线程是如何实现的"><a href="#线程是如何实现的" class="headerlink" title="线程是如何实现的"></a>线程是如何实现的</h1><p>线程是啥，在上面说过了。程序的代码存储在主存中，寄存器PC记录程序执行点，寄存器IR存储当前需要执行的指令，寄存器和主存记录变量值和数据结构。</p>
+<p>同CPU一样，GPU也提供上下文切换功能，多个线程以轮的方式共享处理单元，通过保存和恢复PC值，寄存器和存储器的内容，可以暂停一个线程的执行，并在稍后正确地恢复这个线程。</p>
+<p>GPU的每个SM提供多个执行单元SP，他们共享一个PC和IR（存在与共享的控制单元中），如此以来同一时间，所有的线程执行形同的指令（这个指令就是IR中所存储内容）。</p>
+<h1 id="SIMD"><a href="#SIMD" class="headerlink" title="SIMD"></a>SIMD</h1><p><code>SIMD</code>系统中，所有的并行处理单元在任何时候都执行相同的指令。因为是<code>单指令</code>。</p>
+<p>CUDA采用的是<code>SPMD</code>，单程序多数据的执行形式，但是在一个SM内部其实是<code>SIMD</code>执行warp中的所有线程，单指令多数据。这涉及到warp的工作原理。</p>
+<h1 id="warp与延时隐藏"><a href="#warp与延时隐藏" class="headerlink" title="warp与延时隐藏"></a>warp与延时隐藏</h1><p>一个Block中的线程被进一步分为32个为一个<code>warp</code>。由于<code>单指令</code>的定义，任何时刻一个warp中的所有线程只能取一条指令执行（IR中的指令）。在硬件结构中，每个SM有一个<code>取指/分派</code>单元，由这个单元来向warp中的线程提供所要执行的指令。warp中每个线程的数据不同，但执行时间都相同。</p>
+<p>一个SM中的使用线程数要多于SP数量，SM中硬件只能执行所有warp的一部分，这样做的目的是提高长延时操作的效率，达到延时隐藏的目的。具体说：<font color="red">当一个warp的一条指令需要等待一个长延时的操作时，这个warp将不会被SP选中执行，这个SP会去执行不需要等待的warp，从而达到隐藏等待时间的目的</font>。所以当由足够多的warp时，硬件可以随时找到可悲执行的warp，如此变充分利用硬件资源。warp的被选择是零开销的。<code>零开销的线程调度</code>。在warp的调度机制下，长延迟的操作被其他warp的指令执行隐藏，即<code>延时隐藏</code>。</p>
+<p>这也是为什么GPU不像CPU一样引入大量的缓存和分支预测，为了将更多的芯片面积作为浮点数的计算资源。</p>
+<p>Warp中的线程访问Global memory时，做好的访问方式是<code>coalesced access</code>即连续访问，如果不是连续访问，则会由于<code>Cache miss</code>增加移动数据的开销。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/" data-id="ckcsttzgg00003yfz2j602yx9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-LeetCode-Trie-search-regular-expression" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/" class="article-date">
+  <time datetime="2020-07-14T07:37:29.000Z" itemprop="datePublished">2020-07-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/07/14/LeetCode-Trie-search-regular-expression/">LeetCode-Trie-search regular expression</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="问题描述："><a href="#问题描述：" class="headerlink" title="问题描述："></a>问题描述：</h2><p>设计一个数据结构，并且实现两个方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">void addWord(word)</span><br><span class="line">bool search(word)</span><br></pre></td></tr></table></figure>
+
+<p>其中word中孩子包含26个字母，而需要查找的pattern是26个字母和’.’，’.’可以匹配任何一个字母，如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">addWord(&quot;bad&quot;)</span><br><span class="line">addWord(&quot;dad&quot;)</span><br><span class="line"></span><br><span class="line">search(&quot;pad&quot;) -&gt; false</span><br><span class="line">search(&quot;bad&quot;) -&gt; true</span><br><span class="line">search(&quot;.ad&quot;) -&gt; true</span><br><span class="line">search(&quot;b..&quot;) -&gt; true</span><br></pre></td></tr></table></figure>
+
+<h2 id="实现："><a href="#实现：" class="headerlink" title="实现："></a>实现：</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TrieNode</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">bool</span> is_word;</span><br><span class="line">    TrieNode* next[<span class="number">26</span>];</span><br><span class="line">    TrieNode(<span class="keyword">bool</span> b=<span class="literal">false</span>)&#123;</span><br><span class="line">        is_word = b;</span><br><span class="line">        <span class="built_in">memset</span>(next, <span class="literal">NULL</span>, <span class="keyword">sizeof</span>(next));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">WordDictionary</span> &#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    TrieNode* root;</span><br><span class="line"><span class="comment">/// 后续遍历，销毁Trie</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clear</span><span class="params">(TrieNode* root)</span></span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">26</span>;i++)&#123;</span><br><span class="line">            <span class="keyword">if</span> (root-&gt;next[i] != <span class="literal">nullptr</span>)</span><br><span class="line">                clear(root-&gt;next[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">delete</span> root;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">/// 递归实现匹配</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">search_</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* word, TrieNode* root)</span></span>&#123;</span><br><span class="line">        <span class="comment">// 遍历word中每一个字符</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; word[i]&amp;&amp;root; i++)&#123;</span><br><span class="line">            <span class="comment">// 如果当前字符　是26个字母，指针向下移动即可</span></span><br><span class="line">			<span class="keyword">if</span> (word[i] != <span class="string">'.'</span>)&#123;</span><br><span class="line">				root　=　root-&gt;next[word[i]-<span class="string">'a'</span>];</span><br><span class="line">			&#125;</span><br><span class="line">            <span class="comment">// 如果当前字符是'.'，</span></span><br><span class="line">            <span class="keyword">else</span>&#123;</span><br><span class="line">				TrieNode* node = root;</span><br><span class="line">                <span class="comment">// 遍历这个结点next所有域，</span></span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;<span class="number">26</span>;j++)&#123;</span><br><span class="line">					root = node-&gt;next[j];</span><br><span class="line">					<span class="keyword">if</span> (search_( word+i+<span class="number">1</span>, root))&#123;</span><br><span class="line">						<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> root &amp;&amp; root-&gt;is_word;</span><br><span class="line">	&#125;</span><br><span class="line">    </span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    WordDictionary() &#123;</span><br><span class="line">        root = <span class="keyword">new</span> TrieNode();</span><br><span class="line">    &#125;</span><br><span class="line">    ~WordDictionary()&#123;</span><br><span class="line">        clear(root);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">addWord</span><span class="params">(<span class="built_in">string</span> word)</span> </span>&#123;</span><br><span class="line">        TrieNode* tmp = root;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;word.size();i++)&#123;</span><br><span class="line">            <span class="keyword">if</span> (tmp-&gt;next[word[i]-<span class="string">'a'</span>] == <span class="literal">nullptr</span>)</span><br><span class="line">                tmp-&gt;next[word[i]-<span class="string">'a'</span>] = <span class="keyword">new</span> TrieNode();</span><br><span class="line">            tmp = tmp-&gt;next[word[i]-<span class="string">'a'</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        tmp-&gt;is_word = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line"><span class="comment">/// 匹配入口</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">search</span><span class="params">(<span class="built_in">string</span> word)</span></span>&#123;</span><br><span class="line">		<span class="keyword">return</span> search_(word.c_str() ,root);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>体会递归函数：<code>search_()</code>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/07/14/LeetCode-Trie-search-regular-expression/" data-id="ckcsttzgm00013yfzfnqa53x3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-LeetCode-Trie" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/07/12/LeetCode-Trie/" class="article-date">
@@ -96,8 +200,16 @@
 
 <p>注意：</p>
 <ol>
-<li><code>memset(next, 0, sizeof(next))</code>表示在<code>next</code>地址，从头开始将<code>sizeof(next)</code>个字节设置为<code>0</code>（<code>0</code>在此其实是<code>nullptr</code>，表示初始化不指向任何地址。）</li>
-<li>所有<code>next</code>结点的<code>is_word</code>默认为<code>false</code>。</li>
+<li><p><code>memset(next, 0, sizeof(next))</code>表示在<code>next</code>地址，从头开始将<code>sizeof(next)</code>个字节设置为<code>0</code>（<code>0</code>在此其实是<code>nullptr</code>，表示初始化不指向任何地址。）</p>
+</li>
+<li><p><code>memset(next, 0, sizeof(next))</code>等价于：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">26</span>;i++)&#123;</span><br><span class="line">    next[i] = <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 手动将所有next指针域置为空。</p>
+</li>
+<li><p>所有<code>next</code>结点的<code>is_word</code>默认为<code>false</code>。</p>
+</li>
+<li><p><font color="red">指针指向一个结点的首地址，所以一个结点的成员不同，首地址不同</font>。</p>
+</li>
 </ol>
 <p>每个结点有26个子节点和一个bool型的成员。bool成员表示从root到当前结点的上一个结点形成的路径，这条路径表示的string是否存在于Trie中的。当为True时，这条路径表示的string存在于Trie，False则为不存在。看下图。</p>
 <p>有了结点，可以构造Trie。开辟root空间即可，之后便可以向其中保存指定string，在其中搜索指定string。</p>
@@ -111,8 +223,10 @@
 <ol>
 <li><p><code>tmp-&gt;next[word[i] - &#39;a&#39;] = new TrieNode();</code>智力只是开辟了空间，并没有向其中写入当前的字母，<font color="red">这里是使用26个不同 的位置来唯一标识每一个字母。如果字母‘b’出现，那么next的第二个位置（next[word[i] - ‘a’]）将指向一个新的<code>TrieNode</code>结点，</font>当然也可以使用其他TrieNode的实现方式，比如将26个字符作为<code>key</code>，将其子节点设为<code>value</code>，这种字典类型。下图是个例假设只有abc三个字符，将string <code>bac</code>插入Trie的过程：</p>
  <div align="center"><img src="/2020/07/12/LeetCode-Trie/trie.png" width="500"></div>
+
+ <div align="center">将“bac”插入Trie</div>
 </li>
-<li><p><code>is_word</code>默认是<code>false</code>，但一个单词写入trie结束后，手动将其置为<code>true</code>。</p>
+<li><p><code>is_word</code>默认是<code>false</code>，但一个单词写入trie结束后，手动将最后一个字母的下一个结点的<code>is_word</code>置为<code>true</code>。</p>
 </li>
 </ol>
 <p>在trie中搜索一个string：</p>
@@ -121,6 +235,9 @@
 <p>在trie中搜索一个前缀。与<code>search</code>方法唯一的区别是，不论tmp的<code>is_word</code>是否为true，即prefix是否是一个完整的单词，都就算找到。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">startWith</span><span class="params">(<span class="built_in">string</span> prifix)</span> </span>&#123;</span><br><span class="line">       TrieNode* tmp = find_string(prifix);</span><br><span class="line">       <span class="keyword">if</span>(tmp != <span class="literal">nullptr</span>)</span><br><span class="line">           <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">       <span class="keyword">else</span></span><br><span class="line">           <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
 
+<p>从Trie 中删除一个已经存在的word。只需要将这个word末尾结点的<code>is_word</code>置位false即可。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">remove</span><span class="params">(<span class="built_in">string</span> word)</span></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (search(word))&#123;</span><br><span class="line">		TrieNode* tmp = root;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;word.size();i++)&#123;</span><br><span class="line">			tmp = tmp-&gt;next[word[i]-<span class="string">'a'</span>];</span><br><span class="line">		&#125;</span><br><span class="line">		tmp-&gt;is_word = <span class="literal">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
 <p>Trie对象的头：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	TrieNode* root;</span><br></pre></td></tr></table></figure>
 
@@ -128,8 +245,9 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">TrieNode* <span class="title">find_string</span><span class="params">(<span class="built_in">string</span> word)</span></span>&#123;</span><br><span class="line">       TrieNode* tmp = root;</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; word.size(); i++)&#123;</span><br><span class="line">           <span class="keyword">if</span>(tmp-&gt;next[word[i] - <span class="string">'a'</span>] != <span class="literal">nullptr</span>)</span><br><span class="line">               tmp = tmp -&gt; next[word[i] - <span class="string">'a'</span>];</span><br><span class="line">           <span class="keyword">else</span> &#123;</span><br><span class="line">               tmp = <span class="literal">nullptr</span>;</span><br><span class="line">               <span class="keyword">break</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> tmp;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
 
 <p>后序遍历 释放Trie</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">clear</span><span class="params">(TrieNode *root)</span></span>&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">26</span>; i++)&#123;</span><br><span class="line">            <span class="keyword">if</span>(root-&gt;next[i] != <span class="literal">nullptr</span>)&#123;</span><br><span class="line">                clear(root-&gt;next[i]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">delete</span> root;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">/// Trie END</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">clear</span><span class="params">(TrieNode *root)</span></span>&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">26</span>; i++)&#123;</span><br><span class="line">            <span class="keyword">if</span>(root-&gt;next[i] != <span class="literal">nullptr</span>)&#123;</span><br><span class="line">                clear(root-&gt;next[i]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">delete</span> root;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">/// Trie END</span></span><br></pre></td></tr></table></figure>
 
+<p><font color="gree" size="6">敲黑板</font>：<code>TrieNode</code>结点的定义与链表结点定义，树结点定义相同。都会有若干自身类型的指针，且这些指针初始化为nullptr，表示指针不保存任何地址。当其中某个指针要指向一个新的结点时：<code>tmp-&gt;next[word[i] - &#39;a&#39;] = new TrieNode()</code>，先开辟一个结点空间，后将其地址存入指针。如此，由结点构成的链就形成了。</p>
 
       
     </div>
@@ -599,186 +717,6 @@
 
 
   
-    <article id="post-LeetCode-merge应用-求逆序对" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/" class="article-date">
-  <time datetime="2020-06-24T19:14:48.000Z" itemprop="datePublished">2020-06-25</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/">LeetCode-merge应用-求逆序对</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>分治&amp;归并</p>
-<p>涉及到两两比较的操作，都可以考虑<font color="red" size="4">分治&amp;归并</font>。并归使得当前的对象两两比较完备，而分治使得两个分别两两比较后的对象<font color="red">之间</font>两两比较，完备。</p>
-<p>问题描述，求逆序对个数：<code>[2,7,8,1,3,5]</code>，比如其中的(2,7) (2,8) (2,3) (2,5)以2 开始的逆序对有4个。求一共有多少个逆序对。</p>
-<p>思路：</p>
-<p>如描述中的例子，当分制后，有<code>[2,7,8]</code>和<code>[1,3,5]</code>两部分，而2&gt;1，所以以1为逆序对中第二个元素的逆序对有3个，(2,1) (7,1) (8,1)。这是因为并归操作的前提是两部分，分别有序。</p>
-<p>核心是，当左部分第一个元素2大于右边第一个元素1时，count+=3，（2,7,8 有3个元素）。这是这个问题的关键！</p>
-<p>实现：</p>
-<p>看Merge操作：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">mergeOp_</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> l, <span class="keyword">int</span> mid, <span class="keyword">int</span> r)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span>* aux = <span class="keyword">new</span> <span class="keyword">int</span>[r-l+<span class="number">1</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=l;i&lt;=r;i++)&#123;</span><br><span class="line">        aux[i-l]=nums[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i=l;</span><br><span class="line">    <span class="keyword">int</span> j=mid+<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> b=j;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> k=l;k&lt;=r;k++)&#123;</span><br><span class="line">        <span class="keyword">if</span> (i&gt;mid) &#123; <span class="comment">// 左边排玩</span></span><br><span class="line">            nums[k]=aux[j-l];</span><br><span class="line">            j++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (j&gt;r) &#123; <span class="comment">// 右边排完</span></span><br><span class="line">            nums[k]=aux[i-l];</span><br><span class="line">            i++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (aux[i-l]&lt;=aux[j-l])&#123;</span><br><span class="line">            nums[k] = aux[i-l];</span><br><span class="line">            i++;</span><br><span class="line">        &#125; </span><br><span class="line">        <span class="comment">// 左部分元素大于右部分元素时，记录逆序对个数</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(aux[i-l]&gt;aux[j-l])&#123;</span><br><span class="line">            count_ += (b-i);  <span class="comment">// 这里</span></span><br><span class="line">            nums[k] = aux[j-l];</span><br><span class="line">            j++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">delete</span> aux;</span><br><span class="line">    aux=<span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>count_ += (b-i);</code> 便是记录逆序对个数。</p>
-<p>将上述操作放入下面code的完整的求逆序对解法：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol_mergeSort</span>&#123;</span></span><br><span class="line">	<span class="keyword">int</span> count_=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">split_</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums, <span class="keyword">int</span> l, <span class="keyword">int</span> r)</span></span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (r&lt;=l) <span class="keyword">return</span>;</span><br><span class="line">		<span class="keyword">int</span> mid = (r-l)/<span class="number">2</span>+l;</span><br><span class="line">		split_(nums, l, mid);</span><br><span class="line">		split_(nums, mid+<span class="number">1</span>, r);</span><br><span class="line">		mergeOp_(nums, l, mid, r);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// mergeOp_()</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">mergeSort</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span></span>&#123;</span><br><span class="line">		split_(nums, <span class="number">0</span>, nums.size()<span class="number">-1</span>);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">int</span> <span class="title">count</span><span class="params">()</span></span>&#123;</span><br><span class="line">		<span class="keyword">return</span> count_;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>测试对象：<code>{1,3,4,0,2,5}</code>，逆序对有5对儿。</p>
-<p>上述code结果： </p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">5</span>  </span><br><span class="line"><span class="number">0</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span>  <span class="comment">// 排序后的结果</span></span><br></pre></td></tr></table></figure>
-
-<p>复杂度：O(N*longN)</p>
-<p><font color="gree" size="5">敲黑板</font>：从这个问题体会分治策略</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/06/25/LeetCode-merge%E5%BA%94%E7%94%A8-%E6%B1%82%E9%80%86%E5%BA%8F%E5%AF%B9/" data-id="ckbubwopd00003wfz6z552ijt" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-LeetCode-链表相关" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/" class="article-date">
-  <time datetime="2020-06-23T01:50:23.000Z" itemprop="datePublished">2020-06-23</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/">LeetCode-链表相关</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>给出链表结点的定义：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode *next;</span><br><span class="line">    ListNode() : val(<span class="number">0</span>), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x) : val(x), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x, ListNode *next) : val(x), next(next) &#123;&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>从数组构造一个链表：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// create a linkedList from a vector</span></span><br><span class="line"><span class="function">ListNode* <span class="title">createList</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">    ListNode* tail = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = nums.size() - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) &#123;</span><br><span class="line">        ListNode* tmpNode = <span class="keyword">new</span> ListNode(nums[i], tail);</span><br><span class="line">        tail = tmpNode;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> tail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="补充-递归"><a href="#补充-递归" class="headerlink" title="补充 递归"></a>补充 递归</h1><p>从链表到树的递归操作，体会<font color="red">递归从上到下，执行从底向上</font>。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// traverse a list</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">printListRecurvely</span><span class="params">(ListNode* head)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (head == <span class="literal">nullptr</span>) <span class="keyword">return</span>;</span><br><span class="line">    printListRecurvely(head-&gt;next);</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; head-&gt;val &lt;&lt; <span class="string">"-&gt;"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">inOrderTraverse</span><span class="params">(TreeNode* root)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (root == <span class="literal">nullptr</span>) <span class="keyword">return</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; root-&gt;val &lt;&lt; <span class="string">", "</span>;</span><br><span class="line">    inOrderTraverse(root-&gt;left);</span><br><span class="line">    inOrderTraverse(root-&gt;right);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="206-翻转整个链表"><a href="#206-翻转整个链表" class="headerlink" title="206 翻转整个链表"></a>206 翻转整个链表</h1><p>思路一与#92的翻转子操作相似，定义三个指针，并初始化，在移动到链表尾部的过程中改变next指针的指向，从而实现翻转链表。</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// # 206 翻转整个链表</span></span><br><span class="line"><span class="function">ListNode* <span class="title">reverseList</span><span class="params">(ListNode* head)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (head == <span class="literal">nullptr</span> || head-&gt;next == <span class="literal">nullptr</span>) <span class="keyword">return</span> head;</span><br><span class="line">    ListNode* left = <span class="literal">nullptr</span>;</span><br><span class="line">    ListNode* mid = head;</span><br><span class="line">    ListNode* right = head-&gt;next;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (right != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        <span class="comment">// operation</span></span><br><span class="line">        mid-&gt;next = left;</span><br><span class="line">        <span class="comment">// move ptrs</span></span><br><span class="line">        left = mid;</span><br><span class="line">        mid = right;</span><br><span class="line">        right = right-&gt;next;       </span><br><span class="line">    &#125;</span><br><span class="line">    mid-&gt;next = left;</span><br><span class="line">    <span class="keyword">return</span> mid;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>思路二：递归实现，从最后一个结点开始向前指向，最终返回最后一个结点。实现如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ListNode* <span class="title">reverseList</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!head || !head-&gt;next) <span class="keyword">return</span> head;</span><br><span class="line">    ListNode* p = reverseList(head-&gt;next);</span><br><span class="line"></span><br><span class="line">    head-&gt;next-&gt;next = head;</span><br><span class="line">    head-&gt;next = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> p;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其过程图示见笔记本。</p>
-<p>分析<font color="red" size="4">递归返回值</font>：返回值p始终指向原始链表的尾结点，而它又正好是翻转后的头结点。</p>
-<h1 id="92-翻转链表两个位置间的结点，部分翻转"><a href="#92-翻转链表两个位置间的结点，部分翻转" class="headerlink" title="92 翻转链表两个位置间的结点，部分翻转"></a>92 翻转链表两个位置间的结点，部分翻转</h1><p>例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Input: 1-&gt;2-&gt;3-&gt;4-&gt;5-&gt;NULL, m = 2, n = 4</span><br><span class="line">Output: 1-&gt;4-&gt;3-&gt;2-&gt;5-&gt;NULL</span><br></pre></td></tr></table></figure>
-
-<p>思路：先实现翻转连个结点间的结点，作为子造作，后移动指针，找到对应的m和n，调用子操作。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//# 92 翻转链表某个部分</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol92</span> &#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="comment">/// reverse node from head to tail</span></span><br><span class="line">    <span class="function">ListNode* <span class="title">reverseList</span><span class="params">(ListNode* head, ListNode* tail)</span> </span>&#123;</span><br><span class="line">        ListNode* pre = tail;</span><br><span class="line">        ListNode* cur = head;</span><br><span class="line">        <span class="keyword">while</span> (cur != tail) &#123;</span><br><span class="line">            ListNode* next = cur-&gt;next;</span><br><span class="line">            cur-&gt;next = pre;</span><br><span class="line">            pre = cur;</span><br><span class="line">            cur = next;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> pre;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>对于对整个链表的翻转，上述函数参数<code>tail</code>为<code>nullptr</code>，即表示链表结尾的结点。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">ListNode* <span class="title">reverseBetween</span><span class="params">(ListNode* head, <span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        assert(m &lt;= n);</span><br><span class="line">        <span class="comment">// if (!head) return head;</span></span><br><span class="line">        <span class="comment">// if (m==n) return head;</span></span><br><span class="line"></span><br><span class="line">        ListNode* dhead = <span class="keyword">new</span> ListNode(<span class="number">-1</span>, head);</span><br><span class="line"></span><br><span class="line">        ListNode* nodeM = dhead;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">            nodeM = nodeM-&gt;next;</span><br><span class="line"></span><br><span class="line">        ListNode* nodeN = dhead;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n + <span class="number">1</span>; i++)</span><br><span class="line">            nodeN = nodeN-&gt;next;</span><br><span class="line"></span><br><span class="line">        ListNode* subHead = dhead;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m - <span class="number">1</span>; i++)</span><br><span class="line">            subHead = subHead-&gt;next;</span><br><span class="line"></span><br><span class="line">        subHead-&gt;next = reverseList(nodeM, nodeN);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> dhead-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>过程示意图见笔记本。</p>
-<h1 id="142-判断链表是否有环，若有则返回环的起点"><a href="#142-判断链表是否有环，若有则返回环的起点" class="headerlink" title="142 判断链表是否有环，若有则返回环的起点"></a>142 判断链表是否有环，若有则返回环的起点</h1><p>思路一：在纸上<font color="red">比划比划，找规律</font>。当快慢两指针相遇时，慢指针和entry指针同时向后移动，直到两者相遇，此时两指针所指向的就是环的起点。</p>
-<p>思路二：首先判断是否有环，然后快慢指针在若干步后相遇（相遇时慢指针所走的步数正好是环中的节点数）。最后让新指针从头开始，慢指针从相遇位置开始，一起移动知道两者相遇，此时的相遇结点就是环的入口。</p>
-<p>两思路其实是一样的。</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol142</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="function">ListNode* <span class="title">entryPoint</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (head == <span class="literal">nullptr</span> || head-&gt;next == <span class="literal">nullptr</span>)</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">		ListNode* dhead = <span class="keyword">new</span> ListNode(<span class="number">-1</span>, head);</span><br><span class="line">		ListNode* fast = dhead;</span><br><span class="line">		ListNode* slow = dhead;</span><br><span class="line">		ListNode* entry = dhead;</span><br><span class="line">		<span class="keyword">while</span>(fast-&gt;next &amp;&amp; fast-&gt;next-&gt;next )&#123;</span><br><span class="line">			fast = fast-&gt;next-&gt;next;</span><br><span class="line">			slow = slow-&gt;next;</span><br><span class="line">			<span class="keyword">if</span> (slow == fast)&#123; <span class="comment">// 表示有环</span></span><br><span class="line">                <span class="comment">// slow和entry同时移动，直到两者相遇，相遇点就是</span></span><br><span class="line">                <span class="comment">// 环的起点</span></span><br><span class="line">				<span class="keyword">while</span>(slow != entry)&#123;</span><br><span class="line">					slow = slow-&gt;next;</span><br><span class="line">					entry = entry-&gt;next;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">return</span> entry;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="61-切断链表后再接上"><a href="#61-切断链表后再接上" class="headerlink" title="61 切断链表后再接上"></a>61 切断链表后再接上</h1><p>描述：</p>
-<p>翻转链表，从右边第k个位置切断，交换两部分位置，后将两部分接上，返回新的链表。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Input: 1-&gt;2-&gt;3-&gt;4-&gt;5-&gt;NULL, k = 2</span><br><span class="line">Output: 4-&gt;5-&gt;1-&gt;2-&gt;3-&gt;NULL</span><br><span class="line">Explanation:</span><br><span class="line">rotate 1 steps to the right: 5-&gt;1-&gt;2-&gt;3-&gt;4-&gt;NULL</span><br><span class="line">rotate 2 steps to the right: 4-&gt;5-&gt;1-&gt;2-&gt;3-&gt;NULL</span><br></pre></td></tr></table></figure>
-
-<p>思路：</p>
-<p>初始化所有指针，后移到其应该在的位置，最后重新链接两部分。就是指针操作。</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol61</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">ListNode* <span class="title">rotateRight</span><span class="params">(ListNode* head, <span class="keyword">int</span> k)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (head==<span class="literal">nullptr</span>) <span class="keyword">return</span> head;</span><br><span class="line">        <span class="comment">//1. get the length of list</span></span><br><span class="line">		ListNode* curr = head;</span><br><span class="line">		<span class="keyword">int</span> length=<span class="number">1</span>;</span><br><span class="line">		<span class="keyword">while</span>(curr-&gt;next)&#123;</span><br><span class="line">			curr = curr-&gt;next;</span><br><span class="line">			length++;</span><br><span class="line">		&#125;</span><br><span class="line">        <span class="comment">// 注意这里，</span></span><br><span class="line">		<span class="keyword">int</span> newK = k%length;</span><br><span class="line">		<span class="keyword">if</span> (newK == <span class="number">0</span>) <span class="keyword">return</span> head;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//2. init ptrs</span></span><br><span class="line">		ListNode* dhead = <span class="keyword">new</span> ListNode(<span class="number">-1</span>, head);</span><br><span class="line">		ListNode* end = dhead;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;newK;i++)&#123;</span><br><span class="line">			end=end-&gt;next;</span><br><span class="line">		&#125;</span><br><span class="line">		ListNode* pre = dhead;</span><br><span class="line">		ListNode* newHead = head;</span><br><span class="line">		<span class="keyword">while</span>(end-&gt;next)&#123;</span><br><span class="line">			end=end-&gt;next;</span><br><span class="line">			pre=pre-&gt;next;</span><br><span class="line">			newHead=newHead-&gt;next;</span><br><span class="line">		&#125; </span><br><span class="line">		<span class="comment">//3. move ptrs</span></span><br><span class="line">		pre-&gt;next = <span class="literal">nullptr</span>;</span><br><span class="line">		end-&gt;next = head;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//4. clean up</span></span><br><span class="line">		<span class="keyword">delete</span> dhead;</span><br><span class="line">		dhead=<span class="literal">nullptr</span>;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> newHead;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<h1 id="328-奇数号结点链表，偶数号结点链表"><a href="#328-奇数号结点链表，偶数号结点链表" class="headerlink" title="328 奇数号结点链表，偶数号结点链表"></a>328 奇数号结点链表，偶数号结点链表</h1><p>描述：</p>
-<p>Given a singly linked list, group all odd nodes together followed by the even nodes. Please note here we are talking about the node number and not the value in the nodes.</p>
-<p>思路：遍历结点，更改结点next指针，奇数结点相连，偶数结点相连，最后将偶数节点链表的头接在奇数结点链表的尾。示意图见笔记。</p>
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sol328</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">ListNode* <span class="title">oddEvenList</span><span class="params">(ListNode* head)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!head || !head-&gt;next) <span class="keyword">return</span> head;</span><br><span class="line"></span><br><span class="line">		ListNode* odd = head;</span><br><span class="line">		ListNode* oddCur = head;</span><br><span class="line">		ListNode* even = head-&gt;next;</span><br><span class="line">		ListNode* evenCur = head-&gt;next;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">while</span>( <span class="literal">true</span> )&#123;</span><br><span class="line">			<span class="comment">// 奇数个结点</span></span><br><span class="line">			<span class="keyword">if</span> (oddCur-&gt;next==<span class="literal">nullptr</span> &amp;&amp; evenCur==<span class="literal">nullptr</span>)&#123;</span><br><span class="line">				oddCur-&gt;next = even;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;</span><br><span class="line">            <span class="comment">// 偶数个结点</span></span><br><span class="line">			<span class="keyword">if</span> (oddCur-&gt;next-&gt;next==<span class="literal">nullptr</span> &amp;&amp; evenCur-&gt;next==<span class="literal">nullptr</span>)&#123;</span><br><span class="line">				oddCur-&gt;next = even;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125; </span><br><span class="line">			</span><br><span class="line">			oddCur-&gt;next = oddCur-&gt;next-&gt;next;</span><br><span class="line">			oddCur = oddCur-&gt;next;</span><br><span class="line">			</span><br><span class="line">			evenCur-&gt;next = evenCur-&gt;next-&gt;next;</span><br><span class="line">			evenCur = evenCur-&gt;next;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> odd;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度： O(N)</p>
-<p>很直接的解法，但<font color="red" size="5">花了好长时间</font>: 原因 1.测试vector马虎了；2.<font color="red" size="5">多个if判断的顺序问题</font>。</p>
-<p>重点在这儿，如果上述code中这两个if调换顺序：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 奇数个结点</span></span><br><span class="line"><span class="keyword">if</span> (oddCur-&gt;next-&gt;next==<span class="literal">nullptr</span> &amp;&amp; evenCur-&gt;next==<span class="literal">nullptr</span>)&#123;</span><br><span class="line">    oddCur-&gt;next = even;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125; </span><br><span class="line"><span class="comment">// 偶数个结点</span></span><br><span class="line"><span class="keyword">if</span> (oddCur-&gt;next==<span class="literal">nullptr</span> &amp;&amp; evenCur==<span class="literal">nullptr</span>)&#123;</span><br><span class="line">    oddCur-&gt;next = even;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>那么当结点个数为奇数个，且到链表尾时，第一个if语句中<code>oddCur-&gt;next-&gt;next==nullptr</code>就会出错，因为<code>oddCur-&gt;next-&gt;next</code>指向未定义的位置。所以总是出现<code>Segmentation fault (core dumped)</code>。！！！</p>
-<p><font color="gree" size="5">注意</font>:</p>
-<ol>
-<li>多个if判断的顺序不是随意的。</li>
-<li>如果在中间某处找不到错误，那么从头开始再找，别马虎。</li>
-</ol>
-<h1 id="430-扁平化一个多层链表"><a href="#430-扁平化一个多层链表" class="headerlink" title="430 扁平化一个多层链表"></a>430 扁平化一个多层链表</h1><p>描述：给出一个结点定义：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    Node* prev;</span><br><span class="line">    Node* next;</span><br><span class="line">    Node* child;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>并构造一个多层链表，目标是将这个多层链表变为一层，如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">input：</span><br><span class="line"><span class="number">1</span> - <span class="number">2</span> - <span class="number">3</span> - <span class="number">4</span> - <span class="number">5</span> - null</span><br><span class="line">    |</span><br><span class="line">    <span class="number">6</span> - <span class="number">7</span> - <span class="number">8</span> - <span class="number">9</span> - null</span><br><span class="line">            |</span><br><span class="line">            <span class="number">10</span> - <span class="number">11</span> - null</span><br><span class="line">            </span><br><span class="line">output:</span><br><span class="line"><span class="number">1</span> - <span class="number">2</span> - [<span class="number">6</span> - <span class="number">7</span> - <span class="number">8</span> - [<span class="number">10</span> - <span class="number">11</span>] - <span class="number">9</span>] - <span class="number">3</span> - <span class="number">4</span> - <span class="number">5</span> - null</span><br></pre></td></tr></table></figure>
-
-<p>思路：</p>
-<p>在循环的过程中改变了循环的对象，所以可以将所有深度的结点遍历到。这是由浅入深的扁平化过程。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">遇到第一个含有child的结点后：</span><br><span class="line">1 - 2 - 6 - 7 - 8 - 9 - 3 - 4 - 5 - null</span><br><span class="line">                |</span><br><span class="line">                10 - 11 - null</span><br><span class="line"></span><br><span class="line">遇到第二个含有child的结点后：</span><br><span class="line">1 - 2 - 6 - 7 - 8 - 10 - 11 - 9 - 3 - 4 - 5 - null</span><br></pre></td></tr></table></figure>
-
-<p>实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Node* <span class="title">flatten</span><span class="params">(Node* head)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (Node* h = head; h; h = h-&gt;next)&#123;</span><br><span class="line">        <span class="keyword">if</span> (h-&gt;child)&#123;</span><br><span class="line">            Node* next = h-&gt;next;</span><br><span class="line">            h-&gt;next = h-&gt;child;</span><br><span class="line">            h-&gt;next-&gt;prev = h;</span><br><span class="line">            h-&gt;child = <span class="literal">NULL</span>;</span><br><span class="line">            Node* p = h-&gt;next;</span><br><span class="line">            <span class="keyword">while</span> (p-&gt;next) p = p-&gt;next;</span><br><span class="line">            p-&gt;next = next;</span><br><span class="line">            <span class="keyword">if</span> (next) next-&gt;prev = p;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> head;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度： O(N)</p>
-<p>这个思路很neat！</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/06/23/LeetCode-%E9%93%BE%E8%A1%A8%E7%9B%B8%E5%85%B3/" data-id="ckbubwor500033wfz15y499lb" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -794,7 +732,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">37</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -804,7 +742,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">57</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">35</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -823,7 +761,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -836,6 +774,14 @@
       <ul>
         
           <li>
+            <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/">CUDA-线程-warp-延时隐藏</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/">LeetCode-Trie-search regular expression</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
           </li>
         
@@ -845,14 +791,6 @@
         
           <li>
             <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
           </li>
         
       </ul>

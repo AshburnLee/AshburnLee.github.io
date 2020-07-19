@@ -64,6 +64,145 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-caffe-命令行与python接口" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/" class="article-date">
+  <time datetime="2020-06-03T08:07:58.000Z" itemprop="datePublished">2020-06-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Caffe/">Caffe</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/">caffe 命令行与python接口</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="命令行接口-cmdcaffe"><a href="#命令行接口-cmdcaffe" class="headerlink" title="命令行接口 cmdcaffe"></a>命令行接口 cmdcaffe</h1><p>caffe经过编译后才会生成对应的工具，这个工具在目录<code>caffe-ROOT/build/tools</code>中，在此路目录中可用的命令有：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">./caffe train           <span class="comment">#train or finetune a model</span></span><br><span class="line">./caffe <span class="built_in">test</span>            <span class="comment">#score a model</span></span><br><span class="line">./caffe device_query    <span class="comment">#show GPU diagnostic information</span></span><br><span class="line">./caffe time            <span class="comment">#benchmark model execution time</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h2><h3 id="训练-1"><a href="#训练-1" class="headerlink" title="训练"></a>训练</h3><p>caffe提供三种训练方式。</p>
+<ol>
+<li><p>从头开始训练模型。需要提供<code>.prototxt</code>配置文件的路径，如：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 训练，默认使用CPU</span></span><br><span class="line">./build/tools/caffe train \</span><br><span class="line">-solver examples/mnist/lenet_solver.prototxt</span><br><span class="line"><span class="comment"># 使用编号为2 的GPU训练</span></span><br><span class="line">./build/tools/caffe train \</span><br><span class="line">-solver examples/mnist/lenet_solver.prototxt \</span><br><span class="line">-gpu 2</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>从snapshot中恢复训练。需要提供<code>.solverstate</code>文件路径</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 提供 -snapshot继续训练</span></span><br><span class="line">./build/tools/caffe train \</span><br><span class="line">-solver examples/mnist/lenet_solver.prototxt \</span><br><span class="line">-snapshot examples/mnist/lenet_iter_5000.solverstate</span><br></pre></td></tr></table></figure>
+
+<p> <font color="orange" size="4">如果最初设定的最大训练次数不够的话</font>，可以在配置文件<code>lenet_prototxt.solver</code>中修改<code>max_iter: 10000</code>，比如增加此时为20000.</p>
+</li>
+<li><p>使用预训练模型微调(迁移学习)。需要提供<code>.caffemodel</code>文件路径</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 指明 -weights 关键字，提供预训练模型</span></span><br><span class="line">./build/tools/caffe train \</span><br><span class="line">-solver examples/finetuning_on_flickr_style/solver.prototxt \</span><br><span class="line">-weights models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel</span><br></pre></td></tr></table></figure>
+
+<p> 这里由完整的微调例子<code>examples/finetuning_on_flickr_style</code></p>
+</li>
+</ol>
+<h3 id="多GPU并行"><a href="#多GPU并行" class="headerlink" title="多GPU并行"></a>多GPU并行</h3><p>在<code>-gpu</code>后指定要使用的GPU编号，如<code>-gpu 0,1,2,3</code>，表示使用4个GPU并行计算。使用多GPU时，相同的网络配置会被分配到每一个gpu，每一个GPU所处理数据的batch_size相同，所以，整体并行处理的数据量是<code>batch_size*4</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用可用的所有GPU设备</span></span><br><span class="line">caffe train -solver examples/mnist/lenet_solver.prototxt -gpu all</span><br></pre></td></tr></table></figure>
+
+<h3 id="检查GPU"><a href="#检查GPU" class="headerlink" title="检查GPU"></a>检查GPU</h3><p>使用如下命令检查指定GPU是否正常工作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe device_query -gpu 0</span><br></pre></td></tr></table></figure>
+<p>返回0号GPU的硬件信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">I0603 16:40:28.905443 13455 caffe.cpp:138] Querying GPUs 0</span><br><span class="line">I0603 16:40:28.927069 13455 common.cpp:178] Device id:                     0</span><br><span class="line">I0603 16:40:28.927090 13455 common.cpp:179] Major revision number:         6</span><br><span class="line">I0603 16:40:28.927093 13455 common.cpp:180] Minor revision number:         1</span><br><span class="line">I0603 16:40:28.927096 13455 common.cpp:181] Name:                          GeForce GTX 1050</span><br><span class="line">I0603 16:40:28.927099 13455 common.cpp:182] Total global memory:           2099904512</span><br><span class="line">I0603 16:40:28.927103 13455 common.cpp:183] Total shared memory per block: 49152</span><br><span class="line">I0603 16:40:28.927106 13455 common.cpp:184] Total registers per block:     65536</span><br><span class="line">I0603 16:40:28.927109 13455 common.cpp:185] Warp size:                     32</span><br><span class="line">I0603 16:40:28.927112 13455 common.cpp:186] Maximum memory pitch:          2147483647</span><br><span class="line">I0603 16:40:28.927115 13455 common.cpp:187] Maximum threads per block:     1024</span><br><span class="line">I0603 16:40:28.927119 13455 common.cpp:188] Maximum dimension of block:    1024, 1024, 64</span><br><span class="line">I0603 16:40:28.927122 13455 common.cpp:191] Maximum dimension of grid:     2147483647, 65535, 65535</span><br><span class="line">I0603 16:40:28.927125 13455 common.cpp:194] Clock rate:                    1493000</span><br><span class="line">I0603 16:40:28.927129 13455 common.cpp:195] Total constant memory:         65536</span><br><span class="line">I0603 16:40:28.927151 13455 common.cpp:196] Texture alignment:             512</span><br><span class="line">I0603 16:40:28.927155 13455 common.cpp:197] Concurrent copy and execution: Yes</span><br><span class="line">I0603 16:40:28.927160 13455 common.cpp:199] Number of multiprocessors:     5</span><br><span class="line">I0603 16:40:28.927183 13455 common.cpp:200] Kernel execution timeout:      Yes</span><br></pre></td></tr></table></figure>
+
+<h3 id="准确度测试"><a href="#准确度测试" class="headerlink" title="准确度测试"></a>准确度测试</h3><p>测试会给出模型的每一batch的loss和accuracy以及整体平均的loss和accuracy。<font color="red"><code>test</code>表示只进行forward计算，没有backward。即推理，而非训练</font>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe <span class="built_in">test</span> \</span><br><span class="line">-model examples/mnist/lenet_train_test.prototxt \</span><br><span class="line">-weights examples/mnist/lenet_iter_10000.caffemodel \</span><br><span class="line">-gpu 0 \</span><br><span class="line">-iterations 100</span><br></pre></td></tr></table></figure>
+
+<p>在<code>lenet_train_test.prototxt</code>所定义的模型结构上，使用模型<code>lenet_iter_10000.caffemodel</code>，对测试样本执行100次iteration。batch_size为100，所以iteration×batch_size=10000，覆盖了所有的测试样本<font color="orange">这个测试数据在哪??</font></p>
+<h3 id="时间测试"><a href="#时间测试" class="headerlink" title="时间测试"></a>时间测试</h3><p>指明<code>./build/tools/caffe time</code>测试模型，输出每一层的前先计算后向计算的时间。</p>
+<ol>
+<li><p>下面为lenet计时cpu计算10次迭代。（默认测试50次迭代）</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe time \</span><br><span class="line">-model examples/mnist/lenet_train_test.prototxt \</span><br><span class="line">-iterations 10</span><br></pre></td></tr></table></figure>
+<p> 结果：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">I0603 17:30:35.768501 15346 caffe.cpp:365] *** Benchmark begins ***</span><br><span class="line">I0603 17:30:35.768518 15346 caffe.cpp:366] Testing <span class="keyword">for</span> 10 iterations.</span><br><span class="line">I0603 17:30:35.835475 15346 caffe.cpp:394] Iteration: 1 forward-backward time: 66 ms.</span><br><span class="line">I0603 17:30:35.902711 15346 caffe.cpp:394] Iteration: 2 forward-backward time: 67 ms.</span><br><span class="line">I0603 17:30:35.969769 15346 caffe.cpp:394] Iteration: 3 forward-backward time: 67 ms.</span><br><span class="line">I0603 17:30:36.036651 15346 caffe.cpp:394] Iteration: 4 forward-backward time: 66 ms.</span><br><span class="line">I0603 17:30:36.105055 15346 caffe.cpp:394] Iteration: 5 forward-backward time: 68 ms.</span><br><span class="line">I0603 17:30:36.174151 15346 caffe.cpp:394] Iteration: 6 forward-backward time: 69 ms.</span><br><span class="line">I0603 17:30:36.241129 15346 caffe.cpp:394] Iteration: 7 forward-backward time: 66 ms.</span><br><span class="line">I0603 17:30:36.308782 15346 caffe.cpp:394] Iteration: 8 forward-backward time: 67 ms.</span><br><span class="line">I0603 17:30:36.376447 15346 caffe.cpp:394] Iteration: 9 forward-backward time: 67 ms.</span><br><span class="line">I0603 17:30:36.443658 15346 caffe.cpp:394] Iteration: 10 forward-backward time: 67 ms.</span><br><span class="line">I0603 17:30:36.443676 15346 caffe.cpp:397] Average time per layer: </span><br><span class="line">I0603 17:30:36.443698 15346 caffe.cpp:400]      mnist	forward: 0.015 ms.</span><br><span class="line">I0603 17:30:36.443706 15346 caffe.cpp:403]      mnist	backward: 0.0009 ms.</span><br><span class="line">I0603 17:30:36.443711 15346 caffe.cpp:400]      conv1	forward: 7.4511 ms.</span><br><span class="line">I0603 17:30:36.443714 15346 caffe.cpp:403]      conv1	backward: 7.8538 ms.</span><br><span class="line">I0603 17:30:36.443718 15346 caffe.cpp:400]      pool1	forward: 3.3165 ms.</span><br><span class="line">I0603 17:30:36.443740 15346 caffe.cpp:403]      pool1	backward: 0.5728 ms.</span><br><span class="line">I0603 17:30:36.443745 15346 caffe.cpp:400]      conv2	forward: 12.81 ms.</span><br><span class="line">I0603 17:30:36.443769 15346 caffe.cpp:403]      conv2	backward: 25.1095 ms.</span><br><span class="line">I0603 17:30:36.443774 15346 caffe.cpp:400]      pool2	forward: 1.5992 ms.</span><br><span class="line">I0603 17:30:36.443778 15346 caffe.cpp:403]      pool2	backward: 0.5698 ms.</span><br><span class="line">I0603 17:30:36.443783 15346 caffe.cpp:400]        ip1	forward: 2.6873 ms.</span><br><span class="line">I0603 17:30:36.443787 15346 caffe.cpp:403]        ip1	backward: 4.9053 ms.</span><br><span class="line">I0603 17:30:36.443791 15346 caffe.cpp:400]      relu1	forward: 0.0563 ms.</span><br><span class="line">I0603 17:30:36.443809 15346 caffe.cpp:403]      relu1	backward: 0.0507 ms.</span><br><span class="line">I0603 17:30:36.443814 15346 caffe.cpp:400]        ip2	forward: 0.1712 ms.</span><br><span class="line">I0603 17:30:36.443819 15346 caffe.cpp:403]        ip2	backward: 0.2362 ms.</span><br><span class="line">I0603 17:30:36.443845 15346 caffe.cpp:400]       loss	forward: 0.0529 ms.</span><br><span class="line">I0603 17:30:36.443848 15346 caffe.cpp:403]       loss	backward: 0.0013 ms.</span><br><span class="line">I0603 17:30:36.443868 15346 caffe.cpp:408] Average Forward pass: 28.1725 ms.</span><br><span class="line">I0603 17:30:36.443892 15346 caffe.cpp:410] Average Backward pass: 39.3101 ms.</span><br><span class="line">I0603 17:30:36.443895 15346 caffe.cpp:412] Average Forward-Backward: 67.5 ms.</span><br><span class="line">I0603 17:30:36.443900 15346 caffe.cpp:414] Total Time: 675 ms.</span><br><span class="line">I0603 17:30:36.443918 15346 caffe.cpp:415] *** Benchmark ends ***</span><br></pre></td></tr></table></figure></li>
+<li><p>使用GPU测试10 侧迭代：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe time \</span><br><span class="line">-model examples/mnist/lenet_train_test.prototxt \</span><br><span class="line">-gpu 0 \</span><br><span class="line">-iterations 10</span><br></pre></td></tr></table></figure>
+
+<p> 结果：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">I0603 17:32:11.830056 15434 caffe.cpp:365] *** Benchmark begins ***</span><br><span class="line">... <span class="comment"># 省略</span></span><br><span class="line">I0603 17:32:11.876488 15434 caffe.cpp:414] Total Time: 43.9143 ms.</span><br><span class="line">I0603 17:32:11.876494 15434 caffe.cpp:415] *** Benchmark ends ***</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>测试某个训练好的模型各层执行时间。</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">./build/tools/caffe time \</span><br><span class="line">-model examples/mnist/lenet_train_test.prototxt \</span><br><span class="line">-weights examples/mnist/lenet_iter_10000.caffemodel \</span><br><span class="line">-gpu 0 \</span><br><span class="line">-iterations 10</span><br></pre></td></tr></table></figure>
+<h1 id="python接口-pycaffe"><a href="#python接口-pycaffe" class="headerlink" title="python接口 pycaffe"></a>python接口 pycaffe</h1></li>
+</ol>
+<p>pycaffe接口需要先编译，看<a href="https://ashburnlee.github.io/2020/03/06/caffe-%E5%AE%89%E8%A3%85%E5%8F%8Atrouble-shooting/" target="_blank" rel="noopener">这里</a></p>
+<p>在<code>caffe/examples</code>中的ipython notebook中是使用pycaffe的实例。 </p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/03/caffe-%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%B8%8Epython%E6%8E%A5%E5%8F%A3/" data-id="ckaz6nepw0000edfz4ynb076l" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-cpp-lambda-function" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/06/03/cpp-lambda-function/" class="article-date">
+  <time datetime="2020-06-03T04:54:16.000Z" itemprop="datePublished">2020-06-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C/">C++</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/03/cpp-lambda-function/">cpp-lambda function</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在STL中的许多函数都需要提供一个<code>binary comp function</code>，指明是从大到小还是从小到大，比如<code>sort()</code>函数，最大最小堆等。</p>
+<p>这个 <code>comp</code>函数 可以是函数指针或函数对象。也可以是个<code>lambda</code>函数：</p>
+<h2 id="lambda函数"><a href="#lambda函数" class="headerlink" title="lambda函数"></a>lambda函数</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cout</span>&lt;&lt;[](<span class="keyword">float</span> f)-&gt;<span class="keyword">int</span> &#123;<span class="keyword">return</span> <span class="built_in">abs</span>(f)&#125;;(<span class="number">-3.5</span>)&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<p>返回3.</p>
+<p>其中<code>[]</code>中是<code>lambda indicators</code>。用法如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[ ]：<span class="comment">//不捕获任何外部变量</span></span><br><span class="line">[=]：<span class="comment">//以值的形式捕获所有外部变量</span></span><br><span class="line">[&amp;]：<span class="comment">//以引用的形式捕获所有外部变量</span></span><br><span class="line">[x, &amp;y]：<span class="comment">//x以值捕获，y以引用捕获</span></span><br><span class="line">[=, &amp;z]：<span class="comment">//z以引用捕获，其他以值形式捕获</span></span><br><span class="line">[&amp;, x]：<span class="comment">//x以值行形式捕获，其他以引用形式捕获</span></span><br></pre></td></tr></table></figure>
+
+<p>例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> comp = [](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; x, <span class="keyword">const</span> <span class="keyword">auto</span>&amp; y) &#123; <span class="keyword">return</span> x.second &lt; y.second; &#125;;</span><br><span class="line"></span><br><span class="line">sort(vec.begin(), vec.end(), comp)</span><br><span class="line">sort(vec.begin(), vec.end(), [](<span class="keyword">auto</span> x, <span class="keyword">auto</span> y)&#123;<span class="keyword">return</span> x&gt;y&#125;);</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/06/03/cpp-lambda-function/" data-id="ckayvo1uj0000sffz0sm18y4i" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-pip下载加速" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/06/03/pip%E4%B8%8B%E8%BD%BD%E5%8A%A0%E9%80%9F/" class="article-date">
@@ -573,140 +712,6 @@
 
 
   
-    <article id="post-Cpp-pro-tip-3-尽可能不使用类型转换" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/" class="article-date">
-  <time datetime="2020-03-12T09:35:30.000Z" itemprop="datePublished">2020-03-12</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/">Cpp 杂记 explicit shared_ptr</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="explicit-修饰constructor"><a href="#explicit-修饰constructor" class="headerlink" title="explicit 修饰constructor"></a>explicit 修饰constructor</h1><p>比较区别：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 无explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    foo(<span class="keyword">int</span> n)&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">// 有explicit</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">bar</span>&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">bar</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123; num_ = n; &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> num_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">foo <span class="title">f1</span><span class="params">(<span class="number">2</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    foo* f2 = <span class="keyword">new</span> foo(<span class="number">2</span>);  <span class="comment">// correct</span></span><br><span class="line">    foo f3 = <span class="number">2</span>;  <span class="comment">// correct </span></span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="function">bar <span class="title">b1</span><span class="params">(<span class="number">3</span>)</span></span>;   <span class="comment">// correct</span></span><br><span class="line">    bar* b2 = <span class="keyword">new</span> bar(<span class="number">3</span>); <span class="comment">// correct</span></span><br><span class="line">    bar b3 = <span class="number">3</span>; <span class="comment">// incorrect</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>bar b3 = 3</code>含义是，3的类型int正好是bar单参数构造函数的参数类型int，这时候编译器就自动调用这个构造函数，创建一个bar的对象。这在<code>explicit</code>修饰下是不可行的，只能显式地以3为参数传给构造函数。</p>
-<h1 id="shared-ptr-lt-gt"><a href="#shared-ptr-lt-gt" class="headerlink" title="shared_ptr&lt;&gt;"></a>shared_ptr&lt;&gt;</h1><p>理解shared_ptr可以这样理解：<br>对于<code>std::shared_ptr&lt;string&gt; ptr(new string)</code>，这里有两个对象，“我”和“你”（均为指针）。“我”是<code>ptr</code>，而“你”对应了<code>new string</code>。这时“我”和“你”就有了关系，<font color="red">“我”管理“你”</font>。当<code>new string</code>即“你”不存在时，我不管理任何人，即我管理一个空指针。</p>
-<h2 id="定义并初始化"><a href="#定义并初始化" class="headerlink" title="定义并初始化"></a>定义并初始化</h2><p>定义一个<font color="red">空共享指针</font>，指向类型为int的对象, owns no pointer（“我”没有管理任何指针）, 由于ptr1是空指针，所以为ptr1所指向的对象赋值是违法的：<code>segmentation fault</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr1; </span><br><span class="line"><span class="keyword">if</span> (!ptr1)</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"ptr1==NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"><span class="comment">// 违法，因为ptr1没有指向任何对象，所以给对象赋值是逻辑错误</span></span><br><span class="line">*ptr1 = <span class="string">"string ptr1"</span>;</span><br></pre></td></tr></table></figure>
-
-<p>初始化一个shared_ptr ptr2，<font color="red">非空指针</font>，指向“”。此后，ptr2 就可以像string* 类型的指针一样使用。ptr2 可以管理使用new 关键字分配出来的指针。（<font color="red">new 出来的一定是个指针</font>）</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ptr2 管理一个指向string的指针</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr2(<span class="keyword">new</span> <span class="built_in">string</span>);</span><br><span class="line">*ptr2 = <span class="string">"string ptr2"</span>;</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr2&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
-
-<p>常用的初始化方法:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 一般的初始化一个shared_ptr方法</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr3(<span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"string ptr3"</span>));</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr3&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 推荐的初始化一个shared_ptr</span></span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="built_in">string</span>&gt; ptr4 = make_shared&lt;<span class="built_in">string</span>&gt;(<span class="string">"string ptr4"</span>);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
-
-<h2 id="成员方法"><a href="#成员方法" class="headerlink" title="成员方法"></a>成员方法</h2><p><code>ptr.get()</code>方法，它返回一个指针，这个指针指向ptr所指向对象：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span>* p = ptr4.get();</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*p&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
-<p><code>ptr.reset()</code>方法，改变ptr所指向内容。这里有个好例子：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;<span class="keyword">int</span>&gt; sp;  <span class="comment">// empty </span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 管理一个指针</span></span><br><span class="line">sp.reset (<span class="keyword">new</span> <span class="keyword">int</span>);       </span><br><span class="line">*sp=<span class="number">10</span>;</span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; *sp &lt;&lt; <span class="string">'\n'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 删除所管理的指针, 干礼一个新指针</span></span><br><span class="line">sp.reset (<span class="keyword">new</span> <span class="keyword">int</span>);       </span><br><span class="line">*sp=<span class="number">20</span>;</span><br><span class="line"><span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; *sp &lt;&lt; <span class="string">'\n'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 删除所管理的指针</span></span><br><span class="line">sp.reset();</span><br></pre></td></tr></table></figure>
-
-<p>以下情况相同：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ptr4.reset(<span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"string reset ptr4"</span>));</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="built_in">string</span>* pp = <span class="keyword">new</span> <span class="built_in">string</span>(<span class="string">"fuck you"</span>);</span><br><span class="line">ptr4.reset(pp);</span><br><span class="line"><span class="built_in">cout</span>&lt;&lt;*ptr4&lt;&lt;<span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
-
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/12/Cpp-pro-tip-3-%E5%B0%BD%E5%8F%AF%E8%83%BD%E4%B8%8D%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/" data-id="ckatsrgrw002hxqfz00ox1w7j" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Cpp-pro-tip-2" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/09/Cpp-pro-tip-2/" class="article-date">
-  <time datetime="2020-03-09T06:29:07.000Z" itemprop="datePublished">2020-03-09</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C/">C++</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/09/Cpp-pro-tip-2/">Cpp pro tip 尽可能使用const</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>如果某个值需要保持不变，那么你就应该说出来，这样编译器能确保这写约束不被违反。const可以放于很多位置。</p>
-<h1 id="1-作用于指针"><a href="#1-作用于指针" class="headerlink" title="1. 作用于指针"></a>1. 作用于指针</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> greeting[] = <span class="string">"hello"</span>;</span><br><span class="line"><span class="keyword">char</span>* p = greeting;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* p = greeting;   <span class="comment">// 1</span></span><br><span class="line"><span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;   <span class="comment">// 2</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">const</span> p = greeting;  <span class="comment">// 3</span></span><br></pre></td></tr></table></figure>
-
-<p>const的出现位置[左数右针]：</p>
-<ol>
-<li><code>const *</code>，<font color="red">数据是常量</font>，表示被指向的对象是常量，而指针是可以变的。</li>
-<li><code>* const</code>，表示<font color="red">指针是常量</font>。<font color="red">这个指针不能指向不同的东西，但它指向东西的数据可以改变</font>。</li>
-<li><code>const * const</code>，表示指针和被指向的对象都是常量</li>
-</ol>
-<p>对于在*左侧，下面两种表达意义相同，都在左侧：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* greeting;</span><br><span class="line"><span class="keyword">char</span> <span class="keyword">const</span>* greeting;</span><br></pre></td></tr></table></figure>
-
-<h1 id="2-作用于特殊指针，iterator"><a href="#2-作用于特殊指针，iterator" class="headerlink" title="2. 作用于特殊指针，iterator"></a>2. 作用于特殊指针，iterator</h1><p>对于STL中的迭代器，加入我希望迭代器所指向的东西不可被修改（即对数据只读），那么就需要一个<code>const_iterator</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; vec;</span><br><span class="line"><span class="comment">// 数据const</span></span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::const_iterator cItr = vec.begain();</span><br><span class="line">*cItr = <span class="number">10</span>;   <span class="comment">// 错，所指向的东西不能改</span></span><br><span class="line">cItr++；      <span class="comment">// 对，指针可改</span></span><br></pre></td></tr></table></figure>
-
-<p>而另一种情况，指针不能改变其指向，但是可改变其所指向数据：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 指针const</span></span><br><span class="line"><span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;::iterator itr = vec.begain();</span><br><span class="line">*itr = <span class="number">10</span>;   <span class="comment">// 对，所指向的东西可改</span></span><br><span class="line">itr++；      <span class="comment">// 错，指针指向不可改</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="3-作用与函数"><a href="#3-作用与函数" class="headerlink" title="3. 作用与函数"></a>3. 作用与函数</h1><ol>
-<li><p>函数返回值为const</p>
-<p> 将函数返回值声明为const，这个返回值不能被修改。降低了因为用户的错误而造成的意外。</p>
-</li>
-<li><p>函数参数为const</p>
-<p> 除非你要改动局部变量（函数参数），否则将参数声明为const。</p>
-</li>
-</ol>
-<h1 id="4-作用与类成员函数"><a href="#4-作用与类成员函数" class="headerlink" title="4. 作用与类成员函数"></a>4. 作用与类成员函数</h1><p>即const位于成员函数()和{}之间，如：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">area</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span> y)</span> </span>&#123;</span><br><span class="line">        length_ = x;</span><br><span class="line">        width_ = y;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// length和width，不能被这个函数修改。</span></span><br><span class="line">    <span class="comment">// 限制对象成员函数 改变对象数据成员，保护了程序的健壮性和稳定性</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123;<span class="built_in">cout</span>&lt;&lt;<span class="string">"area="</span>&lt;&lt;length_ * width_&lt;&lt;<span class="built_in">endl</span>;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> length_;</span><br><span class="line">    <span class="keyword">int</span> width_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>print()成员函数，为const函数，表示这个成员函数不能修改成员变量。所以不能将area()成员函数设为const，因为这个函数的 目的就是为成员变量赋值。</p>
-<p><font color="red">const成员函数，和非const成员函数使得我们知道一个类中哪些函数可以修改成员属性，哪些不可以</font>。</p>
-<p>tip:<br>提升c++程序效率的一个方法是以<code>pass by referrence-to-const</code>的方式或<code>pass by pointer-to-const</code>传递对象：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 此为以成员函数</span></span><br><span class="line"><span class="function"><span class="keyword">const</span> <span class="keyword">int</span> <span class="title">opt</span><span class="params">( <span class="keyword">const</span> foo&amp; x)</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> x.length_ * x.width_&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/09/Cpp-pro-tip-2/" data-id="ckatsrgry002mxqfz2hz125w4" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -722,7 +727,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">37</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -732,7 +737,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">57</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">35</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -751,7 +756,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -764,6 +769,14 @@
       <ul>
         
           <li>
+            <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/">CUDA-线程-warp-延时隐藏</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/">LeetCode-Trie-search regular expression</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
           </li>
         
@@ -773,14 +786,6 @@
         
           <li>
             <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
           </li>
         
       </ul>

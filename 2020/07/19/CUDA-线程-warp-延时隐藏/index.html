@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>CUDA-线程-warp-延时隐藏 | Junhui&#39;s Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="什么是线程一个线程包括程序代码，程序执行当前点，变量数值和数据结构。线程的执行是串行的。CUDA启动kernel后，启动大量线程，以充分利用数据的并行性。 CPU中的线程生成和调度需要上千的时钟周期，相比GPU只需要很少的时钟周期。更具体说，在一个Warp中的线程的切换几乎是没有开销的，因为线程的上下文直接存储在物理空间中。 线程是如何实现的线程是啥，在上面说过了。程序的代码存储在主存中，寄存器P">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA-线程-warp-延时隐藏">
+<meta property="og:url" content="http://yoursite.com/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/index.html">
+<meta property="og:site_name" content="Junhui&#39;s Journal">
+<meta property="og:description" content="什么是线程一个线程包括程序代码，程序执行当前点，变量数值和数据结构。线程的执行是串行的。CUDA启动kernel后，启动大量线程，以充分利用数据的并行性。 CPU中的线程生成和调度需要上千的时钟周期，相比GPU只需要很少的时钟周期。更具体说，在一个Warp中的线程的切换几乎是没有开销的，因为线程的上下文直接存储在物理空间中。 线程是如何实现的线程是啥，在上面说过了。程序的代码存储在主存中，寄存器P">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-07-19T08:31:43.000Z">
+<meta property="article:modified_time" content="2020-07-19T08:37:02.107Z">
+<meta property="article:author" content="Junhui">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Junhui&#39;s Journal" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Junhui&#39;s Journal</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CUDA-线程-warp-延时隐藏" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/" class="article-date">
+  <time datetime="2020-07-19T08:31:43.000Z" itemprop="datePublished">2020-07-19</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CUDA-线程-warp-延时隐藏
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="什么是线程"><a href="#什么是线程" class="headerlink" title="什么是线程"></a>什么是线程</h1><p>一个线程包括程序代码，程序执行当前点，变量数值和数据结构。线程的执行是串行的。CUDA启动kernel后，启动大量线程，以充分利用数据的并行性。</p>
+<p>CPU中的线程生成和调度需要上千的时钟周期，相比GPU只需要很少的时钟周期。更具体说，在一个Warp中的线程的切换几乎是没有开销的，因为线程的上下文直接存储在物理空间中。</p>
+<h1 id="线程是如何实现的"><a href="#线程是如何实现的" class="headerlink" title="线程是如何实现的"></a>线程是如何实现的</h1><p>线程是啥，在上面说过了。程序的代码存储在主存中，寄存器PC记录程序执行点，寄存器IR存储当前需要执行的指令，寄存器和主存记录变量值和数据结构。</p>
+<p>同CPU一样，GPU也提供上下文切换功能，多个线程以轮的方式共享处理单元，通过保存和恢复PC值，寄存器和存储器的内容，可以暂停一个线程的执行，并在稍后正确地恢复这个线程。</p>
+<p>GPU的每个SM提供多个执行单元SP，他们共享一个PC和IR（存在与共享的控制单元中），如此以来同一时间，所有的线程执行形同的指令（这个指令就是IR中所存储内容）。</p>
+<h1 id="SIMD"><a href="#SIMD" class="headerlink" title="SIMD"></a>SIMD</h1><p><code>SIMD</code>系统中，所有的并行处理单元在任何时候都执行相同的指令。因为是<code>单指令</code>。</p>
+<p>CUDA采用的是<code>SPMD</code>，单程序多数据的执行形式，但是在一个SM内部其实是<code>SIMD</code>执行warp中的所有线程，单指令多数据。这涉及到warp的工作原理。</p>
+<h1 id="warp与延时隐藏"><a href="#warp与延时隐藏" class="headerlink" title="warp与延时隐藏"></a>warp与延时隐藏</h1><p>一个Block中的线程被进一步分为32个为一个<code>warp</code>。由于<code>单指令</code>的定义，任何时刻一个warp中的所有线程只能取一条指令执行（IR中的指令）。在硬件结构中，每个SM有一个<code>取指/分派</code>单元，由这个单元来向warp中的线程提供所要执行的指令。warp中每个线程的数据不同，但执行时间都相同。</p>
+<p>一个SM中的使用线程数要多于SP数量，SM中硬件只能执行所有warp的一部分，这样做的目的是提高长延时操作的效率，达到延时隐藏的目的。具体说：<font color="red">当一个warp的一条指令需要等待一个长延时的操作时，这个warp将不会被SP选中执行，这个SP会去执行不需要等待的warp，从而达到隐藏等待时间的目的</font>。所以当由足够多的warp时，硬件可以随时找到可悲执行的warp，如此变充分利用硬件资源。warp的被选择是零开销的。<code>零开销的线程调度</code>。在warp的调度机制下，长延迟的操作被其他warp的指令执行隐藏，即<code>延时隐藏</code>。</p>
+<p>这也是为什么GPU不像CPU一样引入大量的缓存和分支预测，为了将更多的芯片面积作为浮点数的计算资源。</p>
+<p>Warp中的线程访问Global memory时，做好的访问方式是<code>coalesced access</code>即连续访问，如果不是连续访问，则会由于<code>Cache miss</code>增加移动数据的开销。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/" data-id="ckcsttzgg00003yfz2j602yx9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">LeetCode-Trie-search regular expression</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">37</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">57</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">35</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/CUDA/" style="font-size: 16.67px;">CUDA</a> <a href="/tags/Caffe/" style="font-size: 13.33px;">Caffe</a> <a href="/tags/Test-Analysis/" style="font-size: 10px;">Test Analysis</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/">CUDA-线程-warp-延时隐藏</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/">LeetCode-Trie-search regular expression</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/11/LeetCode-BST-%E6%89%BE%E5%89%8D%E9%A9%B1%E4%B8%8E%E5%90%8E%E7%BB%A7%E7%BB%93%E7%82%B9/">LeetCode-BST 找前驱与后继结点</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Junhui<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

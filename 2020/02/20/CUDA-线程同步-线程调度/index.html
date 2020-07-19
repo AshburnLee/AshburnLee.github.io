@@ -15,7 +15,7 @@
 <meta property="og:description" content="线程同步（一个block内的同步）  一个block内的所有threads有时候是需要同步的（如使用shared memory优化的矩阵相乘中），方法是在kernel函数中的适当位置加上__syncthreads()。  当一个thread执行到__syncthreadas()时，这个thread会看它所在的block内的其他所有threads情况，如果发现还有其他threads没有执行到这个位">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2020-02-20T01:44:16.000Z">
-<meta property="article:modified_time" content="2020-02-20T01:55:20.427Z">
+<meta property="article:modified_time" content="2020-07-19T01:52:12.610Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -99,15 +99,20 @@
 <p> 当一个thread执行到<code>__syncthreadas()</code>时，这个thread会看它所在的block内的其他<font color="orange">所有</font>threads情况，如果发现还有其他threads没有执行到这个位置，则这个thread等待其他threads。直到block中<font color="orange">所有</font>active的threads都执行到此，接着向下执行。</p>
 <p> 注意这个同步只是这个block内的threads同步。而非是全局同步，CUDA中没有全局通过不的原因是，全局同步的系统开销会很大。     </p>
 <p> 并行系统中<font color="red" size="4">负载均衡</font>：要求线程的执行时间尽量接近。如果不均衡，在需要线程同步时，所有线程会等待最慢的那个thread，此时整体的速度就时最慢的那个thread的速度，其他速度快的threads 的优势完全没有了。</p>
-<p> <font color="orange">block与block之间是异步的，不存在相互等待。而同一个warp内的threads天然同步</font>。</p>
+<p> <font color="orange">block与block之间是异步的，不存在相互等待（当）。而同一个warp内的threads天然同步</font>。</p>
 <p> 注意线程同步，可能导致<font color="red">死锁</font>，比如下情况：</p>
  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (func())&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span>&#123;</span><br><span class="line">    __syncthreads();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p> 产生死锁，执行不同分支的threads相互等待，谁也等不到谁。</p>
 </li>
+<li><p>block间的同步</p>
+<p> block与block之间是异步的，当前kernel执行结束后，block之间自然同步了。言外之意是kernel的执行时间是由最慢的哪个block决定，所以，上文强调负载均衡。</p>
+</li>
+</ol>
+<ol start="3">
 <li><p>线程调度</p>
 <ol>
 <li><p>SP和threads</p>
-<p> 为什么GPU的threads数量远远多于物理执行单元（SP）。因为每个SM中与CPU一样也含有<font color="red" size="4">上下文空间</font>，用于执行上下文切换，从而实现多线程。</p>
+<p> 为什么GPU的threads数量远远多于物理执行单元（SP）。因为每个SM中与CPU一样也含有<font color="red" size="4">上下文空间</font>，用于执行上下文切换，从而实现多线程。（？提升吞吐量？）</p>
 <p> 这里有个<code>SP</code>和<code>threads</code>的关系。以GPU G80为例：</p>
 <p> G80 的硬件信息：<code>16</code>个SM，每个SM含有<code>8</code>个SP，（共有<code>16x8=128</code>个SP），每个SM最多驻扎<code>768</code>个threads，总共同时执行<code>12288</code>个threads。（所以可以通过每个SM中最多可以驻扎的threads数，除以每个SM中的SP数，就得到了）</p>
 <p> 解释：</p>
@@ -196,7 +201,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">37</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -206,7 +211,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">57</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">35</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -225,7 +230,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -238,6 +243,14 @@
       <ul>
         
           <li>
+            <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/">CUDA-线程-warp-延时隐藏</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/">LeetCode-Trie-search regular expression</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
           </li>
         
@@ -247,14 +260,6 @@
         
           <li>
             <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
           </li>
         
       </ul>

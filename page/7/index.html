@@ -64,6 +64,153 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CUDA-资源分配" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" class="article-date">
+  <time datetime="2020-02-20T01:27:25.000Z" itemprop="datePublished">2020-02-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CUDA/">CUDA</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/">CUDA-资源分配</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>GPU系统中的各种<font color="red" size="4">内存数量</font>约束了整个系统中的<code>block</code>数量和<code>threads</code>数量。每个<code>thread</code>使用各种存储的多少影响着可以使用<code>threads</code>的数量。 </p>
+<p>SM资源分割:</p>
+<p>GPU的计算资源以SM为单位，SM之间共享global memory，不过通常global memory足够大，所以每个thread不管使用多少global memory，对可调用的threads数量几乎没有影响（本来设计kernel的原则之一就是最少的使用Global memory）。</p>
+<p>增加资源占量后（<code>thread</code>占用<code>Registers</code>的数量或<code>block</code>占用<code>Shared memory</code>的数量）导致并行性急剧下降，例如，增加每个thread的register数量，可以并行的block数量就可能大幅度下降（下降是以一个block为单位下降的）。使用<code>CUDA Occupancy Calculator</code>工具可以修改某一资源的数值，得到其他资源的相应变化。</p>
+<ol>
+<li><p>一个<code>SM</code>中的Registers数量是有限的</p>
+<p> 这些寄存器要被划分给这个SM中的所有threads。所以如果每个thread使用的寄存器过多时，这个SM中实际使用的threads数会减少，使得资源（应用程序对GPU处理单元）占用率下降。</p>
+<p> 比如一个SM中有768个threads，含有8k个registers。要想最大并行化（最大化占用率），即使用所有的threads，那么就要保证每个thread分配最多10个registers，这种情况下共使用<code>10x768=7680</code>个registers，没有超过8k个。</p>
+<p> 但是如果每个threads分配11个registers，此时<code>11x768=8448</code>个registers，此时算数上最多只能使用727个threads（<code>8000/11=727.27</code>），实际情况会比727还要少，因为超出限制后，threads数的减少是以<font color="red" size="4">block为粒度</font>的减少：如果一个block有256个threads，那么可用threads数就不是<code>从768减少到727</code>，而是<code>从768减少到512</code>，只要threads数减少，就以<font color="red">block为单位（粒度）</font>地减少。如果要减少threads超过256（一个block的threads数），如257，那么实际就要减少<code>2个block（256+1，2个blocks）</code>。</p>
+<p> 分析一个资源分配的例子：一个SM有<code>768</code>个threads，<code>8000</code>个registers。如果每个threads使用<code>11</code>个registers，并且每个block含有<code>256</code>个threads。（上面计算过：最大并行化的register的分配是每个thread使用10个registers。）</p>
+<ul>
+<li><p>一个SM驻扎的threads个数有多少</p>
+<p>  可用threads个数：<code>8000/11=727</code>个threads，而且<code>2x256=512</code>，<code>3x256=768</code>超过了<code>727</code>，所以这个SM驻扎<code>2</code>个blocks（512threads，与上述相符合）。</p>
+</li>
+<li><p>一个SM驻扎的warp数量有多少</p>
+<p>  <code>2</code>个blocks共有<code>512</code>个threads，所以<code>512/32=16</code>个warps，这个SM驻扎<code>16</code>个warps。而理论极限是驻扎<code>768/32=24</code>个warps。16远小于24.</p>
+</li>
+<li><p>warp数量减少意味着什么</p>
+<p>  通过上述计算，没有合理分配registers的结果是，存在资源的浪费，不能最大并行化。</p>
+</li>
+</ul>
+</li>
+</ol>
+<ol start="2">
+<li><p>同样的，一个<code>SM</code>中的<code>shared memory</code>的大小也是有限的</p>
+<p> 回忆：在同一个<code>block</code>的<code>threads</code>共享同一块<code>shared memory</code>。</p>
+<p> 一个SM中实际使用的block数量也是与<font color="orange">每个block被分配的shared memory的大小有关</font>。</p>
+<p> 比如：一个SM有<code>8</code>个blocks，可使用shared memory为<code>16kB</code>。所以想要充分使用所有的blocks，每个block被分配shared memory最多为<code>2kB（16kB/8）</code>. 换句话说，为了最大并行化，充分使用SM的计算资源，这个SM中每个block可使用的shared memory最多为<code>2kB</code>。</p>
+<p> 假如，每个block使用了<code>4kB</code>，则实际只是用了<code>4个（16kB/4kB）blocks</code>，相较于上一种中情况只是用了一半的threads。</p>
+<p> 假如，每个block使用<code>5kB</code>，则实际只用了<code>3个（16kB/5kB）blocks</code>，此种情况可使用的threads就更少了。</p>
+</li>
+</ol>
+<p>回忆实战中，有一回，对kernel的配置没有超过硬件极限，但是实际上每个block只能使用256个threads，超过256，程序就不会得到正确结果。当时不清楚为什么，通过这篇笔记，可以解释了。是因为每个threads使用了过多的Registers（当时程序中没有使用Shared memory）的原因。导致可用threads数减少。</p>
+<p><font color="purple" size="5">敲黑板</font>Registers数量和每个block分配到的shared memory的大小，<font color="red">共同约束了</font>整个系统中的block数量个threads数量。实际应用中也要尽量少的使用存储资源，从而最大化并行程度。<font color="red">内存是竞争资源</font></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/20/CUDA-%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D/" data-id="ckatsrgru002bxqfz2lf84eyo" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-安装使用MinGW-Cmake在windows" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/" class="article-date">
+  <time datetime="2020-01-19T07:34:42.000Z" itemprop="datePublished">2020-01-19</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Utility/">Utility</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/">安装使用MinGW Cmake在windows</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在Windows中不能直接使用gcc，g++编译器，即使使用CLion，也同样需要配置toolchain。除了使用Virtual Studio 之外，还有相对轻量级的工具，比如MinGW 和 Cygwin。</p>
+<ul>
+<li><p>安装cmake</p>
+<p>  并且把其安装目录的<code>bin</code>目录添加到系统路径中。</p>
+<p>  安装CMake后，CMake Documentation存在于安装目录中。其中，阅读CMake Tutorial，里边有CMake的使用细节。或者阅读<a href="https://cmake.org/cmake/help/latest/guide/tutorial/index.html" target="_blank" rel="noopener">在线文档</a>。 </p>
+</li>
+<li><p>安装MinGW</p>
+<p>  从这里 <a href="https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/" target="_blank" rel="noopener">https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/</a><br>  直接下载，免安装。解压到某个位置，进入<code>bin</code>目录，可以看到<code>gcc.exe</code> 和 <code>g++.exe</code>。等其他组件。</p>
+<p>  将这个<code>bin</code>目录的路径加入到系统环境变量中。</p>
+<p>  额外一步：进入mingw的<code>bin</code>目录，找到<code>mingw32-make.exe</code>，将其复制一份并且重命名为<code>make.exe</code>。如此便可以使用<code>make</code>命令代替<code>mingw32-make</code>了，</p>
+</li>
+<li><p>vim</p>
+<p>  如果习惯使用vim，安装vim后，也要将其<code>bin</code>目录加入到环境变量。</p>
+</li>
+<li><p>重启机器使生效</p>
+</li>
+<li><p>测试</p>
+<p>  在命令行中：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cmake --version</span><br><span class="line">g++ --version</span><br><span class="line">gcc --version</span><br><span class="line">mingw32-make --version</span><br><span class="line">vim --version</span><br></pre></td></tr></table></figure>
+<p>  应该返回正确内容。</p>
+</li>
+<li><p>使用</p>
+<p>  创建project，编辑CMakeFiles.txt。project结构与在<a href="https://ashburnlee.github.io/2019/07/29/cmake%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E5%8F%8ACMakeLists-txt%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/" target="_blank" rel="noopener">Linux下使用cmake</a>是一样的。</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir test</span><br><span class="line">cd test</span><br><span class="line">vim main.cpp</span><br><span class="line">vim CMakeFiles.txt</span><br></pre></td></tr></table></figure>
+
+<p>  编译执行：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mkdir build</span><br><span class="line">cd build</span><br><span class="line">cmake -G &quot;MinGW Makefiles&quot; ..</span><br><span class="line">make</span><br><span class="line">.\test.exe</span><br></pre></td></tr></table></figure>
+
+<p>  其中<code>cmake</code>如果报错，将目录下的已存在的CMakeCache.txt删去，从新执行即可。<br>  应该可以返回期望结果。</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/19/%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8MinGW-Cmake%E5%9C%A8windows/" data-id="ckatsrgt10053xqfzfnrm0hqi" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-CUDA-优化优先级" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/17/CUDA-%E4%BC%98%E5%8C%96%E4%BC%98%E5%85%88%E7%BA%A7/" class="article-date">
@@ -123,7 +270,7 @@
 </li>
 <li><p>尽量少用Global memory，尽量多的使用Shared memory。</p>
 <p>  内存指令（Memory instructions）包括读取或写入shared，local或Global内存的任何指令。当访问未缓存的local或Global内存时，内存延迟有数百个时钟周期。 </p>
-<p>  下边这个例子，的赋值运算符，由很高的吞吐量，但是从Global的读操作，会有上百个时钟周期的延迟。</p>
+<p>  下边这个例子，的赋值运算符，有很高的吞吐量，但是从Global的读操作，会有上百个时钟周期的延迟。</p>
   <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">__shared__ <span class="keyword">float</span> shared[<span class="number">32</span>];</span><br><span class="line">__device__ <span class="keyword">float</span> device[<span class="number">32</span>]; </span><br><span class="line">shared[threadIdx.x] = device[threadIdx.x];</span><br></pre></td></tr></table></figure>
 
 <p>  如果在等待Global内存访问完成的同时，可以发出足够的独立算术指令，则线程调度程序（thread scheduler）可以隐藏大部分全局内存延迟。但是，最好尽可能避免访问全局内存。这种操作称为<code>Overlap</code></p>
@@ -207,7 +354,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/">CUDA-Memory Optimization-Local Memory</a>
+      <a class="article-title" href="/2020/01/15/CUDA-Memory-Optimization-Local-Memory/">CUDA-Memory Local/Constant/L1/L2/Register</a>
     </h1>
   
 
@@ -218,11 +365,14 @@
         <h2 id="Local-Memory"><a href="#Local-Memory" class="headerlink" title="Local Memory"></a>Local Memory</h2><p>Local memory 的命周期是一个thread，它存在与Global memory中，所以对Local memory的访存是低效的。</p>
 <p>Local memory 是存储自动变量的。通常自动变量是较复杂的structures 或者数组，这些对象都会消耗太多的这个线程的寄存器。当nvcc编译器发现没有足够的寄存器空间来保存变量时，就会将变量放进Local memory中。</p>
 <p>有个技巧，如果一个kernel函数中需要使用数组，而且数组的长度是固定的，为了避免使用Local memory，将这个数组拆成单个的变量，这些变量会被存储到Registers中（当然是当Registers的个数足够时）。</p>
-<h2 id="Constant-Memory"><a href="#Constant-Memory" class="headerlink" title="Constant Memory"></a>Constant Memory</h2><p>在Device中共有64KB大小的Constant memory。</p>
+<h2 id="Constant-Memory"><a href="#Constant-Memory" class="headerlink" title="Constant Memory"></a>Constant Memory</h2><p>在Device中共有64KB大小的Constant memory，只读。</p>
 <p><font color="orange">如果一个warp中的所有threads访问同一个Constant memory地址时，此时的访存可以和Registers一样快</font>。所以对于只读的全局数据，选择放在Constant memory中。</p>
 <h2 id="Registers"><a href="#Registers" class="headerlink" title="Registers"></a>Registers</h2><p>通常，访问寄存器每一条指令都不会消耗额外的时钟周期，但由于寄存器的读写依赖关系和寄存器内存bank冲突，可能会出现延迟。</p>
 <p>编译器和硬件线程调度程序将尽可能优化调度指令，以避免寄存器bank冲突。应用程序无法直接控制这些银行冲突。这些开发者不受控制。</p>
 <p>当没有足够的寄存器可用分配给指定任务时，就会出现寄存器压力。尽管每个多处理器都包含数千个32位寄存器但它们都是在并发线程之间分配的。为了防止编译器分配太多寄存器，使用<code>-maxrregcount=N</code>编译器命令行选项（nvcc）或启动边界内核定义限定符来控制每个线程分配的寄存器的最大数量。</p>
+<h2 id="L1-L2-Cache"><a href="#L1-L2-Cache" class="headerlink" title="L1/L2 Cache"></a>L1/L2 Cache</h2><p>每个SM有自己独有的一片存储空间，这个空间被Shared memory和L1 缓存公用。而L2缓存 被所有SM公用，L2中缓存来自Global Memory中的数据。</p>
+<p>SP访存时，先从L1中找数据，若没有则从L2中找，若仍没有，从Global Memory中找。</p>
+<p>线程连续访问（Coalesced Access）的好处，是所需的数据很可能已经缓存在L2上，cache hit，此时的访问速度很快。回顾卷积的例子。</p>
 <h2 id="Allocation"><a href="#Allocation" class="headerlink" title="Allocation"></a>Allocation</h2><p>使用cudaMallo() 和cudaFree()在Device上申请, 和回收空间是很耗时的操作，所以程序应该尽可能<font color="red" size="4">重复利用</font>已分配好的空间。</p>
 
       
@@ -268,14 +418,15 @@
       
         <h1 id="Shared-Memory"><a href="#Shared-Memory" class="headerlink" title="Shared Memory"></a>Shared Memory</h1><p>Shared Memory 的特点：</p>
 <ul>
+<li>与L1 cache 一起占据相同的物理空间</li>
 <li>on-chip</li>
 <li>高带宽，低延时，相较于local 和 global memory</li>
 <li>在线程间没有bank冲突</li>
 <li>线程可通过shared memory 来进行协作。</li>
 </ul>
-<p>Shared Memory 的快速访问。通常将<font color="green">经常要访问的数据</font>放入shared memory，来减少访存的次数Shared Memory。</p>
-<p>为了在并发访问中，实现高的内存带宽，shared memory被分成大小相等的块，<font color="green" size="4">banks</font>，这些banks可以被同时访问。所以任何对n个不同banks进行访存，这些访存是同时的。这就实现了高带宽。</p>
-<p>再深入一点，shared memory 被划分为banks，一个bank对外有一个<font color="green">接口</font>，使得每个周期只相应这个bank中的一个地址。所以对于同一个bank的不同地址的并发访问将导致bank conflict。如下图中的<code>threads a</code>和<code>threads b</code>，同时访问<code>bank 1</code>，冲突了。冲突了怎么办，冲突的访存会被排队串行执行。</p>
+<p>Shared Memory 的快速访问。通常将<font color="red">经常要访问的数据，和计算中间结果</font>放入shared memory，来减少访存的次数Shared Memory。</p>
+<p>为了在并发访问中，实现高的内存带宽，shared memory被分成大小相等的块，<font color="red">banks</font>，这些banks可以被同时访问。所以任何对n个不同banks进行访存，这些访存是同时的。这就实现了高带宽。</p>
+<p>再深入一点，shared memory 被划分为banks，一个bank对外有一个<font color="red">接口</font>，使得每个周期只相应这个bank中的一个地址。所以对于同一个bank的不同地址的并发访问将导致<code>bank conflict</code>。如下图中的<code>threads a</code>和<code>threads b</code>，同时访问<code>bank 1</code>，冲突了。冲突了怎么办，冲突的访存会被排队串行执行。</p>
 <div align="center"><img src="/2020/01/15/CUDA-Memory-Optimization-Shared-Memory/bank.png" width="800"></div>
 
 <p>这就是shared memory 架构的设计特点。看更详细的bank，<a href="https://ashburnlee.github.io/2020/02/20/CUDA-%E5%AD%98%E5%82%A8%E4%BC%98%E5%8C%96-%E4%BE%8B-%E7%9F%A9%E9%98%B5%E8%BD%AC%E7%BD%AE/" target="_blank" rel="noopener">看这里</a>。</p>
@@ -655,58 +806,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-LeetCode-二进制中1的个数" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="article-date">
-  <time datetime="2020-01-02T14:18:26.000Z" itemprop="datePublished">2020-01-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">LeetCode-二进制中1的个数</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>bit操作</p>
-<p>知识点</p>
-<ol>
-<li>一个整数除以2，与将这个整数右移1位等价，但是移位运算效率更高。</li>
-<li>一个整数减一，后与原整数做‘与’运算，这个操作会把这个整数最右边的1变成零。</li>
-</ol>
-<p>有了上述两点，求二进制中1的个数，思路就有了：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">numberOfOne</span><span class="params">(<span class="keyword">int</span> num)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(num)&#123;</span><br><span class="line">        count++;</span><br><span class="line">        num = num &amp; (num - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>此方法对正负整数均使用。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" data-id="ckayvgezt0003lufz5yw5azs3" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
     <article id="post-LeetCode-对大数的操作" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/01/02/LeetCode-%E5%AF%B9%E5%A4%A7%E6%95%B0%E7%9A%84%E6%93%8D%E4%BD%9C/" class="article-date">
@@ -799,85 +898,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
 
 
   
-    <article id="post-LeetCode-从链表删除节点" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/" class="article-date">
-  <time datetime="2020-01-02T13:39:51.000Z" itemprop="datePublished">2020-01-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/LeetCode/">LeetCode</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/">LeetCode-链表操作注意事项</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><font color="red">注意1.</font></p>
-<ul>
-<li><p>这句话什么意思：</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ListNode* d_head = <span class="keyword">new</span> ListNode(<span class="number">-1</span>);</span><br></pre></td></tr></table></figure>
-
-<p>  新建一个ListNode型ptr，新建一个ListNode结点，用<code>-1</code>初始化这个结点的<code>val</code>变量，用这个ptr指向这个结点。</p>
-</li>
-<li><p>这句又是都什么意思</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ListNode* curr = dhead;</span><br></pre></td></tr></table></figure>
-
-<p>  新建一个ListNode型ptr，用这个ptr指向dhead结点。并没有实例化一个ListNode。</p>
-</li>
-<li><p>这句又是什么意思</p>
-  <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ListNode node = head;</span><br></pre></td></tr></table></figure>
-
-<p>  实例化一个ListNode，用head的<code>val</code>和<code>next</code>初始化ListNode的<code>val</code>和<code>next</code>。这个<code>operator=</code>是C++帮我们写好的。</p>
-</li>
-</ul>
-<p>所以为了不用单独处理链表的头结点，通常新建一个d_head：<code>ListNode* d_head = new ListNode(-1);</code>，操作过程中，<font color="red">d_head不应给被移动，最后就可以将他delete掉，就像上述code中的伤处操作</font>。</p>
-<p><font color="red">注意2.</font>删除某一个结点</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ListNode* dNode = curr-&gt;next; <span class="comment">//新建ptr，指向curr-&gt;next</span></span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line"><span class="keyword">delete</span> dNode; <span class="comment">// 删除指针所指向地址的内容，指针所指向地址不变。</span></span><br><span class="line">dNode = <span class="literal">nullptr</span>; <span class="comment">// 间指针设为空指针。</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="从链表中删除，插入结点"><a href="#从链表中删除，插入结点" class="headerlink" title="从链表中删除，插入结点"></a>从链表中删除，插入结点</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span>&#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode* next;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x):val(x), next(<span class="literal">NULL</span>)&#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 向链表head的pre_val节点后插入val的结点。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insertNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> val, <span class="keyword">int</span> pre_val)</span></span>&#123;</span><br><span class="line">    ListNode* d_head = <span class="keyword">new</span> ListNode(<span class="number">-1</span>);</span><br><span class="line">    d_head-&gt;next = head;</span><br><span class="line">    <span class="keyword">while</span>(d_head-&gt;val != pre_val)&#123;</span><br><span class="line">        d_head = d_head-&gt;next;	<span class="comment">// dhead 移动了，所以最后不能删</span></span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* insertNode = <span class="keyword">new</span> ListNode(val);</span><br><span class="line">    insertNode-&gt;next = d_head-&gt;next;</span><br><span class="line">    d_head-&gt;next = insertNode;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从链表head中删除delete_val的结点</span></span><br><span class="line"><span class="function">ListNode* <span class="title">deleteNode</span><span class="params">(ListNode* head, <span class="keyword">int</span> delete_val)</span></span>&#123;</span><br><span class="line">    ListNode* dhead = <span class="keyword">new</span> ListNode(<span class="number">-1</span>); <span class="comment">// 新建结点</span></span><br><span class="line">    dhead-&gt;next = head;</span><br><span class="line"></span><br><span class="line">    ListNode* curr = dhead;  <span class="comment">//新建ptr，指向head</span></span><br><span class="line">    <span class="keyword">while</span>(curr-&gt;next)&#123;</span><br><span class="line">        <span class="keyword">if</span>(curr-&gt;next-&gt;val == delete_val)&#123;</span><br><span class="line">            ListNode* dNode = curr-&gt;next; <span class="comment">//新建ptr，指向curr-&gt;next</span></span><br><span class="line">            curr-&gt;next = dNode-&gt;next;</span><br><span class="line">            <span class="comment">// 删处结点</span></span><br><span class="line">            <span class="keyword">delete</span> dNode;</span><br><span class="line">            dNode = <span class="literal">nullptr</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span></span><br><span class="line">            curr=curr-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode* resHead = dhead-&gt;next;  <span class="comment">//新建ptr，指向dhead-&gt;next</span></span><br><span class="line">    <span class="keyword">delete</span> dhead;    <span class="comment">// 整个过程dhead没有移动，所以可以delete </span></span><br><span class="line">    dhead = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> resHead;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 打印当前链表</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">printLinkedList</span><span class="params">(ListNode* head)</span></span>&#123;	</span><br><span class="line">    ListNode* node = head;</span><br><span class="line">    <span class="keyword">while</span>(node)&#123;</span><br><span class="line">        <span class="built_in">cout</span>&lt;&lt;node-&gt;val&lt;&lt;<span class="string">"-&gt;"</span>;</span><br><span class="line">        node = node-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span>&lt;&lt;<span class="string">"NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span></span>&#123;</span><br><span class="line">    <span class="comment">// create a linkedlist</span></span><br><span class="line">    <span class="keyword">int</span> length, nodeVal, headVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;length;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;headVal;</span><br><span class="line">    <span class="keyword">int</span> count=length;</span><br><span class="line">    ListNode* head = <span class="keyword">new</span> ListNode(headVal);</span><br><span class="line">    count--;</span><br><span class="line">    ListNode* dhead = head;</span><br><span class="line">    <span class="keyword">while</span>(count!=<span class="number">0</span>)&#123;</span><br><span class="line">        <span class="built_in">cin</span>&gt;&gt;nodeVal;</span><br><span class="line">        ListNode* node = <span class="keyword">new</span> ListNode(nodeVal);</span><br><span class="line">        dhead-&gt;next = node;</span><br><span class="line">        dhead = dhead-&gt;next;</span><br><span class="line">        count--;</span><br><span class="line">    &#125;</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="comment">//operations</span></span><br><span class="line">    <span class="keyword">int</span> insertVal;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;insertVal;</span><br><span class="line">    insertNode(head, insertVal, <span class="number">2</span>);</span><br><span class="line">    printLinkedList(head);</span><br><span class="line">    <span class="keyword">int</span> dln;</span><br><span class="line">    <span class="built_in">cin</span>&gt;&gt;dln;</span><br><span class="line">    ListNode* nhead = deleteNode(head, dln);</span><br><span class="line">    printLinkedList(nhead);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="创建链表，打印链表，销毁链表"><a href="#创建链表，打印链表，销毁链表" class="headerlink" title="创建链表，打印链表，销毁链表"></a>创建链表，打印链表，销毁链表</h1><p>作为基本操作，为测试时提供便利。先在ListNode定义中中添加一个构造函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode *next;</span><br><span class="line">    ListNode() : val(<span class="number">0</span>), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x) : val(x), next(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    ListNode(<span class="keyword">int</span> x, ListNode *next) : val(x), next(next) &#123;&#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>传入一个保存结点值的容器，创建链表：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ListNode* <span class="title">createList</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; nodeVals)</span></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (nodeVals.size()==<span class="number">0</span>) </span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">	<span class="built_in">vector</span>&lt;ListNode*&gt; nodePtr;</span><br><span class="line">	nodePtr.push_back(<span class="keyword">new</span> ListNode(nodeVals.back()));</span><br><span class="line">	nodeVals.pop_back();</span><br><span class="line">	<span class="keyword">while</span>(!nodeVals.empty())&#123;</span><br><span class="line">		nodePtr.push_back(<span class="keyword">new</span> ListNode(nodeVals.back(), nodePtr.back()));</span><br><span class="line">		nodeVals.pop_back();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> nodePtr.back();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>遍历打印链表：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">showList</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (ListNode* i = head; i!=<span class="literal">NULL</span>; i=i-&gt;next)&#123;</span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;i-&gt;val&lt;&lt;<span class="string">"-&gt;"</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">cout</span>&lt;&lt;<span class="string">"NULL"</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">	<span class="keyword">return</span> ;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>销毁链表：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">destroyList</span><span class="params">(ListNode* head)</span></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (head)&#123;</span><br><span class="line">		destroyList(head-&gt;next);</span><br><span class="line">		<span class="keyword">delete</span> head;</span><br><span class="line">        head = <span class="literal">nullptr</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/01/02/LeetCode-%E4%BB%8E%E9%93%BE%E8%A1%A8%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9/" data-id="ckay1n2y500004afz8rk43wbo" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -893,7 +913,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">37</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -903,7 +923,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">57</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">35</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -922,7 +942,7 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -935,6 +955,14 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
       <ul>
         
           <li>
+            <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/">CUDA-线程-warp-延时隐藏</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/">LeetCode-Trie-search regular expression</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
           </li>
         
@@ -944,14 +972,6 @@ Categories=Application;Network;</code></pre><p> <code>Exec</code>是Firefox可�
         
           <li>
             <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
           </li>
         
       </ul>

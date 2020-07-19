@@ -7,15 +7,15 @@
   
   <title>CUDA-杂记待归类 | Junhui&#39;s Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="向量数据类型  同时适用于Host和Device，通过make_&lt;type name&gt;来构造，如  int2 i2 &#x3D; make_int2(3,4)：i2向量含有3和4两个元素。 float4 f4 &#x3D; make_float4(1.0f, 2.0f, 3.0f, 4.0f)：f4是含有4个元素的数组。  访问方式如下：  int x &#x3D; i2.x; int y &#x3D; i2.y;  CU">
+  <meta name="description" content="二维数组在存储时会被扁平化处理，所以在程序中，最好是将多为数组扁平化为等价的一维数组。CUDA对于多为数组也是按行优先存储。  算法与硬件越是契合，算法的执行效率，硬件的使用率越高。所以有两个选择  可以为当前算法设计特殊的处理架构，DSA（Domain Specific Architecture）如Google TPU。 根据当前硬件精心设计算法。   向量数据类型  同时适用于Host和De">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CUDA-杂记待归类">
 <meta property="og:url" content="http://yoursite.com/2020/02/20/CUDA-%E6%9D%82%E8%AE%B0%E5%BE%85%E5%BD%92%E7%B1%BB/index.html">
 <meta property="og:site_name" content="Junhui&#39;s Journal">
-<meta property="og:description" content="向量数据类型  同时适用于Host和Device，通过make_&lt;type name&gt;来构造，如  int2 i2 &#x3D; make_int2(3,4)：i2向量含有3和4两个元素。 float4 f4 &#x3D; make_float4(1.0f, 2.0f, 3.0f, 4.0f)：f4是含有4个元素的数组。  访问方式如下：  int x &#x3D; i2.x; int y &#x3D; i2.y;  CU">
+<meta property="og:description" content="二维数组在存储时会被扁平化处理，所以在程序中，最好是将多为数组扁平化为等价的一维数组。CUDA对于多为数组也是按行优先存储。  算法与硬件越是契合，算法的执行效率，硬件的使用率越高。所以有两个选择  可以为当前算法设计特殊的处理架构，DSA（Domain Specific Architecture）如Google TPU。 根据当前硬件精心设计算法。   向量数据类型  同时适用于Host和De">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2020-02-20T02:40:58.000Z">
-<meta property="article:modified_time" content="2020-02-27T09:57:42.012Z">
+<meta property="article:modified_time" content="2020-07-19T08:32:24.852Z">
 <meta property="article:author" content="Junhui">
 <meta property="article:tag" content="CUDA">
 <meta name="twitter:card" content="summary">
@@ -93,7 +93,15 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <ol start="4">
+        <ol>
+<li><p>二维数组在存储时会被扁平化处理，所以在程序中，最好是将多为数组扁平化为等价的一维数组。CUDA对于多为数组也是按行优先存储。</p>
+</li>
+<li><p>算法与硬件越是契合，算法的执行效率，硬件的使用率越高。所以有两个选择</p>
+<ul>
+<li>可以为当前算法设计特殊的处理架构，DSA（Domain Specific Architecture）如Google TPU。</li>
+<li>根据当前硬件精心设计算法。</li>
+</ul>
+</li>
 <li><p>向量数据类型</p>
 <p> 同时适用于Host和Device，通过<code>make_&lt;type name&gt;</code>来构造，如</p>
 <p> <code>int2 i2 = make_int2(3,4)</code>：i2向量含有3和4两个元素。<br> <code>float4 f4 = make_float4(1.0f, 2.0f, 3.0f, 4.0f)</code>：f4是含有4个元素的数组。</p>
@@ -120,7 +128,7 @@
 <p>任务并行（Task Parallelism），不同于在大量的数据上执行相同的任务（SIMD），而是同时执行多个不同的任务。</p>
 </li>
 <li><p>CUDA数据并行原语</p>
-<p>啥是原语，就是这个领域的基本操作。CUDA并行原语库（CUDA Data Parallel Primitive Library, CUDPP）. 含有并行前缀和，并i选哪个排序，并行规约等。<font color="orange">这些原语为许多数据并行算法提供了重要基础</font>。如果你正在编写某个复杂算法，那么CUDPP很可能已经提供了这个算法。</p>
+<p>啥是原语，就是这个领域的基本操作。CUDA并行原语库（CUDA Data Parallel Primitive Library, CUDPP）. 含有并行前缀和，并行排序，并行规约等。<font color="orange">这些原语为许多数据并行算法提供了重要基础</font>。如果你正在编写某个复杂算法，那么CUDPP很可能已经提供了这个算法。</p>
 <p>CUDPP 下载地址：<a href="http://code.google.com/p/cudpp" target="_blank" rel="noopener">http://code.google.com/p/cudpp</a></p>
 <p>for more information：CUDA By Example 178页 </p>
 </li>
@@ -144,7 +152,7 @@
 <li><p>warp中的divergence</p>
 <p>已经知道，在一个warp中，所有的threads执行相同的指令，但是如果指令中含有条件分支语句，很大程度上会发生divergence。比如<code>优化并行归约</code> 中的描述：一个宿舍的6个学生可以是一个warp，今天有的想先上厕所，后吃饭，而有的不需要上厕所，此时所有的同学都会一起先上厕所，后一起吃饭。</p>
 <p>总之，分支发散使得性能明显下降。但是，注意<font color="orange">divergence只发生在一个warp中</font>。</p>
-<p>可以综合算法的上下文，将divergence的粒度变为32（warp的大小）的倍数，从而避免warp内的分支发散。比如：</p>
+<p>可以综合算法的上下文，将divergence的粒度变为32（warp的大小）的倍数，从而<font color="orange">避免warp内的分支发散</font>。比如：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (tid%<span class="number">2</span> == <span class="number">0</span>)&#123;  </span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>偶数id的thread把100写入偶数编号的地址，奇数id的thread将200写入奇数编号的地址。会发生分支发散。如果将分支的粒度定为32，则没有了divergence <font color="red">[代码中tid%32 == 0有问题]</font>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">global__ <span class="keyword">void</span> <span class="title">kernel</span><span class="params">(<span class="keyword">float</span>* c)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tid = threadIdx.x + blockDim.x * blockIdx.x;</span><br><span class="line">    <span class="keyword">float</span> a=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> b=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( tid%<span class="number">32</span> == <span class="number">0</span> )&#123;</span><br><span class="line">        c[tid] = <span class="number">100</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        c[tid] = <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -154,7 +162,7 @@
 </li>
 </ol>
 <ol start="41">
-<li><p>数据预读取</p>
+<li><p>数据预读取?</p>
 <p><font color="orange">在一次读取global memory的操作和使用这个数据之间，插入独立于以上数据的操作，可以隐藏访问延迟</font>。如：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> m = dev_a[i];  <span class="comment">// 1. 从global memory中读取</span></span><br><span class="line"><span class="keyword">float</span> f = a * b;     <span class="comment">// 2. 与m无关的操作 </span></span><br><span class="line"><span class="keyword">float</span> f2 = m*f;      <span class="comment">// 3. 使用m</span></span><br></pre></td></tr></table></figure>
 <p>分析：在warp切换中，</p>
@@ -209,7 +217,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Categories</h3>
     <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">36</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">29</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/C/">C++</a><span class="category-list-count">13</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">37</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Caffe/">Caffe</a><span class="category-list-count">18</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Deep-Learning/">Deep Learning</a><span class="category-list-count">11</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/LeetCode/">LeetCode</a><span class="category-list-count">30</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linear-Algebra/">Linear Algebra</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Machine-Learning/">Machine Learning</a><span class="category-list-count">15</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Reinforcement-Learning/">Reinforcement Learning</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Utility/">Utility</a><span class="category-list-count">12</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%85%E5%BD%92%E7%B1%BB/">待归类</a><span class="category-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -219,7 +227,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">56</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">34</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a><span class="tag-list-count">57</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CUDA/" rel="tag">CUDA</a><span class="tag-list-count">35</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Caffe/" rel="tag">Caffe</a><span class="tag-list-count">18</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Test-Analysis/" rel="tag">Test Analysis</a><span class="tag-list-count">6</span></li></ul>
     </div>
   </div>
 
@@ -238,7 +246,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a><span class="archive-list-count">31</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a><span class="archive-list-count">15</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a><span class="archive-list-count">12</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a><span class="archive-list-count">10</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">38</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -251,6 +259,14 @@
       <ul>
         
           <li>
+            <a href="/2020/07/19/CUDA-%E7%BA%BF%E7%A8%8B-warp-%E5%BB%B6%E6%97%B6%E9%9A%90%E8%97%8F/">CUDA-线程-warp-延时隐藏</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/14/LeetCode-Trie-search-regular-expression/">LeetCode-Trie-search regular expression</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/12/LeetCode-Trie/">LeetCode-Trie</a>
           </li>
         
@@ -260,14 +276,6 @@
         
           <li>
             <a href="/2020/07/08/CUDA-%E5%B9%B6%E8%A1%8CRadix-Sort/">CUDA-并行Radix Sort</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/02/LeetCode-%E5%88%A4%E6%96%AD%E9%93%BE%E8%A1%A8%E6%98%AF%E5%90%A6%E7%9B%B8%E4%BA%A4/">LeetCode-判断链表是否相交</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/01/cpp-%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98-%E6%A0%88%E5%86%85%E5%AD%98-%E5%8A%A8%E6%80%81%E5%86%85%E5%AD%98/">cpp-静态内存-栈内存-动态内存</a>
           </li>
         
       </ul>
